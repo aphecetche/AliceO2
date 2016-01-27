@@ -6,7 +6,7 @@
 inputDigitsFile="/Users/laurent/o2/clustering/basicTiming/169099/MB/merged.digits.MB.196099.root" # 932 MB events
 run=169099
 
-msgSize=1000
+msgSize=10
 
 firstSocketNo=45000
 let socketNo=firstSocketNo
@@ -42,14 +42,14 @@ start_device MUONDigitReader
 outSocket=$((socketNo + 1))
 
 sessiontitle="MUONPreclusterFinder_0"
-command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=connect,size=1000,address=tcp://127.0.0.1:$socketNo --output type=push,method=connect,size=1000,address=tcp://localhost:$outSocket --library libAliHLTMUON.so --component MUONPreclusterFinder --parameter '-cdbpath local://$ALICE_ROOT/OCDB -run $run'"
+command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=connect,size=$msgSize,address=tcp://localhost:$socketNo --output type=push,method=connect,size=$msgSize,address=tcp://localhost:$outSocket --library libAliHLTMUON.so --component MUONPreclusterFinder --parameter '-cdbpath local://$ALICE_ROOT/OCDB -run $run'"
 start_device MUONPreclusterFinder
 
 echo
 screen -ls
 
 sessiontitle="MUONClusterWriter"
-command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=bind,size=1000,address=tcp://*:$outSocket --library libAliHLTMUON.so --component MUONClusterWriter --parameter '-datafile MUON.RecPoints.root'"
+command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=connect,size=$msgSize,address=tcp://*:$outSocket --library libAliHLTMUON.so --component MUONClusterWriter --parameter '-datafile MUON.RecPoints.root'"
 
 echo $command
 #start_device MUONPreclusterFinder
