@@ -158,6 +158,7 @@ int main(int argc, char** argv)
   int skipProcessing = 0;
   bool bUseDDS = false;
   int timeout=-1;
+  bool bInteractive = false;
 
   static struct option programOptions[] = {
     { "input",       required_argument, 0, 'i' }, // input socket
@@ -169,6 +170,7 @@ int main(int argc, char** argv)
     { "dry-run",     no_argument      , 0, 'n' }, // skip the component processing
     { "dds",         no_argument      , 0, 'd' }, // run in dds mode
     { "timeout",     required_argument, 0, 't' }, // polling period of the device in ms
+    { "interactive", no_argument      , 0, 'x' }, // enter interactive mode (from terminal only)
     { 0, 0, 0, 0 }
   };
 
@@ -252,6 +254,9 @@ int main(int argc, char** argv)
         break;
       case 'n':
         skipProcessing = 1;
+        break;
+      case 'x':
+        bInteractive = true;
         break;
       case 'd':
         bUseDDS = true;
@@ -448,36 +453,41 @@ int main(int argc, char** argv)
     device.ChangeState("INIT_TASK");
     device.WaitForEndOfState("INIT_TASK");
 
-    device.ChangeState("RUN");
+    if (bInteractive) {
+      device.InteractiveStateLoop();
+    } else {
+      device.ChangeState("RUN");
 
-    auto refTime = boost::chrono::system_clock::now();
+      auto refTime = boost::chrono::system_clock::now();
 
-    while (device.GetCurrentStateName() == "RUNNING") {
-      device.WaitForEndOfStateForMs("RUN", 1000); // Wait end of running state for 1000 ms.
-      auto duration = boost::chrono::duration_cast<boost::chrono::seconds>(boost::chrono::system_clock::now() - refTime);
-      if (timeout>0) {
-        cout << "seconds elapsed since start " << duration.count() << endl;
-        if (duration.count()>timeout) {
-          cout << "Executing time-out shutdown" << endl;
-          // the execution is hanging in the state machine shutdown, has to be debugged
-          // simply throw an exeption to terminate in order to allow callgrind to write
-          // the statistics
-          throw std::runtime_error("terminating by exception");
-          gDevice->ChangeState(FairMQDevice::END);
-          sleep(5);
-          cout << "... done" << endl;
-          refTime=boost::chrono::system_clock::now();
+      while (device.GetCurrentStateName() == "RUNNING") {
+        device.WaitForEndOfStateForMs("RUN", 1000); // Wait end of running state for 1000 ms.
+        auto duration = boost::chrono::duration_cast < boost::chrono::seconds
+            > (boost::chrono::system_clock::now() - refTime);
+        if (timeout > 0) {
+          cout << "seconds elapsed since start " << duration.count() << endl;
+          if (duration.count() > timeout) {
+            cout << "Executing time-out shutdown" << endl;
+            // the execution is hanging in the state machine shutdown, has to be debugged
+            // simply throw an exeption to terminate in order to allow callgrind to write
+            // the statistics
+            throw std::runtime_error("terminating by exception");
+            gDevice->ChangeState(FairMQDevice::END);
+            sleep(5);
+            cout << "... done" << endl;
+            refTime = boost::chrono::system_clock::now();
+          }
         }
       }
+
+      device.ChangeState("RESET_TASK");
+      device.WaitForEndOfState("RESET_TASK");
+
+      device.ChangeState("RESET_DEVICE");
+      device.WaitForEndOfState("RESET_DEVICE");
+
+      device.ChangeState("END");
     }
-
-    device.ChangeState("RESET_TASK");
-    device.WaitForEndOfState("RESET_TASK");
-
-    device.ChangeState("RESET_DEVICE");
-    device.WaitForEndOfState("RESET_DEVICE");
-
-    device.ChangeState("END");
   } // scope for the device reference variable
 
   FairMQDevice* almostdead = gDevice;
