@@ -1,0 +1,54 @@
+
+set(INCLUDE_DIRECTORIES
+  ${CMAKE_SOURCE_DIR}/muon/hltwrapper
+)
+
+set(SYSTEM_INCLUDE_DIRECTORIES
+  ${BASE_INCLUDE_DIRECTORIES}
+  ${Boost_INCLUDE_DIR}
+  ${ROOT_INCLUDE_DIR}
+  ${FAIRROOT_INCLUDE_DIR}
+  ${AlFa_DIR}/include
+)
+
+include_directories(${INCLUDE_DIRECTORIES})
+include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
+
+set(LINK_DIRECTORIES
+  ${ROOT_LIBRARY_DIR}
+  ${Boost_LIBRARY_DIRS}
+  ${FAIRROOT_LIBRARY_DIR}
+  ${AlFa_DIR}/lib
+)
+link_directories(${LINK_DIRECTORIES})
+
+set(SRCS
+  MCHDigitInspector.cxx
+)
+
+set(DEPENDENCIES
+  Base ParBase FairMQ boost_thread boost_program_options boost_system boost_log fairmq_logger pthread Core Tree XMLParser Hist
+)
+
+set(LIBRARY_NAME AliceO2Muon)
+GENERATE_LIBRARY()
+
+Set(Exe_Names
+  mch-digit-inspector
+)
+
+Set(Exe_Source
+  runDigitInspector.cxx
+ )
+
+list(LENGTH Exe_Names _length)
+math(EXPR _length ${_length}-1)
+
+ForEach(_file RANGE 0 ${_length})
+  list(GET Exe_Names ${_file} _name)
+  list(GET Exe_Source ${_file} _src)
+  Set(EXE_NAME ${_name})
+  Set(SRCS ${_src})
+  Set(DEPENDENCIES AliceO2Muon)
+  GENERATE_EXECUTABLE()
+EndForEach(_file RANGE 0 ${_length})

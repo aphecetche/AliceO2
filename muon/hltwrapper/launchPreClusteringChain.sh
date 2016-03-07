@@ -1,9 +1,13 @@
 #!/bin/bash
 
+#
 # very simple helper script to create the commands for starting several processes
 # inspired from devices/aliceHLTwrapper/launchSimpleChain.sh from Matthias Richter
+#
+# toto
 
-inputDigitsFile="/Users/laurent/o2/clustering/basicTiming/169099/MB/merged.digits.MB.196099.root" # 932 MB events
+# 932 MB events
+inputDigitsFile="/Users/laurent/o2/clustering/basicTiming/169099/MB/merged.digits.MB.196099.root" 
 run=169099
 
 msgSize=10
@@ -49,7 +53,9 @@ echo
 screen -ls
 
 sessiontitle="MUONClusterWriter"
-command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=connect,size=$msgSize,address=tcp://*:$outSocket --library libAliHLTMUON.so --component MUONClusterWriter --parameter '-datafile MUON.RecPoints.root'"
+command="aliceHLTwrapper $sessiontitle 1 --input type=pull,method=bind,size=$msgSize,address=tcp://*:$outSocket --library libAliHLTMUON.so --component MUONClusterWriter --parameter '-datafile MUON.RecPoints.root'"
 
 echo $command
 #start_device MUONPreclusterFinder
+
+
