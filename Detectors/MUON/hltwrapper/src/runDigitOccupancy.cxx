@@ -1,4 +1,4 @@
-#include "MCHDigitInspector.h"
+#include "MCHDigitOccupancy.h"
 
 /// A simple program to "spy" on MCH digit messages being exchanged
 /// between two aliceHLTwrappers
@@ -16,7 +16,6 @@ int main(int argc, char* argv[])
 {
   string source;
   bool interactive(false);
-  int maxcount(30);
 
   try {
 
@@ -25,7 +24,6 @@ int main(int argc, char* argv[])
         ("help,h", "produces this usage message")
         ("source,s", po::value<string>(&source), "address to get the messages from")
         ("interactive,x", "interactive loop")
-        ("maxcount,n", po::value<int>(&maxcount),"max number of messages to print")
         ;
 
     po::variables_map vm;
@@ -57,31 +55,31 @@ int main(int argc, char* argv[])
     cerr << "Exception of unknown type!\n";
   }
 
-  AliceO2::MUON::MCHDigitInspector inspector(maxcount);
+  AliceO2::MUON::MCHDigitOccupancy occupancy;
 
   FairMQChannel inputChannel("pull","connect",source);
 
-  inspector.SetTransport("zeromq");
+  occupancy.SetTransport("zeromq");
 
-  inspector.fChannels["data-in"].push_back(inputChannel);
+  occupancy.fChannels["data-in"].push_back(inputChannel);
 
-  inspector.ChangeState(FairMQStateMachine::INIT_DEVICE);
-  inspector.WaitForEndOfState(FairMQStateMachine::INIT_DEVICE);
+  occupancy.ChangeState(FairMQStateMachine::INIT_DEVICE);
+  occupancy.WaitForEndOfState(FairMQStateMachine::INIT_DEVICE);
 
-  inspector.ChangeState(FairMQStateMachine::INIT_TASK);
-  inspector.WaitForEndOfState(FairMQStateMachine::INIT_TASK);
+  occupancy.ChangeState(FairMQStateMachine::INIT_TASK);
+  occupancy.WaitForEndOfState(FairMQStateMachine::INIT_TASK);
 
   if (interactive)
   {
-    inspector.InteractiveStateLoop();
+    occupancy.InteractiveStateLoop();
   }
   else
   {
-      inspector.ChangeState(FairMQStateMachine::RUN);
-      inspector.WaitForEndOfState(FairMQStateMachine::RUN);
+      occupancy.ChangeState(FairMQStateMachine::RUN);
+      occupancy.WaitForEndOfState(FairMQStateMachine::RUN);
   }
 //
-//  inspector.ChangeState(FairMQStateMachine::END);
+//  occupancy.ChangeState(FairMQStateMachine::END);
 
 
 

@@ -64,7 +64,7 @@ void MCHDigitInspector::Run()
 
   int numInputs = fChannels["data-in"].size();
 
-  while (CheckCurrentState (RUNNING)) {
+  while (CheckCurrentState(RUNNING) && fCount < fMaxCount ) {
 
     poller->Poll(10);
 
@@ -82,10 +82,13 @@ void MCHDigitInspector::Run()
     }
 
     if ( inputMessages.size() ) {
-      LOG(INFO) << " |---- received " << inputMessages.size() << " messages";
+      LOG(INFO) << " |---- received " << inputMessages.size() << " messages out of " << fMaxCount << " allowed";
     }
 
-    DumpMessages(inputMessages);
+    if ( inputMessages.size() )
+    {
+        DumpMessages(inputMessages);
+    }
 
     for (auto i : inputMessages) {
       delete i;
@@ -93,15 +96,30 @@ void MCHDigitInspector::Run()
 
     if ( inputMessages.size() ) {
       inputMessages.clear();
-      static int count(0);
-      ++count;
-      if ( count == 30) ChangeState("END");
+      ++fCount;
     }
   }
 
+  WaitForEndOfState(RUNNING);
+
+  if ( fCount >= fMaxCount )
+  {
+      LOG(INFO) << "fMaxCount messages mark reached. Will stop";
+      ChangeState(STOP);
+      WaitForEndOfState(STOP);
+
+      // ChangeState(RESET_TASK);
+      // WaitForEndOfState(RESET_TASK);
+      //
+      // ChangeState(RESET_DEVICE);
+      // WaitForEndOfState(RESET_DEVICE);
+      //
+      ChangeState(END);
+  }
 }
 
 void MCHDigitInspector::InitTask()
 {
   std::cout << "MCHDigitInspector::InitTask" << std::endl;
+  fCount=0;
 }

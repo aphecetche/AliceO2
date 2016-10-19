@@ -10,11 +10,15 @@ namespace MUON {
 
 class MCHDigitInspector : public FairMQDevice {
 public:
-  MCHDigitInspector() = default;
+  MCHDigitInspector(int maxcount=30) : fCount(0),fMaxCount(maxcount) {}
 	virtual ~MCHDigitInspector() = default;
 
 	virtual void Run();
 	virtual void InitTask();
+
+private:
+    int fCount;
+    int fMaxCount;
 };
 
 }

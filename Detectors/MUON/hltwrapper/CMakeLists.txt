@@ -7,6 +7,7 @@ O2_SETUP(NAME ${MODULE_NAME})
 # Define the source and header files
 set(SRCS
     src/MCHDigitInspector.cxx
+    src/MCHDigitOccupancy.cxx
     )
 
 # HEADERS is not needed if we don't generate a dictionary.
@@ -32,3 +33,9 @@ O2_GENERATE_EXECUTABLE(
     BUCKET_NAME ${BUCKET_NAME}
 )
 
+O2_GENERATE_EXECUTABLE(
+    EXE_NAME mch-digit-occupancy
+    SOURCES src/runDigitOccupancy.cxx
+    MODULE_LIBRARY_NAME ${LIBRARY_NAME}
+    BUCKET_NAME ${BUCKET_NAME}
+)
