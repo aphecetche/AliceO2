@@ -17,6 +17,8 @@ void MCHDigitOccupancy::Run()
             std::cout << "Msg size=" << input->GetSize()
                 << std::endl;
 
+            if ( input->GetSize() < 100 ) continue;
+
             void* data = input->GetData();
 
             uint8_t* i8data = reinterpret_cast<uint8_t*>(data);
