@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
 {
   string source;
   bool interactive(false);
+  string mapping;
 
   try {
 
@@ -24,6 +25,7 @@ int main(int argc, char* argv[])
         ("help,h", "produces this usage message")
         ("source,s", po::value<string>(&source), "address to get the messages from")
         ("interactive,x", "interactive loop")
+        ("mapping,s", po::value<string>(&mapping), "compact mapping binary file")
         ;
 
     po::variables_map vm;
@@ -48,6 +50,15 @@ int main(int argc, char* argv[])
       return 2;
     }
 
+    if (vm.count("mapping"))
+    {
+        cout << vm["mapping"].as<string>() << endl;
+    }
+    else
+    {
+        cerr << "Mapping file not given." << endl;
+        return 3;
+    }
   } catch (exception& e) {
     cerr << "error: " << e.what() << "\n";
     return 1;
@@ -55,7 +66,31 @@ int main(int argc, char* argv[])
     cerr << "Exception of unknown type!\n";
   }
 
-  AliceO2::MUON::MCHDigitOccupancy occupancy;
+  std::ifstream input(mapping.c_str(),std::ios::binary);
+
+  int nmanus;
+
+  input.read((char*)&nmanus,sizeof(int));
+ 
+  assert(nmanus==16828);
+
+  std::vector<uint32_t> manus;
+  std::vector<uint8_t> npad;
+
+  manus.resize(nmanus,0);
+  npad.resize(nmanus,0);
+
+  input.read((char*)&manus[0],nmanus*sizeof(uint32_t));
+  input.read((char*)&npad[0],nmanus*sizeof(uint8_t));
+
+  int ix(0);
+  for ( auto m : manus)
+  {
+    std::cout << ix << " " << m << " " << (m & 0x00000FFF) <<  " " << ( ( m & 0x00FFF000 ) >> 12 ) << " : " << (int)npad[ix] << std::endl;
+    ++ix;
+  }
+
+  AliceO2::MUON::MCHDigitOccupancy occupancy(manus,npad);
 
   FairMQChannel inputChannel("pull","connect",source);
 
@@ -78,10 +113,5 @@ int main(int argc, char* argv[])
       occupancy.ChangeState(FairMQStateMachine::RUN);
       occupancy.WaitForEndOfState(FairMQStateMachine::RUN);
   }
-//
-//  occupancy.ChangeState(FairMQStateMachine::END);
-
-
-
   return 0;
 }
