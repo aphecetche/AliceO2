@@ -35,6 +35,7 @@ find_package(Configuration REQUIRED)
 find_package(GLFW)
 
 find_package(benchmark QUIET)
+find_package(RapidJSON REQUIRED)
 
 if (DDS_FOUND)
   add_definitions(-DENABLE_DDS)
@@ -1280,6 +1281,7 @@ o2_define_bucket(
     TPCSimulation
     TPCReconstruction
     ITSSimulation
+    MCHSimulation
     MFTSimulation
     TRDSimulation
     EMCALSimulation
@@ -1571,6 +1573,25 @@ o2_define_bucket(
   $<IF:$<BOOL:${benchmark_FOUND}>,benchmark::benchmark,$<0:"">>
   mch_mapping_segcontour_bucket
   MCHMappingSegContour3
+)
+
+o2_define_bucket(
+  NAME
+  mch_simulation_bucket
+
+  DEPENDENCIES
+  root_base_bucket
+  fairroot_base_bucket
+  DetectorsBase
+  SimulationDataFormat
+  RapidJSON
+
+  INCLUDE_DIRECTORIES
+  ${CMAKE_SOURCE_DIR}/Detectors/Base/include
+  ${CMAKE_SOURCE_DIR}/DataFormats/simulation/include
+  ${CMAKE_SOURCE_DIR}/Common/MathUtils/include
+  ${RAPIDJSON_INCLUDEDIR}/include
+  ${MS_GSL_INCLUDE_DIR}
 )
 
 o2_define_bucket(

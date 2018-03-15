@@ -81,7 +81,18 @@ void o2sim()
     py8Gen->SetParameters(
       ("HeavyIon:bWidth " + std::to_string(confref.getBMax())).c_str()); // impact parameter from 0-x [fm]
     primGen->AddGenerator(py8Gen);
-  } else {
+  } else if ( genconfig.compare("mugen")==0)
+  {
+    // a simple "box" generator for forward muons
+    std::cout << "Init box forward muons generator\n";
+    auto boxGen = new FairBoxGenerator(13, 1); /* mu- */
+    boxGen->SetEtaRange(-2.5, -4.0);
+    boxGen->SetPRange(1, 5);
+    boxGen->SetPhiRange(0., 360.);
+    primGen->AddGenerator(boxGen);
+  }
+  else
+  {
     LOG(FATAL) << "Invalid generator" << FairLogger::endl;
   }
   run->SetGenerator(primGen);

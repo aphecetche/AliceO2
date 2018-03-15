@@ -35,6 +35,7 @@
 #include "FairRunSim.h"
 #include <FairLogger.h>
 #include <algorithm>
+#include "MCHSimulation/Detector.h"
 #endif
 
 void finalize_geometry(FairRunSim* run);
@@ -171,6 +172,9 @@ void build_geometry(FairRunSim* run = nullptr)
     run->AddModule(new o2::fit::Detector(true));
   }
 
+  if (isActivated("MCH")) {
+    run->AddModule(new o2::mch::Detector(true));
+  }
     
   if (geomonly) {
     run->Init();
