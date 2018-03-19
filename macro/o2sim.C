@@ -85,7 +85,7 @@ void o2sim()
   {
     // a simple "box" generator for forward muons
     std::cout << "Init box forward muons generator\n";
-    auto boxGen = new FairBoxGenerator(13, 1); /* mu- */
+    auto boxGen = new FairBoxGenerator(13, 2); /* mu- */
     boxGen->SetEtaRange(-2.5, -4.0);
     boxGen->SetPRange(1, 5);
     boxGen->SetPhiRange(0., 360.);

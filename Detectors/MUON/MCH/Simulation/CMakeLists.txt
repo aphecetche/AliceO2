@@ -5,7 +5,7 @@ O2_SETUP(NAME ${MODULE_NAME})
 set(SRCS
         src/Detector.cxx
         src/SlatGeometry.cxx
-        src/SlatGeometry.h
+        src/SlatMaterials.cxx
         )
 
 set(HEADERS

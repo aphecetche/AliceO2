@@ -12,6 +12,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "SlatGeometry.h"
+#include "SlatMaterials.h"
 
 using namespace rapidjson;
 using std::cout;
@@ -21,8 +22,6 @@ namespace o2
 {
 namespace mch
 {
-
-TGeoMedium* GasMedium(const char* name);
 
 TGeoShape* NormalPCBshape(const char* name, Double_t length);
 
@@ -59,17 +58,12 @@ const Double_t kRotSlatCh[6] = { 90.0000, 0.0000, 90.7940, 90.0000, 0.7940, 90.0
 const Double_t kXPosSlatCh = 0.;
 const Double_t kYPosSlatCh = 0.1663; // be careful with the sign !
 
-const char* gasName = "MchArCO2";
-
 void createSlatGeometry()
 {
+  createSlatMaterials();
 
-  // Vacuum definition (top volume container)
-  auto vacuumMat = new TGeoMaterial("vacuumMat", 0, 0, 0);
-  auto vacuumMed = new TGeoMedium("vacuumMed", 1, vacuumMat);
-
-  // create the gas medium
-  GasMedium(gasName);
+  materialManager().printMaterials();
+  materialManager().printMedia();
 
   StringStream is(jsonSlatDescription.c_str());
 
@@ -92,31 +86,11 @@ void createSlatGeometry()
         CreateChamber(ch);
         break;
       default:
-        //CreateStation(ch);
+        // CreateStation(ch);
         break;
     }
 
   } // end of the chamber loop
-}
-
-TGeoMedium* GasMedium(const char* name)
-{
-  // create the tracking gas medium to be placed in the slats (to be called at
-  // least once and before a slat creation)
-
-  // Gas medium definition (Ar 80% + CO2 20%)
-  const Double_t aGas[]{ 39.95, 12.01, 16. };
-  const Double_t zGas[]{ 18., 6., 8. };
-  const Double_t wGas[]{ .8, .0667, .13333 };
-  const Double_t dGas = .001821;
-
-  auto gasMix = new TGeoMixture("Ar 0.8 + CO2 0.2", 3);
-  gasMix->DefineElement(0, aGas[0], zGas[0], wGas[0]); // Ar
-  gasMix->DefineElement(1, aGas[1], zGas[1], wGas[1]); // C
-  gasMix->DefineElement(2, aGas[2], zGas[2], wGas[2]); // O
-  gasMix->SetDensity(dGas);
-
-  return new TGeoMedium(name, 1, gasMix);
 }
 
 TGeoShape* NormalPCBshape(const char* name, Double_t length)
@@ -128,11 +102,7 @@ TGeoShape* NormalPCBshape(const char* name, Double_t length)
 TGeoVolume* NormalPCB(const char* name, Double_t length, Color_t color)
 {
 
-  auto med = gGeoManager->GetMedium(gasName);
-  if (med == nullptr) {
-    throw std::runtime_error("oups for med");
-  }
-  auto vol = gGeoManager->MakeBox(name, med, length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
+  auto vol = gGeoManager->MakeBox(name, assertMedium(Medium::Vacuum), length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
   vol->SetVisibility(kTRUE);
   vol->SetTransparency(0);
   vol->SetLineColor(color);
@@ -155,7 +125,7 @@ TGeoVolume* CentralPCB()
   pipeShift->RegisterYourself();
 
   auto vol = new TGeoVolume("centralPCB", new TGeoCompositeShape("cPCBshape", "PCBshape-pipeShape:pipeShift"),
-                            gGeoManager->GetMedium(gasName));
+                            assertMedium(Medium::ArCo2));
   vol->SetVisibility(kTRUE);
   vol->SetTransparency(0);
   vol->SetLineColor(kGreen + 1);
@@ -182,7 +152,7 @@ TGeoVolume* DownRoundedPCB(Double_t curvRad, Double_t yShift)
     new TGeoVolume("downroundedPCB",
                    new TGeoCompositeShape(Form("downrounded%.1fPCBshape", curvRad),
                                           Form("PCBshape-downpipe%.1fShape:downpipe%.1fShift", curvRad, curvRad)),
-                   gGeoManager->GetMedium(gasName));
+                   assertMedium(Medium::ArCo2));
   vol->SetVisibility(kTRUE);
   vol->SetTransparency(0);
   vol->SetLineColor(kOrange - 2);
@@ -208,7 +178,7 @@ TGeoVolume* UpRoundedPCB(Double_t curvRad, Double_t yShift)
   auto vol = new TGeoVolume("uproundedPCB",
                             new TGeoCompositeShape(Form("uprounded%.1fPCBShape", curvRad),
                                                    Form("PCBshape-uppipe%.1fShape:uppipe%.1fShift", curvRad, curvRad)),
-                            gGeoManager->GetMedium(gasName));
+                            assertMedium(Medium::ArCo2));
   vol->SetVisibility(kTRUE);
   vol->SetTransparency(0);
   vol->SetLineColor(kOrange - 2);
@@ -393,7 +363,7 @@ void CreateChamber(Value& ch)
   cout << "-- CreateChamber --\n";
 
   for (auto& x : ch["name"].GetArray()) {
-    cout << x.GetString()  << " - ";
+    cout << x.GetString() << " - ";
   }
   // create a half-chamber volume assembly (the inner one)
   auto InVol = new TGeoVolumeAssembly((const char*)ch["name"][0].GetString());
@@ -449,7 +419,7 @@ void CreateChamber(Value& ch)
       rot[i] = slat["rotation"][i].GetDouble();
     }
 
-    TGeoVolume* slatVol{nullptr}; // -LA- new TGeoVolume();
+    TGeoVolume* slatVol{ nullptr }; // -LA- new TGeoVolume();
     // create a slat volume assembly according to its shape
     if (shape == "central")
       slatVol = CentralSlat(detID, nPCBs);

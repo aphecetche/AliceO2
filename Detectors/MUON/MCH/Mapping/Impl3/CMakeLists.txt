@@ -32,7 +32,7 @@ set_target_properties(MCHMappingImpl3 PROPERTIES CXX_VISIBILITY_PRESET hidden)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options(MCHMappingImpl3 PRIVATE -fext-numeric-literals)
 endif ()
-if (APPLE)
+if (APPLE AND NOT ${CMAKE_MAKE_COMMAND} STREQUAL "Ninja")
     add_custom_command(TARGET MCHMappingImpl3 POST_BUILD
             COMMAND ${CMAKE_SOURCE_DIR}/Detectors/MUON/check_nof_exported_symbols.sh $<TARGET_LINKER_FILE:MCHMappingImpl3> 18
             COMMENT "Checking number of exported symbols in the library")

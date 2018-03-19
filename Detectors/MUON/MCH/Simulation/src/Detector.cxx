@@ -56,7 +56,10 @@ void Detector::Initialize()
   o2::Base::Detector::Initialize();
 }
 
-void Detector::ConstructGeometry() { createSlatGeometry(); }
+void Detector::ConstructGeometry()
+{
+  createSlatGeometry();
+}
 
 Bool_t Detector::ProcessHits(FairVolume* v)
 {
@@ -65,11 +68,15 @@ Bool_t Detector::ProcessHits(FairVolume* v)
 
   std::cout << fMC->CurrentVolPath() << " id=" << id << " copy=" << copy << "\n";
 
+  auto stack = fMC->GetStack();
+
   if (fMC->IsTrackEntering()) {
-    std::cout << "Track entering\n";
-  }
-  if (fMC->IsTrackExiting()) {
-    std::cout << "Track exiting\n";
+    std::cout << "Track " << stack->GetCurrentTrackNumber() << " entering maxstep=" << fMC->MaxStep() << "\n";
+    mEloss = 0;
+  } else if (fMC->IsTrackExiting()) {
+    std::cout << "Track " << stack->GetCurrentTrackNumber() << " exiting. mEloss=" << mEloss << "\n";
+  } else {
+    mEloss += fMC->Edep();
   }
   return kTRUE;
 }

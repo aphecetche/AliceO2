@@ -42,10 +42,13 @@ class Detector : public o2::Base::DetImpl<Detector>
 
   void ConstructGeometry() override;
 
-  std::vector<MchHit>* getHits(int) { return nullptr; }
+  std::vector<MchHit>* getHits(int probe) { return (probe==0) ? &mHits : nullptr; }
 
  private:
   void defineSensitiveVolumes();
+
+  std::vector<MchHit> mHits;
+  float mEloss;
 
   ClassDefOverride(Detector, 1)
 };
