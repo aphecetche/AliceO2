@@ -47,8 +47,8 @@ class Detector : public o2::Base::DetImpl<Detector>
  private:
   void defineSensitiveVolumes();
 
-  std::vector<MchHit> mHits;
-  float mEloss;
+  std::vector<MchHit> mHits; //!
+  float mEloss; //!
 
   ClassDefOverride(Detector, 1)
 };
