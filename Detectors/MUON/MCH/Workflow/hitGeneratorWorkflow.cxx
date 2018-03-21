@@ -37,31 +37,54 @@ void generateFakeHits(of::DataAllocator& da, const Segmentation& seg)
 
 of::AlgorithmSpec::ProcessCallback initHitGenerator(of::InitContext& itx)
 {
-  Segmentation seg(100, true);
-
-  LOG(INFO) << seg.nofPads();
+  Segmentation seg(itx.options().get<int>("deid"), true);
 
   return [seg](of::ProcessingContext& ctx) { generateFakeHits(ctx.allocator(), seg); };
+}
+
+of::ConfigParamSpec deIdOption(const char* help) {
+  return of::ConfigParamSpec("deid", of::VariantType::Int, 100, {help});
+}
+
+of::Inputs noInput{};
+of::Outputs noOutput{};
+
+of::DataProcessorSpec hitGeneratorSpec(uint detElemId)
+{
+  return {
+    // clang-format off
+      "mch-hit-generator",
+      noInput,
+      of::Outputs{{"MCH", "HITS", detElemId, of::OutputSpec::Lifetime::Timeframe}},
+      of::AlgorithmSpec{initHitGenerator},
+      { deIdOption("which detection element to generate hits for") }
+    // clang-format on
+  };
+}
+
+of::DataProcessorSpec preclusterizerSpec(uint detElemId)
+{
+  return {
+    // clang-format off
+          "mch-preclusterizer",
+          of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+          noOutput,
+          of::AlgorithmSpec{[](of::ProcessingContext &) {
+            return;
+          }},
+          { deIdOption("which detection element to preclusterize") }
+    // clang-format on
+  };
 }
 
 of::WorkflowSpec hitGeneratorWorkflow()
 {
   return {
     // clang-format off
-      {
-          "mch-hit-generator",
-          of::Inputs{},
-          of::Outputs{ {"MCH","HITS",100,of::OutputSpec::Lifetime::Timeframe}},
-          of::AlgorithmSpec{initHitGenerator},
-      {
-          "mch-preclusterizer",
-          of::Inputs{{"mch-hits","MCH","HITS",100,of::InputSpec::Lifetime::Timeframe}},
-          of::Outputs{},
-          of::AlgorithmSpec{[](of::ProcessingContext&) {
-            return;
-          }}
-      }
-  }; // clang-format on
+      hitGeneratorSpec(100),
+      preclusterizerSpec(100)
+    // clang-format on
+  };
 }
 
 void defineDataProcessing(of::WorkflowSpec& specs)
