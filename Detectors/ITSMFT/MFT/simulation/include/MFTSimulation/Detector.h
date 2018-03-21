@@ -50,7 +50,7 @@ class Detector : public o2::Base::DetImpl<Detector>
 {
  public:
   /// Default constructor
-  Detector();
+  Detector(bool isActive=true);
 
   /// Default destructor
   ~Detector() override;

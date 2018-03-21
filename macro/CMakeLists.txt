@@ -2,6 +2,7 @@
 FILE(GLOB INSTALL_FILES "*.C")
 INSTALL(FILES ${INSTALL_FILES} DESTINATION share/macro/)
 
+add_custom_target(macro_IDE SOURCES build_geometry.C)
 
 # NOTE: commented out until unit testing reenabled
 

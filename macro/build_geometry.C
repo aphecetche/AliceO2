@@ -13,40 +13,160 @@
 #include "TString.h"
 #include "TSystem.h"
 
-#include "DetectorsPassive/Cave.h"
-#include "DetectorsPassive/Magnet.h"
-#include "DetectorsPassive/Dipole.h"
-#include "DetectorsPassive/Absorber.h"
-#include "DetectorsPassive/Shil.h"
-#include "DetectorsPassive/Hall.h"
-#include "DetectorsPassive/Pipe.h"
+#include <DetectorsBase/Detector.h>
 #include <Field/MagneticField.h>
-#include <TPCSimulation/Detector.h>
-#include <ITSSimulation/Detector.h>
-#include <MFTSimulation/Detector.h>
-#include <EMCALSimulation/Detector.h>
-#include <TOFSimulation/Detector.h>
-#include <TRDSimulation/Detector.h>
-#include <FITSimulation/Detector.h>
-#include <PHOSSimulation/Detector.h>
-#include <DetectorsPassive/Cave.h>
-#include <DetectorsPassive/FrameStructure.h>
 #include <SimConfig/SimConfig.h>
 #include "FairRunSim.h"
 #include <FairLogger.h>
 #include <algorithm>
+#include "TMethodCall.h"
 #endif
+
+namespace o2
+{
+namespace Base
+{
+
+namespace
+{
+
+/// TODO: this map would be better created from bottom-up
+/// (e.g. each detector implementation registering itself the det<->classname relationship)
+/// instead of top-to-bottom as here.
+///
+/// But it allows easy testing now.
+const std::map<std::string, std::string> det2class{
+  { "CAVE", "o2::Passive::Cave" },   { "ABSO", "o2::passive::Absorber" },
+  { "DIPO", "o2::passive::Dipole" }, { "FRAME", "o2::passive::FrameStructure" },
+  { "HALL", "o2::passive::Hall" },   { "MAG", "o2::passive::Magnet" },
+  { "PIPE", "o2::passive::Pipe" },   { "SHIL", "o2::passive::Shil" },
+  { "EMC", "o2::EMCAL::Detector" },  { "FIT", "o2::fit::Detector" },
+  { "ITS", "o2::ITS::Detector" },    { "MFT", "o2::MFT::Detector" },
+  { "PHS", "o2::phos::Detector" },   { "TOF", "o2::tof::Detector" },
+  { "TPC", "o2::TPC::Detector" },    { "TRD", "o2::trd::Detector" }
+};
+
+std::string constructorNameFromFullyQualifiedName(const char* className)
+{
+  TString sClassName{ className };
+  auto i = sClassName.Last(':');
+  return { sClassName(i + 1, sClassName.Length() - i).Data() };
+}
+} // namespace
+
+/// Create a FairModule object from the {moduleName,className,isActive} triplet.
+///
+/// We use the fact that all FairModules are Root classes in order to use
+/// the TMethodCall mechanism to create the object.
+///
+/// There's mostly two types of constructors for o2::Base::Detector daughter classes:
+///
+/// - using two strings (name,title) for passive detectors
+/// - using one bool (isActive) for sensitive detectors
+///
+/// we try to automatically find out here which one to use
+///
+/// \param moduleName is one of the detector or passive module name (TODO: for the detector name,
+/// should probably enforce it is one of o2::detectors::DetID ?)
+/// \param className the fully qualified (i.e. with namespaces) classname to be instanciated
+/// \param isActive for detector, whether or not hits should be created (TODO: check that is indeed the intent of this
+/// parameter, in which case all detectors should offer it in their ctor (not the case for e.g. MFT for the moment)
+/// \return a FairModule pointer or nullptr if creation failed
+///
+std::unique_ptr<FairModule> createFairModule(const char* moduleName, const char* className, bool isActive)
+{
+  TClass* c = TClass::GetClass(className);
+
+  if (!c) {
+    LOG(ERROR) << "Cannot get class " << className;
+    return nullptr;
+  }
+
+  int npars{ -1 };
+
+  TMethodCall call;
+
+  auto ctorName{ constructorNameFromFullyQualifiedName(className) };
+
+  // try with 2 strings ctor first
+  call.InitWithPrototype(c, ctorName.c_str(), "const char*, const char*");
+
+  if (call.IsValid()) {
+    npars = 2;
+  } else {
+    // then with 1 bool ctor
+    call.InitWithPrototype(c, ctorName.c_str(), "Bool_t");
+
+    if (call.IsValid()) {
+      npars = 1;
+    }
+  }
+
+  if (npars < 0) {
+    LOG(ERROR) << "Could not find a suitable constructor for class " << className;
+    return nullptr;
+  }
+
+  Long_t returnLong(0);
+
+  if (npars == 1) {
+    Long_t params[] = { (Long_t)(isActive) };
+    call.SetParamPtrs((void*)(params), 1);
+    call.Execute((void*)(nullptr), returnLong);
+  } else if (npars == 2) {
+    // for the (name,title) constructor we use moduleName as name, and assume there is a sensible
+    // default for title...
+    Long_t params[] = { (Long_t)(moduleName) };
+    call.SetParamPtrs((void*)(params), 1);
+    call.Execute((void*)(nullptr), returnLong);
+  }
+
+  return std::unique_ptr<FairModule>(reinterpret_cast<FairModule*>(returnLong));
+}
+
+} // namespace Base
+} // namespace o2
 
 void finalize_geometry(FairRunSim* run);
 
-bool isActivated(std::string s) {
-// access user configuration for list of wanted modules
-  auto& modulelist = o2::conf::SimConfig::Instance().getActiveDetectors();
-  auto active = std::find(modulelist.begin(), modulelist.end(), s)!=modulelist.end();
-  if (active) {
-    std::cout << "Activating " << s << " module \n";
+// decides whether the FairModule named 's' has been
+// requested in the configuration (or is required
+// for some reason -cavern or frame-)
+bool isActivated(std::string s)
+{
+  if (s == "CAVE") {
+    // we always need the cavern
+    return true;
   }
+
+  // access user configuration for list of wanted modules
+  const auto& modulelist = o2::conf::SimConfig::Instance().getActiveDetectors();
+  auto active = (std::find(modulelist.begin(), modulelist.end(), s) != modulelist.end());
+
+  if (s == "FRAME") {
+    // the frame structure must be present to support other detectors
+    return active || isActivated("TOF") || isActivated("TRD");
+  }
+
   return active;
+}
+
+// create a number of FairModules, either active or passive
+void createModules(FairRunSim& runner, const std::vector<std::string>& modules, bool isActive)
+{
+  for (auto& moduleName : modules) {
+    auto it = o2::Base::det2class.find(moduleName);
+    if (it==o2::Base::det2class.end()) {
+      throw std::runtime_error("Don't know which class to use for module " + moduleName);
+    }
+    if (isActivated(moduleName)) {
+      auto module = o2::Base::createFairModule(moduleName.c_str(),it->second.c_str(), isActive);
+      if (!module) {
+        throw std::runtime_error("Could not create module " + moduleName);
+      }
+      runner.AddModule(module.release());
+    }
+  }
 }
 
 // a "factory" like macro to instantiate the O2 geometry
@@ -55,7 +175,7 @@ void build_geometry(FairRunSim* run = nullptr)
   bool geomonly = (run == nullptr);
 
   // minimal macro to test setup of the geometry
-  
+
   TString dir = getenv("VMCWORKDIR");
   TString geom_dir = dir + "/Detectors/Geometry/";
   gSystem->Setenv("GEOMPATH", geom_dir.Data());
@@ -77,101 +197,12 @@ void build_geometry(FairRunSim* run = nullptr)
   run->SetField(field);
 
   // Create geometry
-  // we always need the gave
-  o2::Passive::Cave* cave = new o2::Passive::Cave("CAVE");
-  // the experiment hall (cave)
-  cave->SetGeometryFileName("cave.geo");
-  run->AddModule(cave);
 
-  // the experimental hall
-  if (isActivated("HALL")) {
-    auto hall = new o2::passive::Hall("Hall", "Experimental Hall");
-    run->AddModule(hall);
-  }
+  bool isActive{ true };
 
-  // the magnet
-  if (isActivated("MAG")) {
-    // the frame structure to support other detectors
-    auto magnet = new o2::passive::Magnet("Magnet", "L3 Magnet");
-    run->AddModule(magnet);
-  }
+  createModules(*run, { "CAVE", "ABSO", "DIPO", "FRAME", "HALL", "MAG", "PIPE", "SHIL" }, !isActive);
+  createModules(*run, { "EMC", "FIT", "ITS", "MFT", "PHS", "TOF", "TPC", "TRD" }, isActive);
 
-   // the dipole
-  if (isActivated("DIPO")) {
-    auto dipole = new o2::passive::Dipole("Dipole", "Alice Dipole");
-    run->AddModule(dipole);
-  }
-
-  // beam pipe
-  if (isActivated("PIPE")) {
-    run->AddModule(new o2::passive::Pipe("Pipe", "Beam pipe"));
-  }
-  
-  // the absorber
-  if (isActivated("ABSO")) {
-    // the frame structure to support other detectors
-    auto abso = new o2::passive::Absorber("Absorber", "Absorber");
-    run->AddModule(abso);
-  }
-
-  // the shil
-  if (isActivated("SHIL")) {
-    auto shil = new o2::passive::Shil("Shield", "Small angle beam shield");
-    run->AddModule(shil);
-  }
-  
-  if (isActivated("TOF") || isActivated("TRD") || isActivated("FRAME")) {
-    // the frame structure to support other detectors
-    auto frame = new o2::passive::FrameStructure("Frame", "Frame");
-    run->AddModule(frame);
-  }
-
-  if (isActivated("TOF")){
-    // TOF
-    auto tof = new o2::tof::Detector(true);
-    run->AddModule(tof);
-  }
-
-  if (isActivated("TRD")) {
-    // TRD
-    auto trd = new o2::trd::Detector(true);
-    run->AddModule(trd);
-  }
-
-  if (isActivated("TPC")){
-    // tpc
-    auto tpc = new o2::TPC::Detector(true);
-    run->AddModule(tpc);
-  }
-
-  if (isActivated("ITS")){
-    // its
-    auto its = new o2::ITS::Detector(true);
-    run->AddModule(its);
-  }
-
-  if (isActivated("MFT")){
-    // mft
-    auto mft = new o2::MFT::Detector();
-    run->AddModule(mft);
-  }
-  
-  if (isActivated("EMC")){
-    // emcal
-    run->AddModule(new o2::EMCAL::Detector(true));
-  }
-
-  if (isActivated("PHS")){
-    // phos
-    run->AddModule(new o2::phos::Detector(true));
-  }
-
-  if (isActivated("FIT")) {
-    // FIT
-    run->AddModule(new o2::fit::Detector(true));
-  }
-
-    
   if (geomonly) {
     run->Init();
     finalize_geometry(run);
@@ -183,23 +214,25 @@ void finalize_geometry(FairRunSim* run)
 {
   // finalize geometry and declare alignable volumes
   // this should be called geometry is fully built
-  
+
   if (!gGeoManager) {
     LOG(ERROR) << "gGeomManager is not available" << FairLogger::endl;
     return;
   }
-  
+
   gGeoManager->CloseGeometry();
   if (!run) {
     LOG(ERROR) << "FairRunSim is not available" << FairLogger::endl;
     return;
   }
-  
+
   const TObjArray* modArr = run->GetListOfModules();
   TIter next(modArr);
   FairModule* module = nullptr;
-  while ( (module=(FairModule*)next()) ) {
+  while ((module = (FairModule*)next())) {
     o2::Base::Detector* det = dynamic_cast<o2::Base::Detector*>(module);
-    if (det) det->addAlignableVolumes();
+    if (det)
+      det->addAlignableVolumes();
   }
 }
+
