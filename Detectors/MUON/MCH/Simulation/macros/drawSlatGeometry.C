@@ -11,7 +11,7 @@
 #if !defined(__CLING__) || defined(__ROOTCLING__)
 #include "DetectorsPassive/Cave.h"
 #include "DetectorsPassive/FrameStructure.h"
-//#include "Detector.h"
+#include "MCHSimulation/Detector.h"
 #include "FairRunSim.h"
 #include "TGeoManager.h"
 #include "TObjArray.h"
@@ -30,7 +30,7 @@
 void drawSlatGeometry()
 {
   // minimal macro to test setup of the geometry
-/*
+
   TString dir = getenv("VMCWORKDIR");
   TString geom_dir = dir + "/Detectors/Geometry/";
   gSystem->Setenv("GEOMPATH", geom_dir.Data());
@@ -86,11 +86,6 @@ void drawSlatGeometry()
         printf("Volume %s not found ...\n", name->GetName());
     }
   }
-*/
-
-  gGeoManager->GetVolume("cave");
-
-  o2::mch::createSlatGeometry();
 
   gGeoManager->GetListOfVolumes()->ls();
   //gGeoManager->CloseGeometry();

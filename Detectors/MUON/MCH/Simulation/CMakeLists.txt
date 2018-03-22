@@ -2,16 +2,17 @@ set(MODULE_NAME "MCHSimulation")
 
 O2_SETUP(NAME ${MODULE_NAME})
 
-link_directories( ${LINK_DIRECTORIES})
-
 set(SRCS
    src/SlatGeometry.cxx
+   src/Detector.cxx
 )
 
 set(HEADERS
    include/${MODULE_NAME}/SlatGeometry.h
+   include/${MODULE_NAME}/Detector.h
 )
 
+SET(LINKDEF src/MCHSimulationLinkDef.h)
 Set(LIBRARY_NAME ${MODULE_NAME})
 set(BUCKET_NAME mch_simulation_bucket)
 

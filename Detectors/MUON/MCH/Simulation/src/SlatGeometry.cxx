@@ -34,6 +34,8 @@
 using namespace rapidjson;
 using namespace std;
 
+const char* gasName = "MchArCO2";
+
 namespace o2
 {
 namespace mch

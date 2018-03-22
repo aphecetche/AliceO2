@@ -49,8 +49,6 @@ const array<string, 19> kSlatTypes{ "122000SR1", "112200SR2", "122200S", "222000
                                     "112230N",   "222330N",   "223300N", "333000N", "330000N",
                                     "112233N",   "222333N",   "223330N", "333300N" };
 
-const char* gasName = "MchArCO2";
-
 extern const string jsonSlatDescription;
 void createSlatGeometry();
 } // namespace mch

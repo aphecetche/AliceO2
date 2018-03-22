@@ -14,6 +14,8 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class o2::MCH::SlatGeometry + ;
+#pragma link C++ class o2::mch::SlatGeometry + ;
+#pragma link C++ class o2::mch::Detector + ;
+#pragma link C++ class o2::Base::DetImpl < o2::mch::Detector > +;
 
 #endif
