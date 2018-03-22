@@ -23,27 +23,34 @@
 #include <iostream>
 #include <chrono>
 #include "Framework/OutputSpec.h"
-
+#include "generateHitPositions.h"
 using o2::mch::mapping::Segmentation;
 using namespace std::chrono_literals;
 namespace of = o2::framework;
 
-void generateFakeHits(of::DataAllocator& da, const Segmentation& seg)
+void generateFakeHits(int nhits, of::DataAllocator& da, const Segmentation& seg)
 {
-  LOG(DEBUG) << "would make hits here";
-  LOG(INFO) << seg.nofPads();
-  std::this_thread::sleep_for(1s);
+  auto hitPositions = o2::mch::test::generateHitPositions(nhits,seg);
+
+  for (const auto& hitPos: hitPositions) {
+  }
 }
 
 of::AlgorithmSpec::ProcessCallback initHitGenerator(of::InitContext& itx)
 {
   Segmentation seg(itx.options().get<int>("deid"), true);
 
-  return [seg](of::ProcessingContext& ctx) { generateFakeHits(ctx.allocator(), seg); };
+  auto nhits = itx.options().get<int>("nofhitperde");
+
+  return [seg,nhits](of::ProcessingContext& ctx) { generateFakeHits(nhits,ctx.allocator(), seg); };
 }
 
 of::ConfigParamSpec deIdOption(const char* help) {
   return of::ConfigParamSpec("deid", of::VariantType::Int, 100, {help});
+}
+
+of::ConfigParamSpec nofHitPerDEOption(const char* help) {
+  return of::ConfigParamSpec("nofhitperde", of::VariantType::Int, 10, {help});
 }
 
 of::Inputs noInput{};
@@ -57,7 +64,9 @@ of::DataProcessorSpec hitGeneratorSpec(uint detElemId)
       noInput,
       of::Outputs{{"MCH", "HITS", detElemId, of::OutputSpec::Lifetime::Timeframe}},
       of::AlgorithmSpec{initHitGenerator},
-      { deIdOption("which detection element to generate hits for") }
+      { deIdOption("which detection element to generate hits for"),
+        nofHitPerDEOption("number of hits to generate per detection element")
+      }
     // clang-format on
   };
 }

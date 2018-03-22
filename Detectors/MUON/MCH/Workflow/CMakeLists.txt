@@ -1,3 +1,3 @@
-add_executable(mch-hit-generator hitGeneratorWorkflow.cxx)
-target_link_libraries(mch-hit-generator Framework MCHMappingImpl3)
+add_executable(mch-hit-generator hitGeneratorWorkflow.cxx generateHitPositions.cxx)
+target_link_libraries(mch-hit-generator Framework MCHMappingSegContour3)
 install(TARGETS mch-hit-generator RUNTIME DESTINATION bin)
