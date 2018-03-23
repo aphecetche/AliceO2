@@ -231,7 +231,7 @@ void CreateRoundedSlat(const string name)
   }
 
   // place the rounded PCB in the slat volume assembly
-  slatVol->AddNode(RoundedPCB(radius + kVertFrameLength, ypos), nPCBs - 1,
+  slatVol->AddNode(RoundedPCB(radius + kVertFrameLength, ypos), 1,
                    new TGeoTranslation((nPCBs / 2 - 0.5) * kGasDim[0], 0, 0));
 }
 
