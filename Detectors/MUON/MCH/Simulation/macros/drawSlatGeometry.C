@@ -50,10 +50,10 @@ void drawSlatGeometry()
   o2::Passive::Cave* cave = new o2::Passive::Cave("CAVE");
   cave->SetGeometryFileName("cave.geo");
   run->AddModule(cave);
-
+/*
   o2::passive::FrameStructure* frame = new o2::passive::FrameStructure("Frame", "Frame");
   run->AddModule(frame);
-
+*/
   o2::mch::Detector* mch = new o2::mch::Detector(kTRUE);
   run->AddModule(mch);
 
@@ -90,6 +90,6 @@ void drawSlatGeometry()
   gGeoManager->GetListOfVolumes()->ls();
   //gGeoManager->CloseGeometry();
 
-  gGeoManager->GetTopVolume()->Draw("ogl");
+  gGeoManager->GetTopVolume()->Draw();
   gGeoManager->Export("MCHgeometry.root");
 }
