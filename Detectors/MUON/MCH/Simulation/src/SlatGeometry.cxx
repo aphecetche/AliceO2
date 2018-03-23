@@ -335,7 +335,7 @@ void CreateHalfChambers()
                          halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(), halfChRot));
   } // end of the half-chambers loop
 
-  cout << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
+  cout << endl << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
 }
 
 //______________________________________________________________________________
