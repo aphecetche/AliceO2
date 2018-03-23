@@ -55,8 +55,12 @@ void CreateRoundedSlat(const string name);
 
 void CreateHalfChambers();
 
+//______________________________________________________________________________
 void createSlatGeometry()
 {
+  /// Main function which build and place the slats and the half-chambers volumes
+  /// This function must me called by the MCH detector class to build the slat stations geometry.
+
   // create the gas medium
   GasMedium(gasName);
 
@@ -72,13 +76,14 @@ void createSlatGeometry()
     (slatType.find('R') < slatType.size()) ? CreateRoundedSlat(slatType) : CreateNormalSlat(slatType);
   }
 
+  // create and place the half-chambers in the top volume
   CreateHalfChambers();
 }
 
+//______________________________________________________________________________
 TGeoMedium* GasMedium(const char* name)
 {
-  // create the tracking gas medium to be placed in the slats (to be called at
-  // least once and before a slat creation)
+  /// create the tracking gas medium to be placed in the slats (to be called at least once and before a slat creation)
 
   // Gas medium definition (Ar 80% + CO2 20%)
   const Double_t aGas[]{ 39.95, 12.01, 16. };
@@ -95,9 +100,12 @@ TGeoMedium* GasMedium(const char* name)
   return new TGeoMedium(name, 1, gasMix);
 }
 
+//______________________________________________________________________________
 Double_t SlatCenter(const Int_t nPCBs)
 {
-  // Useful function to compute the center of a slat
+  /// Useful function to compute the center of a slat
+
+  // input : the number of PCBs of the slat
   Double_t x;
   switch (nPCBs % 2) {
     case 0: // even
@@ -111,9 +119,15 @@ Double_t SlatCenter(const Int_t nPCBs)
   return x;
 }
 
+//______________________________________________________________________________
 TGeoVolume* NormalPCB(const char* name, Double_t length)
 {
+  /// Build a normal shape PCB (a simple box of gas volume for the moment)
 
+  // inputs : * the name we want to give to the created volume
+  //          * the length (on the x axis) of this PCB
+
+  // get the tracking gas medium
   auto med = gGeoManager->GetMedium(gasName);
   if (med == nullptr) {
     throw runtime_error("oups for med");
@@ -122,28 +136,38 @@ TGeoVolume* NormalPCB(const char* name, Double_t length)
   return gGeoManager->MakeBox(name, med, length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
 }
 
+//______________________________________________________________________________
 TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
 {
+  /// Build a rounded shape PCB (a simple gas volume for the moment)
+
+  // inputs : * the radius of curvature of the PCB
+  //          * the y position of this PCB w.r.t the LHC beam pipe
 
   // create a classic shape PCB
   auto PCBshape = new TGeoBBox("PCBshape", kGasDim[0] / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
 
-  // create the beam pipe shape (tube width = slat width for)
+  // create the beam pipe shape (tube width = slat width)
   auto pipeShape = new TGeoTubeSeg(Form("pipeR%.1fShape", curvRad), 0., curvRad, kSlatWidth / 2., 90., 270.);
 
-  // place this shape on the ALICE x=0; y=0 coordinate
+  // place this shape on the ALICE x=0; y=0 coordinates
   auto pipeShift =
     new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasDim[0] + kVertSpacerLength) / 2., -yShift, 0.);
   pipeShift->RegisterYourself();
 
+  // return the PCB volume with a new shape
   return new TGeoVolume("roundedPCB",
                         new TGeoCompositeShape(Form("roundedR%.1fY%.1fPCBshape", curvRad, yShift),
                                                Form("PCBshape-pipeR%.1fShape:pipeY%.1fShift", curvRad, yShift)),
                         gGeoManager->GetMedium(gasName));
 }
 
+//______________________________________________________________________________
 void CreateNormalSlat(const string name)
 {
+  /// Build a normal shape slat (an assembly of gas volumes for the moment)
+
+  // input : the name of the slat type we want to create
 
   // get the number of PCBs (= position of the first "0" if there is at least one "0", otherwise it means there are 6
   // PCBs)
@@ -178,8 +202,13 @@ void CreateNormalSlat(const string name)
   } // end of the PCBs loop
 }
 
+//______________________________________________________________________________
 void CreateRoundedSlat(const string name)
 {
+
+  /// Build a rounded shape slat (an assembly of gas volumes for the moment)
+
+  // input : the name of the slat type we want to create
 
   // get the number of PCBs (= 6 for "NR3", 4 for "S(N)R1(2)")
   const Int_t nPCBs = (name.back() == '3') ? 6 : 4;
@@ -235,9 +264,13 @@ void CreateRoundedSlat(const string name)
                    new TGeoTranslation((nPCBs / 2 - 0.5) * kGasDim[0], 0, 0));
 }
 
+//______________________________________________________________________________
 void CreateHalfChambers()
 {
+  /// Build the slat half-chambers
+  /// The different slat types must have been built before calling this function !!!
 
+  // read the json containing all the necessary parameters to place the slat volumes in the half-chambers
   StringStream is(jsonSlatDescription.c_str());
 
   Document doc;
@@ -294,6 +327,9 @@ void CreateHalfChambers()
   } // end of the half-chambers loop
 }
 
+//______________________________________________________________________________
+
+/// Json string describing all the necessary parameters to place the slats in the half-chambers
 const string jsonSlatDescription =
   R"(
 {

@@ -27,8 +27,7 @@ namespace mch
 {
 
 //  Constants
-const Double_t kCentPCBlength = 19.25; // central PCB length
-const Double_t kVertFrameLength = 2.;  // space between a rounded PCB edge and the beam pipe ("dead zone")
+const Double_t kVertFrameLength = 2.; // space between a rounded PCB edge and the beam pipe ("dead zone")
 const Double_t kVertSpacerLength = 2.5;
 const Double_t kShortPCBlength = 35.;
 const Double_t kGasDim[3] = { 40., 40., 0.5 };
