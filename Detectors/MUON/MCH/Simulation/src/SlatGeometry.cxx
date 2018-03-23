@@ -155,11 +155,17 @@ TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
     new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasDim[0] + kVertSpacerLength) / 2., -yShift, 0.);
   pipeShift->RegisterYourself();
 
+  // get the tracking gas medium
+  auto med = gGeoManager->GetMedium(gasName);
+  if (med == nullptr) {
+    throw runtime_error("oups for med");
+  }
+
   // return the PCB volume with a new shape
   return new TGeoVolume("roundedPCB",
                         new TGeoCompositeShape(Form("roundedR%.1fY%.1fPCBshape", curvRad, yShift),
                                                Form("PCBshape-pipeR%.1fShape:pipeY%.1fShift", curvRad, yShift)),
-                        gGeoManager->GetMedium(gasName));
+                        med);
 }
 
 //______________________________________________________________________________
@@ -191,8 +197,8 @@ void CreateNormalSlat(const string name)
 
     // if the slat name contains a "S", it is a shortened one
     if ((name.back() == 'S') && ivol == nPCBs - 1) {
-      PCBlength -= 5;        // take off 5cm for the last PCB of the shortened slat
-      PCBshape = "shortPCB"; // change the name of the PCB volume
+      PCBlength = kShortPCBlength; // change the last PCB length of the shortened slat
+      PCBshape = "shortPCB";       // change the name of the PCB volume
     }
 
     // place the corresponding PCB volume in the slat
@@ -205,8 +211,9 @@ void CreateNormalSlat(const string name)
 //______________________________________________________________________________
 void CreateRoundedSlat(const string name)
 {
-
-  /// Build a rounded shape slat (an assembly of gas volumes for the moment)
+  /// Build a rounded shape slat (an assembly of gas volumes for the moment).
+  /// Since the slat will be rotated to match the mapping convention, the PCBs are placed upside down w.r.t the normal
+  /// shape slat builder. By doing so, for a shortened slat, we must take care of the PCB shift value.
 
   // input : the name of the slat type we want to create
 
@@ -223,7 +230,7 @@ void CreateRoundedSlat(const string name)
 
   Double_t PCBlength, PCBshift;
   TString PCBshape;
-  // loop over the number of normal PCBs in the current slat
+  // loop over the number of normal shape PCBs in the current slat
   for (Int_t ivol = 0; ivol < nPCBs - 1; ivol++) {
     PCBlength = kGasDim[0];
     PCBshift = center;
@@ -231,9 +238,9 @@ void CreateRoundedSlat(const string name)
 
     // if the slat name contains a "S", it is a shortened one
     if (name.find('S') < name.size() && ivol == 0) {
-      PCBlength -= 5;        // take off 5cm for the first PCB of the shortened slat
-      PCBshift -= 5;         // correct the shift
-      PCBshape = "shortPCB"; // change the name of the PCB volume
+      PCBlength = kShortPCBlength; // change the first PCB length of the shortened slat
+      PCBshift -= 5;               // correct the shift
+      PCBshape = "shortPCB";       // change the name of the PCB volume
     }
 
     // place the corresponding PCB volume in the slat
@@ -276,7 +283,7 @@ void CreateHalfChambers()
   Document doc;
   doc.ParseStream(is);
 
-  // create the half-chambers and place the slat volumes in it
+  // get the "half-chambers" array
   Value& hChs = doc["HalfChambers"];
   assert(hChs.IsArray());
 
@@ -301,11 +308,13 @@ void CreateHalfChambers()
 
       cout << "Placing the slat " << slat["detID"].GetInt() << " of type " << slat["type"].GetString() << endl;
 
+      // create the slat rotation matrix
       auto slatRot = new TGeoRotation(Form("Slat%drotation", slat["detID"].GetInt()), slat["rotation"][0].GetDouble(),
                                       slat["rotation"][1].GetDouble(), slat["rotation"][2].GetDouble(),
                                       slat["rotation"][3].GetDouble(), slat["rotation"][4].GetDouble(),
                                       slat["rotation"][5].GetDouble());
 
+      // place the slat on the half-chamber volume
       halfChVol->AddNode(
         gGeoManager->GetVolume(slat["type"].GetString()), slat["detID"].GetInt(),
         new TGeoCombiTrans(Form("Slat%dposition", slat["detID"].GetInt()), slat["position"][0].GetDouble(),
@@ -325,6 +334,8 @@ void CreateHalfChambers()
       new TGeoCombiTrans(Form("HalfCh%dposition", halfCh["moduleID"].GetInt()), halfCh["position"][0].GetDouble(),
                          halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(), halfChRot));
   } // end of the half-chambers loop
+
+  cout << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
 }
 
 //______________________________________________________________________________
