@@ -34,14 +34,12 @@
 using namespace rapidjson;
 using namespace std;
 
-const char* gasName = "MchArCO2";
+const char* gasName = "MCH_SlatGas";
 
 namespace o2
 {
 namespace mch
 {
-
-TGeoMedium* GasMedium(const char* name);
 
 TGeoVolume* NormalPCB(const char* name, Double_t length);
 
@@ -56,13 +54,10 @@ void CreateRoundedSlat(const string name);
 void CreateHalfChambers();
 
 //______________________________________________________________________________
-void createSlatGeometry()
+void CreateSlatGeometry()
 {
   /// Main function which build and place the slats and the half-chambers volumes
   /// This function must me called by the MCH detector class to build the slat stations geometry.
-
-  // create the gas medium
-  GasMedium(gasName);
 
   // create the normal PCB volumes
   auto shortPCB = NormalPCB("shortPCB", kShortPCBlength);
@@ -78,26 +73,6 @@ void createSlatGeometry()
 
   // create and place the half-chambers in the top volume
   CreateHalfChambers();
-}
-
-//______________________________________________________________________________
-TGeoMedium* GasMedium(const char* name)
-{
-  /// create the tracking gas medium to be placed in the slats (to be called at least once and before a slat creation)
-
-  // Gas medium definition (Ar 80% + CO2 20%)
-  const Double_t aGas[]{ 39.95, 12.01, 16. };
-  const Double_t zGas[]{ 18., 6., 8. };
-  const Double_t wGas[]{ .8, .0667, .13333 };
-  const Double_t dGas = .001821;
-
-  auto gasMix = new TGeoMixture("Ar 0.8 + CO2 0.2", 3);
-  gasMix->DefineElement(0, aGas[0], zGas[0], wGas[0]); // Ar
-  gasMix->DefineElement(1, aGas[1], zGas[1], wGas[1]); // C
-  gasMix->DefineElement(2, aGas[2], zGas[2], wGas[2]); // O
-  gasMix->SetDensity(dGas);
-
-  return new TGeoMedium(name, 1, gasMix);
 }
 
 //______________________________________________________________________________
