@@ -81,7 +81,7 @@ void Detector::CreateMaterials()
 
   Int_t fieldType;
   Float_t maxField;
-  o2::Base::Detector::initFieldTrackingParams(fieldType, maxField);
+  initFieldTrackingParams(fieldType, maxField);
 
   // Values taken from AliMUONCommonGeometryBuilder, to be updated ??
   Float_t epsil = .001;  // Tracking precision [cm]
@@ -113,9 +113,8 @@ void Detector::CreateMaterials()
   Float_t dCarbon = 2.265;
   Float_t radCarbon = 18.8; // radiation length
   Float_t absCarbon = 49.9;
-  o2::Base::Detector::Material(++matID, "Carbon", aCarbon, zCarbon, dCarbon, radCarbon, absCarbon);
-  o2::Base::Detector::Medium(++medID, "Carbon", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu, maxDestepAlu,
-                             epsil, stmin);
+  Material(++matID, "Carbon", aCarbon, zCarbon, dCarbon, radCarbon, absCarbon);
+  Medium(++medID, "Carbon", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu, maxDestepAlu, epsil, stmin);
 
   // Nitrogen
   Float_t zNitro = 7.;
@@ -137,9 +136,8 @@ void Detector::CreateMaterials()
   Float_t zGas[nGas] = { zArgon, zCarbon, zOxygen };
   Float_t wGas[nGas] = { .8, .0667, .13333 };
   Float_t dGas = .001821;
-  o2::Base::Detector::Mixture(++matID, "SlatGas", aGas, zGas, dGas, nGas, wGas);
-  o2::Base::Detector::Medium(++medID, "SlatGas", matID, isSens, fieldType, maxField, tmaxfd, maxStepGas, maxDestepGas,
-                             epsil, stmin);
+  Mixture(++matID, "SlatGas", aGas, zGas, dGas, nGas, wGas);
+  Medium(++medID, "SlatGas", matID, isSens, fieldType, maxField, tmaxfd, maxStepGas, maxDestepGas, epsil, stmin);
 
   // Nomex: C22 H10 N2 O5
   const Int_t nNomex = 4;
@@ -147,14 +145,14 @@ void Detector::CreateMaterials()
   Float_t zNomex[nNomex] = { zCarbon, zHydro, zNitro, zOxygen };
   Float_t wNomex[nNomex] = { 22., 10., 2., 5. };
   Float_t dNomex = 0.024; // honey comb
-  o2::Base::Detector::Mixture(++matID, "Nomex", aNomex, zNomex, dNomex, nNomex, wNomex);
-  o2::Base::Detector::Medium(++medID, "Nomex", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu, maxDestepAlu,
-                             epsil, stmin);
+  // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
+  // that the total weight is equal to 1.
+  Mixture(++matID, "Nomex", aNomex, zNomex, dNomex, -nNomex, wNomex);
+  Medium(++medID, "Nomex", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu, maxDestepAlu, epsil, stmin);
 
   Float_t dNomexBulk = 1.43; // bulk material
-  o2::Base::Detector::Mixture(++matID, "NomexBulk", aNomex, zNomex, dNomexBulk, nNomex, wNomex);
-  o2::Base::Detector::Medium(++medID, "NomexBulk", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu,
-                             maxDestepAlu, epsil, stmin);
+  Mixture(++matID, "NomexBulk", aNomex, zNomex, dNomexBulk, -nNomex, wNomex);
+  Medium(++medID, "NomexBulk", matID, isUnsens, fieldType, maxField, tmaxfd, maxStepAlu, maxDestepAlu, epsil, stmin);
 }
 
 } // namespace mch
