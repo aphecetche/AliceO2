@@ -34,7 +34,9 @@
 using namespace rapidjson;
 using namespace std;
 
-const char* gasName = "MCH_SlatGas";
+const char* gas = "MCH_SlatGas";
+const char* carbon = "MCH_Carbon";
+const char* nomex = "MCH_Nomex";
 
 namespace o2
 {
@@ -103,7 +105,7 @@ TGeoVolume* NormalPCB(const char* name, Double_t length)
   //          * the length (on the x axis) of this PCB
 
   // get the tracking gas medium
-  auto med = gGeoManager->GetMedium(gasName);
+  auto med = gGeoManager->GetMedium(gas);
   if (med == nullptr) {
     throw runtime_error("oups for med");
   }
@@ -131,7 +133,7 @@ TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
   pipeShift->RegisterYourself();
 
   // get the tracking gas medium
-  auto med = gGeoManager->GetMedium(gasName);
+  auto med = gGeoManager->GetMedium(gas);
   if (med == nullptr) {
     throw runtime_error("oups for med");
   }
