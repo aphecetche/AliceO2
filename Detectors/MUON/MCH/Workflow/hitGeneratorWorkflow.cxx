@@ -22,35 +22,66 @@
 #include "MCHMappingInterface/Segmentation.h"
 #include <iostream>
 #include <chrono>
+#include <Headers/DataHeader.h>
 #include "Framework/OutputSpec.h"
 #include "generateHitPositions.h"
 using o2::mch::mapping::Segmentation;
 using namespace std::chrono_literals;
 namespace of = o2::framework;
 
-void generateFakeHits(int nhits, of::DataAllocator& da, const Segmentation& seg)
-{
-  auto hitPositions = o2::mch::test::generateHitPositions(nhits,seg);
+struct FakeHit {
+  double x;
+  double y;
+  int charge;
+  friend std::ostream& operator<<(std::ostream& os, const FakeHit& hit)
+  {
+    os << "x: " << hit.x << " y: " << hit.y << " charge: " << hit.charge;
+    return os;
+  }
+};
 
-  for (const auto& hitPos: hitPositions) {
+void generateFakeHits(gsl::span<FakeHit>& hits, const Segmentation& seg)
+{
+  LOG(ERROR) << "HERE AS WELL";
+  auto hitPositions = o2::mch::test::generateHitPositions(hits.size(), seg);
+
+  for (auto i = 0; i < hitPositions.size(); ++i) {
+    auto& fh = hits[i];
+    auto& hp = hitPositions[i];
+    fh.x = hp.x;
+    fh.y = hp.y;
+    fh.charge = 10;
+    LOG(INFO) << fh;
   }
 }
 
 of::AlgorithmSpec::ProcessCallback initHitGenerator(of::InitContext& itx)
 {
-  Segmentation seg(itx.options().get<int>("deid"), true);
+  auto detElemId = itx.options().get<int>("deid");
+
+  Segmentation seg(detElemId, true);
 
   auto nhits = itx.options().get<int>("nofhitperde");
 
-  return [seg,nhits](of::ProcessingContext& ctx) { generateFakeHits(nhits,ctx.allocator(), seg); };
+  LOG(WARNING) << "detElemId=" << detElemId << " nhits=" << nhits;
+
+  return [seg, nhits, detElemId](of::ProcessingContext& ctx) {
+    auto outputHits = ctx.allocator().make<FakeHit>(of::OutputSpec{ "MCH", "HITS", static_cast<o2::header::DataHeader::SubSpecificationType>(detElemId) }, static_cast<size_t>(nhits));
+    //gsl::span<FakeHit> outputHits;
+    LOG(ERROR) << "Calling generateFakeHits with " << outputHits.size() << " hits / " << nhits;
+    generateFakeHits(outputHits, seg);
+    sleep(1);
+  };
 }
 
-of::ConfigParamSpec deIdOption(const char* help) {
-  return of::ConfigParamSpec("deid", of::VariantType::Int, 100, {help});
+of::ConfigParamSpec deIdOption(const char* help)
+{
+  return of::ConfigParamSpec("deid", of::VariantType::Int, 100, { help });
 }
 
-of::ConfigParamSpec nofHitPerDEOption(const char* help) {
-  return of::ConfigParamSpec("nofhitperde", of::VariantType::Int, 10, {help});
+of::ConfigParamSpec nofHitPerDEOption(const char* help)
+{
+  return of::ConfigParamSpec("nofhitperde", of::VariantType::Int, 10, { help });
 }
 
 of::Inputs noInput{};
@@ -71,34 +102,68 @@ of::DataProcessorSpec hitGeneratorSpec(uint detElemId)
   };
 }
 
-of::DataProcessorSpec preclusterizerSpec(uint detElemId)
+of::DataProcessorSpec hitDumper(uint detElemId)
 {
   return {
     // clang-format off
-          "mch-preclusterizer",
-          of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
-          noOutput,
-          of::AlgorithmSpec{[](of::ProcessingContext &) {
-            return;
-          }},
-          { deIdOption("which detection element to preclusterize") }
+      "mch-hit-dumper",
+      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+      noOutput,
+      of::AlgorithmSpec{[](of::ProcessingContext& ctx) {
+        LOG(INFO) << "hit dump";
+        auto hits = ctx.inputs().get("hits");
+        LOG(INFO) << hits.header;
+      }},
+      { deIdOption("which detection element to dump hit for") }
     // clang-format on
   };
 }
 
-of::WorkflowSpec hitGeneratorWorkflow()
+of::DataProcessorSpec digitizer(uint detElemId)
 {
   return {
     // clang-format off
-      hitGeneratorSpec(100),
-      preclusterizerSpec(100)
+      "mch-digitizer",
+      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+      of::Outputs{{"MCH","DIGITS",detElemId, of::OutputSpec::Lifetime::Timeframe}},
+      of::AlgorithmSpec{[](of::ProcessingContext &) {
+        return;
+      }},
+      { deIdOption("which detection element to preclusterize") }
+    // clang-format on
+  };
+}
+
+of::DataProcessorSpec preclusterizerSpec(uint detElemId)
+{
+  return {
+    // clang-format off
+      "mch-preclusterizer",
+      of::Inputs{{"mch-digits", "MCH", "DIGITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+      noOutput,
+      of::AlgorithmSpec{[](of::ProcessingContext &) {
+        return;
+      }},
+      { deIdOption("which detection element to preclusterize") }
+    // clang-format on
+  };
+}
+
+of::WorkflowSpec hitGeneratorWorkflow(uint detElemId)
+{
+  return {
+    // clang-format off
+      hitGeneratorSpec(detElemId),
+      hitDumper(detElemId)
+      // digitizer(detElemId),
+      // preclusterizerSpec(detElemId)
     // clang-format on
   };
 }
 
 void defineDataProcessing(of::WorkflowSpec& specs)
 {
-  of::WorkflowSpec workflow{ hitGeneratorWorkflow() };
+  of::WorkflowSpec workflow{ hitGeneratorWorkflow(100) };
 
   specs.swap(workflow);
 }

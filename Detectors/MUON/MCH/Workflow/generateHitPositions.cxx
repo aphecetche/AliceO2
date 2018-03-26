@@ -23,7 +23,7 @@ namespace test
 {
 
 /// Generates n (x,y) positions randomly distributed on the surface of the segmentation
-std::vector<Position> generateHitPositions(int n, const o2::mch::mapping::Segmentation& seg)
+std::vector<Position> generateHitPositions(long n, const o2::mch::mapping::Segmentation& seg)
 {
   std::random_device rd;
   std::mt19937 mt(rd());

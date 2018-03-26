@@ -28,7 +28,7 @@ struct Position {
   double x, y;
 };
 
-std::vector<Position> generateHitPositions(int n, const o2::mch::mapping::Segmentation& seg);
+std::vector<Position> generateHitPositions(long n, const o2::mch::mapping::Segmentation& seg);
 
 } // namespace simulation
 } // namespace mch
