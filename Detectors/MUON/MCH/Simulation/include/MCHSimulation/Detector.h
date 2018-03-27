@@ -39,8 +39,6 @@ class Detector : public o2::Base::DetImpl<Detector>
 
   void ConstructGeometry() override;
 
-  void CreateMaterials();
-
   std::vector<MchHit>* getHits(int) { return nullptr; }
 
  private:

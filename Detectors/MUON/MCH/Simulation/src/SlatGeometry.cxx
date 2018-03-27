@@ -29,6 +29,8 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 
+#include "MCHSimulation/Materials.h"
+
 #include "MCHSimulation/SlatGeometry.h"
 
 using namespace rapidjson;
@@ -60,6 +62,12 @@ void CreateSlatGeometry()
 {
   /// Main function which build and place the slats and the half-chambers volumes
   /// This function must me called by the MCH detector class to build the slat stations geometry.
+
+  // create the necessary media
+  CreateSlatGeometryMaterials();
+
+  materialManager().printMaterials();
+  materialManager().printMedia();
 
   // create the normal PCB volumes
   auto shortPCB = NormalPCB("shortPCB", kShortPCBlength);
@@ -105,7 +113,7 @@ TGeoVolume* NormalPCB(const char* name, Double_t length)
   //          * the length (on the x axis) of this PCB
 
   // get the tracking gas medium
-  auto med = gGeoManager->GetMedium(gas);
+  auto med = assertMedium(Medium::SlatGas);
   if (med == nullptr) {
     throw runtime_error("oups for med");
   }
@@ -133,7 +141,7 @@ TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
   pipeShift->RegisterYourself();
 
   // get the tracking gas medium
-  auto med = gGeoManager->GetMedium(gas);
+  auto med = assertMedium(Medium::SlatGas);
   if (med == nullptr) {
     throw runtime_error("oups for med");
   }
