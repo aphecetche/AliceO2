@@ -100,6 +100,14 @@ void CreateNoryl(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
+void CreateCopper(int fieldType, float maxField)
+{
+  int imat = autoIncrementedMaterialId();
+  materialManager().Material(moduleName, imat, "Copper", kACopper, kZCopper, kDensCopper, kRadCopper, kAbsCopper);
+  materialManager().Medium(moduleName, Medium::Copper, "Copper", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+                           kEpsil, kStmin);
+}
+
 void CreateVacuum(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
@@ -133,6 +141,7 @@ void CreateSlatGeometryMaterials()
   impl::CreateNomex(fieldType, maxField);
   impl::CreateNomexBulk(fieldType, maxField);
   impl::CreateNoryl(fieldType, maxField);
+  impl::CreateCopper(fieldType, maxField); // PCB and cable medium
 }
 
 } // namespace mch
