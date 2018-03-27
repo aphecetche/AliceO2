@@ -45,7 +45,7 @@ void CreateCarbon(int fieldType, float maxField)
 {
   // for support panel and slat panel
   int imat = autoIncrementedMaterialId();
-  materialManager().Material(moduleName, imat, "Carbon", kACarbon, kZCarbon, kDensCarbon, kRadCarbon, kAbsCarbon);
+  materialManager().Material(moduleName, imat, "Carbon", kACarbon, kZCarbon, kDensCarbon, 0., 0.);
   materialManager().Medium(moduleName, Medium::Carbon, "Carbon", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
@@ -103,7 +103,7 @@ void CreateNoryl(int fieldType, float maxField)
 void CreateCopper(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
-  materialManager().Material(moduleName, imat, "Copper", kACopper, kZCopper, kDensCopper, kRadCopper, kAbsCopper);
+  materialManager().Material(moduleName, imat, "Copper", kACopper, kZCopper, kDensCopper, 0., 0.);
   materialManager().Medium(moduleName, Medium::Copper, "Copper", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }

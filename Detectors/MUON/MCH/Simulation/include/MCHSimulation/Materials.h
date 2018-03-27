@@ -31,8 +31,6 @@ const float kAHydrogen = 1.00794;
 const float kZCarbon = 6.;
 const float kACarbon = 12.0107;
 const float kDensCarbon = 2.265;
-const float kRadCarbon = 18.8;
-const float kAbsCarbon = 49.9;
 
 // Nitrogen
 const float kZNitrogen = 7.;
@@ -50,8 +48,6 @@ const float kAArgon = 39.948;
 const float kZCopper = 29.;
 const float kACopper = 63.546;
 const float kDensCopper = 8.96;
-const float kRadCopper = 1.436; // from MFT, maybe let the MC compute it
-const float kAbsCopper = 9.6;
 
 /// Tracking parameters (values taken from AliMUONCommonGeometryBuilder)
 const float kEpsil{ 0.001 }; // Tracking precision [cm]
