@@ -27,7 +27,7 @@
 #include <iostream>
 #endif
 
-void drawSlatGeometry()
+void drawMCHGeometry()
 {
   // minimal macro to test setup of the geometry
 
@@ -88,7 +88,6 @@ void drawSlatGeometry()
   }
 
   gGeoManager->GetListOfVolumes()->ls();
-  //gGeoManager->CloseGeometry();
 
   gGeoManager->GetTopVolume()->Draw();
   gGeoManager->Export("MCHgeometry.root");

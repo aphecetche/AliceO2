@@ -112,13 +112,7 @@ TGeoVolume* NormalPCB(const char* name, Double_t length)
   // inputs : * the name we want to give to the created volume
   //          * the length (on the x axis) of this PCB
 
-  // get the tracking gas medium
-  auto med = assertMedium(Medium::SlatGas);
-  if (med == nullptr) {
-    throw runtime_error("oups for med");
-  }
-
-  return gGeoManager->MakeBox(name, med, length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
+  return gGeoManager->MakeBox(name, assertMedium(Medium::SlatGas), length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
 }
 
 //______________________________________________________________________________
@@ -140,17 +134,11 @@ TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
     new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasDim[0] + kVertSpacerLength) / 2., -yShift, 0.);
   pipeShift->RegisterYourself();
 
-  // get the tracking gas medium
-  auto med = assertMedium(Medium::SlatGas);
-  if (med == nullptr) {
-    throw runtime_error("oups for med");
-  }
-
   // return the PCB volume with a new shape
   return new TGeoVolume("roundedPCB",
                         new TGeoCompositeShape(Form("roundedR%.1fY%.1fPCBshape", curvRad, yShift),
                                                Form("PCBshape-pipeR%.1fShape:pipeY%.1fShift", curvRad, yShift)),
-                        med);
+                        assertMedium(Medium::SlatGas));
 }
 
 //______________________________________________________________________________

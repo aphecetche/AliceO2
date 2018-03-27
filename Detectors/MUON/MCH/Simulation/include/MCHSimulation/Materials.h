@@ -25,7 +25,7 @@ namespace mch
 
 // Hydrogen
 const float kZHydrogen = 1.;
-const float kAHydrogen = 1.008;
+const float kAHydrogen = 1.00794;
 
 // Carbon
 const float kZCarbon = 6.;
@@ -36,11 +36,11 @@ const float kAbsCarbon = 49.9;
 
 // Nitrogen
 const float kZNitrogen = 7.;
-const float kANitrogen = 14.007;
+const float kANitrogen = 14.0067;
 
 // Oxygen
 const float kZOxygen = 8.;
-const float kAOxygen = 15.999;
+const float kAOxygen = 15.9994;
 
 // Argon
 const float kZArgon = 18.;
