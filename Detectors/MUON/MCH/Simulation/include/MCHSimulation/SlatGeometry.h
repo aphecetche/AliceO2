@@ -26,7 +26,9 @@ namespace o2
 namespace mch
 {
 
-//  Constants
+///  Constants
+
+// Slat
 const Double_t kVertFrameLength = 2.; // space between a rounded PCB edge and the beam pipe ("dead zone")
 const Double_t kVertSpacerLength = 2.5;
 const Double_t kShortPCBlength = 35.;
@@ -41,6 +43,18 @@ const Double_t kRadSt45 = 37.5;
 // Y position of the rounded slats
 const Double_t kRoundedSlatYposSt3 = 37.8;
 const Double_t kRoundedSlatYposSt45 = 38.2;
+
+// Support panels (to be checked !!!)
+const Double_t kCarbonSupportWidth = 0.03;
+const Double_t kGlueSupportWidth = 0.02; // no medium for the moment, need to see if there will be
+const Double_t kNomexSupportWidth = 1.7;
+const Double_t kSupportWidth = 2 * (kCarbonSupportWidth + kGlueSupportWidth) + kNomexSupportWidth;
+const Double_t kSupportHeightSt3 = 2 * 180.5;
+const Double_t kSupportHeightSt4 = 2 * 265.;
+const Double_t kSupportHeightSt5 = 2 * 285.;
+const Double_t kSupportLengthCh5 = 162.;
+const Double_t kSupportLengthCh6 = 167.;
+const Double_t kSupportLengthSt45 = 260.;
 
 // Slat types
 const array<string, 19> kSlatTypes{ "122000SR1", "112200SR2", "122200S", "222000N", "220000N",

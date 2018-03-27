@@ -36,10 +36,6 @@
 using namespace rapidjson;
 using namespace std;
 
-const char* gas = "MCH_SlatGas";
-const char* carbon = "MCH_Carbon";
-const char* nomex = "MCH_Nomex";
-
 namespace o2
 {
 namespace mch
@@ -55,6 +51,8 @@ void CreateNormalSlat(const string name);
 
 void CreateRoundedSlat(const string name);
 
+void CreateSupportPanel(const Int_t iChamber);
+
 void CreateHalfChambers();
 
 //______________________________________________________________________________
@@ -68,6 +66,10 @@ void CreateSlatGeometry()
 
   materialManager().printMaterials();
   materialManager().printMedia();
+
+  // create the support panels
+  for (Int_t iChamber = 5; iChamber <= 10; iChamber++)
+    CreateSupportPanel(iChamber);
 
   // create the normal PCB volumes
   auto shortPCB = NormalPCB("shortPCB", kShortPCBlength);
@@ -245,6 +247,66 @@ void CreateRoundedSlat(const string name)
 }
 
 //______________________________________________________________________________
+void CreateSupportPanel(const Int_t iCh)
+{
+
+  // define the support panel volume
+  auto supVol = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", iCh));
+
+  Double_t radius, supLength, supHeight;
+  if (iCh <= 6) { // station 3 half-chambers
+    radius = kRadSt3;
+    supHeight = kSupportHeightSt3;
+    supLength = (iCh == 5) ? kSupportLengthCh5 : kSupportLengthCh6;
+  } else { // station 4 or 5
+    radius = kRadSt45;
+    supLength = kSupportLengthSt45;
+    supHeight = (iCh <= 8) ? kSupportHeightSt4 : kSupportHeightSt5;
+  }
+
+  cout << "Support panel for the chamber " << iCh << " : radius = " << radius << ", length = " << supLength
+       << ", height = " << supHeight << endl;
+  // create the hole in the nomex volume
+  auto nomexHole = new TGeoTube(Form("NomexSupportPanelHoleCh%d", iCh), 0., radius, kNomexSupportWidth / 2.);
+
+  // place this shape on the ALICE x=0 coordinate
+  auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", iCh), (-supLength + kVertSpacerLength) / 2., 0., 0.);
+  holeTrans->RegisterYourself();
+
+  // create a box for the nomex volume
+  auto nomexBox =
+    new TGeoBBox(Form("NomexSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kNomexSupportWidth / 2.);
+
+  // change the nomex volume shape by extracting the pipe shape
+  auto nomexShape =
+    new TGeoCompositeShape(Form("NomexSupportPanelCh%dShape", iCh),
+                           Form("NomexSupportPanelCh%dBox-NomexSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+
+  // create the nomex volume and place it in the support panel
+  supVol->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", iCh), nomexShape, assertMedium(Medium::Nomex)), iCh,
+                  new TGeoTranslation(supLength / 2., 0., 0.));
+
+  // create the hole in the carbon volume
+  auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", iCh), 0., radius, kCarbonSupportWidth / 2.);
+
+  // create a box for the carbon volume
+  auto carbonBox =
+    new TGeoBBox(Form("CarbonSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kCarbonSupportWidth / 2.);
+
+  // change the carbon volume shape by extracting the pipe shape
+  auto carbonShape =
+    new TGeoCompositeShape(Form("CarbonSupportPanelCh%dShape", iCh),
+                           Form("CarbonSupportPanelCh%dBox-CarbonSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+
+  // create the carbon volume
+  auto carbonVol = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
+
+  // place it on each side of the nomex volume
+  supVol->AddNode(carbonVol, 1, new TGeoTranslation(supLength / 2., 0., (kSupportWidth - kCarbonSupportWidth) / 2.));
+  supVol->AddNode(carbonVol, 2, new TGeoTranslation(supLength / 2., 0., -(kSupportWidth - kCarbonSupportWidth) / 2.));
+}
+
+//______________________________________________________________________________
 void CreateHalfChambers()
 {
   /// Build the slat half-chambers
@@ -268,8 +330,20 @@ void CreateHalfChambers()
       throw;
     }
 
-    cout << endl << "Creating half-chamber " << halfCh["name"].GetString() << endl;
-    auto halfChVol = new TGeoVolumeAssembly((const char*)halfCh["name"].GetString());
+    const Int_t moduleID = halfCh["moduleID"].GetInt();
+    const string name = halfCh["name"].GetString();
+    // get the chamber number (if the chamber name has a '0' at the 3rd digit, take the number after; otherwise it's the
+    // chamber 10)
+    const Int_t nCh = (name.find('0') == 2) ? name[3] - '0' /* char -> int conversion */ : 10;
+
+    cout << endl << "Creating half-chamber " << name << ", chamber number " << nCh << endl;
+    auto halfChVol = new TGeoVolumeAssembly(name.data());
+
+    // place the support panel corresponding to the chamber number
+    auto supRot = new TGeoRotation();
+    if (moduleID % 2)
+      supRot->RotateY(180.);
+    halfChVol->AddNode(gGeoManager->GetVolume(Form("Ch%dSupportPanel", nCh)), moduleID, supRot);
 
     // place the slat volumes on the different nodes of the half-chamber
     for (auto& slat : halfCh["nodes"].GetArray()) {
@@ -279,32 +353,33 @@ void CreateHalfChambers()
         throw;
       }
 
-      cout << "Placing the slat " << slat["detID"].GetInt() << " of type " << slat["type"].GetString() << endl;
+      const Int_t detID = slat["detID"].GetInt();
+
+      cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
 
       // create the slat rotation matrix
-      auto slatRot = new TGeoRotation(Form("Slat%drotation", slat["detID"].GetInt()), slat["rotation"][0].GetDouble(),
+      auto slatRot = new TGeoRotation(Form("Slat%drotation", detID), slat["rotation"][0].GetDouble(),
                                       slat["rotation"][1].GetDouble(), slat["rotation"][2].GetDouble(),
                                       slat["rotation"][3].GetDouble(), slat["rotation"][4].GetDouble(),
                                       slat["rotation"][5].GetDouble());
 
       // place the slat on the half-chamber volume
-      halfChVol->AddNode(
-        gGeoManager->GetVolume(slat["type"].GetString()), slat["detID"].GetInt(),
-        new TGeoCombiTrans(Form("Slat%dposition", slat["detID"].GetInt()), slat["position"][0].GetDouble(),
-                           slat["position"][1].GetDouble(), slat["position"][2].GetDouble(), slatRot));
+      halfChVol->AddNode(gGeoManager->GetVolume(slat["type"].GetString()), detID,
+                         new TGeoCombiTrans(Form("Slat%dposition", detID), slat["position"][0].GetDouble(),
+                                            slat["position"][1].GetDouble(), slat["position"][2].GetDouble(), slatRot));
 
     } // end of the node loop
     cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << halfCh["name"].GetString() << endl;
 
     // place the half-chamber in the top volume
-    auto halfChRot = new TGeoRotation(Form("HalfCh%drotation", halfCh["moduleID"].GetInt()),
-                                      halfCh["rotation"][0].GetDouble(), halfCh["rotation"][1].GetDouble(),
-                                      halfCh["rotation"][2].GetDouble(), halfCh["rotation"][3].GetDouble(),
-                                      halfCh["rotation"][4].GetDouble(), halfCh["rotation"][5].GetDouble());
+    auto halfChRot = new TGeoRotation(Form("HalfCh%drotation", moduleID), halfCh["rotation"][0].GetDouble(),
+                                      halfCh["rotation"][1].GetDouble(), halfCh["rotation"][2].GetDouble(),
+                                      halfCh["rotation"][3].GetDouble(), halfCh["rotation"][4].GetDouble(),
+                                      halfCh["rotation"][5].GetDouble());
 
     gGeoManager->GetTopVolume()->AddNode(
-      halfChVol, halfCh["moduleID"].GetInt(),
-      new TGeoCombiTrans(Form("HalfCh%dposition", halfCh["moduleID"].GetInt()), halfCh["position"][0].GetDouble(),
+      halfChVol, moduleID,
+      new TGeoCombiTrans(Form("HalfCh%dposition", moduleID), halfCh["position"][0].GetDouble(),
                          halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(), halfChRot));
   } // end of the half-chambers loop
 
