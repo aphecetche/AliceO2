@@ -52,7 +52,7 @@ void CreateCarbon(int fieldType, float maxField)
 
 void CreateNomex(int fieldType, float maxField)
 {
-  // Nomex (honey comb) : C22 H10 N2 O5
+  // Nomex (honey comb) : C22 H10 N2 O5 (to be checked !!!)
   const int n = 4;
   std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
@@ -69,7 +69,7 @@ void CreateNomex(int fieldType, float maxField)
 
 void CreateNomexBulk(int fieldType, float maxField)
 {
-  // Nomex (bulk) : C22 H10 N2 O5
+  // Nomex (bulk) : C22 H10 N2 O5 (to be checked !!!)
   const int n = 4;
   std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
@@ -82,6 +82,22 @@ void CreateNomexBulk(int fieldType, float maxField)
   materialManager().Mixture(moduleName, imat, "NomexBulk", a.data(), z.data(), d, -n, w.data());
   materialManager().Medium(moduleName, Medium::NomexBulk, "NomexBulk", imat, 1, fieldType, maxField, kMaxfd, kStemax,
                            kDeemax, kEpsil, kStmin);
+}
+
+void CreateNoryl(int fieldType, float maxField)
+{
+  // Noryl: C8 H8 O polyphenylene oxyde (di-methyl not sure)
+  const int n = 3;
+  std::array<float, n> a{ kACarbon, kAHydrogen, kAOxygen };
+  std::array<float, n> z{ kZCarbon, kZHydrogen, kZOxygen };
+  std::array<float, n> w{ 8., 8., 1. };
+  float d{ 1.06 };
+
+  int imat = autoIncrementedMaterialId();
+  materialManager().Mixture(moduleName, imat, "Noryl", a.data(), z.data(), d, -n, w.data());
+
+  materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 1, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+                           kEpsil, kStmin);
 }
 
 void CreateVacuum(int fieldType, float maxField)
@@ -116,6 +132,7 @@ void CreateSlatGeometryMaterials()
   impl::CreateCarbon(fieldType, maxField);
   impl::CreateNomex(fieldType, maxField);
   impl::CreateNomexBulk(fieldType, maxField);
+  impl::CreateNoryl(fieldType, maxField);
 }
 
 } // namespace mch
