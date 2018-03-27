@@ -134,7 +134,7 @@ void Detector::CreateMaterials()
   const Int_t nGas = 3;
   Float_t aGas[nGas] = { aArgon, aCarbon, aOxygen };
   Float_t zGas[nGas] = { zArgon, zCarbon, zOxygen };
-  Float_t wGas[nGas] = { .8, .0667, .13333 };
+  Float_t wGas[nGas] = { .8, 1. / 15, 2. / 15 };
   Float_t dGas = .001821;
   Mixture(++matID, "SlatGas", aGas, zGas, dGas, nGas, wGas);
   Medium(++medID, "SlatGas", matID, isSens, fieldType, maxField, tmaxfd, maxStepGas, maxDestepGas, epsil, stmin);
@@ -145,6 +145,7 @@ void Detector::CreateMaterials()
   Float_t zNomex[nNomex] = { zCarbon, zHydro, zNitro, zOxygen };
   Float_t wNomex[nNomex] = { 22., 10., 2., 5. };
   Float_t dNomex = 0.024; // honey comb
+
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   Mixture(++matID, "Nomex", aNomex, zNomex, dNomex, -nNomex, wNomex);
