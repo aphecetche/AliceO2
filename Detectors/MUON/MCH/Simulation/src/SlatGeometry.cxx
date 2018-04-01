@@ -41,6 +41,12 @@ namespace o2
 namespace mch
 {
 
+void CreateNormalPCB(const string name);
+
+void CreateShortPCB(const string name);
+
+void CreateRoundedPCB(const string name);
+
 TGeoVolume* NormalPCB(const char* name, Double_t length);
 
 TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift);
@@ -67,13 +73,31 @@ void CreateSlatGeometry()
   materialManager().printMaterials();
   materialManager().printMedia();
 
+  // create the different PCB types
+  cout << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
+  for (auto pcb : kPcbTypes) { // loop over the PCB types of the array
+
+    // create a PCB volume assembly according to its shape
+    switch (pcb.front()) { // get the first character of the pcb type name
+      case 'R':
+        CreateRoundedPCB(pcb);
+        break;
+      case 'S':
+        CreateShortPCB(pcb);
+        break;
+      default:
+        CreateNormalPCB(pcb);
+        break;
+    }
+  }
+
   // create the support panels
   for (Int_t iChamber = 5; iChamber <= 10; iChamber++)
     CreateSupportPanel(iChamber);
 
   // create the normal PCB volumes
-  auto shortPCB = NormalPCB("shortPCB", kShortPCBlength);
-  auto normalPCB = NormalPCB("normalPCB", kGasDim[0]);
+  auto shortPCB = NormalPCB("shortPCB", kShortPCBLength);
+  auto normalPCB = NormalPCB("normalPCB", kPCBLength);
 
   // create the different slat types
   cout << "Creating " << kSlatTypes.size() << " types of slat" << endl;
@@ -88,6 +112,137 @@ void CreateSlatGeometry()
 }
 
 //______________________________________________________________________________
+void CreateNormalPCB(const string name)
+{
+  /// Build a normal shape PCB
+  /// input : * the name of the PCB type ("B1N1","B2N2-","B2N2+","B3-N3" or "B3+N3")
+
+  // check if the given name match this builder
+  if (name.front() != 'B')
+    throw runtime_error("Normal PCB builder called with the wrong PCB type name");
+
+  // get the number from the PCB type name -> important for this builder
+  const Int_t numb = name[1] - '0'; // char -> int conversion
+
+  // get the pcb plate names
+  const string bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
+  const string nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
+
+  auto pcb = new TGeoVolumeAssembly(name.data());
+
+  // place the gas
+  pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), kPCBLength / 2.,
+                                    kGasHeight / 2., kGasWidth / 2.),
+               1);
+
+  auto bend = gGeoManager->MakeBox(bendName.data(), assertMedium(Medium::Copper), kPCBLength / 2., kPCBHeight / 2.,
+                                   kPCBWidth / 2.);
+  bend->SetLineColor(kRed);
+  pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
+  auto nonbend = gGeoManager->MakeBox(nonbendName.data(), assertMedium(Medium::Copper), kPCBLength / 2.,
+                                      kPCBHeight / 2., kPCBWidth / 2.);
+  nonbend->SetLineColor(kGreen);
+  pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
+}
+
+//______________________________________________________________________________
+void CreateShortPCB(const string name)
+{
+  /// Build a short shape PCB
+  /// input : * the name of the PCB type ("S-" or "S+")
+
+  // check if the given name match this builder
+  if (name.front() != 'S')
+    throw runtime_error("Shortened PCB builder called with the wrong PCB type name");
+
+  auto pcb = new TGeoVolumeAssembly(name.data());
+
+  // place the gas
+  pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), kShortPCBLength / 2.,
+                                    kGasHeight / 2., kGasWidth / 2.),
+               1);
+
+  auto bend = gGeoManager->MakeBox(Form("S2B%c", name.back()), assertMedium(Medium::Copper), kShortPCBLength / 2.,
+                                   kPCBHeight / 2., kPCBWidth / 2.);
+  bend->SetLineColor(kRed);
+  pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
+  auto nonbend = gGeoManager->MakeBox(Form("S2N%c", name.back()), assertMedium(Medium::Copper), kShortPCBLength / 2.,
+                                      kPCBHeight / 2., kPCBWidth / 2.);
+  nonbend->SetLineColor(kGreen);
+  pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
+}
+
+//______________________________________________________________________________
+void CreateRoundedPCB(const string name)
+{
+  /// Build a rounded shape PCB
+  /// input : * the name of the PCB type ("R1", "R2" or "R3")
+
+  // check if the given name match this builder
+  if (name.front() != 'R')
+    throw runtime_error("Rounded PCB builder called with the wrong PCB type name");
+
+  // get the number from the PCB type name
+  const Int_t numb = name.back() - '0'; // char -> int conversion
+
+  // LHC beam pipe radius ("R3" -> it is a slat of a station 4 or 5)
+  const Double_t radius = (numb == 3) ? kRadSt45 : kRadSt3;
+  // compute the radius of curvature of the PCB we want to create
+  const Double_t curvRad = radius + kVertFrameLength;
+
+  // y position of the PCB center w.r.t the beam pipe shape
+  Double_t ypos;
+  switch (numb) {
+    case 1:
+      ypos = 0.; // central for "R1"
+      break;
+    case 2:
+      ypos = kRoundedSlatYposSt3; // "R2" -> station 3
+      break;
+    default:
+      ypos = kRoundedSlatYposSt45; // "R3" -> station 4 or 5
+      break;
+  }
+
+  auto pcb = new TGeoVolumeAssembly(name.data());
+
+  // create the hole in the gas
+  auto gasHole = new TGeoTubeSeg(Form("GasHoleR%.1f", curvRad), 0., curvRad, kGasWidth / 2., -90., 90.);
+
+  // place this shape on the ALICE x=0; y=0 coordinates
+  auto pipeShift = new TGeoTranslation(Form("holeY%.1fShift", ypos), -(kGasLength + kVertSpacerLength) / 2., -ypos, 0.);
+  pipeShift->RegisterYourself();
+
+  // create a classic shape gas box
+  auto gasBox = new TGeoBBox("GasBox", kGasLength / 2., kGasHeight / 2., kGasWidth / 2.);
+
+  // change the gas volume shape by extracting the pipe shape
+  auto gasShape = new TGeoCompositeShape(Form("R%.1fY%.1fGasShape", curvRad, ypos),
+                                         Form("GasBox-GasHoleR%.1f:holeY%.1fShift", curvRad, ypos));
+
+  // create the new gas volume and place it in the PCB volume assembly
+  pcb->AddNode(new TGeoVolume(Form("R%.1fY%.1fSlatGas", curvRad, ypos), gasShape, assertMedium(Medium::SlatGas)), 1);
+
+  // create the hole in the pcb plate volume
+  auto pcbHole = new TGeoTubeSeg(Form("PcbHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
+
+  // create a box volume for the pcb plate
+  auto pcbBox = new TGeoBBox("PcbBox", kPCBLength / 2., kPCBHeight / 2., kPCBWidth / 2.);
+
+  // change the pcb volume shape by extracting the pipe shape
+  auto pcbShape = new TGeoCompositeShape(Form("R%.1fY%.1fPcbShape", curvRad, ypos),
+                                         Form("PcbBox-PcbHoleR%.1f:holeY%.1fShift", curvRad, ypos));
+
+  auto bend = new TGeoVolume(Form("%sB", name.data()), pcbShape, assertMedium(Medium::Copper));
+  bend->SetLineColor(kRed);
+  pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
+
+  auto nonbend = new TGeoVolume(Form("%sN", name.data()), pcbShape, assertMedium(Medium::Copper));
+  nonbend->SetLineColor(kGreen);
+  pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
+}
+
+//______________________________________________________________________________
 Double_t SlatCenter(const Int_t nPCBs)
 {
   /// Useful function to compute the center of a slat
@@ -96,10 +251,10 @@ Double_t SlatCenter(const Int_t nPCBs)
   Double_t x;
   switch (nPCBs % 2) {
     case 0: // even
-      x = (nPCBs - 1) * kGasDim[0] / 2;
+      x = (nPCBs - 1) * kGasLength / 2;
       break;
     case 1: // odd
-      x = (nPCBs / 2) * kGasDim[0];
+      x = (nPCBs / 2) * kGasLength;
       break;
   }
 
@@ -114,7 +269,7 @@ TGeoVolume* NormalPCB(const char* name, Double_t length)
   // inputs : * the name we want to give to the created volume
   //          * the length (on the x axis) of this PCB
 
-  return gGeoManager->MakeBox(name, assertMedium(Medium::SlatGas), length / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
+  return gGeoManager->MakeBox(name, assertMedium(Medium::SlatGas), length / 2., kGasHeight / 2., kGasWidth / 2.);
 }
 
 //______________________________________________________________________________
@@ -126,14 +281,14 @@ TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
   //          * the y position of this PCB w.r.t the LHC beam pipe
 
   // create a classic shape PCB
-  auto PCBshape = new TGeoBBox("PCBshape", kGasDim[0] / 2., kGasDim[1] / 2., kGasDim[2] / 2.);
+  auto PCBshape = new TGeoBBox("PCBshape", kGasLength / 2., kGasHeight / 2., kGasWidth / 2.);
 
   // create the beam pipe shape (tube width = slat width)
   auto pipeShape = new TGeoTubeSeg(Form("pipeR%.1fShape", curvRad), 0., curvRad, kSlatWidth / 2., 90., 270.);
 
   // place this shape on the ALICE x=0; y=0 coordinates
   auto pipeShift =
-    new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasDim[0] + kVertSpacerLength) / 2., -yShift, 0.);
+    new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasLength + kVertSpacerLength) / 2., -yShift, 0.);
   pipeShift->RegisterYourself();
 
   // return the PCB volume with a new shape
@@ -167,18 +322,18 @@ void CreateNormalSlat(const string name)
   // loop over the number of PCBs in the current slat
   for (Int_t ivol = 0; ivol < nPCBs; ivol++) {
 
-    PCBlength = kGasDim[0];
+    PCBlength = kGasLength;
     PCBshape = "normalPCB";
 
     // if the slat name contains a "S", it is a shortened one
     if ((name.back() == 'S') && ivol == nPCBs - 1) {
-      PCBlength = kShortPCBlength; // change the last PCB length of the shortened slat
+      PCBlength = kShortPCBLength; // change the last PCB length of the shortened slat
       PCBshape = "shortPCB";       // change the name of the PCB volume
     }
 
     // place the corresponding PCB volume in the slat
     slatVol->AddNode(gGeoManager->GetVolume(PCBshape), ivol + 1,
-                     new TGeoTranslation(ivol * kGasDim[0] - 0.5 * (kGasDim[0] - PCBlength) - center, 0, 0));
+                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kGasLength - PCBlength) - center, 0, 0));
 
   } // end of the PCBs loop
 }
@@ -207,20 +362,20 @@ void CreateRoundedSlat(const string name)
   TString PCBshape;
   // loop over the number of normal shape PCBs in the current slat
   for (Int_t ivol = 0; ivol < nPCBs - 1; ivol++) {
-    PCBlength = kGasDim[0];
+    PCBlength = kGasLength;
     PCBshift = center;
     PCBshape = "normalPCB";
 
     // if the slat name contains a "S", it is a shortened one
     if (name.find('S') < name.size() && ivol == 0) {
-      PCBlength = kShortPCBlength; // change the first PCB length of the shortened slat
+      PCBlength = kShortPCBLength; // change the first PCB length of the shortened slat
       PCBshift -= 5;               // correct the shift
       PCBshape = "shortPCB";       // change the name of the PCB volume
     }
 
     // place the corresponding PCB volume in the slat
     slatVol->AddNode(gGeoManager->GetVolume(PCBshape), nPCBs - ivol,
-                     new TGeoTranslation(ivol * kGasDim[0] - 0.5 * (kGasDim[0] - PCBlength) - PCBshift, 0, 0));
+                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kGasLength - PCBlength) - PCBshift, 0, 0));
 
   } // end of the normal shape PCBs loop
 
@@ -243,7 +398,7 @@ void CreateRoundedSlat(const string name)
 
   // place the rounded PCB in the slat volume assembly
   slatVol->AddNode(RoundedPCB(radius + kVertFrameLength, ypos), 1,
-                   new TGeoTranslation((nPCBs / 2 - 0.5) * kGasDim[0], 0, 0));
+                   new TGeoTranslation((nPCBs / 2 - 0.5) * kGasLength, 0, 0));
 }
 
 //______________________________________________________________________________
