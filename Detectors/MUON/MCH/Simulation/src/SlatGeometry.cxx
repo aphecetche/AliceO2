@@ -95,20 +95,19 @@ void CreateSlatGeometry()
   for (Int_t iChamber = 5; iChamber <= 10; iChamber++)
     CreateSupportPanel(iChamber);
 
-  // create the normal PCB volumes
-  auto shortPCB = NormalPCB("shortPCB", kShortPCBLength);
-  auto normalPCB = NormalPCB("normalPCB", kPCBLength);
-
   // create the different slat types
   cout << "Creating " << kSlatTypes.size() << " types of slat" << endl;
-  for (auto slatType : kSlatTypes) { // loop over the slat types of the array
 
+  for (auto slat : kSlatTypes) { // loop over the slats of the map
+
+    cout << "The slat " << slat.first << " contains " << slat.second.size() << " PCBs" << endl;
     // create a slat volume assembly according to its shape
-    (slatType.find('R') < slatType.size()) ? CreateRoundedSlat(slatType) : CreateNormalSlat(slatType);
+    //(slat.find('R') < slat.size()) ? CreateRoundedSlat(slat) : CreateNormalSlat(slat);
   }
-
-  // create and place the half-chambers in the top volume
-  CreateHalfChambers();
+  /*
+    // create and place the half-chambers in the top volume
+    CreateHalfChambers();
+  */
 }
 
 //______________________________________________________________________________
