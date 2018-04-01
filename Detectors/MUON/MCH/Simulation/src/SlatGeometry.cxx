@@ -47,15 +47,9 @@ void CreateShortPCB(const string name);
 
 void CreateRoundedPCB(const string name);
 
-TGeoVolume* NormalPCB(const char* name, Double_t length);
-
-TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift);
-
 Double_t SlatCenter(const Int_t nPCBs);
 
-void CreateNormalSlat(const string name);
-
-void CreateRoundedSlat(const string name);
+void CreateSlat(const string name, vector<string> PCBs);
 
 void CreateSupportPanel(const Int_t iChamber);
 
@@ -100,14 +94,12 @@ void CreateSlatGeometry()
 
   for (auto slat : kSlatTypes) { // loop over the slats of the map
 
-    cout << "The slat " << slat.first << " contains " << slat.second.size() << " PCBs" << endl;
     // create a slat volume assembly according to its shape
-    //(slat.find('R') < slat.size()) ? CreateRoundedSlat(slat) : CreateNormalSlat(slat);
+    CreateSlat(slat.first, slat.second);
   }
-  /*
-    // create and place the half-chambers in the top volume
-    CreateHalfChambers();
-  */
+
+  // create and place the half-chambers in the top volume
+  CreateHalfChambers();
 }
 
 //______________________________________________________________________________
@@ -261,143 +253,35 @@ Double_t SlatCenter(const Int_t nPCBs)
 }
 
 //______________________________________________________________________________
-TGeoVolume* NormalPCB(const char* name, Double_t length)
-{
-  /// Build a normal shape PCB (a simple box of gas volume for the moment)
-
-  // inputs : * the name we want to give to the created volume
-  //          * the length (on the x axis) of this PCB
-
-  return gGeoManager->MakeBox(name, assertMedium(Medium::SlatGas), length / 2., kGasHeight / 2., kGasWidth / 2.);
-}
-
-//______________________________________________________________________________
-TGeoVolume* RoundedPCB(Double_t curvRad, Double_t yShift)
-{
-  /// Build a rounded shape PCB (a simple gas volume for the moment)
-
-  // inputs : * the radius of curvature of the PCB
-  //          * the y position of this PCB w.r.t the LHC beam pipe
-
-  // create a classic shape PCB
-  auto PCBshape = new TGeoBBox("PCBshape", kGasLength / 2., kGasHeight / 2., kGasWidth / 2.);
-
-  // create the beam pipe shape (tube width = slat width)
-  auto pipeShape = new TGeoTubeSeg(Form("pipeR%.1fShape", curvRad), 0., curvRad, kSlatWidth / 2., 90., 270.);
-
-  // place this shape on the ALICE x=0; y=0 coordinates
-  auto pipeShift =
-    new TGeoTranslation(Form("pipeY%.1fShift", yShift), (kGasLength + kVertSpacerLength) / 2., -yShift, 0.);
-  pipeShift->RegisterYourself();
-
-  // return the PCB volume with a new shape
-  return new TGeoVolume("roundedPCB",
-                        new TGeoCompositeShape(Form("roundedR%.1fY%.1fPCBshape", curvRad, yShift),
-                                               Form("PCBshape-pipeR%.1fShape:pipeY%.1fShift", curvRad, yShift)),
-                        assertMedium(Medium::SlatGas));
-}
-
-//______________________________________________________________________________
-void CreateNormalSlat(const string name)
+void CreateSlat(const string name, vector<string> PCBs)
 {
   /// Build a normal shape slat (an assembly of gas volumes for the moment)
 
-  // input : the name of the slat type we want to create
+  // inputs : * the name of the slat type we want to create
+  //          * the PCB names vector
 
-  // get the number of PCBs (= position of the first "0" if there is at least one "0", otherwise it means there are 6
-  // PCBs)
-  const Int_t nPCBs = (name.find('0') < name.size()) ? name.find('0') : 6;
-
-  cout << "Creating slat type " << name << " which has " << nPCBs << " PCBs" << endl;
+  cout << "Creating slat type " << name << " which has " << PCBs.size() << " PCBs" << endl;
 
   // create the slat volume assembly
   auto slatVol = new TGeoVolumeAssembly(name.data());
 
   // compute the slat center
-  Double_t center = SlatCenter(nPCBs);
+  Double_t center = SlatCenter(PCBs.size());
 
   Double_t PCBlength;
-  TString PCBshape;
+  Int_t ivol = 0;
   // loop over the number of PCBs in the current slat
-  for (Int_t ivol = 0; ivol < nPCBs; ivol++) {
-
-    PCBlength = kGasLength;
-    PCBshape = "normalPCB";
+  for (auto pcb : PCBs) {
 
     // if the slat name contains a "S", it is a shortened one
-    if ((name.back() == 'S') && ivol == nPCBs - 1) {
-      PCBlength = kShortPCBLength; // change the last PCB length of the shortened slat
-      PCBshape = "shortPCB";       // change the name of the PCB volume
-    }
+    PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
 
     // place the corresponding PCB volume in the slat
-    slatVol->AddNode(gGeoManager->GetVolume(PCBshape), ivol + 1,
-                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kGasLength - PCBlength) - center, 0, 0));
+    slatVol->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
+                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
 
+    ivol++;
   } // end of the PCBs loop
-}
-
-//______________________________________________________________________________
-void CreateRoundedSlat(const string name)
-{
-  /// Build a rounded shape slat (an assembly of gas volumes for the moment).
-  /// Since the slat will be rotated to match the mapping convention, the PCBs are placed upside down w.r.t the normal
-  /// shape slat builder. By doing so, for a shortened slat, we must take care of the PCB shift value.
-
-  // input : the name of the slat type we want to create
-
-  // get the number of PCBs (= 6 for "NR3", 4 for "S(N)R1(2)")
-  const Int_t nPCBs = (name.back() == '3') ? 6 : 4;
-
-  cout << "Creating slat type " << name << " which has " << nPCBs << " PCBs" << endl;
-
-  // create the slat volume assembly
-  auto slatVol = new TGeoVolumeAssembly(name.data());
-
-  // compute the slat center
-  Double_t center = SlatCenter(nPCBs);
-
-  Double_t PCBlength, PCBshift;
-  TString PCBshape;
-  // loop over the number of normal shape PCBs in the current slat
-  for (Int_t ivol = 0; ivol < nPCBs - 1; ivol++) {
-    PCBlength = kGasLength;
-    PCBshift = center;
-    PCBshape = "normalPCB";
-
-    // if the slat name contains a "S", it is a shortened one
-    if (name.find('S') < name.size() && ivol == 0) {
-      PCBlength = kShortPCBLength; // change the first PCB length of the shortened slat
-      PCBshift -= 5;               // correct the shift
-      PCBshape = "shortPCB";       // change the name of the PCB volume
-    }
-
-    // place the corresponding PCB volume in the slat
-    slatVol->AddNode(gGeoManager->GetVolume(PCBshape), nPCBs - ivol,
-                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kGasLength - PCBlength) - PCBshift, 0, 0));
-
-  } // end of the normal shape PCBs loop
-
-  // LHC beam pipe radius ("NR3" -> it is a slat of a station 4 or 5)
-  const Double_t radius = (name.back() == '3') ? kRadSt45 : kRadSt3;
-
-  // y position of the PCB center w.r.t the beam pipe shape
-  Double_t ypos;
-  switch (name.back()) { // get the last character
-    case '1':
-      ypos = 0.; // central for "S(N)R1"
-      break;
-    case '2':
-      ypos = kRoundedSlatYposSt3; // "S(N)R2" -> station 3
-      break;
-    default:
-      ypos = kRoundedSlatYposSt45; // "S(N)R3" -> station 4 or 5
-      break;
-  }
-
-  // place the rounded PCB in the slat volume assembly
-  slatVol->AddNode(RoundedPCB(radius + kVertFrameLength, ypos), 1,
-                   new TGeoTranslation((nPCBs / 2 - 0.5) * kGasLength, 0, 0));
 }
 
 //______________________________________________________________________________
