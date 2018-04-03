@@ -87,12 +87,20 @@ void CreateSlatGeometry()
 
   // create and place the half-chambers in the top volume
   CreateHalfChambers();
+
+  // test for G10
+  auto volg10 = gGeoManager->MakeBox("G10 volume", assertMedium(Medium::G10), 10, 20, 10);
+  gGeoManager->GetTopVolume()->AddNode(volg10, 1, new TGeoTranslation(0, 0, 900));
+
+  // test for rohacell
+  auto volroha = gGeoManager->MakeBox("Rohacell volume", assertMedium(Medium::Rohacell), 10, 20, 10);
+  gGeoManager->GetTopVolume()->AddNode(volroha, 1, new TGeoTranslation(0, 0, 800));
 }
 
 //______________________________________________________________________________
 void CreateNormalPCB(const string name)
 {
-  /// Build a normal shape PCB
+  /// Build a normal shape PCB (pcb plates sandwich with the sensitive gas inside for the moment)
   /// input : * the name of the PCB type ("B1N1","B2N2-","B2N2+","B3-N3", "B3+N3", "S2-" or "S2+")
 
   // check if the given name match this builder
@@ -101,17 +109,16 @@ void CreateNormalPCB(const string name)
 
   cout << "PCB type " << name << endl;
 
-  Bool_t isShort = (name.front() == 'S') ? kTRUE : kFALSE;
-
   // get the number from the PCB type name -> important for this builder
   const Int_t numb = name[1] - '0'; // char -> int conversion
 
-  // get the pcb plate names
+  // get the pcb plate names and length
   string bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
   string nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
   Double_t pcbLength = kPCBLength;
 
-  if (isShort) {
+  // correct these values for shortened PCB
+  if (name.front() == 'S') {
     bendName = Form("S2B%c", name.back());
     nonbendName = Form("S2N%c", name.back());
     pcbLength = kShortPCBLength;
@@ -137,7 +144,7 @@ void CreateNormalPCB(const string name)
 //______________________________________________________________________________
 void CreateRoundedPCB(const string name)
 {
-  /// Build a rounded shape PCB
+  /// Build a rounded shape PCB (pcb plates sandwich with the sensitive gas inside for the moment)
   /// input : * the name of the PCB type ("R1", "R2" or "R3")
 
   // check if the given name match this builder

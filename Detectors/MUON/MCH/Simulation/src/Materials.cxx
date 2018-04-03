@@ -31,13 +31,11 @@ void CreateSlatGas(int fieldType, float maxField)
   const int n = 3;
   std::array<float, n> a{ kAArgon, kACarbon, kAOxygen };
   std::array<float, n> z{ kZArgon, kZCarbon, kZOxygen };
-  std::array<float, n> w{ 1 * 0.8, 1 * 0.2, 2 * 0.2 }; // Relative weight of each atom in the gas
-  float d{ 0.001821 };                                 // according to AliRoot
+  std::array<float, n> w{ 0.8, 1. / 15, 2. / 15 }; // Relative weight of each atom in the gas
+  float d{ 0.001821 };                             // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
-  // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
-  // that the total weight is equal to 1.
-  materialManager().Mixture(moduleName, imat, "Ar 80% + CO2 20%", a.data(), z.data(), d, -n, w.data());
+  materialManager().Mixture(moduleName, imat, "Ar 80% + CO2 20%", a.data(), z.data(), d, n, w.data());
   materialManager().Medium(moduleName, Medium::SlatGas, "Ar 80% + CO2 20%", imat, 1, fieldType, maxField, kMaxfd,
                            kStemax, kDeemax, kEpsil, kStmin);
 }
@@ -57,8 +55,8 @@ void CreateNomex(int fieldType, float maxField)
   const int n = 4;
   std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 22., 10., 2., 5. }; // Relative weight of each atom in the compound
-  float d{ 0.024 };                           // according to AliRoot
+  std::array<float, n> w{ 22., 10., 2., 5. };
+  float d{ 0.024 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
@@ -74,8 +72,8 @@ void CreateNomexBulk(int fieldType, float maxField)
   const int n = 4;
   std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 22., 10., 2., 5. }; // Relative weight of each atom in the compound
-  float d{ 1.43 };                            // according to AliRoot
+  std::array<float, n> w{ 22., 10., 2., 5. };
+  float d{ 1.43 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
@@ -112,11 +110,11 @@ void CreateCopper(int fieldType, float maxField)
 
 void CreateG10(int fieldType, float maxField)
 {
-  // G10: SiO2(60%) + C8H14O4(40%)
+  // G10: SiO2(60%) + C8H14O4(40%) -> weights to be checked !!!
   const int n = 5;
   std::array<float, n> a{ kASilicon, kAOxygen, kACarbon, kAHydrogen, kAOxygen };
   std::array<float, n> z{ kZSilicon, kZOxygen, kZCarbon, kZHydrogen, kZOxygen };
-  std::array<float, n> w{ 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom in the gas
+  std::array<float, n> w{ 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom
   float d{ 1.7 };                                                         // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -133,8 +131,8 @@ void CreateRohacell(int fieldType, float maxField)
   const int n = 4;
   std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 9., 13., 1., 2. }; // Relative weight of each atom in the gas
-  float d{ 0.03 };                           // according to AliRoot
+  std::array<float, n> w{ 9., 13., 1., 2. };
+  float d{ 0.03 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
