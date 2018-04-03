@@ -64,7 +64,7 @@ void CreateNomex(int fieldType, float maxField)
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "Nomex", a.data(), z.data(), d, -n, w.data());
-  materialManager().Medium(moduleName, Medium::Nomex, "Nomex", imat, 1, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::Nomex, "Nomex", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
@@ -81,7 +81,7 @@ void CreateNomexBulk(int fieldType, float maxField)
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "NomexBulk", a.data(), z.data(), d, -n, w.data());
-  materialManager().Medium(moduleName, Medium::NomexBulk, "NomexBulk", imat, 1, fieldType, maxField, kMaxfd, kStemax,
+  materialManager().Medium(moduleName, Medium::NomexBulk, "NomexBulk", imat, 0, fieldType, maxField, kMaxfd, kStemax,
                            kDeemax, kEpsil, kStmin);
 }
 
@@ -98,7 +98,7 @@ void CreateNoryl(int fieldType, float maxField)
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "Noryl", a.data(), z.data(), d, -n, w.data());
-  materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 1, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
@@ -123,7 +123,7 @@ void CreateG10(int fieldType, float maxField)
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "G10", a.data(), z.data(), d, -n, w.data());
-  materialManager().Medium(moduleName, Medium::G10, "G10", imat, 1, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::G10, "G10", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
@@ -140,7 +140,7 @@ void CreateRohacell(int fieldType, float maxField)
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
   // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "Rohacell", a.data(), z.data(), d, -n, w.data());
-  materialManager().Medium(moduleName, Medium::Rohacell, "Rohacell", imat, 1, fieldType, maxField, kMaxfd, kStemax,
+  materialManager().Medium(moduleName, Medium::Rohacell, "Rohacell", imat, 0, fieldType, maxField, kMaxfd, kStemax,
                            kDeemax, kEpsil, kStmin);
 }
 
