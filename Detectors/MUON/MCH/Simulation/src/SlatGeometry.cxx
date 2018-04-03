@@ -43,8 +43,6 @@ namespace mch
 
 void CreateNormalPCB(const string name);
 
-void CreateShortPCB(const string name);
-
 void CreateRoundedPCB(const string name);
 
 Double_t SlatCenter(const Int_t nPCBs);
@@ -65,7 +63,6 @@ void CreateSlatGeometry()
   CreateSlatGeometryMaterials();
 
   materialManager().printMaterials();
-  // materialManager().printMedia();
 
   // create the different PCB types
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
@@ -75,9 +72,6 @@ void CreateSlatGeometry()
     switch (pcb.front()) { // get the first character of the pcb type name
       case 'R':
         CreateRoundedPCB(pcb);
-        break;
-      case 'S':
-        CreateShortPCB(pcb);
         break;
       default:
         CreateNormalPCB(pcb);
@@ -106,63 +100,43 @@ void CreateSlatGeometry()
 void CreateNormalPCB(const string name)
 {
   /// Build a normal shape PCB
-  /// input : * the name of the PCB type ("B1N1","B2N2-","B2N2+","B3-N3" or "B3+N3")
+  /// input : * the name of the PCB type ("B1N1","B2N2-","B2N2+","B3-N3", "B3+N3", "S2-" or "S2+")
 
   // check if the given name match this builder
-  if (name.front() != 'B')
+  if (!(name.front() == 'B' || name.front() == 'S'))
     throw runtime_error("Normal PCB builder called with the wrong PCB type name");
 
   cout << "PCB type " << name << endl;
+
+  Bool_t isShort = (name.front() == 'S') ? kTRUE : kFALSE;
 
   // get the number from the PCB type name -> important for this builder
   const Int_t numb = name[1] - '0'; // char -> int conversion
 
   // get the pcb plate names
-  const string bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
-  const string nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
+  string bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
+  string nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
+  Double_t pcbLength = kPCBLength;
+
+  if (isShort) {
+    bendName = Form("S2B%c", name.back());
+    nonbendName = Form("S2N%c", name.back());
+    pcbLength = kShortPCBLength;
+  }
 
   auto pcb = new TGeoVolumeAssembly(name.data());
 
   // place the gas
-  pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), kPCBLength / 2.,
+  pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), pcbLength / 2.,
                                     kGasHeight / 2., kGasWidth / 2.),
                1);
 
-  auto bend = gGeoManager->MakeBox(bendName.data(), assertMedium(Medium::Copper), kPCBLength / 2., kPCBHeight / 2.,
+  auto bend = gGeoManager->MakeBox(bendName.data(), assertMedium(Medium::Copper), pcbLength / 2., kPCBHeight / 2.,
                                    kPCBWidth / 2.);
   bend->SetLineColor(kRed);
   pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
-  auto nonbend = gGeoManager->MakeBox(nonbendName.data(), assertMedium(Medium::Copper), kPCBLength / 2.,
-                                      kPCBHeight / 2., kPCBWidth / 2.);
-  nonbend->SetLineColor(kGreen);
-  pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
-}
-
-//______________________________________________________________________________
-void CreateShortPCB(const string name)
-{
-  /// Build a short shape PCB
-  /// input : * the name of the PCB type ("S-" or "S+")
-
-  // check if the given name match this builder
-  if (name.front() != 'S')
-    throw runtime_error("Shortened PCB builder called with the wrong PCB type name");
-
-  cout << "PCB type " << name << endl;
-
-  auto pcb = new TGeoVolumeAssembly(name.data());
-
-  // place the gas
-  pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), kShortPCBLength / 2.,
-                                    kGasHeight / 2., kGasWidth / 2.),
-               1);
-
-  auto bend = gGeoManager->MakeBox(Form("S2B%c", name.back()), assertMedium(Medium::Copper), kShortPCBLength / 2.,
-                                   kPCBHeight / 2., kPCBWidth / 2.);
-  bend->SetLineColor(kRed);
-  pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
-  auto nonbend = gGeoManager->MakeBox(Form("S2N%c", name.back()), assertMedium(Medium::Copper), kShortPCBLength / 2.,
-                                      kPCBHeight / 2., kPCBWidth / 2.);
+  auto nonbend = gGeoManager->MakeBox(nonbendName.data(), assertMedium(Medium::Copper), pcbLength / 2., kPCBHeight / 2.,
+                                      kPCBWidth / 2.);
   nonbend->SetLineColor(kGreen);
   pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
 }
