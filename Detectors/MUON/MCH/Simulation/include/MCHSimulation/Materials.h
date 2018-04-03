@@ -40,6 +40,10 @@ const float kANitrogen = 14.0067;
 const float kZOxygen = 8.;
 const float kAOxygen = 15.9994;
 
+// Silicon
+const float kZSilicon = 14.;
+const float kASilicon = 28.0855;
+
 // Argon
 const float kZArgon = 18.;
 const float kAArgon = 39.948;
@@ -58,7 +62,7 @@ const float kStemax{ -1. }; // Maximum displacement for multiple scattering [cm]
 const float kDeemax{ -.3 }; // Maximum fractional energy loss, DLS
 const float kStmin{ -.8 };  // Minimum step due to continuous processes [cm]
 
-enum Medium { Vacuum, SlatGas, Carbon, Nomex, NomexBulk, Noryl, Copper };
+enum Medium { Vacuum, SlatGas, Carbon, Nomex, NomexBulk, Noryl, Copper, G10 };
 
 // Return a pointer to the mch medium number imed.
 // Throws an exception if imed is not within Medium enum
