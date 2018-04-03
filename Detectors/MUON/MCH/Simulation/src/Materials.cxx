@@ -94,8 +94,9 @@ void CreateNoryl(int fieldType, float maxField)
   float d{ 1.06 };
 
   int imat = autoIncrementedMaterialId();
+  // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
+  // that the total weight is equal to 1.
   materialManager().Mixture(moduleName, imat, "Noryl", a.data(), z.data(), d, -n, w.data());
-
   materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 1, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }

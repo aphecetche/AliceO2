@@ -21,7 +21,7 @@ namespace mch
 
 /// Definition of constants for the elements
 /// The atomic number and the atomic masse values are taken from the 2016 PDG booklet
-/// The other constants (density, radiation length , ...) come from AliRoot
+/// For the radiation and absorption lengths, we let the Virtual Monte-Carlo compute them internally
 
 // Hydrogen
 const float kZHydrogen = 1.;
