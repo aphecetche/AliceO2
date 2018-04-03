@@ -49,7 +49,7 @@ Double_t SlatCenter(const Int_t nPCBs);
 
 void CreateSlat(const string name, vector<string> PCBs);
 
-void CreateSupportPanel(const Int_t iChamber);
+void CreateSupportPanels();
 
 void CreateHalfChambers();
 
@@ -80,8 +80,7 @@ void CreateSlatGeometry()
   }
 
   // create the support panels
-  for (Int_t iChamber = 5; iChamber <= 10; iChamber++)
-    CreateSupportPanel(iChamber);
+  CreateSupportPanels();
 
   // create the different slat types
   cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
@@ -265,63 +264,68 @@ void CreateSlat(const string name, vector<string> PCBs)
 }
 
 //______________________________________________________________________________
-void CreateSupportPanel(const Int_t iCh)
+void CreateSupportPanels()
 {
+  /// Function building the half-chamber support panels (one different per chamber)
 
-  // define the support panel volume
-  auto supVol = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", iCh));
+  for (Int_t iCh = 5; iCh <= 10; iCh++) {
 
-  Double_t radius, supLength, supHeight;
-  if (iCh <= 6) { // station 3 half-chambers
-    radius = kRadSt3;
-    supHeight = kSupportHeightSt3;
-    supLength = (iCh == 5) ? kSupportLengthCh5 : kSupportLengthCh6;
-  } else { // station 4 or 5
-    radius = kRadSt45;
-    supLength = kSupportLengthSt45;
-    supHeight = (iCh <= 8) ? kSupportHeightSt4 : kSupportHeightSt5;
-  }
+    // define the support panel volume
+    auto supVol = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", iCh));
 
-  cout << "Support panel for the chamber " << iCh << " : radius = " << radius << ", length = " << supLength
-       << ", height = " << supHeight << endl;
-  // create the hole in the nomex volume
-  auto nomexHole = new TGeoTube(Form("NomexSupportPanelHoleCh%d", iCh), 0., radius, kNomexSupportWidth / 2.);
+    Double_t radius, supLength, supHeight;
+    if (iCh <= 6) { // station 3 half-chambers
+      radius = kRadSt3;
+      supHeight = kSupportHeightSt3;
+      supLength = (iCh == 5) ? kSupportLengthCh5 : kSupportLengthCh6;
+    } else { // station 4 or 5
+      radius = kRadSt45;
+      supLength = kSupportLengthSt45;
+      supHeight = (iCh <= 8) ? kSupportHeightSt4 : kSupportHeightSt5;
+    }
 
-  // place this shape on the ALICE x=0 coordinate
-  auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", iCh), (-supLength + kVertSpacerLength) / 2., 0., 0.);
-  holeTrans->RegisterYourself();
+    cout << "Support panel for the chamber " << iCh << " : radius = " << radius << ", length = " << supLength
+         << ", height = " << supHeight << endl;
+    // create the hole in the nomex volume
+    auto nomexHole = new TGeoTube(Form("NomexSupportPanelHoleCh%d", iCh), 0., radius, kNomexSupportWidth / 2.);
 
-  // create a box for the nomex volume
-  auto nomexBox =
-    new TGeoBBox(Form("NomexSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kNomexSupportWidth / 2.);
+    // place this shape on the ALICE x=0 coordinate
+    auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", iCh), (-supLength + kVertSpacerLength) / 2., 0., 0.);
+    holeTrans->RegisterYourself();
 
-  // change the nomex volume shape by extracting the pipe shape
-  auto nomexShape =
-    new TGeoCompositeShape(Form("NomexSupportPanelCh%dShape", iCh),
-                           Form("NomexSupportPanelCh%dBox-NomexSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+    // create a box for the nomex volume
+    auto nomexBox =
+      new TGeoBBox(Form("NomexSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kNomexSupportWidth / 2.);
 
-  // create the nomex volume and place it in the support panel
-  supVol->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", iCh), nomexShape, assertMedium(Medium::Nomex)), iCh,
-                  new TGeoTranslation(supLength / 2., 0., 0.));
+    // change the nomex volume shape by extracting the pipe shape
+    auto nomexShape =
+      new TGeoCompositeShape(Form("NomexSupportPanelCh%dShape", iCh),
+                             Form("NomexSupportPanelCh%dBox-NomexSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
 
-  // create the hole in the carbon volume
-  auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", iCh), 0., radius, kCarbonSupportWidth / 2.);
+    // create the nomex volume and place it in the support panel
+    supVol->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", iCh), nomexShape, assertMedium(Medium::Nomex)), iCh,
+                    new TGeoTranslation(supLength / 2., 0., 0.));
 
-  // create a box for the carbon volume
-  auto carbonBox =
-    new TGeoBBox(Form("CarbonSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kCarbonSupportWidth / 2.);
+    // create the hole in the carbon volume
+    auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", iCh), 0., radius, kCarbonSupportWidth / 2.);
 
-  // change the carbon volume shape by extracting the pipe shape
-  auto carbonShape =
-    new TGeoCompositeShape(Form("CarbonSupportPanelCh%dShape", iCh),
-                           Form("CarbonSupportPanelCh%dBox-CarbonSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+    // create a box for the carbon volume
+    auto carbonBox =
+      new TGeoBBox(Form("CarbonSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kCarbonSupportWidth / 2.);
 
-  // create the carbon volume
-  auto carbonVol = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
+    // change the carbon volume shape by extracting the pipe shape
+    auto carbonShape =
+      new TGeoCompositeShape(Form("CarbonSupportPanelCh%dShape", iCh),
+                             Form("CarbonSupportPanelCh%dBox-CarbonSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
 
-  // place it on each side of the nomex volume
-  supVol->AddNode(carbonVol, 1, new TGeoTranslation(supLength / 2., 0., (kSupportWidth - kCarbonSupportWidth) / 2.));
-  supVol->AddNode(carbonVol, 2, new TGeoTranslation(supLength / 2., 0., -(kSupportWidth - kCarbonSupportWidth) / 2.));
+    // create the carbon volume
+    auto carbonVol = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
+
+    // place it on each side of the nomex volume
+    supVol->AddNode(carbonVol, 1, new TGeoTranslation(supLength / 2., 0., (kSupportWidth - kCarbonSupportWidth) / 2.));
+    supVol->AddNode(carbonVol, 2, new TGeoTranslation(supLength / 2., 0., -(kSupportWidth - kCarbonSupportWidth) / 2.));
+
+  } // end of the chamber loop
 }
 
 //______________________________________________________________________________
