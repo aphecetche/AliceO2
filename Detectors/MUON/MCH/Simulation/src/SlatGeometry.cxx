@@ -65,10 +65,10 @@ void CreateSlatGeometry()
   CreateSlatGeometryMaterials();
 
   materialManager().printMaterials();
-  materialManager().printMedia();
+  // materialManager().printMedia();
 
   // create the different PCB types
-  cout << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
+  cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
   for (auto pcb : kPcbTypes) { // loop over the PCB types of the array
 
     // create a PCB volume assembly according to its shape
@@ -90,7 +90,7 @@ void CreateSlatGeometry()
     CreateSupportPanel(iChamber);
 
   // create the different slat types
-  cout << "Creating " << kSlatTypes.size() << " types of slat" << endl;
+  cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
   for (auto slat : kSlatTypes) { // loop over the slats of the map
 
@@ -111,6 +111,8 @@ void CreateNormalPCB(const string name)
   // check if the given name match this builder
   if (name.front() != 'B')
     throw runtime_error("Normal PCB builder called with the wrong PCB type name");
+
+  cout << "PCB type " << name << endl;
 
   // get the number from the PCB type name -> important for this builder
   const Int_t numb = name[1] - '0'; // char -> int conversion
@@ -146,6 +148,8 @@ void CreateShortPCB(const string name)
   if (name.front() != 'S')
     throw runtime_error("Shortened PCB builder called with the wrong PCB type name");
 
+  cout << "PCB type " << name << endl;
+
   auto pcb = new TGeoVolumeAssembly(name.data());
 
   // place the gas
@@ -172,6 +176,8 @@ void CreateRoundedPCB(const string name)
   // check if the given name match this builder
   if (name.front() != 'R')
     throw runtime_error("Rounded PCB builder called with the wrong PCB type name");
+
+  cout << "PCB type " << name << endl;
 
   // get the number from the PCB type name
   const Int_t numb = name.back() - '0'; // char -> int conversion
@@ -212,7 +218,7 @@ void CreateRoundedPCB(const string name)
                                          Form("GasBox-GasHoleR%.1f:holeY%.1fShift", curvRad, ypos));
 
   // create the new gas volume and place it in the PCB volume assembly
-  pcb->AddNode(new TGeoVolume(Form("R%.1fY%.1fSlatGas", curvRad, ypos), gasShape, assertMedium(Medium::SlatGas)), 1);
+  pcb->AddNode(new TGeoVolume(Form("Gas of %s", name.data()), gasShape, assertMedium(Medium::SlatGas)), 1);
 
   // create the hole in the pcb plate volume
   auto pcbHole = new TGeoTubeSeg(Form("PcbHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
@@ -260,7 +266,7 @@ void CreateSlat(const string name, vector<string> PCBs)
   // inputs : * the name of the slat type we want to create
   //          * the PCB names vector
 
-  cout << "Creating slat type " << name << " which has " << PCBs.size() << " PCBs" << endl;
+  cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
 
   // create the slat volume assembly
   auto slatVol = new TGeoVolumeAssembly(name.data());
@@ -374,7 +380,7 @@ void CreateHalfChambers()
     // chamber 10)
     const Int_t nCh = (name.find('0') == 2) ? name[3] - '0' /* char -> int conversion */ : 10;
 
-    cout << endl << "Creating half-chamber " << name << ", chamber number " << nCh << endl;
+    cout << endl << "Creating half-chamber " << name << endl;
     auto halfChVol = new TGeoVolumeAssembly(name.data());
 
     // place the support panel corresponding to the chamber number

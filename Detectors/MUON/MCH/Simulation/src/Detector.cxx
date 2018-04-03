@@ -27,15 +27,10 @@ Detector::Detector(bool active) : o2::Base::DetImpl<Detector>("MCH", active) {}
 
 void Detector::defineSensitiveVolumes()
 {
-  std::vector<std::string> sensitiveVolumeNames;
 
-  sensitiveVolumeNames.emplace_back("roundedPCB");
-  sensitiveVolumeNames.emplace_back("normalPCB");
-  sensitiveVolumeNames.emplace_back("shortPCB");
+  for (const auto& volName : kPcbTypes) {
 
-  for (const auto& volName : sensitiveVolumeNames) {
-
-    auto vol = gGeoManager->GetVolume(volName.c_str());
+    auto vol = gGeoManager->GetVolume(Form("Gas of %s", volName.data()));
 
     if (!vol) {
       LOG(WARNING) << std::string("could not get expected volume ") + std::string(volName);
