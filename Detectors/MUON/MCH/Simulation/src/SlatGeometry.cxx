@@ -47,7 +47,7 @@ void CreateRoundedPCB(const string name);
 
 Double_t SlatCenter(const Int_t nPCBs);
 
-void CreateSlat(const string name, vector<string> PCBs);
+void CreateSlats();
 
 void CreateSupportPanels();
 
@@ -83,13 +83,7 @@ void CreateSlatGeometry()
   CreateSupportPanels();
 
   // create the different slat types
-  cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
-
-  for (auto slat : kSlatTypes) { // loop over the slats of the map
-
-    // create a slat volume assembly according to its shape
-    CreateSlat(slat.first, slat.second);
-  }
+  CreateSlats();
 
   // create and place the half-chambers in the top volume
   CreateHalfChambers();
@@ -232,35 +226,40 @@ Double_t SlatCenter(const Int_t nPCBs)
 }
 
 //______________________________________________________________________________
-void CreateSlat(const string name, vector<string> PCBs)
+void CreateSlats()
 {
-  /// Build a normal shape slat (an assembly of gas volumes for the moment)
+  /// Slat building function
 
-  // inputs : * the name of the slat type we want to create
-  //          * the PCB names vector
+  cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
-  cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
+  for (auto slat : kSlatTypes) {
 
-  // create the slat volume assembly
-  auto slatVol = new TGeoVolumeAssembly(name.data());
+    const string name = slat.first; // slat name
+    auto PCBs = slat.second;        // PCB names vector
 
-  // compute the slat center
-  Double_t center = SlatCenter(PCBs.size());
+    cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
 
-  Double_t PCBlength;
-  Int_t ivol = 0;
-  // loop over the number of PCBs in the current slat
-  for (auto pcb : PCBs) {
+    // create the slat volume assembly
+    auto slatVol = new TGeoVolumeAssembly(name.data());
 
-    // if the slat name contains a "S", it is a shortened one
-    PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
+    // compute the slat center
+    Double_t center = SlatCenter(PCBs.size());
 
-    // place the corresponding PCB volume in the slat
-    slatVol->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
-                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
+    Double_t PCBlength;
+    Int_t ivol = 0;
+    // loop over the number of PCBs in the current slat
+    for (auto pcb : PCBs) {
 
-    ivol++;
-  } // end of the PCBs loop
+      // if the PCB name starts with a "S", it is a shortened one
+      PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
+
+      // place the corresponding PCB volume in the slat
+      slatVol->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
+                       new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
+
+      ivol++;
+    } // end of the PCBs loop
+  }   // end of the slat loop
 }
 
 //______________________________________________________________________________
@@ -321,7 +320,8 @@ void CreateSupportPanels()
     // create the carbon volume
     auto carbonVol = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
 
-    // place it on each side of the nomex volume
+    // place it on each side of the nomex volume (since there should be a glue layer between the carbon and the nomex,
+    // there is nothing for the moment (vacuum))
     supVol->AddNode(carbonVol, 1, new TGeoTranslation(supLength / 2., 0., (kSupportWidth - kCarbonSupportWidth) / 2.));
     supVol->AddNode(carbonVol, 2, new TGeoTranslation(supLength / 2., 0., -(kSupportWidth - kCarbonSupportWidth) / 2.));
 
@@ -347,10 +347,8 @@ void CreateHalfChambers()
   // loop over the objects (half-chambers) of the array
   for (auto& halfCh : hChs.GetArray()) {
     // check that "halfCh" is an object
-    if (!halfCh.IsObject()) {
-      cout << "Can't create the half-chambers : wrong Value input" << endl;
-      throw;
-    }
+    if (!halfCh.IsObject())
+      throw runtime_error("Can't create the half-chambers : wrong Value input");
 
     const Int_t moduleID = halfCh["moduleID"].GetInt();
     const string name = halfCh["name"].GetString();
@@ -370,10 +368,8 @@ void CreateHalfChambers()
     // place the slat volumes on the different nodes of the half-chamber
     for (auto& slat : halfCh["nodes"].GetArray()) {
       // check that "slat" is an object
-      if (!slat.IsObject()) {
-        cout << "Can't create the slat : wrong Value input" << endl;
-        throw;
-      }
+      if (!slat.IsObject())
+        throw runtime_error("Can't create the slat : wrong Value input");
 
       const Int_t detID = slat["detID"].GetInt();
 
