@@ -127,6 +127,23 @@ void CreateG10(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
+void CreateRohacell(int fieldType, float maxField)
+{
+  // rohacell: C9 H13 N1 O2
+  const int n = 4;
+  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
+  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
+  std::array<float, n> w{ 9., 13., 1., 2. }; // Relative weight of each atom in the gas
+  float d{ 0.03 };                           // according to AliRoot
+
+  int imat = autoIncrementedMaterialId();
+  // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
+  // that the total weight is equal to 1.
+  materialManager().Mixture(moduleName, imat, "Rohacell", a.data(), z.data(), d, -n, w.data());
+  materialManager().Medium(moduleName, Medium::Rohacell, "Rohacell", imat, 1, fieldType, maxField, kMaxfd, kStemax,
+                           kDeemax, kEpsil, kStmin);
+}
+
 void CreateVacuum(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
@@ -160,8 +177,9 @@ void CreateSlatGeometryMaterials()
   impl::CreateNomex(fieldType, maxField);
   impl::CreateNomexBulk(fieldType, maxField);
   impl::CreateNoryl(fieldType, maxField);
-  impl::CreateCopper(fieldType, maxField); // PCB and cable medium
-  impl::CreateG10(fieldType, maxField);    // for insulating material
+  impl::CreateCopper(fieldType, maxField);   // PCB and cable medium
+  impl::CreateG10(fieldType, maxField);      // for insulating material
+  impl::CreateRohacell(fieldType, maxField); // for horizontal border
 }
 
 } // namespace mch
