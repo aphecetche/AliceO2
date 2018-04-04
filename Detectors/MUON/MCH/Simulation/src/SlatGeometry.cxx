@@ -87,14 +87,6 @@ void CreateSlatGeometry()
 
   // create and place the half-chambers in the top volume
   CreateHalfChambers();
-
-  // test for G10
-  auto volg10 = gGeoManager->MakeBox("G10 volume", assertMedium(Medium::G10), 10, 20, 10);
-  gGeoManager->GetTopVolume()->AddNode(volg10, 1, new TGeoTranslation(0, 0, 900));
-
-  // test for rohacell
-  auto volroha = gGeoManager->MakeBox("Rohacell volume", assertMedium(Medium::Rohacell), 10, 20, 10);
-  gGeoManager->GetTopVolume()->AddNode(volroha, 1, new TGeoTranslation(0, 0, 800));
 }
 
 //______________________________________________________________________________
