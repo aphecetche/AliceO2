@@ -389,7 +389,7 @@ void CreateHalfChambers()
     cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << halfCh["name"].GetString() << endl;
 
     // place the half-chamber in the top volume
-    auto halfChRot = new TGeoRotation(Form("HalfCh%drotation", moduleID), halfCh["rotation"][0].GetDouble(),
+    auto halfChRot = new TGeoRotation(Form("%srotation", name.data()), halfCh["rotation"][0].GetDouble(),
                                       halfCh["rotation"][1].GetDouble(), halfCh["rotation"][2].GetDouble(),
                                       halfCh["rotation"][3].GetDouble(), halfCh["rotation"][4].GetDouble(),
                                       halfCh["rotation"][5].GetDouble());
@@ -398,6 +398,15 @@ void CreateHalfChambers()
       halfChVol, moduleID,
       new TGeoCombiTrans(Form("HalfCh%dposition", moduleID), halfCh["position"][0].GetDouble(),
                          halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(), halfChRot));
+
+    // if the dipole is present in the geometry, we place the station 3 half-chambers in it
+    if (gGeoManager->GetVolume("Dipole") && (nCh == 5 || nCh == 6)) {
+      gGeoManager->GetTopVolume()
+        ->GetNode(Form("%s_%d", name.data(), moduleID))
+        ->SetMotherVolume(gGeoManager->GetVolume("DDIP"));
+      cout << endl << "Placing " << name << " in the Dipole" << endl;
+      gGeoManager->GetTopVolume()->GetNode(Form("%s_%d", name.data(), moduleID))->Print();
+    }
   } // end of the half-chambers loop
 
   cout << endl << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
