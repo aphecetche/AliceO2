@@ -29,7 +29,7 @@ std::vector<Position> generateHitPositions(long n, const o2::mch::mapping::Segme
   std::mt19937 mt(rd());
   std::vector<Position> hitPositions;
 
-  hitPositions.resize(n);
+  hitPositions.reserve(n);
 
   auto bbox = o2::mch::mapping::getBBox(seg);
   std::uniform_real_distribution<double> distX{ bbox.xmin(), bbox.xmax() };
