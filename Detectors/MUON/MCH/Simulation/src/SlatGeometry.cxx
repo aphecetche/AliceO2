@@ -45,8 +45,6 @@ void CreateNormalPCB(const string name);
 
 void CreateRoundedPCB(const string name);
 
-Double_t SlatCenter(const Int_t nPCBs);
-
 void CreateSlats();
 
 void CreateSupportPanels();
@@ -206,25 +204,6 @@ void CreateRoundedPCB(const string name)
 }
 
 //______________________________________________________________________________
-Double_t SlatCenter(const Int_t nPCBs)
-{
-  /// Useful function to compute the center of a slat
-
-  // input : the number of PCBs of the slat
-  Double_t x;
-  switch (nPCBs % 2) {
-    case 0: // even
-      x = (nPCBs - 1) * kGasLength / 2;
-      break;
-    case 1: // odd
-      x = (nPCBs / 2) * kGasLength;
-      break;
-  }
-
-  return x;
-}
-
-//______________________________________________________________________________
 void CreateSlats()
 {
   /// Slat building function
@@ -235,14 +214,15 @@ void CreateSlats()
 
     const string name = slat.first; // slat name
     auto PCBs = slat.second;        // PCB names vector
+    const Int_t nPCBs = PCBs.size();
 
-    cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
+    cout << "Slat " << name << " which has " << nPCBs << " PCBs" << endl;
 
     // create the slat volume assembly
     auto slatVol = new TGeoVolumeAssembly(name.data());
 
     // compute the slat center
-    Double_t center = SlatCenter(PCBs.size());
+    const Double_t center = (nPCBs % 2) ? (nPCBs / 2) * kGasLength : (nPCBs - 1) * kGasLength / 2;
 
     Double_t PCBlength;
     Int_t ivol = 0;
@@ -399,7 +379,7 @@ void CreateHalfChambers()
       new TGeoCombiTrans(Form("HalfCh%dposition", moduleID), halfCh["position"][0].GetDouble(),
                          halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(), halfChRot));
 
-    // if the dipole is present in the geometry, we place the station 3 half-chambers in it
+    // if the dipole is present in the geometry, we place the station 3 half-chambers in it (actually not working)
     if (gGeoManager->GetVolume("Dipole") && (nCh == 5 || nCh == 6)) {
       gGeoManager->GetTopVolume()
         ->GetNode(Form("%s_%d", name.data(), moduleID))
