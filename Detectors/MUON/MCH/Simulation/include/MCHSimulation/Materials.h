@@ -62,7 +62,7 @@ const float kStemax{ -1. }; // Maximum displacement for multiple scattering [cm]
 const float kDeemax{ -.3 }; // Maximum fractional energy loss, DLS
 const float kStmin{ -.8 };  // Minimum step due to continuous processes [cm]
 
-enum Medium { Vacuum, SlatGas, Carbon, Nomex, NomexBulk, Noryl, Copper, G10, Rohacell };
+enum Medium { Vacuum, SlatGas, Carbon, Nomex, NomexBulk, Noryl, Copper, G10, Rohacell, Glue };
 
 // Return a pointer to the mch medium number imed.
 // Throws an exception if imed is not within Medium enum

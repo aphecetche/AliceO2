@@ -142,6 +142,23 @@ void CreateRohacell(int fieldType, float maxField)
                            kDeemax, kEpsil, kStmin);
 }
 
+void CreateGlue(int fieldType, float maxField)
+{
+  // araldite 2011 (C10 H25 N3)
+  const int n = 3;
+  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen };
+  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen };
+  std::array<float, n> w{ 10., 25., 3. };
+  float d{ 1.066 };
+
+  int imat = autoIncrementedMaterialId();
+  // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
+  // that the total weight is equal to 1.
+  materialManager().Mixture(moduleName, imat, "Glue", a.data(), z.data(), d, -n, w.data());
+  materialManager().Medium(moduleName, Medium::Glue, "Glue", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+                           kEpsil, kStmin);
+}
+
 void CreateVacuum(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
@@ -178,6 +195,7 @@ void CreateSlatGeometryMaterials()
   impl::CreateCopper(fieldType, maxField);   // PCB and cable medium
   impl::CreateG10(fieldType, maxField);      // for insulating material
   impl::CreateRohacell(fieldType, maxField); // for horizontal border
+  impl::CreateGlue(fieldType, maxField);
 }
 
 } // namespace mch

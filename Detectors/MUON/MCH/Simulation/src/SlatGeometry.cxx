@@ -284,6 +284,26 @@ void CreateSupportPanels()
     supVol->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", iCh), nomexShape, assertMedium(Medium::Nomex)), iCh,
                     new TGeoTranslation(supLength / 2., 0., 0.));
 
+    // create the hole in the glue volume
+    auto glueHole = new TGeoTube(Form("GlueSupportPanelHoleCh%d", iCh), 0., radius, kGlueSupportWidth / 2.);
+
+    // create a box for the glue volume
+    auto glueBox =
+      new TGeoBBox(Form("GlueSupportPanelCh%dBox", iCh), supLength / 2., supHeight / 2., kGlueSupportWidth / 2.);
+
+    // change the glue volume shape by extracting the pipe shape
+    auto glueShape =
+      new TGeoCompositeShape(Form("GlueSupportPanelCh%dShape", iCh),
+                             Form("GlueSupportPanelCh%dBox-GlueSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+
+    // create the glue volume
+    auto glueVol = new TGeoVolume(Form("GlueSupportPanelCh%d", iCh), glueShape, assertMedium(Medium::Glue));
+
+    // place it on each side of the nomex volume
+    supVol->AddNode(glueVol, 1, new TGeoTranslation(supLength / 2., 0., (kNomexSupportWidth + kGlueSupportWidth) / 2.));
+    supVol->AddNode(glueVol, 2,
+                    new TGeoTranslation(supLength / 2., 0., -(kNomexSupportWidth + kGlueSupportWidth) / 2.));
+
     // create the hole in the carbon volume
     auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", iCh), 0., radius, kCarbonSupportWidth / 2.);
 
@@ -299,8 +319,7 @@ void CreateSupportPanels()
     // create the carbon volume
     auto carbonVol = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
 
-    // place it on each side of the nomex volume (since there should be a glue layer between the carbon and the nomex,
-    // there is nothing for the moment (vacuum))
+    // place it on each side of the glue volume
     supVol->AddNode(carbonVol, 1, new TGeoTranslation(supLength / 2., 0., (kSupportWidth - kCarbonSupportWidth) / 2.));
     supVol->AddNode(carbonVol, 2, new TGeoTranslation(supLength / 2., 0., -(kSupportWidth - kCarbonSupportWidth) / 2.));
 
