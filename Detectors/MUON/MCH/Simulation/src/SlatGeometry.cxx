@@ -1021,7 +1021,7 @@ const string jsonSlatDescription =
     {
       "name":"SC09I",
       "moduleID":12,
-      "position":[0.00, -0.1663, -1398.75],
+      "position":[0.00, -0.1663, -1398.85],
       "rotation":[90, 0, 90.794, 90, 0.794, 90],
       "nodes":[
         {
@@ -1108,7 +1108,7 @@ const string jsonSlatDescription =
     {
       "name":"SC09O",
       "moduleID":13,
-      "position":[0.00, -0.1663, -1414.25],
+      "position":[0.00, -0.1663, -1414.35],
       "rotation":[90, 0, 90.794, 90, 0.794, 90],
       "nodes":[
         {
@@ -1195,7 +1195,7 @@ const string jsonSlatDescription =
     {
       "name":"SC10I",
       "moduleID":14,
-      "position":[0.00, -0.1663, -1429.75],
+      "position":[0.00, -0.1663, -1429.85],
       "rotation":[90, 0, 90.794, 90, 0.794, 90],
       "nodes":[
         {
@@ -1282,7 +1282,7 @@ const string jsonSlatDescription =
     {
       "name":"SC10O",
       "moduleID":15,
-      "position":[0.00, -0.1663, -1445.25],
+      "position":[0.00, -0.1663, -1445.35],
       "rotation":[90, 0, 90.794, 90, 0.794, 90],
       "nodes":[
         {
