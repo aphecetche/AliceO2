@@ -29,62 +29,62 @@ namespace mch
 ///  Constants
 
 /// Gas
-const Double_t kGasLength = 40.;
-const Double_t kGasHeight = 40.;
-const Double_t kGasWidth = 2 * 0.25;
+const float kGasLength = 40.;
+const float kGasHeight = 40.;
+const float kGasWidth = 2 * 0.25;
 
 /// PCB
-const Double_t kPCBLength = kGasLength;
-const Double_t kShortPCBLength = 35.;
-const Double_t kPCBHeight = 58.;
-const Double_t kPCBWidth = 0.003; // according to AliRoot
+const float kPCBLength = kGasLength;
+const float kShortPCBLength = 35.;
+const float kPCBHeight = 58.;
+const float kPCBWidth = 0.003; // according to AliRoot
 
 /// Insulation (to be checked)
-const Double_t kInsuWidth = 0.022; // according to AliRoot (400 mum on construction plan ???)
+const float kInsuWidth = 0.022; // according to AliRoot (400 mum on construction plan ???)
 
 /// Glue
-const Double_t kGlueWidth = 0.004; // according to construction plan
+const float kGlueWidth = 0.004; // according to construction plan
 
 /// Bulk Nomex
-const Double_t kNomexBulkWidth = 0.025; // according to AliRoot and construction plan
+const float kNomexBulkWidth = 0.025; // according to AliRoot and construction plan
 
 /// Carbon fiber
-const Double_t kCarbonWidth = 0.02; // according to AliRoot and construction plan
+const float kCarbonWidth = 0.02; // according to AliRoot and construction plan
 
 /// Honeycomb Nomex
-const Double_t kNomexWidth = 0.8; // according to AliRoot and construction plan
+const float kNomexWidth = 0.8; // according to AliRoot and construction plan
 
 /// Spacers
 // Horizontal
-const Double_t kHoriSpacerLength = kPCBLength; // according to AliRoot
-const Double_t kHoriSpacerHeight = 1.95;       // according to AliRoot
-const Double_t kHoriSpacerWidth = kGasWidth;   // according to AliRoot
+const float kHoriSpacerLength = kPCBLength; // according to AliRoot
+const float kHoriSpacerHeight = 1.95;       // according to AliRoot
+const float kHoriSpacerWidth = kGasWidth;   // according to AliRoot
 // Vertical
-const Double_t kVertSpacerLength = 2.5;
-const Double_t kVertSpacerWidth = kGasWidth; // according to AliRoot
-const Double_t kVertSpacerHeight = kGasLength + kHoriSpacerHeight;
+const float kVertSpacerLength = 2.5;
+const float kVertSpacerWidth = kGasWidth; // according to AliRoot
+const float kVertSpacerHeight = kGasLength + kHoriSpacerHeight;
 
-const Double_t kVertFrameLength = 2.; // space between a rounded PCB edge and the beam pipe ("dead zone")
+const float kVertFrameLength = 2.; // space between a rounded PCB edge and the beam pipe ("dead zone")
 
 // Support panels (to be checked !!!)
-const Double_t kCarbonSupportWidth = 0.03;
-const Double_t kGlueSupportWidth = 0.02; // changed w.r.t AliRoot to match the construction plans
-const Double_t kNomexSupportWidth = 1.7; // changed w.r.t AliRoot to match the construction plans
-const Double_t kSupportWidth = 2 * (kCarbonSupportWidth + kGlueSupportWidth) + kNomexSupportWidth;
-const Double_t kSupportHeightSt3 = 361.;
-const Double_t kSupportHeightSt4 = 530.;
-const Double_t kSupportHeightSt5 = 570.;
-const Double_t kSupportLengthCh5 = 162.;
-const Double_t kSupportLengthCh6 = 167.;
-const Double_t kSupportLengthSt45 = 260.;
+const float kCarbonSupportWidth = 0.03;
+const float kGlueSupportWidth = 0.02; // changed w.r.t AliRoot to match the construction plans
+const float kNomexSupportWidth = 1.7; // changed w.r.t AliRoot to match the construction plans
+const float kSupportWidth = 2 * (kCarbonSupportWidth + kGlueSupportWidth) + kNomexSupportWidth;
+const float kSupportHeightSt3 = 361.;
+const float kSupportHeightSt4 = 530.;
+const float kSupportHeightSt5 = 570.;
+const float kSupportLengthCh5 = 162.;
+const float kSupportLengthCh6 = 167.;
+const float kSupportLengthSt45 = 260.;
 
 // Inner radii
-const Double_t kRadSt3 = 29.5;
-const Double_t kRadSt45 = 37.5;
+const float kRadSt3 = 29.5;
+const float kRadSt45 = 37.5;
 
 // Y position of the rounded slats
-const Double_t kRoundedSlatYposSt3 = 37.8;
-const Double_t kRoundedSlatYposSt45 = 38.2;
+const float kRoundedSlatYposSt3 = 37.8;
+const float kRoundedSlatYposSt45 = 38.2;
 
 // PCB types
 const array<string, 10> kPcbTypes{ "B1N1", "B2N2-", "B2N2+", "B3-N3", "B3+N3", "R1", "R2", "R3", "S2-", "S2+" };

@@ -11,6 +11,8 @@
 #include <array>
 #include "MCHSimulation/Materials.h"
 
+using namespace std;
+
 namespace o2
 {
 namespace mch
@@ -29,10 +31,10 @@ void CreateSlatGas(int fieldType, float maxField)
 {
   // Ar 80% + CO2 20%
   const int n = 3;
-  std::array<float, n> a{ kAArgon, kACarbon, kAOxygen };
-  std::array<float, n> z{ kZArgon, kZCarbon, kZOxygen };
-  std::array<float, n> w{ 0.8, 1. / 15, 2. / 15 }; // Relative weight of each atom in the gas
-  float d{ 0.001821 };                             // according to AliRoot
+  array<float, n> a{ kAArgon, kACarbon, kAOxygen };
+  array<float, n> z{ kZArgon, kZCarbon, kZOxygen };
+  array<float, n> w{ 0.8, 1. / 15, 2. / 15 }; // Relative weight of each atom in the gas
+  float d{ 0.001821 };                        // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Ar 80% + CO2 20%", a.data(), z.data(), d, n, w.data());
@@ -53,9 +55,9 @@ void CreateNomex(int fieldType, float maxField)
 {
   // Nomex (honey comb) : C22 H10 N2 O5 (to be checked !!!)
   const int n = 4;
-  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
-  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 22., 10., 2., 5. };
+  array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
+  array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
+  array<float, n> w{ 22., 10., 2., 5. };
   float d{ 0.024 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -70,9 +72,9 @@ void CreateNomexBulk(int fieldType, float maxField)
 {
   // Nomex (bulk) : C22 H10 N2 O5 (to be checked !!!)
   const int n = 4;
-  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
-  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 22., 10., 2., 5. };
+  array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
+  array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
+  array<float, n> w{ 22., 10., 2., 5. };
   float d{ 1.43 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -87,9 +89,9 @@ void CreateNoryl(int fieldType, float maxField)
 {
   // Noryl: C8 H8 O polyphenylene oxyde (di-methyl not sure)
   const int n = 3;
-  std::array<float, n> a{ kACarbon, kAHydrogen, kAOxygen };
-  std::array<float, n> z{ kZCarbon, kZHydrogen, kZOxygen };
-  std::array<float, n> w{ 8., 8., 1. };
+  array<float, n> a{ kACarbon, kAHydrogen, kAOxygen };
+  array<float, n> z{ kZCarbon, kZHydrogen, kZOxygen };
+  array<float, n> w{ 8., 8., 1. };
   float d{ 1.06 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -112,10 +114,10 @@ void CreateG10(int fieldType, float maxField)
 {
   // G10: SiO2(60%) + C8H14O4(40%) -> weights to be checked !!!
   const int n = 5;
-  std::array<float, n> a{ kASilicon, kAOxygen, kACarbon, kAHydrogen, kAOxygen };
-  std::array<float, n> z{ kZSilicon, kZOxygen, kZCarbon, kZHydrogen, kZOxygen };
-  std::array<float, n> w{ 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom
-  float d{ 1.7 };                                                         // according to AliRoot
+  array<float, n> a{ kASilicon, kAOxygen, kACarbon, kAHydrogen, kAOxygen };
+  array<float, n> z{ kZSilicon, kZOxygen, kZCarbon, kZHydrogen, kZOxygen };
+  array<float, n> w{ 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom
+  float d{ 1.7 };                                                    // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so
@@ -129,9 +131,9 @@ void CreateRohacell(int fieldType, float maxField)
 {
   // rohacell: C9 H13 N1 O2
   const int n = 4;
-  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
-  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  std::array<float, n> w{ 9., 13., 1., 2. };
+  array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
+  array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
+  array<float, n> w{ 9., 13., 1., 2. };
   float d{ 0.03 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -146,9 +148,9 @@ void CreateGlue(int fieldType, float maxField)
 {
   // araldite 2011 (C10 H25 N3)
   const int n = 3;
-  std::array<float, n> a{ kACarbon, kAHydrogen, kANitrogen };
-  std::array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen };
-  std::array<float, n> w{ 10., 25., 3. };
+  array<float, n> a{ kACarbon, kAHydrogen, kANitrogen };
+  array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen };
+  array<float, n> w{ 10., 25., 3. };
   float d{ 1.066 };
 
   int imat = autoIncrementedMaterialId();
@@ -174,7 +176,7 @@ TGeoMedium* assertMedium(int imed)
 {
   auto med = materialManager().getTGeoMedium(impl::moduleName, imed);
   if (med == nullptr) {
-    throw std::runtime_error("Could not retrieve medium " + std::to_string(imed) + " for " + impl::moduleName);
+    throw runtime_error("Could not retrieve medium " + to_string(imed) + " for " + impl::moduleName);
   }
   return med;
 }

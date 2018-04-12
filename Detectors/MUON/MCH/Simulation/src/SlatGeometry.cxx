@@ -64,7 +64,7 @@ void CreateSlatGeometry()
 
   // create the different PCB types
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
-  for (auto pcb : kPcbTypes) { // loop over the PCB types of the array
+  for (const auto& pcb : kPcbTypes) { // loop over the PCB types of the array
 
     // create a PCB volume assembly according to its shape
     switch (pcb.front()) { // get the first character of the pcb type name
@@ -106,22 +106,22 @@ void CreateNormalPCB(const string name)
   cout << "PCB type " << name << endl;
 
   // get the number from the PCB type name -> important for this builder
-  const Int_t numb = name[1] - '0'; // char -> int conversion
+  const int numb = name[1] - '0'; // char -> int conversion
 
-  // get the pcb plate names and length
+  // get the pcb plate names
   string bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
   string nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
-  Double_t length = kPCBLength;
 
   // correct these values for shortened PCB
   if (name.front() == 'S') {
     bendName = Form("S2B%c", name.back());
     nonbendName = Form("S2N%c", name.back());
-    length = kShortPCBLength;
   }
 
+  const float length = (name.front() == 'S') ? kShortPCBLength : kPCBLength;
+
   auto pcb = new TGeoVolumeAssembly(name.data());
-  Double_t width = 0; // increment this value when adding a new layer
+  float width = 0; // increment this value when adding a new layer
 
   // place the gas
   width += kGasWidth;
@@ -199,15 +199,15 @@ void CreateRoundedPCB(const string name)
   cout << "PCB type " << name << endl;
 
   // get the number from the PCB type name
-  const Int_t numb = name.back() - '0'; // char -> int conversion
+  const int numb = name.back() - '0'; // char -> int conversion
 
   // LHC beam pipe radius ("R3" -> it is a slat of a station 4 or 5)
-  const Double_t radius = (numb == 3) ? kRadSt45 : kRadSt3;
+  const float radius = (numb == 3) ? kRadSt45 : kRadSt3;
   // compute the radius of curvature of the PCB we want to create
-  const Double_t curvRad = radius + kVertFrameLength;
+  const float curvRad = radius + kVertFrameLength;
 
   // y position of the PCB center w.r.t the beam pipe shape
-  Double_t ypos;
+  float ypos;
   switch (numb) {
     case 1:
       ypos = 0.; // central for "R1"
@@ -262,14 +262,15 @@ void CreateRoundedPCB(const string name)
 void CreateSlats()
 {
   /// Slat building function
+  /// The different PCB types must have been built before calling this function !!!
 
   cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
-  for (auto slat : kSlatTypes) {
+  for (const auto& slat : kSlatTypes) {
 
     const string name = slat.first; // slat name
-    auto PCBs = slat.second;        // PCB names vector
-    const Int_t nPCBs = PCBs.size();
+    const auto PCBs = slat.second;  // PCB names vector
+    const int nPCBs = PCBs.size();
 
     cout << "Slat " << name << " which has " << nPCBs << " PCBs" << endl;
 
@@ -277,13 +278,12 @@ void CreateSlats()
     auto slatVol = new TGeoVolumeAssembly(name.data());
 
     // compute the slat center
-    // const Double_t center = (nPCBs % 2) ? (nPCBs / 2) * kGasLength : (nPCBs - 1) * kGasLength / 2;
-    const Double_t center = (nPCBs - 1) * kGasLength / 2;
+    const float center = (nPCBs - 1) * kGasLength / 2;
 
-    Double_t PCBlength;
-    Int_t ivol = 0;
+    float PCBlength;
+    int ivol = 0;
     // loop over the number of PCBs in the current slat
-    for (auto pcb : PCBs) {
+    for (const auto& pcb : PCBs) {
 
       // if the PCB name starts with a "S", it is a shortened one
       PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
@@ -302,60 +302,61 @@ void CreateSupportPanels()
 {
   /// Function building the half-chamber support panels (one different per chamber)
 
-  for (Int_t iCh = 5; iCh <= 10; iCh++) {
+  for (int i = 5; i <= 10; i++) {
 
     // define the support panel volume
-    auto support = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", iCh));
+    auto support = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", i));
 
-    Double_t radius, length, height;
-    if (iCh <= 6) { // station 3 half-chambers
-      radius = kRadSt3;
+    float length, height;
+    if (i <= 6) { // station 3 half-chambers
       height = kSupportHeightSt3;
-      length = (iCh == 5) ? kSupportLengthCh5 : kSupportLengthCh6;
+      length = (i == 5) ? kSupportLengthCh5 : kSupportLengthCh6;
     } else { // station 4 or 5
-      radius = kRadSt45;
       length = kSupportLengthSt45;
-      height = (iCh <= 8) ? kSupportHeightSt4 : kSupportHeightSt5;
+      height = (i <= 8) ? kSupportHeightSt4 : kSupportHeightSt5;
     }
 
-    Double_t width = 0; // increment this value when adding a new layer
+    // LHC beam pipe radius at the given chamber z position
+    const float radius = (i <= 6) ? kRadSt3 : kRadSt45;
 
-    cout << "Support panel for the chamber " << iCh << " : radius = " << radius << ", length = " << length
+    float width = 0.; // increment this value when adding a new layer
+
+    cout << "Support panel for the chamber " << i << " : radius = " << radius << ", length = " << length
          << ", height = " << height << endl;
     // create the hole in the nomex volume
-    auto nomexHole = new TGeoTube(Form("NomexSupportPanelHoleCh%d", iCh), 0., radius, kNomexSupportWidth / 2.);
+    auto nomexHole = new TGeoTube(Form("NomexSupportPanelHoleCh%d", i), 0., radius, kNomexSupportWidth / 2.);
 
     // place this shape on the ALICE x=0 coordinate
-    auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", iCh), (-length + kVertSpacerLength) / 2., 0., 0.);
+    auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", i), (-length + kVertSpacerLength) / 2., 0., 0.);
     holeTrans->RegisterYourself();
 
     // create a box for the nomex volume
     auto nomexBox =
-      new TGeoBBox(Form("NomexSupportPanelCh%dBox", iCh), length / 2., height / 2., kNomexSupportWidth / 2.);
+      new TGeoBBox(Form("NomexSupportPanelCh%dBox", i), length / 2., height / 2., kNomexSupportWidth / 2.);
 
     // change the nomex volume shape by extracting the pipe shape
     auto nomexShape =
-      new TGeoCompositeShape(Form("NomexSupportPanelCh%dShape", iCh),
-                             Form("NomexSupportPanelCh%dBox-NomexSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+      new TGeoCompositeShape(Form("NomexSupportPanelCh%dShape", i),
+                             Form("NomexSupportPanelCh%dBox-NomexSupportPanelHoleCh%d:holeCh%dShift", i, i, i));
 
     // create the nomex volume and place it in the support panel
     width += kNomexSupportWidth;
-    support->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", iCh), nomexShape, assertMedium(Medium::Nomex)), iCh,
+    support->AddNode(new TGeoVolume(Form("NomexSupportPanelCh%d", i), nomexShape, assertMedium(Medium::Nomex)), i,
                      new TGeoTranslation(length / 2., 0., 0.));
 
     // create the hole in the glue volume
-    auto glueHole = new TGeoTube(Form("GlueSupportPanelHoleCh%d", iCh), 0., radius, kGlueSupportWidth / 2.);
+    auto glueHole = new TGeoTube(Form("GlueSupportPanelHoleCh%d", i), 0., radius, kGlueSupportWidth / 2.);
 
     // create a box for the glue volume
-    auto glueBox = new TGeoBBox(Form("GlueSupportPanelCh%dBox", iCh), length / 2., height / 2., kGlueSupportWidth / 2.);
+    auto glueBox = new TGeoBBox(Form("GlueSupportPanelCh%dBox", i), length / 2., height / 2., kGlueSupportWidth / 2.);
 
     // change the glue volume shape by extracting the pipe shape
     auto glueShape =
-      new TGeoCompositeShape(Form("GlueSupportPanelCh%dShape", iCh),
-                             Form("GlueSupportPanelCh%dBox-GlueSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+      new TGeoCompositeShape(Form("GlueSupportPanelCh%dShape", i),
+                             Form("GlueSupportPanelCh%dBox-GlueSupportPanelHoleCh%d:holeCh%dShift", i, i, i));
 
     // create the glue volume
-    auto glue = new TGeoVolume(Form("GlueSupportPanelCh%d", iCh), glueShape, assertMedium(Medium::Glue));
+    auto glue = new TGeoVolume(Form("GlueSupportPanelCh%d", i), glueShape, assertMedium(Medium::Glue));
 
     // place it on each side of the nomex volume
     width += kGlueSupportWidth;
@@ -363,19 +364,19 @@ void CreateSupportPanels()
     support->AddNode(glue, 2, new TGeoTranslation(length / 2., 0., -width / 2.));
 
     // create the hole in the carbon volume
-    auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", iCh), 0., radius, kCarbonSupportWidth / 2.);
+    auto carbonHole = new TGeoTube(Form("CarbonSupportPanelHoleCh%d", i), 0., radius, kCarbonSupportWidth / 2.);
 
     // create a box for the carbon volume
     auto carbonBox =
-      new TGeoBBox(Form("CarbonSupportPanelCh%dBox", iCh), length / 2., height / 2., kCarbonSupportWidth / 2.);
+      new TGeoBBox(Form("CarbonSupportPanelCh%dBox", i), length / 2., height / 2., kCarbonSupportWidth / 2.);
 
     // change the carbon volume shape by extracting the pipe shape
     auto carbonShape =
-      new TGeoCompositeShape(Form("CarbonSupportPanelCh%dShape", iCh),
-                             Form("CarbonSupportPanelCh%dBox-CarbonSupportPanelHoleCh%d:holeCh%dShift", iCh, iCh, iCh));
+      new TGeoCompositeShape(Form("CarbonSupportPanelCh%dShape", i),
+                             Form("CarbonSupportPanelCh%dBox-CarbonSupportPanelHoleCh%d:holeCh%dShift", i, i, i));
 
     // create the carbon volume
-    auto carbon = new TGeoVolume(Form("CarbonSupportPanelCh%d", iCh), carbonShape, assertMedium(Medium::Carbon));
+    auto carbon = new TGeoVolume(Form("CarbonSupportPanelCh%d", i), carbonShape, assertMedium(Medium::Carbon));
 
     // place it on each side of the glue volume
     width += kCarbonSupportWidth;
@@ -402,16 +403,16 @@ void CreateHalfChambers()
   assert(hChs.IsArray());
 
   // loop over the objects (half-chambers) of the array
-  for (auto& halfCh : hChs.GetArray()) {
+  for (const auto& halfCh : hChs.GetArray()) {
     // check that "halfCh" is an object
     if (!halfCh.IsObject())
       throw runtime_error("Can't create the half-chambers : wrong Value input");
 
-    const Int_t moduleID = halfCh["moduleID"].GetInt();
+    const auto moduleID = halfCh["moduleID"].GetInt();
     const string name = halfCh["name"].GetString();
     // get the chamber number (if the chamber name has a '0' at the 3rd digit, take the number after; otherwise it's the
     // chamber 10)
-    const Int_t nCh = (name.find('0') == 2) ? name[3] - '0' /* char -> int conversion */ : 10;
+    const int nCh = (name.find('0') == 2) ? name[3] - '0' /* char -> int conversion */ : 10;
 
     cout << endl << "Creating half-chamber " << name << endl;
     auto halfChVol = new TGeoVolumeAssembly(name.data());
@@ -423,12 +424,12 @@ void CreateHalfChambers()
     halfChVol->AddNode(gGeoManager->GetVolume(Form("Ch%dSupportPanel", nCh)), moduleID, supRot);
 
     // place the slat volumes on the different nodes of the half-chamber
-    for (auto& slat : halfCh["nodes"].GetArray()) {
+    for (const auto& slat : halfCh["nodes"].GetArray()) {
       // check that "slat" is an object
       if (!slat.IsObject())
         throw runtime_error("Can't create the slat : wrong Value input");
 
-      const Int_t detID = slat["detID"].GetInt();
+      const auto detID = slat["detID"].GetInt();
 
       cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
 
