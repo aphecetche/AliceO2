@@ -115,20 +115,69 @@ void CreateNormalPCB(const string name)
   }
 
   auto pcb = new TGeoVolumeAssembly(name.data());
+  Double_t width = 0; // increment this value when adding a new layer
 
   // place the gas
+  width += kGasWidth;
   pcb->AddNode(gGeoManager->MakeBox(Form("Gas of %s", name.data()), assertMedium(Medium::SlatGas), pcbLength / 2.,
-                                    kGasHeight / 2., kGasWidth / 2.),
+                                    kGasHeight / 2., width / 2.),
                1);
 
+  // the pcb plates (bending and non-bending)
+  width += kPCBWidth;
   auto bend = gGeoManager->MakeBox(bendName.data(), assertMedium(Medium::Copper), pcbLength / 2., kPCBHeight / 2.,
                                    kPCBWidth / 2.);
-  bend->SetLineColor(kRed);
-  pcb->AddNode(bend, 2, new TGeoTranslation(0., 0., (kGasWidth + kPCBWidth) / 2.));
+  bend->SetLineColor(kRed); // visualisation help
+  pcb->AddNode(bend, 1, new TGeoTranslation(0., 0., width / 2.));
   auto nonbend = gGeoManager->MakeBox(nonbendName.data(), assertMedium(Medium::Copper), pcbLength / 2., kPCBHeight / 2.,
                                       kPCBWidth / 2.);
-  nonbend->SetLineColor(kGreen);
-  pcb->AddNode(nonbend, 3, new TGeoTranslation(0., 0., -(kGasWidth + kPCBWidth) / 2.));
+  nonbend->SetLineColor(kGreen); // visualisation help
+  pcb->AddNode(nonbend, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // the insulating material (G10)
+  auto insu = gGeoManager->MakeBox(Form("Insulation of %s", name.data()), assertMedium(Medium::G10), pcbLength / 2.,
+                                   kPCBHeight / 2., kInsuWidth / 2.);
+  width += kInsuWidth;
+  pcb->AddNode(insu, 1, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(insu, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // glue between insulation and a first layer of nomex (bulk)
+  auto glue = gGeoManager->MakeBox(Form("Glue of %s", name.data()), assertMedium(Medium::Glue), pcbLength / 2.,
+                                   kPCBHeight / 2., kGlueWidth / 2.);
+  width += kGlueWidth;
+  pcb->AddNode(glue, 1, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(glue, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // nomex bulk
+  auto nomexBulk = gGeoManager->MakeBox(Form("Nomex bulk of %s", name.data()), assertMedium(Medium::NomexBulk),
+                                        pcbLength / 2., kPCBHeight / 2., kNomexBulkWidth / 2.);
+  width += kNomexBulkWidth;
+  pcb->AddNode(nomexBulk, 1, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(nomexBulk, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // glue between nomex bulk and a first carbon fiber layer
+  width += kGlueWidth;
+  pcb->AddNode(glue, 3, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(glue, 4, new TGeoTranslation(0., 0., -width / 2.));
+
+  // first carbon fiber layer
+  auto carbon = gGeoManager->MakeBox(Form("Carbon fiber of %s", name.data()), assertMedium(Medium::Carbon),
+                                     pcbLength / 2., kPCBHeight / 2., kCarbonWidth / 2.);
+  width += kCarbonWidth;
+  pcb->AddNode(carbon, 1, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(carbon, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // honeycomb nomex
+  auto nomex = gGeoManager->MakeBox(Form("Nomex honeycomb of %s", name.data()), assertMedium(Medium::Nomex),
+                                    pcbLength / 2., kPCBHeight / 2., kNomexWidth / 2.);
+  width += kNomexWidth;
+  pcb->AddNode(nomex, 1, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(nomex, 2, new TGeoTranslation(0., 0., -width / 2.));
+
+  // second carbon fiber layer
+  width += kCarbonWidth;
+  pcb->AddNode(carbon, 3, new TGeoTranslation(0., 0., width / 2.));
+  pcb->AddNode(carbon, 4, new TGeoTranslation(0., 0., -width / 2.));
 }
 
 //______________________________________________________________________________
