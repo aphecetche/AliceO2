@@ -186,7 +186,7 @@ void CreateSlatGeometryMaterials()
   float maxField;                                               // maximum magnetic field value
   Base::Detector::initFieldTrackingParams(fieldType, maxField); // get the values
 
-  impl::CreateVacuum(fieldType, maxField); // necessary ?
+  // impl::CreateVacuum(fieldType, maxField); // necessary ? The stations are in another volume (cave)
   impl::CreateSlatGas(fieldType, maxField);
   impl::CreateCarbon(fieldType, maxField);
   impl::CreateNomex(fieldType, maxField);
