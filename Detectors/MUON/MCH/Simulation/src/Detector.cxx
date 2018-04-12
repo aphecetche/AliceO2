@@ -30,7 +30,7 @@ void Detector::defineSensitiveVolumes()
 
   for (const auto& volName : kPcbTypes) {
 
-    auto vol = gGeoManager->GetVolume(Form("Gas of %s", volName.data()));
+    auto vol = gGeoManager->GetVolume(Form("%s gas", volName.data()));
 
     if (!vol) {
       LOG(WARNING) << std::string("could not get expected volume ") + std::string(volName);

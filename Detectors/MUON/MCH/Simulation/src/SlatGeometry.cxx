@@ -277,7 +277,8 @@ void CreateSlats()
     auto slatVol = new TGeoVolumeAssembly(name.data());
 
     // compute the slat center
-    const Double_t center = (nPCBs % 2) ? (nPCBs / 2) * kGasLength : (nPCBs - 1) * kGasLength / 2;
+    // const Double_t center = (nPCBs % 2) ? (nPCBs / 2) * kGasLength : (nPCBs - 1) * kGasLength / 2;
+    const Double_t center = (nPCBs - 1) * kGasLength / 2;
 
     Double_t PCBlength;
     Int_t ivol = 0;
