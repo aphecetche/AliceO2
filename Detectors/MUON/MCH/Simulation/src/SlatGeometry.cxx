@@ -196,8 +196,9 @@ void CreatePCBs()
 
       auto nomexBulkHole =
         new TGeoTubeSeg(Form("NomexBulkHoleR%.1f", curvRad), 0., curvRad, kNomexBulkWidth / 2., -90., 90.);
-      nomexBulk->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fNomexBulkShape", curvRad, ypos),
-                                                 Form("NomexBulkBox-GasHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
+      nomexBulk->SetShape(
+        new TGeoCompositeShape(Form("R%.1fY%.1fNomexBulkShape", curvRad, ypos),
+                               Form("NomexBulkBox-NomexBulkHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
 
       auto carbonHole = new TGeoTubeSeg(Form("CarbonHoleR%.1f", curvRad), 0., curvRad, kCarbonWidth / 2., -90., 90.);
       carbon->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fCarbonShape", curvRad, ypos),
