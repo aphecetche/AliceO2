@@ -94,6 +94,7 @@ void CreatePCBs()
   for (const auto& name : kPcbTypes) { // loop over the PCB types of the array
 
     cout << "PCB type " << name << endl;
+    auto pcb = new TGeoVolumeAssembly(name.data());
 
     // common length for each layer
     length = kPCBLength;
@@ -209,8 +210,7 @@ void CreatePCBs()
                                              Form("NomexBox-NomexHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
     }
 
-    // place all the layers in an assembly
-    auto pcb = new TGeoVolumeAssembly(name.data());
+    // place all the layers in the pcb volume assembly
 
     float width = kGasWidth; // increment this value when adding a new layer
     pcb->AddNode(gas, 1);
