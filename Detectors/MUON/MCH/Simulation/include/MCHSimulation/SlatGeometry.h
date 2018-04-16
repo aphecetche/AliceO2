@@ -75,7 +75,7 @@ const float kVertFrameLength = 2.; // space between a rounded PCB edge and the b
 // Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
 const float kGlueSupportWidth = 0.02; // changed w.r.t AliRoot to match the construction plans
-const float kNomexSupportWidth = 1.7; // changed w.r.t AliRoot to match the construction plans
+const float kNomexSupportWidth = 1.5;
 const float kSupportWidth = 2 * (kCarbonSupportWidth + kGlueSupportWidth) + kNomexSupportWidth;
 const float kSupportHeightSt3 = 361.;
 const float kSupportHeightSt4 = 530.;
