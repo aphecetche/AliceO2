@@ -78,8 +78,7 @@ void CreatePCBs()
 {
   /// Build the different PCB types
 
-  /// A PCB is a pile-up of several material layers, from in to out : sensitive gas, pcb plate, insulation, glue, bulk
-  /// nomex, glue, carbon fiber, honeycomb nomex and another carbon fiber layer
+  /// A PCB is a pile-up of several material layers, from in to out : sensitive gas, pcb plate and insulation
   /// There are two types of pcb plates : a "bending" and a "non-bending" one. We build the PCB volume such that the
   /// bending side faces the IP (z>0). When placing the slat on the half-chambers, the builder grabs the rotation to
   /// apply from the JSON. By doing so, we make sure that we match the mapping convention
@@ -134,22 +133,6 @@ void CreatePCBs()
     auto insu =
       new TGeoVolume(Form("%s insulation", name.data()),
                      new TGeoBBox("InsuBox", length / 2., height / 2., kInsuWidth / 2.), assertMedium(Medium::G10));
-    // glue
-    auto glue =
-      new TGeoVolume(Form("%s glue", name.data()), new TGeoBBox("GlueBox", length / 2., height / 2., kGlueWidth / 2.),
-                     assertMedium(Medium::Glue));
-    // nomex (bulk)
-    auto nomexBulk = new TGeoVolume(Form("%s nomex (bulk)", name.data()),
-                                    new TGeoBBox("NomexBulkBox", length / 2., height / 2., kNomexBulkWidth / 2.),
-                                    assertMedium(Medium::NomexBulk));
-    // carbon fiber
-    auto carbon = new TGeoVolume(Form("%s carbon fiber", name.data()),
-                                 new TGeoBBox("CarbonBox", length / 2., height / 2., kCarbonWidth / 2.),
-                                 assertMedium(Medium::Carbon));
-    // nomex (honeycomb)
-    auto nomex =
-      new TGeoVolume(Form("%s nomex (honeycomb)", name.data()),
-                     new TGeoBBox("NomexBox", length / 2., height / 2., kNomexWidth / 2.), assertMedium(Medium::Nomex));
 
     // change the volume shape if we are creating a rounded PCB
     if (name.front() == 'R') {
@@ -190,24 +173,6 @@ void CreatePCBs()
       auto insuHole = new TGeoTubeSeg(Form("InsuHoleR%.1f", curvRad), 0., curvRad, kInsuWidth / 2., -90., 90.);
       insu->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fInsuShape", curvRad, ypos),
                                             Form("InsuBox-InsuHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
-
-      auto glueHole = new TGeoTubeSeg(Form("GlueHoleR%.1f", curvRad), 0., curvRad, kGlueWidth / 2., -90., 90.);
-      glue->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fGlueShape", curvRad, ypos),
-                                            Form("GlueBox-GlueHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
-
-      auto nomexBulkHole =
-        new TGeoTubeSeg(Form("NomexBulkHoleR%.1f", curvRad), 0., curvRad, kNomexBulkWidth / 2., -90., 90.);
-      nomexBulk->SetShape(
-        new TGeoCompositeShape(Form("R%.1fY%.1fNomexBulkShape", curvRad, ypos),
-                               Form("NomexBulkBox-NomexBulkHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
-
-      auto carbonHole = new TGeoTubeSeg(Form("CarbonHoleR%.1f", curvRad), 0., curvRad, kCarbonWidth / 2., -90., 90.);
-      carbon->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fCarbonShape", curvRad, ypos),
-                                              Form("CarbonBox-CarbonHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
-
-      auto nomexHole = new TGeoTubeSeg(Form("NomexHoleR%.1f", curvRad), 0., curvRad, kNomexWidth / 2., -90., 90.);
-      nomex->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fNomexShape", curvRad, ypos),
-                                             Form("NomexBox-NomexHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
     }
 
     // place all the layers in the pcb volume assembly
@@ -222,30 +187,6 @@ void CreatePCBs()
     width += kInsuWidth;
     pcb->AddNode(insu, 1, new TGeoTranslation(0., 0., width / 2.));
     pcb->AddNode(insu, 2, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kGlueWidth;
-    pcb->AddNode(glue, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(glue, 2, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kNomexBulkWidth;
-    pcb->AddNode(nomexBulk, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(nomexBulk, 2, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kGlueWidth;
-    pcb->AddNode(glue, 3, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(glue, 4, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kCarbonWidth;
-    pcb->AddNode(carbon, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(carbon, 2, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kNomexWidth;
-    pcb->AddNode(nomex, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(nomex, 2, new TGeoTranslation(0., 0., -width / 2.));
-
-    width += kCarbonWidth;
-    pcb->AddNode(carbon, 3, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(carbon, 4, new TGeoTranslation(0., 0., -width / 2.));
   }
 }
 
@@ -257,16 +198,19 @@ void CreateSlats()
 
   cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
-  for (const auto& slat : kSlatTypes) {
+  for (const auto& slatType : kSlatTypes) {
 
-    const string name = slat.first; // slat name
-    const auto PCBs = slat.second;  // PCB names vector
+    const string typeName = slatType.first;   // slat type name
+    auto name = (const char*)typeName.data(); // slat name (easier to name volumes)
+    const auto PCBs = slatType.second;        // PCB names vector
     const int nPCBs = PCBs.size();
 
     cout << "Slat " << name << " which has " << nPCBs << " PCBs" << endl;
 
     // create the slat volume assembly
-    auto slatVol = new TGeoVolumeAssembly(name.data());
+    auto slat = new TGeoVolumeAssembly(name);
+    const float height = kSlatPanelHeight;
+    float length = 0;
 
     // compute the slat center
     const float center = (nPCBs - 1) * kGasLength / 2;
@@ -278,14 +222,114 @@ void CreateSlats()
 
       // if the PCB name starts with a "S", it is a shortened one
       PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
-
-      // place the corresponding PCB volume in the slat
-      slatVol->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
-                       new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
-
+      length += PCBlength;
+      cout << pcb << " : " << ivol << ", length = " << length << endl;
+      // place the corresponding PCB volume in the slat and correct the origin of the slat
+      slat->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
+                    new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
       ivol++;
+
     } // end of the PCBs loop
-  }   // end of the slat loop
+
+    length += 2 * kVertSpacerLength;
+
+    // glue a slat panel on each side of the PCBs
+    auto panel = new TGeoVolumeAssembly(Form("%s panel", name));
+
+    // glue
+    auto glue = new TGeoVolume(Form("%s panel glue", name),
+                               new TGeoBBox(Form("%sGlueBox", name), length / 2., height / 2., kGlueWidth / 2.),
+                               assertMedium(Medium::Glue));
+
+    // nomex (bulk)
+    auto nomexBulk =
+      new TGeoVolume(Form("%s panel nomex (bulk)", name),
+                     new TGeoBBox(Form("%sNomexBulkBox", name), length / 2., height / 2., kNomexBulkWidth / 2.),
+                     assertMedium(Medium::NomexBulk));
+
+    // carbon fiber
+    auto carbon = new TGeoVolume(Form("%s panel carbon fiber", name),
+                                 new TGeoBBox(Form("%sCarbonBox", name), length / 2., height / 2., kCarbonWidth / 2.),
+                                 assertMedium(Medium::Carbon));
+    // nomex (honeycomb)
+    auto nomex = new TGeoVolume(Form("%s panel nomex (honeycomb)", name),
+                                new TGeoBBox(Form("%sNomexBox", name), length / 2., height / 2., kNomexWidth / 2.),
+                                assertMedium(Medium::Nomex));
+
+    // change the volume shape if we are creating a rounded slat
+    if (typeName.find('R') < typeName.size()) {
+
+      // LHC beam pipe radius ("NR3" -> it is a slat of a station 4 or 5)
+      const float radius = (typeName.back() == '3') ? kRadSt45 : kRadSt3;
+
+      // y position of the PCB center w.r.t the beam pipe shape
+      float ypos;
+      switch (typeName.back()) { // get the last character
+        case '1':
+          ypos = 0.; // central for "S(N)R1"
+          break;
+        case '2':
+          ypos = kRoundedSlatYposSt3; // "S(N)R2" -> station 3
+          break;
+        default:
+          ypos = kRoundedSlatYposSt45; // "NR3" -> station 4 or 5
+          break;
+      }
+
+      // create the pipe position
+      auto pipeShift =
+        new TGeoTranslation(Form("%sPanelHoleShift", name), -(length - kVertSpacerLength) / 2., -ypos, 0.);
+      pipeShift->RegisterYourself();
+
+      // for each volume, create a hole and change the volume shape by extracting the pipe shape
+
+      auto glueHole = new TGeoTube(Form("%sGlueHole", name), 0., radius, kGlueWidth / 2.);
+      glue->SetShape(new TGeoCompositeShape(Form("%sGlueShape", name),
+                                            Form("%sGlueBox-%sGlueHole:%sPanelHoleShift", name, name, name)));
+
+      auto nomexBulkHole = new TGeoTube(Form("%sNomexBulkHole", name), 0., radius, kNomexBulkWidth / 2.);
+      nomexBulk->SetShape(new TGeoCompositeShape(
+        Form("%sNomexBulkShape", name), Form("%sNomexBulkBox-%sNomexBulkHole:%sPanelHoleShift", name, name, name)));
+
+      auto carbonHole = new TGeoTube(Form("%sCarbonHole", name), 0., radius, kCarbonWidth / 2.);
+      carbon->SetShape(new TGeoCompositeShape(Form("%sCarbonShape", name),
+                                              Form("%sCarbonBox-%sCarbonHole:%sPanelHoleShift", name, name, name)));
+
+      auto nomexHole = new TGeoTube(Form("%sNomexHole", name), 0., radius, kNomexWidth / 2.);
+      nomex->SetShape(new TGeoCompositeShape(Form("%sNomexShape", name),
+                                             Form("%sNomexBox-%sNomexHole:%sPanelHoleShift", name, name, name)));
+    }
+
+    // place all the layers in the slat panel volume assembly
+    // be careful : the panel origin is on the glue edge !
+
+    float width = kGlueWidth; // increment this value when adding a new layer
+    panel->AddNode(glue, 1, new TGeoTranslation(0., 0., width / 2.));
+
+    panel->AddNode(nomexBulk, 1, new TGeoTranslation(0., 0., width + kNomexBulkWidth / 2.));
+    width += kNomexBulkWidth;
+
+    panel->AddNode(glue, 2, new TGeoTranslation(0., 0., width + kGlueWidth / 2.));
+    width += kGlueWidth;
+
+    panel->AddNode(carbon, 1, new TGeoTranslation(0., 0., width + kCarbonWidth / 2.));
+    width += kCarbonWidth;
+
+    panel->AddNode(nomex, 1, new TGeoTranslation(0., 0., width + kNomexWidth / 2.));
+    width += kNomexWidth;
+
+    panel->AddNode(carbon, 2, new TGeoTranslation(0., 0., width + kCarbonWidth / 2.));
+    width += kCarbonWidth;
+
+    // place the panel volume on each side of the slat volume assembly
+    // shift the slat panel if the slat contains a shortened PCB
+    const float shift = (typeName.find('S') < typeName.size()) ? -2.5 : 0.;
+
+    slat->AddNode(panel, 1, new TGeoTranslation(shift, 0., kTotalPCBWidth / 2.));
+    auto mirror = new TGeoRotation();
+    mirror->ReflectZ(true);
+    slat->AddNode(panel, 2, new TGeoCombiTrans(shift, 0., -kTotalPCBWidth / 2., mirror));
+  } // end of the slat loop
 }
 
 //______________________________________________________________________________

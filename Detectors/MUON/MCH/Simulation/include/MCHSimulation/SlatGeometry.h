@@ -42,6 +42,12 @@ const float kPCBWidth = 0.003; // according to AliRoot
 /// Insulation (to be checked)
 const float kInsuWidth = 0.022; // according to AliRoot (400 mum on construction plan ???)
 
+/// PCB volume (gas + 2*(pcb plate + insulation))
+const float kTotalPCBWidth = kGasWidth + 2 * (kPCBWidth + kInsuWidth);
+
+// Slat panel = honeycomb nomex + 2 carbon fiber skins
+const float kSlatPanelHeight = 42.5; // according to construction plan, its length depends on the number of PCBs
+
 /// Glue
 const float kGlueWidth = 0.004; // according to construction plan
 
