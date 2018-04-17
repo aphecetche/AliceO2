@@ -86,58 +86,64 @@ void CreatePCBs()
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
   const float height = kPCBHeight;
-  float gasLength, pcbLength, radius, curvRad, ypos;
+  float gasLength, pcbLength, radius, curvRad, ypos, pcbShift;
   int numb;
 
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
-  for (const auto& name : kPcbTypes) { // loop over the PCB types of the array
+  for (const auto& pcbType : kPcbTypes) { // loop over the PCB types of the array
+
+    auto name = (const char*)pcbType.data();
 
     cout << "PCB type " << name << endl;
-    auto pcb = new TGeoVolumeAssembly(name.data());
+    auto pcb = new TGeoVolumeAssembly(name);
 
     gasLength = kGasLength;
     pcbLength = kPCBLength;
 
-    numb = name[1] - '0'; // char -> int conversion
+    pcbShift = 0.;
+
+    numb = pcbType[1] - '0'; // char -> int conversion
 
     // change the variables according to the PCB shape if necessary
-    switch (name.front()) {
-      case 'R': // rounded
-        pcbLength = kRoundedPCBLength;
-        bendName = Form("%sB", name.data());
-        nonbendName = Form("%sN", name.data());
-        numb = name.back() - '0'; // char -> int conversion
+    switch (pcbType.front()) {
+      case 'R':                      // rounded
+        numb = pcbType.back() - '0'; // char -> int conversion
+        pcbLength = (numb == 1) ? kR1PCBLength : kRoundedPCBLength;
+        pcbShift = -(pcbLength - kPCBLength);
+        bendName = Form("%sB", name);
+        nonbendName = Form("%sN", name);
         break;
       case 'S': // shortened
         gasLength = kShortPCBLength;
         pcbLength = kShortPCBLength;
-        bendName = Form("S2B%c", name.back());
-        nonbendName = Form("S2N%c", name.back());
+        bendName = Form("S2B%c", pcbType.back());
+        nonbendName = Form("S2N%c", pcbType.back());
         break;
       default: // normal
-        bendName = (numb == 3) ? name.substr(0, 3) : name.substr(0, 2);
-        nonbendName = (numb == 3) ? name.substr(3) : name.substr(2);
+        bendName = (numb == 3) ? pcbType.substr(0, 3) : pcbType.substr(0, 2);
+        nonbendName = (numb == 3) ? pcbType.substr(3) : pcbType.substr(2);
     }
 
     // create the volume of each material (a box by default)
     // sensitive gas
-    auto gas = new TGeoVolume(Form("%s gas", name.data()),
-                              new TGeoBBox("GasBox", gasLength / 2., kGasHeight / 2., kGasWidth / 2.),
+    auto gas = new TGeoVolume(Form("%s gas", name),
+                              new TGeoBBox(Form("%sGasBox", name), gasLength / 2., kGasHeight / 2., kGasWidth / 2.),
                               assertMedium(Medium::SlatGas));
     // bending pcb plate
-    auto bend = new TGeoVolume(bendName.data(), new TGeoBBox("BendBox", pcbLength / 2., height / 2., kPCBWidth / 2.),
+    auto bend = new TGeoVolume(bendName.data(),
+                               new TGeoBBox(Form("%sBendBox", name), pcbLength / 2., height / 2., kPCBWidth / 2.),
                                assertMedium(Medium::Copper));
     // non-bending pcb plate
-    auto nonbend =
-      new TGeoVolume(nonbendName.data(), new TGeoBBox("NonBendBox", pcbLength / 2., height / 2., kPCBWidth / 2.),
-                     assertMedium(Medium::Copper));
+    auto nonbend = new TGeoVolume(nonbendName.data(),
+                                  new TGeoBBox(Form("%sNonBendBox", name), pcbLength / 2., height / 2., kPCBWidth / 2.),
+                                  assertMedium(Medium::Copper));
     // insulating material (G10)
-    auto insu =
-      new TGeoVolume(Form("%s insulation", name.data()),
-                     new TGeoBBox("InsuBox", pcbLength / 2., height / 2., kInsuWidth / 2.), assertMedium(Medium::G10));
+    auto insu = new TGeoVolume(Form("%s insulation", name),
+                               new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., height / 2., kInsuWidth / 2.),
+                               assertMedium(Medium::G10));
 
     // change the volume shape if we are creating a rounded PCB
-    if (name.front() == 'R') {
+    if (pcbType.front() == 'R') {
       // LHC beam pipe radius ("R3" -> it is a slat of a station 4 or 5)
       radius = (numb == 3) ? kRadSt45 : kRadSt3;
       // y position of the PCB center w.r.t the beam pipe shape
@@ -155,26 +161,30 @@ void CreatePCBs()
       // compute the radius of curvature of the PCB we want to create
       curvRad = radius + kVertFrameLength;
 
-      // create the pipe position
-      auto pipeShift = new TGeoTranslation(Form("holeY%.1fShift", ypos), -pcbLength / 2., -ypos, 0.);
-      pipeShift->RegisterYourself();
+      // create the relative pipe position
+      auto gasShift =
+        new TGeoTranslation(Form("GasHoleY%.1fShift", ypos), -(gasLength + kVertSpacerLength) / 2., -ypos, 0.);
+      gasShift->RegisterYourself();
+      auto PCBshift = new TGeoTranslation(Form("PCBholeY%.1fShift", ypos), -(pcbLength + pcbShift) / 2., -ypos, 0.);
+      PCBshift->RegisterYourself();
 
       // for each volume, create a hole and change the volume shape by extracting the pipe shape
       auto gasHole = new TGeoTubeSeg(Form("GasHoleR%.1f", curvRad), 0., curvRad, kGasWidth / 2., -90., 90.);
       gas->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fGasShape", curvRad, ypos),
-                                           Form("GasBox-GasHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
+                                           Form("%sGasBox-GasHoleR%.1f:GasHoleY%.1fShift", name, curvRad, ypos)));
 
       auto bendHole = new TGeoTubeSeg(Form("BendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
       bend->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fBendShape", curvRad, ypos),
-                                            Form("BendBox-BendHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
+                                            Form("%sBendBox-BendHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
       auto nonbendHole = new TGeoTubeSeg(Form("NonBendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
-      nonbend->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fNonBendShape", curvRad, ypos),
-                                               Form("NonBendBox-NonBendHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
+      nonbend->SetShape(
+        new TGeoCompositeShape(Form("R%.1fY%.1fNonBendShape", curvRad, ypos),
+                               Form("%sNonBendBox-NonBendHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
       auto insuHole = new TGeoTubeSeg(Form("InsuHoleR%.1f", curvRad), 0., curvRad, kInsuWidth / 2., -90., 90.);
       insu->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fInsuShape", curvRad, ypos),
-                                            Form("InsuBox-InsuHoleR%.1f:holeY%.1fShift", curvRad, ypos)));
+                                            Form("%sInsuBox-InsuHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
     }
 
     // place all the layers in the pcb volume assembly
@@ -183,12 +193,12 @@ void CreatePCBs()
     pcb->AddNode(gas, 1);
 
     width += kPCBWidth;
-    pcb->AddNode(bend, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(nonbend, 2, new TGeoTranslation(0., 0., -width / 2.));
+    pcb->AddNode(bend, 1, new TGeoTranslation(pcbShift / 2., 0., width / 2.));
+    pcb->AddNode(nonbend, 2, new TGeoTranslation(pcbShift / 2., 0., -width / 2.));
 
     width += kInsuWidth;
-    pcb->AddNode(insu, 1, new TGeoTranslation(0., 0., width / 2.));
-    pcb->AddNode(insu, 2, new TGeoTranslation(0., 0., -width / 2.));
+    pcb->AddNode(insu, 1, new TGeoTranslation(pcbShift / 2., 0., width / 2.));
+    pcb->AddNode(insu, 2, new TGeoTranslation(pcbShift / 2., 0., -width / 2.));
   }
 }
 
