@@ -36,6 +36,7 @@ const float kGasWidth = 2 * 0.25;
 /// PCB
 const float kPCBLength = kGasLength;
 const float kShortPCBLength = 35.;
+const float kRoundedPCBLength = 42.5;
 const float kPCBHeight = 58.;
 const float kPCBWidth = 0.003; // according to AliRoot
 

@@ -86,7 +86,7 @@ void CreatePCBs()
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
   const float height = kPCBHeight;
-  float length, radius, curvRad, ypos;
+  float gasLength, pcbLength, radius, curvRad, ypos;
   int numb;
 
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
@@ -95,20 +95,22 @@ void CreatePCBs()
     cout << "PCB type " << name << endl;
     auto pcb = new TGeoVolumeAssembly(name.data());
 
-    // common length for each layer
-    length = kPCBLength;
+    gasLength = kGasLength;
+    pcbLength = kPCBLength;
 
     numb = name[1] - '0'; // char -> int conversion
 
     // change the variables according to the PCB shape if necessary
     switch (name.front()) {
       case 'R': // rounded
+        pcbLength = kRoundedPCBLength;
         bendName = Form("%sB", name.data());
         nonbendName = Form("%sN", name.data());
         numb = name.back() - '0'; // char -> int conversion
         break;
       case 'S': // shortened
-        length = kShortPCBLength;
+        gasLength = kShortPCBLength;
+        pcbLength = kShortPCBLength;
         bendName = Form("S2B%c", name.back());
         nonbendName = Form("S2N%c", name.back());
         break;
@@ -119,20 +121,20 @@ void CreatePCBs()
 
     // create the volume of each material (a box by default)
     // sensitive gas
-    auto gas =
-      new TGeoVolume(Form("%s gas", name.data()), new TGeoBBox("GasBox", length / 2., kGasHeight / 2., kGasWidth / 2.),
-                     assertMedium(Medium::SlatGas));
+    auto gas = new TGeoVolume(Form("%s gas", name.data()),
+                              new TGeoBBox("GasBox", gasLength / 2., kGasHeight / 2., kGasWidth / 2.),
+                              assertMedium(Medium::SlatGas));
     // bending pcb plate
-    auto bend = new TGeoVolume(bendName.data(), new TGeoBBox("BendBox", length / 2., height / 2., kPCBWidth / 2.),
+    auto bend = new TGeoVolume(bendName.data(), new TGeoBBox("BendBox", pcbLength / 2., height / 2., kPCBWidth / 2.),
                                assertMedium(Medium::Copper));
     // non-bending pcb plate
     auto nonbend =
-      new TGeoVolume(nonbendName.data(), new TGeoBBox("NonBendBox", length / 2., height / 2., kPCBWidth / 2.),
+      new TGeoVolume(nonbendName.data(), new TGeoBBox("NonBendBox", pcbLength / 2., height / 2., kPCBWidth / 2.),
                      assertMedium(Medium::Copper));
     // insulating material (G10)
     auto insu =
       new TGeoVolume(Form("%s insulation", name.data()),
-                     new TGeoBBox("InsuBox", length / 2., height / 2., kInsuWidth / 2.), assertMedium(Medium::G10));
+                     new TGeoBBox("InsuBox", pcbLength / 2., height / 2., kInsuWidth / 2.), assertMedium(Medium::G10));
 
     // change the volume shape if we are creating a rounded PCB
     if (name.front() == 'R') {
@@ -154,7 +156,7 @@ void CreatePCBs()
       curvRad = radius + kVertFrameLength;
 
       // create the pipe position
-      auto pipeShift = new TGeoTranslation(Form("holeY%.1fShift", ypos), -(length + kVertSpacerLength) / 2., -ypos, 0.);
+      auto pipeShift = new TGeoTranslation(Form("holeY%.1fShift", ypos), -pcbLength / 2., -ypos, 0.);
       pipeShift->RegisterYourself();
 
       // for each volume, create a hole and change the volume shape by extracting the pipe shape
@@ -223,7 +225,7 @@ void CreateSlats()
       // if the PCB name starts with a "S", it is a shortened one
       PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
       length += PCBlength;
-      cout << pcb << " : " << ivol << ", length = " << length << endl;
+
       // place the corresponding PCB volume in the slat and correct the origin of the slat
       slat->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
                     new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
