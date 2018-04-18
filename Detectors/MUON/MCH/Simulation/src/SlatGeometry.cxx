@@ -86,7 +86,7 @@ void CreatePCBs()
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
   const float height = kPCBHeight;
-  float gasLength, pcbLength, radius, curvRad, ypos, pcbShift;
+  float gasLength, pcbLength, radius, curvRad, ypos, pcbShift, gasShift;
   int numb;
 
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
@@ -100,6 +100,7 @@ void CreatePCBs()
     gasLength = kGasLength;
     pcbLength = kPCBLength;
 
+    gasShift = 0.;
     pcbShift = 0.;
 
     numb = pcbType[1] - '0'; // char -> int conversion
@@ -108,7 +109,10 @@ void CreatePCBs()
     switch (pcbType.front()) {
       case 'R':                      // rounded
         numb = pcbType.back() - '0'; // char -> int conversion
+        if (numb == 1)
+          gasLength = kR1PCBLength;
         pcbLength = (numb == 1) ? kR1PCBLength : kRoundedPCBLength;
+        gasShift = -(gasLength - kGasLength);
         pcbShift = -(pcbLength - kPCBLength);
         bendName = Form("%sB", name);
         nonbendName = Form("%sN", name);
@@ -159,30 +163,31 @@ void CreatePCBs()
           break;
       }
       // compute the radius of curvature of the PCB we want to create
-      curvRad = radius + kVertFrameLength;
+      curvRad = radius + kRoundedSpacerLength;
 
       // create the relative pipe position
-      auto gasShift =
-        new TGeoTranslation(Form("GasHoleY%.1fShift", ypos), -(gasLength + kVertSpacerLength) / 2., -ypos, 0.);
-      gasShift->RegisterYourself();
-      auto PCBshift = new TGeoTranslation(Form("PCBholeY%.1fShift", ypos), -(pcbLength + pcbShift) / 2., -ypos, 0.);
-      PCBshift->RegisterYourself();
+      auto gasTrans = new TGeoTranslation(Form("GasHoleY%.1fShift", ypos),
+                                          -kRoundedPCBLength + (gasLength + kVertSpacerLength) / 2., -ypos, 0.);
+      gasTrans->RegisterYourself();
+      auto pcbTrans = new TGeoTranslation(Form("PCBholeY%.1fShift", ypos),
+                                          -kRoundedPCBLength + (pcbLength + kVertSpacerLength) / 2., -ypos, 0.);
+      pcbTrans->RegisterYourself();
 
       // for each volume, create a hole and change the volume shape by extracting the pipe shape
-      auto gasHole = new TGeoTubeSeg(Form("GasHoleR%.1f", curvRad), 0., curvRad, kGasWidth / 2., -90., 90.);
+      auto gasHole = new TGeoTube(Form("GasHoleR%.1f", curvRad), 0., curvRad, kGasWidth / 2);
       gas->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fGasShape", curvRad, ypos),
                                            Form("%sGasBox-GasHoleR%.1f:GasHoleY%.1fShift", name, curvRad, ypos)));
 
-      auto bendHole = new TGeoTubeSeg(Form("BendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
+      auto bendHole = new TGeoTube(Form("BendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2.);
       bend->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fBendShape", curvRad, ypos),
                                             Form("%sBendBox-BendHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
-      auto nonbendHole = new TGeoTubeSeg(Form("NonBendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2., -90., 90.);
+      auto nonbendHole = new TGeoTube(Form("NonBendHoleR%.1f", curvRad), 0., curvRad, kPCBWidth / 2.);
       nonbend->SetShape(
         new TGeoCompositeShape(Form("R%.1fY%.1fNonBendShape", curvRad, ypos),
                                Form("%sNonBendBox-NonBendHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
-      auto insuHole = new TGeoTubeSeg(Form("InsuHoleR%.1f", curvRad), 0., curvRad, kInsuWidth / 2., -90., 90.);
+      auto insuHole = new TGeoTube(Form("InsuHoleR%.1f", curvRad), 0., curvRad, kInsuWidth / 2.);
       insu->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fInsuShape", curvRad, ypos),
                                             Form("%sInsuBox-InsuHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
     }
@@ -190,7 +195,7 @@ void CreatePCBs()
     // place all the layers in the pcb volume assembly
 
     float width = kGasWidth; // increment this value when adding a new layer
-    pcb->AddNode(gas, 1);
+    pcb->AddNode(gas, 1, new TGeoTranslation(gasShift / 2., 0., 0.));
 
     width += kPCBWidth;
     pcb->AddNode(bend, 1, new TGeoTranslation(pcbShift / 2., 0., width / 2.));

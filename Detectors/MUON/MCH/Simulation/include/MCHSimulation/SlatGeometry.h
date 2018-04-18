@@ -72,7 +72,7 @@ const float kVertSpacerLength = 2.5;
 const float kVertSpacerWidth = kGasWidth; // according to AliRoot
 const float kVertSpacerHeight = kGasLength + kHoriSpacerHeight;
 
-const float kVertFrameLength = 2.; // space between a rounded PCB edge and the beam pipe ("dead zone")
+const float kRoundedSpacerLength = 2.;
 
 // Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
