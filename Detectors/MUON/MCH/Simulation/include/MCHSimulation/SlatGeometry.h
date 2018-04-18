@@ -64,9 +64,8 @@ const float kNomexWidth = 0.8; // according to AliRoot and construction plan
 
 /// Spacers
 // Horizontal
-const float kHoriSpacerLength = kPCBLength; // according to AliRoot
-const float kHoriSpacerHeight = 1.95;       // according to AliRoot
-const float kHoriSpacerWidth = kGasWidth;   // according to AliRoot
+const float kHoriSpacerHeight = 1.95;     // according to AliRoot
+const float kHoriSpacerWidth = kGasWidth; // according to AliRoot
 // Vertical
 const float kVertSpacerLength = 2.5;
 const float kVertSpacerWidth = kGasWidth; // according to AliRoot
@@ -76,7 +75,7 @@ const float kRoundedSpacerLength = 2.;
 
 // Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
-const float kGlueSupportWidth = 0.02; // changed w.r.t AliRoot to match the construction plans
+const float kGlueSupportWidth = 0.02; // added w.r.t AliRoot to match the construction plans
 const float kNomexSupportWidth = 1.5;
 const float kSupportWidth = 2 * (kCarbonSupportWidth + kGlueSupportWidth) + kNomexSupportWidth;
 const float kSupportHeightSt3 = 361.;

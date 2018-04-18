@@ -53,11 +53,11 @@ void CreateCarbon(int fieldType, float maxField)
 
 void CreateNomex(int fieldType, float maxField)
 {
-  // Nomex (honey comb) : C22 H10 N2 O5 (to be checked !!!)
+  // Nomex (honey comb) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
   array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  array<float, n> w{ 22., 10., 2., 5. };
+  array<float, n> w{ 14., 10., 2., 2. };
   float d{ 0.024 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -70,11 +70,11 @@ void CreateNomex(int fieldType, float maxField)
 
 void CreateNomexBulk(int fieldType, float maxField)
 {
-  // Nomex (bulk) : C22 H10 N2 O5 (to be checked !!!)
+  // Nomex (bulk) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
   array<float, n> a{ kACarbon, kAHydrogen, kANitrogen, kAOxygen };
   array<float, n> z{ kZCarbon, kZHydrogen, kZNitrogen, kZOxygen };
-  array<float, n> w{ 22., 10., 2., 5. };
+  array<float, n> w{ 14., 10., 2., 2. };
   float d{ 1.43 }; // according to AliRoot
 
   int imat = autoIncrementedMaterialId();
@@ -87,12 +87,12 @@ void CreateNomexBulk(int fieldType, float maxField)
 
 void CreateNoryl(int fieldType, float maxField)
 {
-  // Noryl: C8 H8 O polyphenylene oxyde (di-methyl not sure)
+  // Noryl 731 (ALICE-INT-2002-17) : C8 H8 O
   const int n = 3;
   array<float, n> a{ kACarbon, kAHydrogen, kAOxygen };
   array<float, n> z{ kZCarbon, kZHydrogen, kZOxygen };
   array<float, n> w{ 8., 8., 1. };
-  float d{ 1.06 }; // according to AliRoot
+  float d{ 1.06 };
 
   int imat = autoIncrementedMaterialId();
   // By giving a negative number of different atoms, it will compute itself the relative proportions of each atom so

@@ -146,6 +146,12 @@ void CreatePCBs()
                                new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., height / 2., kInsuWidth / 2.),
                                assertMedium(Medium::G10));
 
+    // horizontal spacer (noryl)
+    auto hori = new TGeoVolume(
+      Form("%s horizontal spacer", name),
+      new TGeoBBox(Form("%sHoriBox", name), pcbLength / 2., kHoriSpacerHeight / 2., kHoriSpacerWidth / 2.),
+      assertMedium(Medium::Noryl));
+
     // change the volume shape if we are creating a rounded PCB
     if (pcbType.front() == 'R') {
       // LHC beam pipe radius ("R3" -> it is a slat of a station 4 or 5)
