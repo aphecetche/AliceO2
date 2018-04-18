@@ -227,28 +227,46 @@ void CreateSlats()
     // create the slat volume assembly
     auto slat = new TGeoVolumeAssembly(name);
     const float height = kSlatPanelHeight;
-    float length = 0;
+    float length = 2 * kVertSpacerLength; // vertical spacers
+
+    float panelShift = 0;
 
     // compute the slat center
     const float center = (nPCBs - 1) * kGasLength / 2;
 
-    float PCBlength;
+    float PCBlength, gasLength;
     int ivol = 0;
     // loop over the number of PCBs in the current slat
     for (const auto& pcb : PCBs) {
 
-      // if the PCB name starts with a "S", it is a shortened one
-      PCBlength = (pcb.front() == 'S') ? kShortPCBLength : kPCBLength;
+      gasLength = kGasLength;
+
+      switch (pcb.front()) {
+        case 'R':
+          PCBlength = (pcb.back() == '1') ? kR1PCBLength : kRoundedPCBLength;
+          panelShift -= PCBlength - kRoundedPCBLength;
+          break;
+        case 'S':
+          PCBlength = kShortPCBLength;
+          gasLength = kShortPCBLength;
+          panelShift += PCBlength - kPCBLength;
+          break;
+        default:
+          PCBlength = kPCBLength;
+      }
+
       length += PCBlength;
 
       // place the corresponding PCB volume in the slat and correct the origin of the slat
       slat->AddNode(gGeoManager->GetVolume(pcb.data()), ivol + 1,
-                    new TGeoTranslation(ivol * kGasLength - 0.5 * (kPCBLength - PCBlength) - center, 0, 0));
+                    new TGeoTranslation(ivol * kPCBLength - 0.5 * (kPCBLength - gasLength) - center, 0, 0));
       ivol++;
 
     } // end of the PCBs loop
 
-    length += 2 * kVertSpacerLength;
+    // don't count the vertical spacer length twice in the case of rounded slat
+    if (typeName.find('R') < typeName.size())
+      length -= kVertSpacerLength;
 
     // glue a slat panel on each side of the PCBs
     auto panel = new TGeoVolumeAssembly(Form("%s panel", name));
@@ -279,11 +297,13 @@ void CreateSlats()
       // LHC beam pipe radius ("NR3" -> it is a slat of a station 4 or 5)
       const float radius = (typeName.back() == '3') ? kRadSt45 : kRadSt3;
 
-      // y position of the PCB center w.r.t the beam pipe shape
+      // position of the slat center w.r.t the beam pipe center
       float ypos;
+      float xpos = (length - kVertSpacerLength) / 2.;
       switch (typeName.back()) { // get the last character
         case '1':
           ypos = 0.; // central for "S(N)R1"
+          xpos = 2 * kPCBLength + (panelShift + kVertSpacerLength) / 2.;
           break;
         case '2':
           ypos = kRoundedSlatYposSt3; // "S(N)R2" -> station 3
@@ -294,8 +314,7 @@ void CreateSlats()
       }
 
       // create the pipe position
-      auto pipeShift =
-        new TGeoTranslation(Form("%sPanelHoleShift", name), -(length - kVertSpacerLength) / 2., -ypos, 0.);
+      auto pipeShift = new TGeoTranslation(Form("%sPanelHoleShift", name), -xpos, -ypos, 0.);
       pipeShift->RegisterYourself();
 
       // for each volume, create a hole and change the volume shape by extracting the pipe shape
@@ -339,13 +358,11 @@ void CreateSlats()
     width += kCarbonWidth;
 
     // place the panel volume on each side of the slat volume assembly
-    // shift the slat panel if the slat contains a shortened PCB
-    const float shift = (typeName.find('S') < typeName.size()) ? -2.5 : 0.;
 
-    slat->AddNode(panel, 1, new TGeoTranslation(shift, 0., kTotalPCBWidth / 2.));
+    slat->AddNode(panel, 1, new TGeoTranslation(panelShift / 2., 0., kTotalPCBWidth / 2.));
     auto mirror = new TGeoRotation();
     mirror->ReflectZ(true);
-    slat->AddNode(panel, 2, new TGeoCombiTrans(shift, 0., -kTotalPCBWidth / 2., mirror));
+    slat->AddNode(panel, 2, new TGeoCombiTrans(panelShift / 2., 0., -kTotalPCBWidth / 2., mirror));
   } // end of the slat loop
 }
 
