@@ -63,13 +63,11 @@ const float kCarbonWidth = 0.02; // according to AliRoot and construction plan
 const float kNomexWidth = 0.8; // according to AliRoot and construction plan
 
 /// Spacers
+const float kSpacerWidth = kGasWidth;
 // Horizontal
-const float kHoriSpacerHeight = 1.95;     // according to AliRoot
-const float kHoriSpacerWidth = kGasWidth; // according to AliRoot
+const float kHoriSpacerHeight = 1.95;
 // Vertical
 const float kVertSpacerLength = 2.5;
-const float kVertSpacerWidth = kGasWidth; // according to AliRoot
-const float kVertSpacerHeight = kGasLength + kHoriSpacerHeight;
 
 const float kRoundedSpacerLength = 2.;
 
