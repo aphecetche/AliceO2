@@ -343,7 +343,8 @@ void CreateSlats()
           ypos = 0.;
           xpos = 2 * kPCBLength + (panelShift + kVertSpacerLength) / 2.;
           xRoundedPos = kRoundedPCBLength + kPCBLength - kRoundedSpacerLength / 2.;
-          angMin = -TMath::RadToDeg() * TMath::ASin((kGasHeight / 2.) / radius);
+          angMin =
+            -TMath::RadToDeg() * TMath::ACos((kRoundedPCBLength - kR1PCBLength - kRoundedSpacerLength / 2.) / radius);
           angMax = -angMin;
           break;
         case '2': // "S(N)R2" -> station 3
@@ -359,7 +360,6 @@ void CreateSlats()
       }
 
       // create the rounded spacer
-      cout << endl << name << " : min = " << angMin << ", max = " << angMax << endl;
       auto rounded = gGeoManager->MakeTubs(Form("%s rounded spacer", name), assertMedium(Medium::Noryl), radius,
                                            radius + kRoundedSpacerLength, kSpacerWidth, angMin, angMax);
       slat->AddNode(rounded, 1, new TGeoTranslation(-xRoundedPos, -ypos, 0.));
