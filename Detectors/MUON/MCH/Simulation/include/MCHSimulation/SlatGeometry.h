@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file   SlatGeometry.h
-/// \brief  Implementation of the slat stations geometry
+/// \brief  Implementation of the slat-stations geometry
 /// \author Florian Damas <florian.damas@cern.ch>
 /// \date   22 mars 2018
 
@@ -41,13 +41,13 @@ const float kR1PCBLength = 19.25;
 const float kPCBHeight = 58.;
 const float kPCBWidth = 0.003; // according to AliRoot
 
-/// Insulation (to be checked)
+/// Insulator (to be checked)
 const float kInsuWidth = 0.022; // according to AliRoot (400 mum on construction plan ???)
 
-/// PCB volume (gas + 2*(pcb plate + insulation))
+/// PCB volume (gas + 2*(pcb plate + insulator))
 const float kTotalPCBWidth = kGasWidth + 2 * (kPCBWidth + kInsuWidth);
 
-// Slat panel = honeycomb nomex + 2 carbon fiber skins
+/// Slat panel = honeycomb nomex + 2 carbon fiber skins
 const float kSlatPanelHeight = 42.5; // according to construction plan, its length depends on the number of PCBs
 
 /// Glue
@@ -65,11 +65,11 @@ const float kNomexWidth = 0.8; // according to AliRoot and construction plan
 /// Spacers
 const float kSpacerWidth = kGasWidth;
 // Horizontal
-const float kHoriSpacerHeight = 1.95;
+const float kHoriSpacerHeight = 1.95; // according to AliRoot and construction plan
 // Vertical
-const float kVertSpacerLength = 2.5;
+const float kVertSpacerLength = 2.5; // according to AliRoot and construction plan
 
-const float kRoundedSpacerLength = 2.;
+const float kRoundedSpacerLength = 2.; // according to AliRoot and construction plan
 
 // Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
