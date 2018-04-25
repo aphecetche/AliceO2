@@ -42,6 +42,8 @@ namespace o2
 namespace mch
 {
 
+void CreateCommonVolumes();
+
 void CreatePCBs();
 
 void CreateSlats();
@@ -61,10 +63,8 @@ void CreateSlatGeometry()
 
   materialManager().printMaterials();
 
-  // create the right vertical spacer (identical for any slat)
-  new TGeoVolume("Right vertical spacer",
-                 new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.),
-                 assertMedium(Medium::Noryl));
+  // create the identical volumes shared by many elements
+  CreateCommonVolumes();
 
   // create the different PCB types
   CreatePCBs();
@@ -77,6 +77,17 @@ void CreateSlatGeometry()
 
   // create and place the half-chambers in the top volume
   CreateHalfChambers();
+}
+
+//______________________________________________________________________________
+void CreateCommonVolumes()
+{
+  /// Build the identical volumes (constant shapes, dimensions, ...) shared by many elements
+
+  // the right vertical spacer (identical to any slat)
+  new TGeoVolume("Right vertical spacer",
+                 new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.),
+                 assertMedium(Medium::Noryl));
 }
 
 //______________________________________________________________________________
