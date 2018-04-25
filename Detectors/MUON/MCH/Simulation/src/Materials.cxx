@@ -177,11 +177,13 @@ TGeoMedium* assertMedium(int imed)
 void CreateSlatGeometryMaterials()
 {
 
-  int fieldType;                                                // magnetic field type
-  float maxField;                                               // maximum magnetic field value
+  /// Magnetic field values
+  int fieldType;  // magnetic field type
+  float maxField; // maximum magnetic field value
+
   Base::Detector::initFieldTrackingParams(fieldType, maxField); // get the values
 
-  // define these values as constants
+  // define these values as constants for the medium definitions
   const int kFieldType = fieldType;
   const float kMaxField = maxField;
 

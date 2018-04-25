@@ -16,11 +16,12 @@
 #ifndef O2_MCH_SIMULATION_SLATMATERIALS_H
 #define O2_MCH_SIMULATION_SLATMATERIALS_H
 
-#include "DetectorsBase/MaterialManager.h"
 #include "DetectorsBase/Detector.h" // for the magnetic field
+#include "DetectorsBase/MaterialManager.h"
 
 namespace o2
 {
+
 namespace mch
 {
 

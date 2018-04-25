@@ -21,7 +21,7 @@
 #include "TGeoTube.h"
 #include "TGeoVolume.h"
 #include "TMath.h"
-#include "TROOT.h"
+//#include "TROOT.h"
 #include "TSystem.h"
 
 #include <string>
@@ -91,9 +91,9 @@ void CreateCommonVolumes()
                  new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.), noryl);
 
   // the top spacers : 4 lengths possible according to the PCB shape
-  const float lengths[4] = { kShortPCBLength, kPCBLength, kR1kR1PCBLength, kRoundedPCBLength };
+  const float lengths[4] = { kShortPCBLength, kPCBLength, kR1PCBLength, kRoundedPCBLength };
   for (int i = 0; i < 4; i++)
-    new TGeoVolume(Form("Top spacer %.2f long", lenghts[i]),
+    new TGeoVolume(Form("Top spacer %.2f long", lengths[i]),
                    new TGeoBBox(lengths[i] / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.), noryl);
 }
 
