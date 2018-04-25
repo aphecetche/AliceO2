@@ -84,10 +84,17 @@ void CreateCommonVolumes()
 {
   /// Build the identical volumes (constant shapes, dimensions, ...) shared by many elements
 
+  auto noryl = assertMedium(Medium::Noryl);
+
   // the right vertical spacer (identical to any slat)
   new TGeoVolume("Right vertical spacer",
-                 new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.),
-                 assertMedium(Medium::Noryl));
+                 new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.), noryl);
+
+  // the top spacers : 4 lengths possible according to the PCB shape
+  const float lengths[4] = { kShortPCBLength, kPCBLength, kR1kR1PCBLength, kRoundedPCBLength };
+  for (int i = 0; i < 4; i++)
+    new TGeoVolume(Form("Top spacer %.2f long", lenghts[i]),
+                   new TGeoBBox(lengths[i] / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.), noryl);
 }
 
 //______________________________________________________________________________
@@ -164,8 +171,6 @@ void CreatePCBs()
                                assertMedium(Medium::G10));
 
     // horizontal spacers (noryl)
-    auto top = gGeoManager->MakeBox(Form("%s top spacer", name), assertMedium(Medium::Noryl), pcbLength / 2.,
-                                    kHoriSpacerHeight / 2., kSpacerWidth / 2.);
     auto bottom = new TGeoVolume(
       Form("%s bottom spacer", name),
       new TGeoBBox(Form("%sBottomSpacerBox", name), pcbLength / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.),
@@ -239,7 +244,8 @@ void CreatePCBs()
     pcb->AddNode(insu, 1, new TGeoTranslation(pcbShift / 2., 0., width / 2.));
     pcb->AddNode(insu, 2, new TGeoTranslation(pcbShift / 2., 0., -width / 2.));
 
-    pcb->AddNode(top, 1, new TGeoTranslation(pcbShift / 2., (kGasHeight + kHoriSpacerHeight) / 2., 0.));
+    pcb->AddNode(gGeoManager->GetVolume(Form("Top spacer %.2f long", pcbLength)), 1,
+                 new TGeoTranslation(pcbShift / 2., (kGasHeight + kHoriSpacerHeight) / 2., 0.));
     pcb->AddNode(bottom, 1, new TGeoTranslation(pcbShift / 2., -(kGasHeight + kHoriSpacerHeight) / 2., 0.));
   }
 }
