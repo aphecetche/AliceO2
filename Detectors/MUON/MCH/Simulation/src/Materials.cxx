@@ -8,6 +8,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file   Materials.h
+/// \brief  Implementation of the MCH materials definitions
+/// \author Florian Damas <florian.damas@cern.ch>
+/// \date   22 mars 2018
+
 #include "MCHSimulation/Materials.h"
 
 using namespace std;
@@ -26,7 +31,7 @@ int autoIncrementedMaterialId()
   return ++nmat;
 }
 
-void CreateSlatGas(int fieldType, float maxField)
+void CreateSlatGas()
 {
   // Ar 80% + CO2 20%
   const int n = 3;
@@ -37,20 +42,20 @@ void CreateSlatGas(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Ar 80% + CO2 20%", a, z, d, n, w);
-  materialManager().Medium(moduleName, Medium::SlatGas, "Ar 80% + CO2 20%", imat, 1, fieldType, maxField, kMaxfd,
+  materialManager().Medium(moduleName, Medium::SlatGas, "Ar 80% + CO2 20%", imat, 1, kFieldType, kMaxField, kMaxfd,
                            kStemax, kDeemax, kEpsil, kStmin);
 }
 
-void CreateCarbon(int fieldType, float maxField)
+void CreateCarbon()
 {
-  // for support panel and slat panel
+  // for panels
   int imat = autoIncrementedMaterialId();
   materialManager().Material(moduleName, imat, "Carbon", kACarbon, kZCarbon, kDensCarbon, 0., 0.);
-  materialManager().Medium(moduleName, Medium::Carbon, "Carbon", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
-                           kEpsil, kStmin);
+  materialManager().Medium(moduleName, Medium::Carbon, "Carbon", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax,
+                           kDeemax, kEpsil, kStmin);
 }
 
-void CreateNomex(int fieldType, float maxField)
+void CreateNomex()
 {
   // Nomex (honey comb) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
@@ -61,11 +66,11 @@ void CreateNomex(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Nomex", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::Nomex, "Nomex", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::Nomex, "Nomex", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
-void CreateNomexBulk(int fieldType, float maxField)
+void CreateNomexBulk()
 {
   // Nomex (bulk) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
@@ -76,11 +81,11 @@ void CreateNomexBulk(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "NomexBulk", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::NomexBulk, "NomexBulk", imat, 0, fieldType, maxField, kMaxfd, kStemax,
+  materialManager().Medium(moduleName, Medium::NomexBulk, "NomexBulk", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax,
                            kDeemax, kEpsil, kStmin);
 }
 
-void CreateNoryl(int fieldType, float maxField)
+void CreateNoryl()
 {
   // Noryl 731 (ALICE-INT-2002-17) : C8 H8 O
   const int n = 3;
@@ -91,19 +96,20 @@ void CreateNoryl(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Noryl", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::Noryl, "Noryl", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
-void CreateCopper(int fieldType, float maxField)
+void CreateCopper()
 {
+  // for pcb's
   int imat = autoIncrementedMaterialId();
   materialManager().Material(moduleName, imat, "Copper", kACopper, kZCopper, kDensCopper, 0., 0.);
-  materialManager().Medium(moduleName, Medium::Copper, "Copper", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
-                           kEpsil, kStmin);
+  materialManager().Medium(moduleName, Medium::Copper, "Copper", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax,
+                           kDeemax, kEpsil, kStmin);
 }
 
-void CreateG10(int fieldType, float maxField)
+void CreateG10()
 {
   // G10: SiO2(60%) + C8H14O4(40%) -> weights to be checked !!!
   const int n = 5;
@@ -114,11 +120,11 @@ void CreateG10(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "G10", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::G10, "G10", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::G10, "G10", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
-void CreateRohacell(int fieldType, float maxField)
+void CreateRohacell()
 {
   // rohacell: C9 H13 N1 O2
   const int n = 4;
@@ -129,13 +135,13 @@ void CreateRohacell(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Rohacell", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::Rohacell, "Rohacell", imat, 0, fieldType, maxField, kMaxfd, kStemax,
+  materialManager().Medium(moduleName, Medium::Rohacell, "Rohacell", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax,
                            kDeemax, kEpsil, kStmin);
 }
 
-void CreateGlue(int fieldType, float maxField)
+void CreateGlue()
 {
-  // araldite 2011 : C10 H25 N3
+  // araldite 2011 (ALICE-INT-2002-17) : C10 H25 N3
   const int n = 3;
   float a[n] = { kACarbon, kAHydrogen, kANitrogen };
   float z[n] = { kZCarbon, kZHydrogen, kZNitrogen };
@@ -144,15 +150,15 @@ void CreateGlue(int fieldType, float maxField)
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "Glue", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::Glue, "Glue", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Medium(moduleName, Medium::Glue, "Glue", imat, 0, kFieldType, kMaxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
-void CreateVacuum(int fieldType, float maxField)
+void CreateVacuum()
 {
   int imat = autoIncrementedMaterialId();
   materialManager().Material(moduleName, imat, "Vacuum", 0, 0, 0, 0, 0, 0);
-  materialManager().Medium(moduleName, Medium::Vacuum, "Vacuum", imat, 0, fieldType, maxField, -1, -1, -1, -1, -1);
+  materialManager().Medium(moduleName, Medium::Vacuum, "Vacuum", imat, 0, kFieldType, kMaxField, -1, -1, -1, -1, -1);
 }
 
 } // namespace impl
@@ -175,16 +181,20 @@ void CreateSlatGeometryMaterials()
   float maxField;                                               // maximum magnetic field value
   Base::Detector::initFieldTrackingParams(fieldType, maxField); // get the values
 
-  // impl::CreateVacuum(fieldType, maxField); // necessary ? The stations are in another volume (cave)
-  impl::CreateSlatGas(fieldType, maxField); // sensitive medium for tracking
-  impl::CreateCarbon(fieldType, maxField);
-  impl::CreateNomex(fieldType, maxField);
-  impl::CreateNomexBulk(fieldType, maxField);
-  impl::CreateNoryl(fieldType, maxField);    // spacers
-  impl::CreateCopper(fieldType, maxField);   // PCB and cable medium
-  impl::CreateG10(fieldType, maxField);      // insulator
-  impl::CreateRohacell(fieldType, maxField); // for horizontal border
-  impl::CreateGlue(fieldType, maxField);
+  // define these values as constants
+  const int kFieldType = fieldType;
+  const float kMaxField = maxField;
+
+  // impl::CreateVacuum(); // necessary ? The stations are in another volume (cave)
+  impl::CreateSlatGas(); // sensitive medium for tracking
+  impl::CreateCarbon();
+  impl::CreateNomex();
+  impl::CreateNomexBulk();
+  impl::CreateNoryl();    // spacers
+  impl::CreateCopper();   // PCB and cable medium
+  impl::CreateG10();      // insulator
+  impl::CreateRohacell(); // for horizontal border
+  impl::CreateGlue();
 }
 
 } // namespace mch

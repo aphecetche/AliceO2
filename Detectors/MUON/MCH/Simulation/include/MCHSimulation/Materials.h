@@ -8,6 +8,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file   Materials.h
+/// \brief  Implementation of the MCH materials definitions
+/// \author Florian Damas <florian.damas@cern.ch>
+/// \date   22 mars 2018
+
 #ifndef O2_MCH_SIMULATION_SLATMATERIALS_H
 #define O2_MCH_SIMULATION_SLATMATERIALS_H
 
