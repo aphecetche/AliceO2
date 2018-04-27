@@ -110,12 +110,12 @@ void createCopper(int fieldType, float maxField)
 
 void createG10(int fieldType, float maxField)
 {
-  // G10: SiO2(60%) + C8H14O4(40%) -> weights to be checked !!!
+  // G10: SiO2(60%) + C8H14O4(40%) -> will be changed to FR4 !
   const int n = 5;
   float a[n] = { kASilicon, kAOxygen, kACarbon, kAHydrogen, kAOxygen };
   float z[n] = { kZSilicon, kZOxygen, kZCarbon, kZHydrogen, kZOxygen };
   float w[n] = { 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom
-  float d = 1.7;                                                 // according to AliRoot
+  float d = 1.8;                                                 // changed w.r.t AliRoot after investigation
 
   int imat = autoIncrementedMaterialId();
   materialManager().Mixture(moduleName, imat, "G10", a, z, d, -n, w);

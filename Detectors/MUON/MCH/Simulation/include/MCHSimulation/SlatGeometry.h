@@ -39,10 +39,10 @@ const float kShortPCBLength = 35.;
 const float kRoundedPCBLength = 42.5;
 const float kR1PCBLength = 19.25;
 const float kPCBHeight = 58.;
-const float kPCBWidth = 0.003; // according to AliRoot
+const float kPCBWidth = 0.002; // changed w.r.t AliRoot after investigation
 
-/// Insulator (to be checked)
-const float kInsuWidth = 0.022; // according to AliRoot (400 mum on construction plan ???)
+/// Insulator (FR4)
+const float kInsuWidth = 0.04; // changed w.r.t AliRoot after investigation
 
 /// PCB volume (gas + 2*(pcb plate + insulator))
 const float kTotalPCBWidth = kGasWidth + 2 * (kPCBWidth + kInsuWidth);
