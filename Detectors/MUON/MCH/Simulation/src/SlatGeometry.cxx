@@ -21,7 +21,6 @@
 #include "TGeoTube.h"
 #include "TGeoVolume.h"
 #include "TMath.h"
-//#include "TROOT.h"
 #include "TSystem.h"
 
 #include <string>
@@ -42,45 +41,45 @@ namespace o2
 namespace mch
 {
 
-void CreateCommonVolumes();
+void createCommonVolumes();
 
-void CreatePCBs();
+void createPCBs();
 
-void CreateSlats();
+void createSlats();
 
-void CreateSupportPanels();
+void createSupportPanels();
 
-void CreateHalfChambers();
+void createHalfChambers();
 
 //______________________________________________________________________________
-void CreateSlatGeometry()
+void createSlatGeometry()
 {
   /// Main function which build and place the slats and the half-chambers volumes
   /// This function must me called by the MCH detector class to build the slat stations geometry.
 
   // create the necessary media
-  CreateSlatGeometryMaterials();
+  createSlatGeometryMaterials();
 
   materialManager().printMaterials();
 
   // create the identical volumes shared by many elements
-  CreateCommonVolumes();
+  createCommonVolumes();
 
   // create the different PCB types
-  CreatePCBs();
+  createPCBs();
 
   // create the support panels
-  CreateSupportPanels();
+  createSupportPanels();
 
   // create the different slat types
-  CreateSlats();
+  createSlats();
 
   // create and place the half-chambers in the top volume
-  CreateHalfChambers();
+  createHalfChambers();
 }
 
 //______________________________________________________________________________
-void CreateCommonVolumes()
+void createCommonVolumes()
 {
   /// Build the identical volumes (constant shapes, dimensions, ...) shared by many elements
 
@@ -98,7 +97,7 @@ void CreateCommonVolumes()
 }
 
 //______________________________________________________________________________
-void CreatePCBs()
+void createPCBs()
 {
   /// Build the different PCB types
 
@@ -251,7 +250,7 @@ void CreatePCBs()
 }
 
 //______________________________________________________________________________
-void CreateSlats()
+void createSlats()
 {
   /// Slat building function
   /// The different PCB types must have been built before calling this function !!!
@@ -452,7 +451,7 @@ void CreateSlats()
 }
 
 //______________________________________________________________________________
-void CreateSupportPanels()
+void createSupportPanels()
 {
   /// Function building the half-chamber support panels (one different per chamber)
 
@@ -538,7 +537,7 @@ void CreateSupportPanels()
 }
 
 //______________________________________________________________________________
-void CreateHalfChambers()
+void createHalfChambers()
 {
   /// Build the slat half-chambers
   /// The different slat types must have been built before calling this function !!!

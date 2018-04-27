@@ -77,7 +77,7 @@ TGeoMedium* assertMedium(int imed);
 
 o2::Base::MaterialManager& materialManager();
 
-void CreateSlatGeometryMaterials();
+void createSlatGeometryMaterials();
 
 } // namespace mch
 } // namespace o2

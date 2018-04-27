@@ -31,7 +31,7 @@ int autoIncrementedMaterialId()
   return ++nmat;
 }
 
-void CreateSlatGas(int fieldType, float maxField)
+void createSlatGas(int fieldType, float maxField)
 {
   // Ar 80% + CO2 20%
   const int n = 3;
@@ -46,7 +46,7 @@ void CreateSlatGas(int fieldType, float maxField)
                            kStemax, kDeemax, kEpsil, kStmin);
 }
 
-void CreateCarbon(int fieldType, float maxField)
+void createCarbon(int fieldType, float maxField)
 {
   // for support panel and slat panel
   int imat = autoIncrementedMaterialId();
@@ -55,7 +55,7 @@ void CreateCarbon(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateNomex(int fieldType, float maxField)
+void createNomex(int fieldType, float maxField)
 {
   // Nomex (honey comb) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
@@ -70,7 +70,7 @@ void CreateNomex(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateNomexBulk(int fieldType, float maxField)
+void createNomexBulk(int fieldType, float maxField)
 {
   // Nomex (bulk) : C14 H10 N2 O2 (changed w.r.t AliRoot)
   const int n = 4;
@@ -85,7 +85,7 @@ void CreateNomexBulk(int fieldType, float maxField)
                            kDeemax, kEpsil, kStmin);
 }
 
-void CreateNoryl(int fieldType, float maxField)
+void createNoryl(int fieldType, float maxField)
 {
   // Noryl 731 (ALICE-INT-2002-17) : C8 H8 O
   const int n = 3;
@@ -100,7 +100,7 @@ void CreateNoryl(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateCopper(int fieldType, float maxField)
+void createCopper(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
   materialManager().Material(moduleName, imat, "Copper", kACopper, kZCopper, kDensCopper, 0., 0.);
@@ -108,7 +108,7 @@ void CreateCopper(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateG10(int fieldType, float maxField)
+void createG10(int fieldType, float maxField)
 {
   // G10: SiO2(60%) + C8H14O4(40%) -> weights to be checked !!!
   const int n = 5;
@@ -123,7 +123,7 @@ void CreateG10(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateRohacell(int fieldType, float maxField)
+void createRohacell(int fieldType, float maxField)
 {
   // rohacell: C9 H13 N1 O2
   const int n = 4;
@@ -138,7 +138,7 @@ void CreateRohacell(int fieldType, float maxField)
                            kDeemax, kEpsil, kStmin);
 }
 
-void CreateGlue(int fieldType, float maxField)
+void createGlue(int fieldType, float maxField)
 {
   // araldite 2011 (ALICE-INT-2002-17) : C10 H25 N3
   const int n = 3;
@@ -153,7 +153,7 @@ void CreateGlue(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void CreateVacuum(int fieldType, float maxField)
+void createVacuum(int fieldType, float maxField)
 {
   int imat = autoIncrementedMaterialId();
   materialManager().Material(moduleName, imat, "Vacuum", 0, 0, 0, 0, 0, 0);
@@ -173,23 +173,23 @@ TGeoMedium* assertMedium(int imed)
   return med;
 }
 
-void CreateSlatGeometryMaterials()
+void createSlatGeometryMaterials()
 {
 
   int fieldType;                                                // magnetic field type
   float maxField;                                               // maximum magnetic field value
   Base::Detector::initFieldTrackingParams(fieldType, maxField); // get the values
 
-  // impl::CreateVacuum(fieldType, maxField); // necessary ? The stations are in another volume (cave)
-  impl::CreateSlatGas(fieldType, maxField); // sensitive medium for tracking
-  impl::CreateCarbon(fieldType, maxField);
-  impl::CreateNomex(fieldType, maxField);
-  impl::CreateNomexBulk(fieldType, maxField);
-  impl::CreateNoryl(fieldType, maxField);    // spacers
-  impl::CreateCopper(fieldType, maxField);   // PCB and cable medium
-  impl::CreateG10(fieldType, maxField);      // insulator
-  impl::CreateRohacell(fieldType, maxField); // for horizontal border
-  impl::CreateGlue(fieldType, maxField);
+  // impl::createVacuum(fieldType, maxField); // necessary ? The stations are in another volume (cave)
+  impl::createSlatGas(fieldType, maxField); // sensitive medium for tracking
+  impl::createCarbon(fieldType, maxField);
+  impl::createNomex(fieldType, maxField);
+  impl::createNomexBulk(fieldType, maxField);
+  impl::createNoryl(fieldType, maxField);    // spacers
+  impl::createCopper(fieldType, maxField);   // PCB and cable medium
+  impl::createG10(fieldType, maxField);      // insulator
+  impl::createRohacell(fieldType, maxField); // for horizontal border
+  impl::createGlue(fieldType, maxField);
 }
 
 } // namespace mch

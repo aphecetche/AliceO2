@@ -117,7 +117,7 @@ const map<string, vector<string>> kSlatTypes = { { "122000SR1", { "R1", "B1N1", 
                                                  { "333300N", { "B3+N3", "B3-N3", "B3-N3", "B3-N3" } } };
 
 extern const string jsonSlatDescription;
-void CreateSlatGeometry();
+void createSlatGeometry();
 } // namespace mch
 } // namespace o2
 #endif

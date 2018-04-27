@@ -46,7 +46,7 @@ void Detector::Initialize()
   o2::Base::Detector::Initialize();
 }
 
-void Detector::ConstructGeometry() { CreateSlatGeometry(); }
+void Detector::ConstructGeometry() { createSlatGeometry(); }
 
 Bool_t Detector::ProcessHits(FairVolume* v)
 {
