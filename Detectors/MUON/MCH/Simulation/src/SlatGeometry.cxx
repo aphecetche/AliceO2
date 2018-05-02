@@ -83,17 +83,16 @@ void createCommonVolumes()
 {
   /// Build the identical volumes (constant shapes, dimensions, ...) shared by many elements
 
-  auto noryl = assertMedium(Medium::Noryl);
-
   // the right vertical spacer (identical to any slat)
-  new TGeoVolume("Right vertical spacer",
-                 new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.), noryl);
+  new TGeoVolume("Right spacer", new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.),
+                 assertMedium(Medium::Noryl));
 
   // the top spacers : 4 lengths possible according to the PCB shape
-  const float lengths[4] = { kShortPCBLength, kPCBLength, kR1PCBLength, kRoundedPCBLength };
+  float lengths[4] = { kShortPCBLength, kPCBLength, kR1PCBLength, kRoundedPCBLength };
   for (int i = 0; i < 4; i++)
     new TGeoVolume(Form("Top spacer %.2f long", lengths[i]),
-                   new TGeoBBox(lengths[i] / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.), noryl);
+                   new TGeoBBox(lengths[i] / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.),
+                   assertMedium(Medium::Noryl));
 }
 
 //______________________________________________________________________________
@@ -107,8 +106,7 @@ void createPCBs()
   /// apply from the JSON. By doing so, we make sure that we match the mapping convention
 
   // Define some necessary variables
-  string bendName, nonbendName;    // pcb plate names
-  const float height = kPCBHeight; // common to all PCBs
+  string bendName, nonbendName; // pcb plate names
   float gasLength, pcbLength, radius, curvRad, ypos, pcbShift,
     gasShift; // useful parameters for dimensions and positions
   int numb;   // number characterizing the PCB
@@ -158,15 +156,15 @@ void createPCBs()
                               assertMedium(Medium::SlatGas));
     // bending pcb plate
     auto bend = new TGeoVolume(bendName.data(),
-                               new TGeoBBox(Form("%sBendBox", name), pcbLength / 2., height / 2., kPCBWidth / 2.),
+                               new TGeoBBox(Form("%sBendBox", name), pcbLength / 2., kPCBHeight / 2., kPCBWidth / 2.),
                                assertMedium(Medium::Copper));
     // non-bending pcb plate
-    auto nonbend = new TGeoVolume(nonbendName.data(),
-                                  new TGeoBBox(Form("%sNonBendBox", name), pcbLength / 2., height / 2., kPCBWidth / 2.),
-                                  assertMedium(Medium::Copper));
+    auto nonbend = new TGeoVolume(
+      nonbendName.data(), new TGeoBBox(Form("%sNonBendBox", name), pcbLength / 2., kPCBHeight / 2., kPCBWidth / 2.),
+      assertMedium(Medium::Copper));
     // insulating material (G10)
     auto insu = new TGeoVolume(Form("%s insulator", name),
-                               new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., height / 2., kInsuWidth / 2.),
+                               new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., kPCBHeight / 2., kInsuWidth / 2.),
                                assertMedium(Medium::G10));
 
     // horizontal spacers (noryl)
@@ -262,21 +260,18 @@ void createSlats()
     const string typeName = slatType.first;   // slat type name
     auto name = (const char*)typeName.data(); // slat name (easier to name volumes)
     const auto PCBs = slatType.second;        // PCB names vector
-    const int nPCBs = PCBs.size();
 
-    cout << "Slat " << name << " which has " << nPCBs << " PCBs" << endl;
+    cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
 
     // create the slat volume assembly
     auto slat = new TGeoVolumeAssembly(name);
     const float height = kSlatPanelHeight; // common to all slats
     float length = 2 * kVertSpacerLength;  // vertical spacers
 
-    float panelShift = 0;
-
     // compute the slat center
-    const float center = (nPCBs - 1) * kGasLength / 2;
+    const float center = (PCBs.size() - 1) * kGasLength / 2;
 
-    float PCBlength, gasLength;
+    float PCBlength, gasLength, panelShift = 0;
     int ivol = 0;
     // loop over the number of PCBs in the current slat
     for (const auto& pcb : PCBs) {
@@ -314,7 +309,7 @@ void createSlats()
 
     // left vertical spacer
     auto left = new TGeoVolume(
-      Form("%s left vertical spacer", name),
+      Form("%s left spacer", name),
       new TGeoBBox(Form("%sLeftSpacerBox", name), kVertSpacerLength / 2., leftSpacerHeight / 2., kSpacerWidth / 2.),
       assertMedium(Medium::Noryl));
 
@@ -348,12 +343,10 @@ void createSlats()
       const float radius = (typeName.back() == '3') ? kRadSt45 : kRadSt3;
 
       // extreme angle values for the rounded spacer
-      double angMin;
-      double angMax = 90.;
+      double angMin, angMax = 90.;
 
       // position of the slat center w.r.t the beam pipe center
-      float ypos;
-      float xpos = (length - kVertSpacerLength) / 2.;
+      float ypos, xpos = (length - kVertSpacerLength) / 2.;
       float xRoundedPos = xpos - panelShift / 2.;
 
       // change the above values if necessary
@@ -441,7 +434,7 @@ void createSlats()
     slat->AddNode(panel, 2, new TGeoCombiTrans(panelShift / 2., 0., -kTotalPCBWidth / 2., mirror));
 
     // place the vertical spacers
-    slat->AddNode(gGeoManager->GetVolume("Right vertical spacer"), 1,
+    slat->AddNode(gGeoManager->GetVolume("Right spacer"), 1,
                   new TGeoTranslation((length - kVertSpacerLength + panelShift) / 2., 0., 0.));
     // don't place a left spacer for S(N)R1 slat
     if (typeName.back() != '1')
@@ -458,7 +451,7 @@ void createSupportPanels()
   for (int i = 5; i <= 10; i++) {
 
     // define the support panel volume
-    auto support = new TGeoVolumeAssembly(Form("Ch%dSupportPanel", i));
+    auto support = new TGeoVolumeAssembly(Form("Chamber %d support panel", i));
 
     // dimensions
     float length, height, width = 0; // increment the width when adding a new layer
@@ -473,9 +466,6 @@ void createSupportPanels()
 
     // LHC beam pipe radius at the given chamber z position
     const float radius = (i <= 6) ? kRadSt3 : kRadSt45;
-
-    cout << "Support panel for the chamber " << i << " : radius = " << radius << ", length = " << length
-         << ", height = " << height << endl;
 
     // place this shape on the ALICE x=0 coordinate
     auto holeTrans = new TGeoTranslation(Form("holeCh%dShift", i), (-length + kVertSpacerLength) / 2., 0., 0.);
@@ -571,7 +561,7 @@ void createHalfChambers()
     auto supRot = new TGeoRotation();
     if (moduleID % 2)
       supRot->RotateY(180.);
-    halfChVol->AddNode(gGeoManager->GetVolume(Form("Ch%dSupportPanel", nCh)), moduleID, supRot);
+    halfChVol->AddNode(gGeoManager->GetVolume(Form("Chamber %d support panel", nCh)), moduleID, supRot);
 
     // place the slat volumes on the different nodes of the half-chamber
     for (const auto& slat : halfCh["nodes"].GetArray()) {
@@ -583,16 +573,15 @@ void createHalfChambers()
 
       cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
 
-      // create the slat rotation matrix
-      auto slatRot = new TGeoRotation(Form("Slat%drotation", detID), slat["rotation"][0].GetDouble(),
-                                      slat["rotation"][1].GetDouble(), slat["rotation"][2].GetDouble(),
-                                      slat["rotation"][3].GetDouble(), slat["rotation"][4].GetDouble(),
-                                      slat["rotation"][5].GetDouble());
-
       // place the slat on the half-chamber volume
-      halfChVol->AddNode(gGeoManager->GetVolume(slat["type"].GetString()), detID,
-                         new TGeoCombiTrans(Form("Slat%dposition", detID), slat["position"][0].GetDouble(),
-                                            slat["position"][1].GetDouble(), slat["position"][2].GetDouble(), slatRot));
+      halfChVol->AddNode(
+        gGeoManager->GetVolume(slat["type"].GetString()), detID,
+        new TGeoCombiTrans(slat["position"][0].GetDouble(), slat["position"][1].GetDouble(),
+                           slat["position"][2].GetDouble(),
+                           new TGeoRotation(Form("Slat%drotation", detID), slat["rotation"][0].GetDouble(),
+                                            slat["rotation"][1].GetDouble(), slat["rotation"][2].GetDouble(),
+                                            slat["rotation"][3].GetDouble(), slat["rotation"][4].GetDouble(),
+                                            slat["rotation"][5].GetDouble())));
 
     } // end of the node loop
     cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << halfCh["name"].GetString() << endl;
@@ -600,8 +589,8 @@ void createHalfChambers()
     // place the half-chamber in the top volume
     gGeoManager->GetTopVolume()->AddNode(
       halfChVol, moduleID,
-      new TGeoCombiTrans(Form("HalfCh%dposition", moduleID), halfCh["position"][0].GetDouble(),
-                         halfCh["position"][1].GetDouble(), halfCh["position"][2].GetDouble(),
+      new TGeoCombiTrans(halfCh["position"][0].GetDouble(), halfCh["position"][1].GetDouble(),
+                         halfCh["position"][2].GetDouble(),
                          new TGeoRotation(Form("%srotation", name.data()), halfCh["rotation"][0].GetDouble(),
                                           halfCh["rotation"][1].GetDouble(), halfCh["rotation"][2].GetDouble(),
                                           halfCh["rotation"][3].GetDouble(), halfCh["rotation"][4].GetDouble(),
