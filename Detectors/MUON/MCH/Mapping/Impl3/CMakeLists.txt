@@ -25,9 +25,6 @@ endforeach ()
 set(LIBRARY_NAME MCHMappingImpl3)
 O2_GENERATE_LIBRARY()
 
-include(GenerateExportHeader)
-generate_export_header(MCHMappingImpl3)
-
 set_target_properties(MCHMappingImpl3 PROPERTIES CXX_VISIBILITY_PRESET hidden)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options(MCHMappingImpl3 PRIVATE -fext-numeric-literals)

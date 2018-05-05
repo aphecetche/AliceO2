@@ -13,8 +13,9 @@
 
 #include "MCHMappingInterface/SegmentationCInterface.h"
 #include "SegmentationImpl3.h"
-#include "mchmappingimpl3_export.h"
 #include <fstream>
+
+#define MCHMAPPINGIMPL3_EXPORT __attribute__((visibility("default")))
 
 extern "C" {
 
