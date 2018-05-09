@@ -27,7 +27,7 @@
 #include <iostream>
 #endif
 
-void drawMCHGeometry()
+void drawMCHgeometry()
 {
   // minimal macro to test setup of the geometry
 
