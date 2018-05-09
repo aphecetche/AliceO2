@@ -100,6 +100,10 @@ void createCommonVolumes()
                    new TGeoBBox(lengths[i] / 2., kBorderHeight / 2., kBorderWidth / 2.),
                    assertMedium(Medium::Rohacell));
   }
+
+  // MANU (to be checked !!!)
+  new TGeoVolume("MANU", new TGeoBBox(kMANULength / 2., kMANUHeight / 2., kMANUWidth / 2.),
+                 assertMedium(Medium::Copper));
 }
 
 //______________________________________________________________________________
@@ -114,14 +118,15 @@ void createPCBs()
 
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
-  float gasLength, pcbLength, borderLength, radius, curvRad, ypos, pcbShift,
-    gasShift; // useful parameters for dimensions and positions
-  int numb;   // number characterizing the PCB
+  float gasLength, pcbLength, borderLength, radius, curvRad, ypos, pcbShift, gasShift,
+    manuShift; // useful parameters for dimensions and positions
+  int numb;    // number characterizing the PCB
 
   cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
   for (const auto& pcbType : kPcbTypes) { // loop over the PCB types of the array
 
-    auto name = (const char*)pcbType.data();
+    const string pcbName = pcbType.first;
+    auto name = (const char*)pcbName.data();
 
     cout << "PCB type " << name << endl;
     auto pcb = new TGeoVolumeAssembly(name);
@@ -130,12 +135,12 @@ void createPCBs()
     pcbShift = 0.;
     radius = 0.;
 
-    numb = pcbType[1] - '0'; // char -> int conversion
+    numb = pcbName[1] - '0'; // char -> int conversion
 
     // change the variables according to the PCB shape if necessary
-    switch (pcbType.front()) {
+    switch (pcbName.front()) {
       case 'R': // rounded
-        numb = pcbType.back() - '0';
+        numb = pcbName.back() - '0';
         gasLength = (numb == 1) ? kR1PCBLength : kGasLength;
         pcbLength = (numb == 1) ? kR1PCBLength : kRoundedPCBLength;
         gasShift = -(gasLength - kGasLength);
@@ -147,14 +152,14 @@ void createPCBs()
       case 'S': // shortened
         gasLength = kShortPCBLength;
         pcbLength = kShortPCBLength;
-        bendName = Form("S2B%c", pcbType.back());
-        nonbendName = Form("S2N%c", pcbType.back());
+        bendName = Form("S2B%c", pcbName.back());
+        nonbendName = Form("S2N%c", pcbName.back());
         break;
       default: // normal
         gasLength = kGasLength;
         pcbLength = kPCBLength;
-        bendName = (numb == 3) ? pcbType.substr(0, 3) : pcbType.substr(0, 2);
-        nonbendName = (numb == 3) ? pcbType.substr(3) : pcbType.substr(2);
+        bendName = (numb == 3) ? pcbName.substr(0, 3) : pcbName.substr(0, 2);
+        nonbendName = (numb == 3) ? pcbName.substr(3) : pcbName.substr(2);
     }
 
     borderLength = pcbLength;
@@ -184,7 +189,7 @@ void createPCBs()
                      assertMedium(Medium::Noryl));
 
     // change the volume shape if we are creating a rounded PCB
-    if (pcbType.front() == 'R') {
+    if (pcbName.front() == 'R') {
       // LHC beam pipe radius ("R3" -> it is a slat of a station 4 or 5)
       radius = (numb == 3) ? kRadSt45 : kRadSt3;
       // y position of the PCB center w.r.t the beam pipe shape
@@ -230,12 +235,12 @@ void createPCBs()
       insu->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fInsuShape", curvRad, ypos),
                                             Form("%sInsuBox-InsuHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
-      if (pcbType.back() != '1') { // change the bottom spacer and border shape for "R2" and "R3" PCBs
+      if (pcbName.back() != '1') { // change the bottom spacer and border shape for "R2" and "R3" PCBs
         new TGeoTube(Form("SpacerHoleR%.1f", radius), 0., radius, kSpacerWidth / 2);
         spacer->SetShape(
           new TGeoCompositeShape(Form("R%.1fY%.1fSpacerShape", radius, ypos),
                                  Form("%sSpacerBox-SpacerHoleR%.1f:SpacerHoleY%.1fShift", name, radius, ypos)));
-        borderLength -= (pcbType.back() == '3') ? curvRad : curvRad + kRoundedSpacerLength;
+        borderLength -= (pcbName.back() == '3') ? curvRad : curvRad + kRoundedSpacerLength / 2.;
       }
     }
 
@@ -264,7 +269,23 @@ void createPCBs()
       gGeoManager->MakeBox(Form("%s bottom border", name), assertMedium(Medium::Rohacell), borderLength / 2.,
                            kBorderHeight / 2., kBorderWidth / 2.),
       1, new TGeoTranslation((pcbShift + pcbLength - borderLength) / 2., -(kPCBHeight - kBorderHeight) / 2., 0.));
-  }
+
+    // the MANUs
+    width += kMANUWidth;
+    auto manus = pcbType.second;
+    for (int i = 0; i < manus.size(); i++) {
+
+      float length = (i % 2) ? borderLength : pcbLength;
+      manuShift = (i % 2) ? pcbLength - borderLength : 0.;
+
+      for (int j = 0; j < manus[i]; j++) {
+        pcb->AddNode(gGeoManager->GetVolume("MANU"), 100 * i + j,
+                     new TGeoTranslation((j - manus[i] / 2) * (length / manus[i]) -
+                                           (manus[i] % 2 - 1) * (length / (2 * manus[i])) + (pcbShift + manuShift) / 2,
+                                         TMath::Power(-1, i % 2) * kMANUypos, TMath::Power(-1, i / 2) * width / 2.));
+      }
+    } // end of the MANUs loop
+  }   // end of the PCBs loop
 }
 
 //______________________________________________________________________________

@@ -28,8 +28,9 @@ Detector::Detector(bool active) : o2::Base::DetImpl<Detector>("MCH", active) {}
 void Detector::defineSensitiveVolumes()
 {
 
-  for (const auto& volName : kPcbTypes) {
+  for (const auto& pcb : kPcbTypes) {
 
+    const auto& volName = pcb.first;
     auto vol = gGeoManager->GetVolume(Form("%s gas", volName.data()));
 
     if (!vol) {

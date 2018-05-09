@@ -71,11 +71,17 @@ const float kVertSpacerLength = 2.5; // according to AliRoot and construction pl
 // Rounded
 const float kRoundedSpacerLength = 2.; // according to AliRoot and construction plan
 
-// Border (Rohacell)
+/// Border (Rohacell)
 const float kBorderHeight = 5.;       // to be checked !
 const float kBorderWidth = kGasWidth; // to be checked
 
-// Support panels (to be checked !!!)
+/// MANU (NULOC, equivalent to 44 mum width of copper according to AliRoot)
+const float kMANULength = 2.5;      // according to AliRoot
+const float kMANUHeight = 5 - 0.35; // according to construction plan
+const float kMANUWidth = 0.0044;    // according to AliRoot
+const float kMANUypos = 0.45 + (kSlatPanelHeight + kMANUHeight) / 2.;
+
+/// Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
 const float kGlueSupportWidth = 0.02; // added w.r.t AliRoot to match the construction plans
 const float kNomexSupportWidth = 1.5;
@@ -95,8 +101,12 @@ const float kRadSt45 = 37.5;
 const float kRoundedSlatYposSt3 = 37.8;
 const float kRoundedSlatYposSt45 = 38.2;
 
-// PCB types
-const array<string, 10> kPcbTypes{ "B1N1", "B2N2-", "B2N2+", "B3-N3", "B3+N3", "R1", "R2", "R3", "S2-", "S2+" };
+// PCB types {name, number of MANUs array}
+const map<string, array<int, 4>> kPcbTypes = { { "B1N1", { 10, 10, 7, 7 } }, { "B2N2-", { 5, 5, 4, 3 } },
+                                               { "B2N2+", { 5, 5, 3, 4 } },  { "B3-N3", { 3, 2, 2, 2 } },
+                                               { "B3+N3", { 2, 3, 2, 2 } },  { "R1", { 3, 4, 2, 3 } },
+                                               { "R2", { 13, 4, 9, 3 } },    { "R3", { 13, 1, 10, 0 } },
+                                               { "S2-", { 4, 5, 3, 3 } },    { "S2+", { 5, 4, 3, 3 } } };
 
 // Slat types
 const map<string, vector<string>> kSlatTypes = { { "122000SR1", { "R1", "B1N1", "B2N2+", "S2-" } },
