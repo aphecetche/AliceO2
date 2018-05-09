@@ -87,12 +87,19 @@ void createCommonVolumes()
   new TGeoVolume("Right spacer", new TGeoBBox(kVertSpacerLength / 2., kSlatPanelHeight / 2., kSpacerWidth / 2.),
                  assertMedium(Medium::Noryl));
 
-  // the top spacers : 4 lengths possible according to the PCB shape
+  // the top spacers and borders : 4 lengths possible according to the PCB shape
   float lengths[4] = { kShortPCBLength, kPCBLength, kR1PCBLength, kRoundedPCBLength };
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++) {
+    // top spacer
     new TGeoVolume(Form("Top spacer %.2f long", lengths[i]),
                    new TGeoBBox(lengths[i] / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.),
                    assertMedium(Medium::Noryl));
+
+    // top border
+    new TGeoVolume(Form("Top border %.2f long", lengths[i]),
+                   new TGeoBBox(lengths[i] / 2., kBorderHeight / 2., kBorderWidth / 2.),
+                   assertMedium(Medium::Rohacell));
+  }
 }
 
 //______________________________________________________________________________
@@ -107,7 +114,7 @@ void createPCBs()
 
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
-  float gasLength, pcbLength, radius, curvRad, ypos, pcbShift,
+  float gasLength, pcbLength, borderLength, radius, curvRad, ypos, pcbShift,
     gasShift; // useful parameters for dimensions and positions
   int numb;   // number characterizing the PCB
 
@@ -121,6 +128,7 @@ void createPCBs()
 
     gasShift = 0.;
     pcbShift = 0.;
+    radius = 0.;
 
     numb = pcbType[1] - '0'; // char -> int conversion
 
@@ -149,6 +157,8 @@ void createPCBs()
         nonbendName = (numb == 3) ? pcbType.substr(3) : pcbType.substr(2);
     }
 
+    borderLength = pcbLength;
+
     // create the volume of each material (a box by default)
     // sensitive gas
     auto gas = new TGeoVolume(Form("%s gas", name),
@@ -167,11 +177,11 @@ void createPCBs()
                                new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., kPCBHeight / 2., kInsuWidth / 2.),
                                assertMedium(Medium::FR4));
 
-    // horizontal spacers (noryl)
-    auto bottom = new TGeoVolume(
-      Form("%s bottom spacer", name),
-      new TGeoBBox(Form("%sBottomSpacerBox", name), pcbLength / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.),
-      assertMedium(Medium::Noryl));
+    // bottom spacer (noryl)
+    auto spacer =
+      new TGeoVolume(Form("%s bottom spacer", name),
+                     new TGeoBBox(Form("%sSpacerBox", name), pcbLength / 2., kHoriSpacerHeight / 2., kSpacerWidth / 2.),
+                     assertMedium(Medium::Noryl));
 
     // change the volume shape if we are creating a rounded PCB
     if (pcbType.front() == 'R') {
@@ -199,10 +209,10 @@ void createPCBs()
       auto pcbTrans = new TGeoTranslation(Form("PCBholeY%.1fShift", ypos),
                                           -kRoundedPCBLength + (pcbLength + kVertSpacerLength) / 2., -ypos, 0.);
       pcbTrans->RegisterYourself();
-      auto bottomTrans = new TGeoTranslation(Form("BottomSpacerHoleY%.1fShift", ypos),
+      auto spacerTrans = new TGeoTranslation(Form("SpacerHoleY%.1fShift", ypos),
                                              -kRoundedPCBLength + (pcbLength + kVertSpacerLength) / 2.,
                                              -ypos + (kGasHeight + kHoriSpacerHeight) / 2., 0.);
-      bottomTrans->RegisterYourself();
+      spacerTrans->RegisterYourself();
 
       // for each volume, create a hole and change the volume shape by extracting the pipe shape
       new TGeoTube(Form("GasHoleR%.1f", curvRad), 0., curvRad, kGasWidth / 2);
@@ -220,15 +230,16 @@ void createPCBs()
       insu->SetShape(new TGeoCompositeShape(Form("R%.1fY%.1fInsuShape", curvRad, ypos),
                                             Form("%sInsuBox-InsuHoleR%.1f:PCBholeY%.1fShift", name, curvRad, ypos)));
 
-      if (pcbType.back() != '1') { // change the bottom spacer shape for "R2" and "R3" PCBs
-        new TGeoTube(Form("BottomSpacerHoleR%.1f", radius), 0., radius, kSpacerWidth / 2);
-        bottom->SetShape(new TGeoCompositeShape(
-          Form("R%.1fY%.1fBottomSpacerShape", radius, ypos),
-          Form("%sBottomSpacerBox-BottomSpacerHoleR%.1f:BottomSpacerHoleY%.1fShift", name, radius, ypos)));
+      if (pcbType.back() != '1') { // change the bottom spacer and border shape for "R2" and "R3" PCBs
+        new TGeoTube(Form("SpacerHoleR%.1f", radius), 0., radius, kSpacerWidth / 2);
+        spacer->SetShape(
+          new TGeoCompositeShape(Form("R%.1fY%.1fSpacerShape", radius, ypos),
+                                 Form("%sSpacerBox-SpacerHoleR%.1f:SpacerHoleY%.1fShift", name, radius, ypos)));
+        borderLength -= (pcbType.back() == '3') ? curvRad : curvRad + kRoundedSpacerLength;
       }
     }
 
-    // place all the layers in the pcb volume assembly
+    /// place all the layers in the pcb volume assembly
 
     float width = kGasWidth; // increment this value when adding a new layer
     pcb->AddNode(gas, 1, new TGeoTranslation(gasShift / 2., 0., 0.));
@@ -241,9 +252,18 @@ void createPCBs()
     pcb->AddNode(insu, 1, new TGeoTranslation(pcbShift / 2., 0., width / 2.));
     pcb->AddNode(insu, 2, new TGeoTranslation(pcbShift / 2., 0., -width / 2.));
 
+    // the horizontal spacers
     pcb->AddNode(gGeoManager->GetVolume(Form("Top spacer %.2f long", pcbLength)), 1,
                  new TGeoTranslation(pcbShift / 2., (kGasHeight + kHoriSpacerHeight) / 2., 0.));
-    pcb->AddNode(bottom, 1, new TGeoTranslation(pcbShift / 2., -(kGasHeight + kHoriSpacerHeight) / 2., 0.));
+    pcb->AddNode(spacer, 1, new TGeoTranslation(pcbShift / 2., -(kGasHeight + kHoriSpacerHeight) / 2., 0.));
+
+    // the borders
+    pcb->AddNode(gGeoManager->GetVolume(Form("Top border %.2f long", pcbLength)), 1,
+                 new TGeoTranslation(pcbShift / 2., (kPCBHeight - kBorderHeight) / 2., 0.));
+    pcb->AddNode(
+      gGeoManager->MakeBox(Form("%s bottom border", name), assertMedium(Medium::Rohacell), borderLength / 2.,
+                           kBorderHeight / 2., kBorderWidth / 2.),
+      1, new TGeoTranslation((pcbShift + pcbLength - borderLength) / 2., -(kPCBHeight - kBorderHeight) / 2., 0.));
   }
 }
 

@@ -62,14 +62,18 @@ const float kCarbonWidth = 0.02; // according to AliRoot and construction plan
 /// Honeycomb Nomex
 const float kNomexWidth = 0.8; // according to AliRoot and construction plan
 
-/// Spacers
+/// Spacers (noryl)
 const float kSpacerWidth = kGasWidth;
 // Horizontal
 const float kHoriSpacerHeight = 1.95; // according to AliRoot and construction plan
 // Vertical
 const float kVertSpacerLength = 2.5; // according to AliRoot and construction plan
-
+// Rounded
 const float kRoundedSpacerLength = 2.; // according to AliRoot and construction plan
+
+// Border (Rohacell)
+const float kBorderHeight = 5.;       // to be checked !
+const float kBorderWidth = kGasWidth; // to be checked
 
 // Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
