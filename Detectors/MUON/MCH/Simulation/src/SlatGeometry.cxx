@@ -162,10 +162,10 @@ void createPCBs()
     auto nonbend = new TGeoVolume(
       nonbendName.data(), new TGeoBBox(Form("%sNonBendBox", name), pcbLength / 2., kPCBHeight / 2., kPCBWidth / 2.),
       assertMedium(Medium::Copper));
-    // insulating material (G10)
+    // insulating material
     auto insu = new TGeoVolume(Form("%s insulator", name),
                                new TGeoBBox(Form("%sInsuBox", name), pcbLength / 2., kPCBHeight / 2., kInsuWidth / 2.),
-                               assertMedium(Medium::G10));
+                               assertMedium(Medium::FR4));
 
     // horizontal spacers (noryl)
     auto bottom = new TGeoVolume(

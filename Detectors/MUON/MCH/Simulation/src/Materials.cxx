@@ -108,18 +108,18 @@ void createCopper(int fieldType, float maxField)
                            kEpsil, kStmin);
 }
 
-void createG10(int fieldType, float maxField)
+void createFR4(int fieldType, float maxField)
 {
-  // G10: SiO2(60%) + C8H14O4(40%) -> will be changed to FR4 !
-  const int n = 5;
-  float a[n] = { kASilicon, kAOxygen, kACarbon, kAHydrogen, kAOxygen };
-  float z[n] = { kZSilicon, kZOxygen, kZCarbon, kZHydrogen, kZOxygen };
-  float w[n] = { 1 * 0.6, 2 * 0.6, 8 * 0.4, 14 * 0.4, 4 * 0.4 }; // Relative weight of each atom
-  float d = 1.8;                                                 // changed w.r.t AliRoot after investigation
+  // FR4: O292 Si68 C462 H736 (from AliRoot)
+  const int n = 4;
+  float a[n] = { kAOxygen, kASilicon, kACarbon, kAHydrogen };
+  float z[n] = { kZOxygen, kZSilicon, kZCarbon, kZHydrogen };
+  float w[n] = { 292, 68, 462, 736 }; // Relative weight of each atom
+  float d = 1.8;                      // changed w.r.t AliRoot after investigation
 
   int imat = autoIncrementedMaterialId();
-  materialManager().Mixture(moduleName, imat, "G10", a, z, d, -n, w);
-  materialManager().Medium(moduleName, Medium::G10, "G10", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
+  materialManager().Mixture(moduleName, imat, "FR4", a, z, d, -n, w);
+  materialManager().Medium(moduleName, Medium::FR4, "FR4", imat, 0, fieldType, maxField, kMaxfd, kStemax, kDeemax,
                            kEpsil, kStmin);
 }
 
@@ -187,7 +187,7 @@ void createSlatGeometryMaterials()
   impl::createNomexBulk(fieldType, maxField);
   impl::createNoryl(fieldType, maxField);    // spacers
   impl::createCopper(fieldType, maxField);   // PCB and cable medium
-  impl::createG10(fieldType, maxField);      // insulator
+  impl::createFR4(fieldType, maxField);      // insulator
   impl::createRohacell(fieldType, maxField); // for horizontal border
   impl::createGlue(fieldType, maxField);
 }
