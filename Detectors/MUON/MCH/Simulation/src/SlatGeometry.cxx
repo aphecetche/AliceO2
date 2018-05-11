@@ -331,6 +331,7 @@ void createSlats()
           break;
         default:
           PCBlength = kPCBLength;
+          break;
       }
 
       length += PCBlength;
@@ -341,6 +342,12 @@ void createSlats()
       ivol++;
 
     } // end of the PCBs loop
+
+    // compute the LV cable length
+    float cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
+    cableLength -= length;
+    if (typeName == "122330N")
+      cableLength -= kGasLength;
 
     float leftSpacerHeight = kSlatPanelHeight;
     if (typeName.find('R') < typeName.size()) {
@@ -412,6 +419,10 @@ void createSlats()
           break;
       }
 
+      // change the LV cable length
+      cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
+      cableLength -= xpos + length / 2.;
+
       // create and place the rounded spacer
       auto rounded = gGeoManager->MakeTubs(Form("%s rounded spacer", name), assertMedium(Medium::Noryl), radius,
                                            radius + kRoundedSpacerLength, kSpacerWidth, angMin, angMax);
@@ -480,6 +491,19 @@ void createSlats()
     // don't place a left spacer for S(N)R1 slat
     if (typeName.back() != '1')
       slat->AddNode(left, 1, new TGeoTranslation(-(length - kVertSpacerLength - panelShift) / 2., 0., 0.));
+
+    // place the LV cables (top and bottom)
+    cableLength += kVertSpacerLength;
+    auto LVcable = gGeoManager->MakeBox(Form("%s LV cable", name), assertMedium(Medium::Copper), cableLength / 2.,
+                                        kLVcableHeight / 2., kLVcableWidth / 2.);
+    slat->AddNode(
+      LVcable, 1,
+      new TGeoTranslation(-kVertSpacerLength + (length + cableLength + panelShift) / 2.,
+                          kMANUypos + (kMANUHeight + kLVcableHeight) / 2., -(kTotalPCBWidth - kLVcableWidth) / 2.));
+    slat->AddNode(
+      LVcable, 2,
+      new TGeoTranslation(-kVertSpacerLength + (length + cableLength + panelShift) / 2.,
+                          -(kMANUypos + (kMANUHeight + kLVcableHeight) / 2.), -(kTotalPCBWidth - kLVcableWidth) / 2.));
 
   } // end of the slat loop
 }

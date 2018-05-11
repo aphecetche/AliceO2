@@ -81,6 +81,11 @@ const float kMANUHeight = 5 - 0.35; // according to construction plan
 const float kMANUWidth = 0.0044;    // according to AliRoot
 const float kMANUypos = 0.45 + (kSlatPanelHeight + kMANUHeight) / 2.;
 
+/// Cables (copper)
+// Low voltage (values from AliRoot)
+const float kLVcableHeight = 2.6;
+const float kLVcableWidth = 0.026;
+
 /// Support panels (to be checked !!!)
 const float kCarbonSupportWidth = 0.03;
 const float kGlueSupportWidth = 0.02; // added w.r.t AliRoot to match the construction plans
