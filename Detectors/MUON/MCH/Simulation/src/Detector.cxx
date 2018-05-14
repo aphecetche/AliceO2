@@ -16,6 +16,8 @@
 #include "TVirtualMC.h"
 #include <stdexcept>
 
+#include "TStopwatch.h"
+
 ClassImp(o2::mch::Detector);
 
 namespace o2
@@ -47,7 +49,13 @@ void Detector::Initialize()
   o2::Base::Detector::Initialize();
 }
 
-void Detector::ConstructGeometry() { createSlatGeometry(); }
+void Detector::ConstructGeometry()
+{
+
+  TStopwatch timer;
+  createSlatGeometry();
+  timer.Print("m");
+}
 
 Bool_t Detector::ProcessHits(FairVolume* v)
 {
