@@ -118,7 +118,7 @@ void createPCBs()
 
   // Define some necessary variables
   string bendName, nonbendName; // pcb plate names
-  float gasLength, pcbLength, borderLength, radius, curvRad, ypos, pcbShift, gasShift,
+  float width, gasLength, pcbLength, borderLength, radius, curvRad, ypos, pcbShift, gasShift,
     manuShift; // useful parameters for dimensions and positions
   int numb;    // number characterizing the PCB
 
@@ -246,7 +246,7 @@ void createPCBs()
 
     /// place all the layers in the pcb volume assembly
 
-    float width = kGasWidth; // increment this value when adding a new layer
+    width = kGasWidth; // increment this value when adding a new layer
     pcb->AddNode(gas, 1, new TGeoTranslation(gasShift / 2., 0., 0.));
 
     width += kPCBWidth;
@@ -296,6 +296,10 @@ void createSlats()
 
   cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
+  // Define some necessary variables
+  float length, center, PCBlength, gasLength, ypos, xpos, xRoundedPos, angMin, angMax, radius, width, cableLength,
+    leftSpacerHeight;
+
   for (const auto& slatType : kSlatTypes) {
 
     const string typeName = slatType.first;   // slat type name
@@ -306,13 +310,10 @@ void createSlats()
 
     // create the slat volume assembly
     auto slat = new TGeoVolumeAssembly(name);
-    const float height = kSlatPanelHeight; // common to all slats
-    float length = 2 * kVertSpacerLength;  // vertical spacers
+    length = 2 * kVertSpacerLength; // vertical spacers
+    center = (PCBs.size() - 1) * kGasLength / 2;
 
-    // compute the slat center
-    const float center = (PCBs.size() - 1) * kGasLength / 2;
-
-    float PCBlength, gasLength, panelShift = 0;
+    float panelShift = 0;
     int ivol = 0;
     // loop over the number of PCBs in the current slat
     for (const auto& pcb : PCBs) {
@@ -344,12 +345,12 @@ void createSlats()
     } // end of the PCBs loop
 
     // compute the LV cable length
-    float cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
+    cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
     cableLength -= length;
     if (typeName == "122330N")
       cableLength -= kGasLength;
 
-    float leftSpacerHeight = kSlatPanelHeight;
+    leftSpacerHeight = kSlatPanelHeight;
     if (typeName.find('R') < typeName.size()) {
       length -= kVertSpacerLength;   // don't count the vertical spacer length twice in the case of rounded slat
       leftSpacerHeight = kGasHeight; // to avoid overlaps with the horizontal spacers
@@ -365,37 +366,40 @@ void createSlats()
     auto panel = new TGeoVolumeAssembly(Form("%s panel", name));
 
     // glue
-    auto glue = new TGeoVolume(Form("%s panel glue", name),
-                               new TGeoBBox(Form("%sGlueBox", name), length / 2., height / 2., kGlueWidth / 2.),
-                               assertMedium(Medium::Glue));
+    auto glue =
+      new TGeoVolume(Form("%s panel glue", name),
+                     new TGeoBBox(Form("%sGlueBox", name), length / 2., kSlatPanelHeight / 2., kGlueWidth / 2.),
+                     assertMedium(Medium::Glue));
 
     // nomex (bulk)
-    auto nomexBulk =
-      new TGeoVolume(Form("%s panel nomex (bulk)", name),
-                     new TGeoBBox(Form("%sNomexBulkBox", name), length / 2., height / 2., kNomexBulkWidth / 2.),
-                     assertMedium(Medium::NomexBulk));
+    auto nomexBulk = new TGeoVolume(
+      Form("%s panel nomex (bulk)", name),
+      new TGeoBBox(Form("%sNomexBulkBox", name), length / 2., kSlatPanelHeight / 2., kNomexBulkWidth / 2.),
+      assertMedium(Medium::NomexBulk));
 
     // carbon fiber
-    auto carbon = new TGeoVolume(Form("%s panel carbon fiber", name),
-                                 new TGeoBBox(Form("%sCarbonBox", name), length / 2., height / 2., kCarbonWidth / 2.),
-                                 assertMedium(Medium::Carbon));
+    auto carbon =
+      new TGeoVolume(Form("%s panel carbon fiber", name),
+                     new TGeoBBox(Form("%sCarbonBox", name), length / 2., kSlatPanelHeight / 2., kCarbonWidth / 2.),
+                     assertMedium(Medium::Carbon));
     // nomex (honeycomb)
-    auto nomex = new TGeoVolume(Form("%s panel nomex (honeycomb)", name),
-                                new TGeoBBox(Form("%sNomexBox", name), length / 2., height / 2., kNomexWidth / 2.),
-                                assertMedium(Medium::Nomex));
+    auto nomex =
+      new TGeoVolume(Form("%s panel nomex (honeycomb)", name),
+                     new TGeoBBox(Form("%sNomexBox", name), length / 2., kSlatPanelHeight / 2., kNomexWidth / 2.),
+                     assertMedium(Medium::Nomex));
 
     // change the volume shape if we are creating a rounded slat
     if (typeName.find('R') < typeName.size()) {
 
       // LHC beam pipe radius ("NR3" -> it is a slat of a station 4 or 5)
-      const float radius = (typeName.back() == '3') ? kRadSt45 : kRadSt3;
+      radius = (typeName.back() == '3') ? kRadSt45 : kRadSt3;
 
-      // extreme angle values for the rounded spacer
-      double angMin, angMax = 90.;
+      // extreme angle value for the rounded spacer
+      angMax = 90.;
 
       // position of the slat center w.r.t the beam pipe center
-      float ypos, xpos = (length - kVertSpacerLength) / 2.;
-      float xRoundedPos = xpos - panelShift / 2.;
+      xpos = (length - kVertSpacerLength) / 2.;
+      xRoundedPos = xpos - panelShift / 2.;
 
       // change the above values if necessary
       switch (typeName.back()) { // get the last character
@@ -461,7 +465,7 @@ void createSlats()
     // place all the layers in the slat panel volume assembly
     // be careful : the panel origin is on the glue edge !
 
-    float width = kGlueWidth; // increment this value when adding a new layer
+    width = kGlueWidth; // increment this value when adding a new layer
     panel->AddNode(glue, 1, new TGeoTranslation(0., 0., width / 2.));
 
     panel->AddNode(nomexBulk, 1, new TGeoTranslation(0., 0., width + kNomexBulkWidth / 2.));
@@ -513,13 +517,13 @@ void createSupportPanels()
 {
   /// Function building the half-chamber support panels (one different per chamber)
 
+  // dimensions
+  float length, height, width;
+
   for (int i = 5; i <= 10; i++) {
 
     // define the support panel volume
     auto support = new TGeoVolumeAssembly(Form("Chamber %d support panel", i));
-
-    // dimensions
-    float length, height, width = 0; // increment the width when adding a new layer
 
     if (i <= 6) { // station 3 half-chambers
       height = kSupportHeightSt3;
@@ -543,7 +547,7 @@ void createSupportPanels()
     new TGeoBBox(Form("NomexSupportPanelCh%dBox", i), length / 2., height / 2., kNomexSupportWidth / 2.);
 
     // create the nomex volume, change its shape by extracting the pipe shape and place it in the support panel
-    width += kNomexSupportWidth;
+    width = kNomexSupportWidth; // increment the width when adding a new layer
     support->AddNode(
       new TGeoVolume(
         Form("NomexSupportPanelCh%d", i),
@@ -607,17 +611,19 @@ void createHalfChambers()
   Value& hChs = doc["HalfChambers"];
   assert(hChs.IsArray());
 
+  int moduleID, nCh, detID;
+
   // loop over the objects (half-chambers) of the array
   for (const auto& halfCh : hChs.GetArray()) {
     // check that "halfCh" is an object
     if (!halfCh.IsObject())
       throw runtime_error("Can't create the half-chambers : wrong Value input");
 
-    const auto moduleID = halfCh["moduleID"].GetInt();
+    moduleID = halfCh["moduleID"].GetInt();
     const string name = halfCh["name"].GetString();
     // get the chamber number (if the chamber name has a '0' at the 3rd digit, take the number after; otherwise it's the
     // chamber 10)
-    const int nCh = (name.find('0') == 2) ? name[3] - '0' : 10;
+    nCh = (name.find('0') == 2) ? name[3] - '0' : 10;
 
     cout << endl << "Creating half-chamber " << name << endl;
     auto halfChVol = new TGeoVolumeAssembly(name.data());
@@ -634,7 +640,7 @@ void createHalfChambers()
       if (!slat.IsObject())
         throw runtime_error("Can't create the slat : wrong Value input");
 
-      const auto detID = slat["detID"].GetInt();
+      detID = slat["detID"].GetInt();
 
       cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
 
@@ -649,7 +655,7 @@ void createHalfChambers()
                                             slat["rotation"][5].GetDouble())));
 
     } // end of the node loop
-    cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << halfCh["name"].GetString() << endl;
+    cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << name << endl;
 
     // place the half-chamber in the top volume
     gGeoManager->GetTopVolume()->AddNode(
