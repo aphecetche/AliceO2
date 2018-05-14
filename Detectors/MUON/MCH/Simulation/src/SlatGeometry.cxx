@@ -346,6 +346,8 @@ void createSlats()
 
     // compute the LV cable length
     cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
+    if (typeName == "122200N")
+      cableLength = kSupportLengthCh6;
     cableLength -= length;
     if (typeName == "122330N")
       cableLength -= kGasLength;
@@ -401,6 +403,9 @@ void createSlats()
       xpos = (length - kVertSpacerLength) / 2.;
       xRoundedPos = xpos - panelShift / 2.;
 
+      // change the LV cable length for st.3 slats
+      cableLength = (typeName.find('S') < typeName.size()) ? kSupportLengthCh5 : kSupportLengthCh6;
+
       // change the above values if necessary
       switch (typeName.back()) { // get the last character
         case '1':                // central for "S(N)R1"
@@ -420,17 +425,16 @@ void createSlats()
           ypos = kRoundedSlatYposSt45;
           angMin =
             TMath::RadToDeg() * TMath::ASin((ypos - kSlatPanelHeight / 2.) / (radius + kRoundedSpacerLength / 2.));
+          cableLength = kSupportLengthSt45;
           break;
       }
 
-      // change the LV cable length
-      cableLength = (typeName.find('3') < typeName.size()) ? kSupportLengthSt45 : kSupportLengthCh5;
       cableLength -= xpos + length / 2.;
 
       // create and place the rounded spacer
-      auto rounded = gGeoManager->MakeTubs(Form("%s rounded spacer", name), assertMedium(Medium::Noryl), radius,
-                                           radius + kRoundedSpacerLength, kSpacerWidth, angMin, angMax);
-      slat->AddNode(rounded, 1, new TGeoTranslation(-xRoundedPos, -ypos, 0.));
+      slat->AddNode(gGeoManager->MakeTubs(Form("%s rounded spacer", name), assertMedium(Medium::Noryl), radius,
+                                          radius + kRoundedSpacerLength, kSpacerWidth, angMin, angMax),
+                    1, new TGeoTranslation(-xRoundedPos, -ypos, 0.));
 
       // create the pipe position
       auto pipeShift = new TGeoTranslation(Form("%sPanelHoleShift", name), -xpos, -ypos, 0.);
