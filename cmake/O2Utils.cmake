@@ -371,7 +371,6 @@ CHECK_VARIABLE(PARSED_ARGS_WORKFLOW_NAME "You must provide an executable name")
   ############### build the executable #####################
   ADD_EXECUTABLE(${PARSED_ARGS_WORKFLOW_NAME} ${PARSED_ARGS_SOURCES})
   FOREACH(bucket ${PARSED_ARGS_DETECTOR_BUCKETS})
-    MESSAGE(${bucket})
     O2_TARGET_LINK_BUCKET(
       TARGET ${PARSED_ARGS_WORKFLOW_NAME}
       BUCKET ${bucket}
@@ -401,6 +400,11 @@ endfunction(O2_FRAMEWORK_WORKFLOW)
 # arg TEST_SRCS
 # arg MODULE_LIBRARY_NAME - Name of the library of the module this executable belongs to.
 function(O2_GENERATE_TESTS)
+
+if (NOT BUILD_TESTING)
+return()
+endif()
+
   cmake_parse_arguments(
       PARSED_ARGS
       "" # bool args
