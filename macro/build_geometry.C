@@ -178,13 +178,10 @@ void build_geometry(FairRunSim* run = nullptr)
     run->AddModule(new o2::fit::Detector(true));
   }
 
-<<<<<<< HEAD
   if (isActivated("HMP")) {
     // HMP
     run->AddModule(new o2::hmpid::Detector(true));
   }
-=======
->>>>>>> Creation of the MCH Detector class.
 
   if (geomonly) {
     run->Init();

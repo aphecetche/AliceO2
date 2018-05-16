@@ -59,10 +59,7 @@ find_package(FairRoot REQUIRED)
 find_package(FairMQ REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(Configuration REQUIRED)
-<<<<<<< HEAD
 find_package(Monitoring REQUIRED)
-=======
->>>>>>> Creation of the MCH simulation module.
 find_package(RapidJSON REQUIRED)
 
 find_package(GLFW)
