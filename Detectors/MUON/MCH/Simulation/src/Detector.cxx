@@ -63,10 +63,12 @@ Bool_t Detector::ProcessHits(FairVolume* v)
   int id = fMC->CurrentVolID(copy);
 
   std::cout << fMC->CurrentVolPath() << " id=" << id << " copy=" << copy << "\n";
-
-  if (fMC->IsTrackEntering()) {
-    std::cout << "Track entering\n";
-  }
+  
+  int off,offcopy;
+  int idm = fMC->CurrentVolOffID(off,offcopy);
+  std::cout << "-----" << idm << "\n";
+  
+   if (fMC->IsTrackEntering()) { std::cout << "Track entering\n"; }
   if (fMC->IsTrackExiting()) {
     std::cout << "Track exiting\n";
   }
