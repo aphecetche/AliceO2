@@ -70,8 +70,7 @@ void Stepper::process(const TVirtualMC& vmc)
   }
 
   if (t.isEntering()) {
-    mTrackEloss = 0.0;
-    mTrackLength = 0.0;
+    resetStep();
     // float x,y,z;
     // vmc.TrackPosition(x,y,z);
   }
@@ -84,12 +83,8 @@ void Stepper::process(const TVirtualMC& vmc)
   const float GeV2KeV = 1E6;
 
   if (t.isExiting() || t.isStopped()) {
-    if (mTrackEloss > 0) {
       mHits->emplace_back(stack->GetCurrentTrackNumber(), detElemId, mTrackEloss * GeV2KeV, mTrackLength);
-    } else {
-      mTrackEloss = 0.0;
-      mTrackLength = 0.0;
-    }
+      resetStep();
   }
 }
 
@@ -98,6 +93,11 @@ void Stepper::registerHits(const char* branchName)
   if (FairRootManager::Instance()) {
     FairRootManager::Instance()->RegisterAny(branchName, mHits, kTRUE);
   }
+}
+
+void Stepper::resetStep() {
+    mTrackEloss = 0.0;
+    mTrackLength = 0.0;
 }
 
 void Stepper::resetHits() { mHits->clear(); }

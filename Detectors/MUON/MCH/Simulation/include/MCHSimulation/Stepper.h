@@ -38,6 +38,7 @@ class Stepper
  private:
   void countProcesses(const TVirtualMC& vmc);
   void showProcesses();
+  void resetStep();
 
  private:
   float mTrackEloss{ 0.0 };
