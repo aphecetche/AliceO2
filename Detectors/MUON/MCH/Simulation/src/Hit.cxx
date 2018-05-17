@@ -8,15 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifdef __CLING__
+#include "MCHSimulation/Hit.h"
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+ClassImp(o2::mch::Hit);
 
-#pragma link C++ class o2::mch::Detector + ;
-#pragma link C++ class o2::mch::Hit + ;
-#pragma link C++ class std::vector < o2::mch::Hit > +;
-#pragma link C++ class o2::Base::DetImpl < o2::mch::Detector > +;
-
-#endif

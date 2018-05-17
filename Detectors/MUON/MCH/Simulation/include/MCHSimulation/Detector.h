@@ -12,15 +12,16 @@
 #define O2_MCH_SIMULATION_DETECTOR_H
 
 #include "DetectorsBase/Detector.h"
-#include "SimulationDataFormat/BaseHits.h"
-#include <iostream>
+#include "MCHSimulation/Hit.h"
+#include <vector>
+#include <memory>
 
 namespace o2
 {
 namespace mch
 {
 
-using MchHit = ::o2::BaseHit;
+class Stepper;
 
 class Detector : public o2::Base::DetImpl<Detector>
 {
@@ -33,21 +34,26 @@ class Detector : public o2::Base::DetImpl<Detector>
 
   void Initialize() override;
 
-  void Register() override {}
+  void Register() override;
 
   void Reset() override {}
 
   void ConstructGeometry() override;
 
-  std::vector<MchHit>* getHits(int) { return nullptr; }
+  std::vector<o2::mch::Hit>* getHits(int);
+
+  void EndOfEvent() override;
 
  private:
   void defineSensitiveVolumes();
 
-  ClassDefOverride(Detector, 1)
+ private:
+  std::unique_ptr<o2::mch::Stepper> mStepper{nullptr};
+
+  ClassDefOverride(Detector, 1);
 };
 
-} // namespace mch
+} // namespace mc
 } // namespace o2
 
 #endif

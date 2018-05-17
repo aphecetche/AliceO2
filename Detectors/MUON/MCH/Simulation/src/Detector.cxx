@@ -9,14 +9,9 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHSimulation/Detector.h"
-
 #include "MCHSimulation/SlatGeometry.h"
-
+#include "MCHSimulation/Stepper.h"
 #include "TGeoManager.h"
-#include "TVirtualMC.h"
-#include <stdexcept>
-
-#include "TStopwatch.h"
 
 ClassImp(o2::mch::Detector);
 
@@ -25,11 +20,16 @@ namespace o2
 namespace mch
 {
 
-Detector::Detector(bool active) : o2::Base::DetImpl<Detector>("MCH", active) {}
+Detector::Detector(bool active)
+  : o2::Base::DetImpl<Detector>("MCH", active), mStepper{ std::make_unique<o2::mch::Stepper>() }
+{
+}
 
 void Detector::defineSensitiveVolumes()
 {
-
+  // TODO: the slatgeometry should construct a list of volume names
+  // and then this method will call AddSensititiveVolume for all
+  // so we don't need here the detail of kPcbTypes...
   for (const auto& pcb : kPcbTypes) {
 
     const auto& volName = pcb.first;
@@ -49,31 +49,24 @@ void Detector::Initialize()
   o2::Base::Detector::Initialize();
 }
 
-void Detector::ConstructGeometry()
-{
-
-  TStopwatch timer;
-  createSlatGeometry();
-  timer.Print("m");
-}
+void Detector::ConstructGeometry() { createSlatGeometry(); }
 
 Bool_t Detector::ProcessHits(FairVolume* v)
 {
-  int copy;
-  int id = fMC->CurrentVolID(copy);
-
-  std::cout << fMC->CurrentVolPath() << " id=" << id << " copy=" << copy << "\n";
-  
-  int off,offcopy;
-  int idm = fMC->CurrentVolOffID(off,offcopy);
-  std::cout << "-----" << idm << "\n";
-  
-   if (fMC->IsTrackEntering()) { std::cout << "Track entering\n"; }
-  if (fMC->IsTrackExiting()) {
-    std::cout << "Track exiting\n";
-  }
+  mStepper->process(*fMC);
   return kTRUE;
 }
+
+std::vector<o2::mch::Hit>* Detector::getHits(int) { return nullptr; /*return mStepper->getHits();*/ }
+
+void Detector::Register()
+{
+  // TODO : get another way to do I/O (i.e. separate concerns)
+
+  mStepper->registerHits(addNameTo("Hit").c_str());
+}
+
+void Detector::EndOfEvent() { mStepper->resetHits(); }
 
 } // namespace mch
 } // namespace o2
