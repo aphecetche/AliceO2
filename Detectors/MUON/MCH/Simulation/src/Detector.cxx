@@ -9,12 +9,43 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHSimulation/Detector.h"
-#include "MCHSimulation/SlatGeometry.h"
-#include "MCHSimulation/Stepper.h"
+#include "SlatGeometry.h"
+#include "Stepper.h"
+#include "TGeoManager.h"
+#include <sstream>
+#include <iostream>
+#include <array>
 #include "TGeoManager.h"
 
 ClassImp(o2::mch::Detector);
 
+namespace
+{
+std::string chamberName(int chamberNumber, bool inside)
+{
+  std::ostringstream name;
+  name << "SC" << std::setw(2) << std::setfill('0') << chamberNumber << (inside ? "I" : "O");
+  return name.str();
+}
+void dumpGeometry()
+{
+  // try to find back volume of slats
+  for (auto ch = 5; ch <= 10; ++ch) {
+    for (auto inside : std::array<bool, 2>{ true, false }) {
+      auto chname = chamberName(ch, inside);
+      auto vol = gGeoManager->GetVolume(chname.c_str());
+      if (!vol) {
+        std::cout << "could not get volume " << chname << std::endl;
+        continue;
+      }
+      TIter next(vol->GetNodes());
+      while (TGeoNode* node = static_cast<TGeoNode*>(next())) {
+        std::cout << node->GetName() << " index=" << node->GetIndex() << " number=" << node->GetNumber() << "\n";
+      }
+    }
+  }
+}
+} // namespace
 namespace o2
 {
 namespace mch
@@ -25,21 +56,12 @@ Detector::Detector(bool active)
 {
 }
 
+Detector::~Detector() = default;
+
 void Detector::defineSensitiveVolumes()
 {
-  // TODO: the slatgeometry should construct a list of volume names
-  // and then this method will call AddSensititiveVolume for all
-  // so we don't need here the detail of kPcbTypes...
-  for (const auto& pcb : kPcbTypes) {
-
-    const auto& volName = pcb.first;
-    auto vol = gGeoManager->GetVolume(Form("%s gas", volName.data()));
-
-    if (!vol) {
-      LOG(WARNING) << std::string("could not get expected volume ") + std::string(volName);
-    } else {
+  for (auto* vol : getSlatSensitiveVolumes()) {
       AddSensitiveVolume(vol);
-    }
   }
 }
 
@@ -49,7 +71,11 @@ void Detector::Initialize()
   o2::Base::Detector::Initialize();
 }
 
-void Detector::ConstructGeometry() { createSlatGeometry(); }
+void Detector::ConstructGeometry()
+{
+  createSlatGeometry();
+  dumpGeometry();
+}
 
 Bool_t Detector::ProcessHits(FairVolume* v)
 {

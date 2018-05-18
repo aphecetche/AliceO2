@@ -28,7 +28,7 @@ class Detector : public o2::Base::DetImpl<Detector>
  public:
   Detector(bool active = true);
 
-  ~Detector() override = default;
+  ~Detector() override;
 
   Bool_t ProcessHits(FairVolume* v = nullptr) override;
 
@@ -48,7 +48,7 @@ class Detector : public o2::Base::DetImpl<Detector>
   void defineSensitiveVolumes();
 
  private:
-  std::unique_ptr<o2::mch::Stepper> mStepper{nullptr};
+  std::unique_ptr<o2::mch::Stepper> mStepper{nullptr}; //!
 
   ClassDefOverride(Detector, 1);
 };

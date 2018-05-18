@@ -8,34 +8,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_SIMULATION_HIT_H
-#define O2_MCH_SIMULATION_HIT_H
+/// \file   SlatGeometry.h
+/// \brief  Implementation of the slat-stations geometry
+/// \author Florian Damas <florian.damas@cern.ch>
+/// \date   22 mars 2018
 
-#include "SimulationDataFormat/BaseHits.h"
+#ifndef O2_MCH_SIMULATION_SLATGEOMETRY_H
+#define O2_MCH_SIMULATION_SLATGEOMETRY_H
+
+#include <string>
+#include <vector>
+
+class TGeoVolume;
 
 namespace o2
 {
 namespace mch
 {
 
-class Hit : public ::o2::BasicXYZEHit<float> {
+void createSlatGeometry();
 
-public:
-  Hit(float x = 0, float y = 0, float z = 0, float tof = 0, float eloss = 0, int trackId = 0, short detElemId = 0, float length = 0.0)
-    : ::o2::BasicXYZEHit<float>(x,y,z,tof,eloss,trackId,detElemId), mLength{ length }
-  {
-  }
-
-  float detElemId() const { return GetDetectorID(); }
-
-  private:
-
-  float mLength{0.0};
-
-  ClassDefNV(Hit,1);
-};
+std::vector<TGeoVolume*> getSlatSensitiveVolumes();
 
 } // namespace mch
 } // namespace o2
-
 #endif

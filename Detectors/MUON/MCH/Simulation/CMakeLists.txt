@@ -5,16 +5,16 @@ O2_SETUP(NAME ${MODULE_NAME})
 set(SRCS
    src/Detector.cxx
    src/Materials.cxx
+   src/Materials.h
    src/SlatGeometry.cxx
+   src/SlatGeometry.h
    src/Stepper.cxx
+   src/Stepper.h
 )
 
 set(HEADERS
    include/${MODULE_NAME}/Detector.h
    include/${MODULE_NAME}/Hit.h
-   include/${MODULE_NAME}/Materials.h
-   include/${MODULE_NAME}/SlatGeometry.h
-   include/${MODULE_NAME}/Stepper.h
 )
 
 SET(LINKDEF src/MCHSimulationLinkDef.h)

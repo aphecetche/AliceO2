@@ -13,7 +13,7 @@
 /// \author Florian Damas <florian.damas@cern.ch>
 /// \date   22 mars 2018
 
-#include "MCHSimulation/Materials.h"
+#include "Materials.h"
 
 using namespace std;
 

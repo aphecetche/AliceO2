@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHSimulation/Stepper.h"
+#include "Stepper.h"
 
 #include "SimulationDataFormat/Stack.h"
 #include "SimulationDataFormat/TrackReference.h"
@@ -71,8 +71,6 @@ void Stepper::process(const TVirtualMC& vmc)
 
   if (t.isEntering()) {
     resetStep();
-    // float x,y,z;
-    // vmc.TrackPosition(x,y,z);
   }
 
   mTrackEloss += vmc.Edep();
@@ -80,10 +78,10 @@ void Stepper::process(const TVirtualMC& vmc)
 
   countProcesses(vmc);
 
-  const float GeV2KeV = 1E6;
-
   if (t.isExiting() || t.isStopped()) {
-      mHits->emplace_back(stack->GetCurrentTrackNumber(), detElemId, mTrackEloss * GeV2KeV, mTrackLength);
+     float x,y,z;
+     vmc.TrackPosition(x,y,z);
+      mHits->emplace_back(x,y,z,0.0,mTrackEloss,stack->GetCurrentTrackNumber(), detElemId, mTrackLength);
       resetStep();
   }
 }
