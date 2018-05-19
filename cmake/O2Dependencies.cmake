@@ -1569,6 +1569,14 @@ o2_define_bucket(
 
 o2_define_bucket(
     NAME
+    mch_simulation_test_bucket
+
+    DEPENDENCIES
+    mch_simulation_bucket
+)
+
+o2_define_bucket(
+    NAME
     mch_preclustering_bucket
 
     DEPENDENCIES

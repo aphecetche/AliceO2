@@ -22,3 +22,7 @@ Set(LIBRARY_NAME ${MODULE_NAME})
 set(BUCKET_NAME mch_simulation_bucket)
 
 O2_GENERATE_LIBRARY()
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

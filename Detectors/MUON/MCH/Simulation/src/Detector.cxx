@@ -27,9 +27,11 @@ std::string chamberName(int chamberNumber, bool inside)
   name << "SC" << std::setw(2) << std::setfill('0') << chamberNumber << (inside ? "I" : "O");
   return name.str();
 }
+
 void dumpGeometry()
 {
-  // try to find back volume of slats
+  //TODO: instead of dumping geometry, must turn this function
+  // into DECoordinateTransformer object(s) ...
   for (auto ch = 5; ch <= 10; ++ch) {
     for (auto inside : std::array<bool, 2>{ true, false }) {
       auto chname = chamberName(ch, inside);
@@ -40,7 +42,9 @@ void dumpGeometry()
       }
       TIter next(vol->GetNodes());
       while (TGeoNode* node = static_cast<TGeoNode*>(next())) {
-        std::cout << node->GetName() << " index=" << node->GetIndex() << " number=" << node->GetNumber() << "\n";
+        if (strstr(node->GetName(), "support")==nullptr) {
+          std::cout << node->GetName() << " index=" << node->GetIndex() << " number=" << node->GetNumber() << "\n";
+        }
       }
     }
   }
@@ -61,7 +65,7 @@ Detector::~Detector() = default;
 void Detector::defineSensitiveVolumes()
 {
   for (auto* vol : getSlatSensitiveVolumes()) {
-      AddSensitiveVolume(vol);
+    AddSensitiveVolume(vol);
   }
 }
 
