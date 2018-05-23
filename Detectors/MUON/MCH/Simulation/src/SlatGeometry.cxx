@@ -186,7 +186,7 @@ void createSlatGeometry()
   // create the necessary media
   createSlatGeometryMaterials();
 
-  materialManager().printMaterials();
+  // materialManager().printMaterials();
 
   // create the identical volumes shared by many elements
   createCommonVolumes();
@@ -248,13 +248,13 @@ void createPCBs()
     manuShift; // useful parameters for dimensions and positions
   int numb;    // number characterizing the PCB
 
-  cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
+  // cout << endl << "Creating " << kPcbTypes.size() << " types of PCBs" << endl;
   for (const auto& pcbType : kPcbTypes) { // loop over the PCB types of the array
 
     const string pcbName = pcbType.first;
     auto name = (const char*)pcbName.data();
 
-    cout << "PCB type " << name << endl;
+    // cout << "PCB type " << name << endl;
     auto pcb = new TGeoVolumeAssembly(name);
 
     gasShift = 0.;
@@ -420,7 +420,7 @@ void createSlats()
   /// Slat building function
   /// The different PCB types must have been built before calling this function !!!
 
-  cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
+  // cout << endl << "Creating " << kSlatTypes.size() << " types of slat" << endl;
 
   // Define some necessary variables
   float length, center, PCBlength, gasLength, ypos, xpos, xRoundedPos, angMin, angMax, radius, width, cableLength,
@@ -432,7 +432,7 @@ void createSlats()
     auto name = (const char*)typeName.data(); // slat name (easier to name volumes)
     const auto PCBs = slatType.second;        // PCB names vector
 
-    cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
+    // cout << "Slat " << name << " which has " << PCBs.size() << " PCBs" << endl;
 
     // create the slat volume assembly
     auto slat = new TGeoVolumeAssembly(name);
@@ -755,7 +755,7 @@ void createHalfChambers()
     // chamber 10)
     nCh = (name.find('0') == 2) ? name[3] - '0' : 10;
 
-    cout << endl << "Creating half-chamber " << name << endl;
+    // cout << endl << "Creating half-chamber " << name << endl;
     auto halfChVol = new TGeoVolumeAssembly(name.data());
 
     // place the support panel corresponding to the chamber number
@@ -772,7 +772,7 @@ void createHalfChambers()
 
       detID = slat["detID"].GetInt();
 
-      cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
+      // cout << "Placing the slat " << detID << " of type " << slat["type"].GetString() << endl;
 
       // place the slat on the half-chamber volume
       halfChVol->AddNode(
@@ -785,7 +785,7 @@ void createHalfChambers()
                                             slat["rotation"][5].GetDouble())));
 
     } // end of the node loop
-    cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << name << endl;
+    // cout << halfCh["nodes"].Size() << " slats placed on the half-chamber " << name << endl;
 
     // place the half-chamber in the top volume
     gGeoManager->GetTopVolume()->AddNode(
@@ -802,12 +802,12 @@ void createHalfChambers()
       gGeoManager->GetTopVolume()
         ->GetNode(Form("%s_%d", name.data(), moduleID))
         ->SetMotherVolume(gGeoManager->GetVolume("DDIP"));
-      cout << endl << "Placing " << name << " in the Dipole" << endl;
+      // cout << endl << "Placing " << name << " in the Dipole" << endl;
       gGeoManager->GetTopVolume()->GetNode(Form("%s_%d", name.data(), moduleID))->Print();
     }
   } // end of the half-chambers loop
 
-  cout << endl << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
+  // cout << endl << hChs.Size() << " half-chambers placed on the top volume" << endl << endl;
 }
 
 //______________________________________________________________________________

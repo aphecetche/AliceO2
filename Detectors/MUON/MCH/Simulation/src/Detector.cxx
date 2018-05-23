@@ -19,37 +19,7 @@
 
 ClassImp(o2::mch::Detector);
 
-namespace
-{
-std::string chamberName(int chamberNumber, bool inside)
-{
-  std::ostringstream name;
-  name << "SC" << std::setw(2) << std::setfill('0') << chamberNumber << (inside ? "I" : "O");
-  return name.str();
-}
 
-void dumpGeometry()
-{
-  //TODO: instead of dumping geometry, must turn this function
-  // into DECoordinateTransformer object(s) ...
-  for (auto ch = 5; ch <= 10; ++ch) {
-    for (auto inside : std::array<bool, 2>{ true, false }) {
-      auto chname = chamberName(ch, inside);
-      auto vol = gGeoManager->GetVolume(chname.c_str());
-      if (!vol) {
-        std::cout << "could not get volume " << chname << std::endl;
-        continue;
-      }
-      TIter next(vol->GetNodes());
-      while (TGeoNode* node = static_cast<TGeoNode*>(next())) {
-        if (strstr(node->GetName(), "support")==nullptr) {
-          std::cout << node->GetName() << " index=" << node->GetIndex() << " number=" << node->GetNumber() << "\n";
-        }
-      }
-    }
-  }
-}
-} // namespace
 namespace o2
 {
 namespace mch
@@ -78,7 +48,6 @@ void Detector::Initialize()
 void Detector::ConstructGeometry()
 {
   createSlatGeometry();
-  dumpGeometry();
 }
 
 Bool_t Detector::ProcessHits(FairVolume* v)

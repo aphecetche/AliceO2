@@ -14,6 +14,7 @@
 /// \date   22 mars 2018
 
 #include "Materials.h"
+#include "TGeoManager.h"
 
 using namespace std;
 
@@ -31,6 +32,22 @@ int autoIncrementedMaterialId()
   return ++nmat;
 }
 
+void dump(const char* msg, TList* list)
+{
+  std::cout << msg << "\n";
+  TIter next(list);
+  TObject* mat;
+  while ((mat = next())) {
+    TGeoMedium* m = dynamic_cast<TGeoMedium*>(mat);
+    std::cout << "UID=" << mat->GetUniqueID();
+    if (m) {
+      std::cout << " Id=" << m->GetId();
+    }
+    std::cout << "\n";
+    mat->Print();
+  }
+}
+
 void createSlatGas(int fieldType, float maxField)
 {
   // Ar 80% + CO2 20%
@@ -44,6 +61,9 @@ void createSlatGas(int fieldType, float maxField)
   materialManager().Mixture(moduleName, imat, "Ar 80% + CO2 20%", a, z, d, n, w);
   materialManager().Medium(moduleName, Medium::SlatGas, "Ar 80% + CO2 20%", imat, 1, fieldType, maxField, kMaxfd,
                            kStemax, kDeemax, kEpsil, kStmin);
+
+  // dump("--- Materials", gGeoManager->GetListOfMaterials());
+  // dump("--- Media", gGeoManager->GetListOfMedia());
 }
 
 void createCarbon(int fieldType, float maxField)
