@@ -25,7 +25,7 @@ namespace o2
 namespace mch
 {
 
-void createStation2Geometry();
+void createStation2Geometry(TGeoVolume& topVolume);
 
 std::vector<TGeoVolume*> getStation2SensitiveVolumes();
 

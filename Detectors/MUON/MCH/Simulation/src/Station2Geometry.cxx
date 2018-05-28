@@ -91,6 +91,8 @@ TGeoVolume* createQuadrant()
 
   // Segment 0 - Horizontal box
 
+  auto seg0 = new TGeoVolumeAssembly("Segment 0");
+
   length = kHalfSegment0Length;
   height = kHalfSegment0Height;
 
@@ -100,45 +102,50 @@ TGeoVolume* createQuadrant()
 
   // gas
   width = kAnodeCathodeGap;
-  quadrant->AddNode(gGeoManager->MakeBox("Segment 0 gas", gas, length, height, width), 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(gGeoManager->MakeBox("Segment 0 gas", gas, length, height, width), 1, new TGeoTranslation(x, y, z));
   z += width;
 
   // copper sheet
   width = kEffCopperWidth / 2.;
   z += width;
   auto copper0 = gGeoManager->MakeBox("SCU0L", copper, length, height, width);
-  quadrant->AddNode(copper0, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(copper0, 2, new TGeoTranslation(x, y, -z));
+  seg0->AddNode(copper0, 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(copper0, 2, new TGeoTranslation(x, y, -z));
 
   // cathode
   width = kCathodeWidth / 2.;
   z += width;
   auto cathode0 = gGeoManager->MakeBox("SCB0L", FR4, length, height, width);
-  quadrant->AddNode(cathode0, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(cathode0, 2, new TGeoTranslation(x, y, -z));
+  seg0->AddNode(cathode0, 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(cathode0, 2, new TGeoTranslation(x, y, -z));
 
   // rohacell
   width = kRohaWidth / 2.;
   z += width;
   auto rohacell0 = gGeoManager->MakeBox("SRH0L", rohacell, length, height, width);
-  quadrant->AddNode(rohacell0, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(rohacell0, 2, new TGeoTranslation(x, y, -z));
+  seg0->AddNode(rohacell0, 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(rohacell0, 2, new TGeoTranslation(x, y, -z));
 
   // mechanical exit board
   width = kMechExitBoardWidth / 2.;
   z += width;
   auto mech0 = gGeoManager->MakeBox("SMB0L", FR4, length, height, width);
-  quadrant->AddNode(mech0, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(mech0, 2, new TGeoTranslation(x, y, -z));
+  seg0->AddNode(mech0, 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(mech0, 2, new TGeoTranslation(x, y, -z));
 
   // effective electronic exit board
   width = kEffElecReadBoardWidth / 2.;
   z += width;
   auto elec0 = gGeoManager->MakeBox("SEB0L", copper, length, height, width);
-  quadrant->AddNode(elec0, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(elec0, 2, new TGeoTranslation(x, y, -z));
+  seg0->AddNode(elec0, 1, new TGeoTranslation(x, y, z));
+  seg0->AddNode(elec0, 2, new TGeoTranslation(x, y, -z));
+
+  // place the segment 0 in the quadrant
+  quadrant->AddNode(seg0, 0);
 
   // Segment 1 - Polygon
+
+  auto seg1 = new TGeoVolumeAssembly("Segment 1");
 
   x = 0.;
   y = 0.;
@@ -160,7 +167,7 @@ TGeoVolume* createQuadrant()
   width = kAnodeCathodeGap;
   par[4] = -width; // z-position of the first plane
   par[7] = width;  // z-position of the second plane
-  quadrant->AddNode(new TGeoVolume("Segment 1 gas", new TGeoPgon(par), gas), 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(new TGeoVolume("Segment 1 gas", new TGeoPgon(par), gas), 1, new TGeoTranslation(x, y, z));
   z += width;
 
   // copper sheet
@@ -169,8 +176,8 @@ TGeoVolume* createQuadrant()
   par[7] = width;  // z-position of the second plane
   z += width;
   auto copper1 = new TGeoVolume("SCU1L", new TGeoPgon(par), copper);
-  quadrant->AddNode(copper1, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(copper1, 2, new TGeoTranslation(x, y, -z));
+  seg1->AddNode(copper1, 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(copper1, 2, new TGeoTranslation(x, y, -z));
 
   // cathode
   width = kCathodeWidth / 2.;
@@ -178,8 +185,8 @@ TGeoVolume* createQuadrant()
   par[7] = width;  // z-position of the second plane
   z += width;
   auto cathode1 = new TGeoVolume("SCB1L", new TGeoPgon(par), FR4);
-  quadrant->AddNode(cathode1, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(cathode1, 2, new TGeoTranslation(x, y, -z));
+  seg1->AddNode(cathode1, 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(cathode1, 2, new TGeoTranslation(x, y, -z));
 
   // rohacell
   width = kRohaWidth / 2.;
@@ -187,8 +194,8 @@ TGeoVolume* createQuadrant()
   par[7] = width;  // z-position of the second plane
   z += width;
   auto rohacell1 = new TGeoVolume("SRH1L", new TGeoPgon(par), rohacell);
-  quadrant->AddNode(rohacell1, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(rohacell1, 2, new TGeoTranslation(x, y, -z));
+  seg1->AddNode(rohacell1, 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(rohacell1, 2, new TGeoTranslation(x, y, -z));
 
   // mechanical exit board
   width = kMechExitBoardWidth / 2.;
@@ -196,8 +203,8 @@ TGeoVolume* createQuadrant()
   par[7] = width;  // z-position of the second plane
   z += width;
   auto mech1 = new TGeoVolume("SMB1L", new TGeoPgon(par), FR4);
-  quadrant->AddNode(mech1, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(mech1, 2, new TGeoTranslation(x, y, -z));
+  seg1->AddNode(mech1, 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(mech1, 2, new TGeoTranslation(x, y, -z));
 
   // effective electronic exit board
   width = kEffElecReadBoardWidth / 2.;
@@ -205,10 +212,14 @@ TGeoVolume* createQuadrant()
   par[7] = width;  // z-position of the second plane
   z += width;
   auto elec1 = new TGeoVolume("SEB1L", new TGeoPgon(par), copper);
-  quadrant->AddNode(elec1, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(elec1, 2, new TGeoTranslation(x, y, -z));
+  seg1->AddNode(elec1, 1, new TGeoTranslation(x, y, z));
+  seg1->AddNode(elec1, 2, new TGeoTranslation(x, y, -z));
+
+  // place the segment 1 volume in the quadrant
+  quadrant->AddNode(seg1, 1);
 
   // Segment 2 - Vertical box
+  auto seg2 = new TGeoVolumeAssembly("Segment 2");
 
   length = kHalfSegment2Length;
   height = kHalfSegment2Height;
@@ -219,43 +230,46 @@ TGeoVolume* createQuadrant()
 
   // gas
   width = kAnodeCathodeGap;
-  quadrant->AddNode(gGeoManager->MakeBox("Segment 2 gas", gas, length, height, width), 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(gGeoManager->MakeBox("Segment 2 gas", gas, length, height, width), 1, new TGeoTranslation(x, y, z));
   z += width;
 
   // copper sheet
   width = kEffCopperWidth / 2.;
   z += width;
   auto copper2 = gGeoManager->MakeBox("SCU2L", copper, length, height, width);
-  quadrant->AddNode(copper2, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(copper2, 2, new TGeoTranslation(x, y, -z));
+  seg2->AddNode(copper2, 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(copper2, 2, new TGeoTranslation(x, y, -z));
 
   // cathode
   width = kCathodeWidth / 2.;
   z += width;
   auto cathode2 = gGeoManager->MakeBox("SCB2L", FR4, length, height, width);
-  quadrant->AddNode(cathode2, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(cathode2, 2, new TGeoTranslation(x, y, -z));
+  seg2->AddNode(cathode2, 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(cathode2, 2, new TGeoTranslation(x, y, -z));
 
   // rohacell
   width = kRohaWidth / 2.;
   z += width;
   auto rohacell2 = gGeoManager->MakeBox("SRH2L", rohacell, length, height, width);
-  quadrant->AddNode(rohacell2, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(rohacell2, 2, new TGeoTranslation(x, y, -z));
+  seg2->AddNode(rohacell2, 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(rohacell2, 2, new TGeoTranslation(x, y, -z));
 
   // mechanical exit board
   width = kMechExitBoardWidth / 2.;
   z += width;
   auto mech2 = gGeoManager->MakeBox("SMB2L", FR4, length, height, width);
-  quadrant->AddNode(mech2, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(mech2, 2, new TGeoTranslation(x, y, -z));
+  seg2->AddNode(mech2, 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(mech2, 2, new TGeoTranslation(x, y, -z));
 
   // effective electronic exit board
   width = kEffElecReadBoardWidth / 2.;
   z += width;
   auto elec2 = gGeoManager->MakeBox("SEB2L", copper, length, height, width);
-  quadrant->AddNode(elec2, 1, new TGeoTranslation(x, y, z));
-  quadrant->AddNode(elec2, 2, new TGeoTranslation(x, y, -z));
+  seg2->AddNode(elec2, 1, new TGeoTranslation(x, y, z));
+  seg2->AddNode(elec2, 2, new TGeoTranslation(x, y, -z));
+
+  // place the segment 2 in the quadrant
+  quadrant->AddNode(seg2, 2);
 
   /* TODO
   /// Frames
@@ -574,7 +588,7 @@ TGeoVolume* createQuadrant()
 }
 
 //______________________________________________________________________________
-void createStation2Geometry()
+void createStation2Geometry(TGeoVolume& topVolume)
 {
   /// Create the geometry of the station 2
 
@@ -593,9 +607,6 @@ void createStation2Geometry()
   detElemId[1] = 0; // quadrant II
   detElemId[2] = 3; // quadrant III
   detElemId[3] = 2; // quadrant IV
-
-  // Get the top volume (cave)
-  auto top = gGeoManager->GetTopVolume();
 
   // Build the two chambers
   float posz = 0.;
@@ -617,8 +628,8 @@ void createStation2Geometry()
     }
 
     // place the half-chambers in the top volume
-    top->AddNode(in, 2 * (ich - 1), new TGeoTranslation(0., 0., kChamberZpos[ich - 3]));
-    top->AddNode(out, 2 * ich - 1, new TGeoTranslation(0., 0., kChamberZpos[ich - 3]));
+    topVolume.AddNode(in, 2 * (ich - 1), new TGeoTranslation(0., 0., kChamberZpos[ich - 3]));
+    topVolume.AddNode(out, 2 * ich - 1, new TGeoTranslation(0., 0., kChamberZpos[ich - 3]));
 
   } // end of the chamber loop
 }

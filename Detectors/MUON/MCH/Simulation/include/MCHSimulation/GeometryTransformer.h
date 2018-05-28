@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_GEOMETRYTRANSFORMER_H
-#define O2_MCH_GEOMETRYTRANSFORMER_H
+#ifndef O2_MCH_SIMULATION_GEOMETRYTRANSFORMER_H
+#define O2_MCH_SIMULATION_GEOMETRYTRANSFORMER_H
 
 #include "MathUtils/Cartesian3D.h"
 
@@ -19,14 +19,8 @@ namespace o2
 {
 namespace mch
 {
-class DECoordinateTransformer
-{
- public:
-  Point3D<double> localToGlobal(const Point3D<double>& local);
-  Point3D<double> GlobalToLocal(const Point3D<double>& global);
-};
 
-DECoordinateTransformer getTransformer(int detElemId, const TGeoManager& geo);
+o2::Transform3D getTransformation(int detElemId, const TGeoManager& geo);
 
 } // namespace mch
 } // namespace o2

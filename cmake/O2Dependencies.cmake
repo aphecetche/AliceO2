@@ -1581,6 +1581,9 @@ o2_define_bucket(
 
     DEPENDENCIES
     mch_simulation_bucket
+    mch_mapping_impl3_bucket
+    MCHMappingImpl3
+    MCHSimulation
 )
 
 o2_define_bucket(

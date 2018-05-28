@@ -677,7 +677,7 @@ void createSupportPanels()
 }
 
 //______________________________________________________________________________
-void buildHalfChambers()
+void buildHalfChambers(TGeoVolume& topVolume)
 {
   /// Build the slat half-chambers
   /// The different slat types must have been built before calling this function !!!
@@ -691,9 +691,6 @@ void buildHalfChambers()
   // get the "half-chambers" array
   Value& hChs = doc["HalfChambers"];
   assert(hChs.IsArray());
-
-  // get the top volume (cave)
-  auto top = gGeoManager->GetTopVolume();
 
   int moduleID = 0, nCh = 0, detID = 0;
 
@@ -738,7 +735,7 @@ void buildHalfChambers()
     } // end of the node loop
 
     // place the half-chamber in the top volume
-    top->AddNode(
+    topVolume.AddNode(
       halfChVol, moduleID,
       new TGeoCombiTrans(halfCh["position"][0].GetDouble(), halfCh["position"][1].GetDouble(),
                          halfCh["position"][2].GetDouble(),
@@ -749,7 +746,7 @@ void buildHalfChambers()
 
     // if the dipole is present in the geometry, we place the station 3 half-chambers in it (actually not working)
     if (gGeoManager->GetVolume("Dipole") && (nCh == 5 || nCh == 6))
-      top->GetNode(Form("%s_%d", name.data(), moduleID))->SetMotherVolume(gGeoManager->GetVolume("DDIP"));
+      topVolume.GetNode(Form("%s_%d", name.data(), moduleID))->SetMotherVolume(gGeoManager->GetVolume("DDIP"));
 
   } // end of the half-chambers loop
 }
@@ -775,7 +772,7 @@ vector<TGeoVolume*> getStation345SensitiveVolumes()
 }
 
 //______________________________________________________________________________
-void createStation345Geometry()
+void createStation345Geometry(TGeoVolume& topVolume)
 {
   /// Main function which build and place the slats and the half-chambers volumes
   /// This function must me called by the MCH detector class to build the slat stations geometry.
@@ -793,7 +790,7 @@ void createStation345Geometry()
   createSlats();
 
   // create and place the half-chambers in the top volume
-  buildHalfChambers();
+  buildHalfChambers(topVolume);
 }
 
 //______________________________________________________________________________

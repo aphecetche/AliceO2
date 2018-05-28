@@ -22,12 +22,12 @@ namespace o2
 namespace mch
 {
 
-void createGeometry()
+void createGeometry(TGeoVolume& topVolume)
 {
   createMaterials();
-  createStation1Geometry();
-  createStation2Geometry();
-  createStation345Geometry();
+  createStation1Geometry(topVolume);
+  createStation2Geometry(topVolume);
+  createStation345Geometry(topVolume);
 }
 
 std::vector<TGeoVolume*> getSensitiveVolumes()
@@ -45,6 +45,7 @@ std::vector<TGeoVolume*> getSensitiveVolumes()
   }
   return vol;
 }
+
 
 } // namespace mch
 } // namespace o2

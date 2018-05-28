@@ -6,6 +6,7 @@ set(SRCS
    src/Detector.cxx
    src/Geometry.cxx
    src/Geometry.h
+   src/GeometryTransformer.cxx
    src/Hit.cxx
    src/Materials.cxx
    src/Materials.h
@@ -21,6 +22,7 @@ set(SRCS
 
 set(HEADERS
    include/${MODULE_NAME}/Detector.h
+   include/${MODULE_NAME}/GeometryTransformer.h
    include/${MODULE_NAME}/Hit.h
 )
 

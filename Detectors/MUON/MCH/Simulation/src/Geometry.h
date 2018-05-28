@@ -23,7 +23,8 @@ namespace o2
 namespace mch
 {
 
-void createGeometry();
+// createGeometry creates MCH geometry and attach it to topVolume
+void createGeometry(TGeoVolume& topVolume);
 
 std::vector<TGeoVolume*> getSensitiveVolumes();
 

@@ -1510,7 +1510,7 @@ TGeoVolume* createQuadrant(int chamber)
 }
 
 //______________________________________________________________________________
-void createStation1Geometry()
+void createStation1Geometry(TGeoVolume& topVolume)
 {
 
   // Create basic volumes
@@ -1549,9 +1549,6 @@ void createStation1Geometry()
   detElemId[2] = 3; // quadrant III
   detElemId[3] = 2; // quadrant IV
 
-  // Get the top volume (cave)
-  auto top = gGeoManager->GetTopVolume();
-
   // Build the two chambers
   float posx = 0., posy = 0., posz = 0.;
   for (int ich = 1; ich < 3; ich++) {
@@ -1575,8 +1572,8 @@ void createStation1Geometry()
     }
 
     // place the half-chambers in the top volume
-    top->AddNode(in, 2 * (ich - 1), new TGeoTranslation(0., 0., kChamberZpos[ich - 1]));
-    top->AddNode(out, 2 * ich - 1, new TGeoTranslation(0., 0., kChamberZpos[ich - 1]));
+    topVolume.AddNode(in, 2 * (ich - 1), new TGeoTranslation(0., 0., kChamberZpos[ich - 1]));
+    topVolume.AddNode(out, 2 * ich - 1, new TGeoTranslation(0., 0., kChamberZpos[ich - 1]));
 
   } // end of the chamber loop
 }

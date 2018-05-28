@@ -47,7 +47,11 @@ void Detector::Initialize()
 
 void Detector::ConstructGeometry()
 {
-  createGeometry();
+  TGeoVolume* top = gGeoManager->GetTopVolume();
+  if (!top) {
+    throw std::runtime_error("Cannot create MCH geometry without a top volume");
+  }
+  createGeometry(*top);
 }
 
 Bool_t Detector::ProcessHits(FairVolume* v)
