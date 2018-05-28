@@ -38,8 +38,11 @@ struct GEOMETRY {
   }
 };
 
-const std::array<std::string, 12> chamberNames{ "SC05I", "SC05O", "SC06I", "SC06O", "SC07I", "SC07O",
-                                                "SC08I", "SC08O", "SC09I", "SC09O", "SC10I", "SC10O" };
+const std::array<std::string, 8> quadrantChamberNames{ "SC01I", "SC01O", "SC02I", "SC02O", "SC03I", "SC03O",
+                                                        "SC04I", "SC04O" };
+
+const std::array<std::string, 12> slatChamberNames{ "SC05I", "SC05O", "SC06I", "SC06O", "SC07I", "SC07O",
+                                                    "SC08I", "SC08O", "SC09I", "SC09O", "SC10I", "SC10O" };
 
 BOOST_AUTO_TEST_SUITE(o2_mch_simulation)
 
@@ -47,6 +50,10 @@ BOOST_FIXTURE_TEST_SUITE(geometrytransformer, GEOMETRY)
 
 BOOST_AUTO_TEST_CASE(CanGetAllChambers)
 {
+  std::vector<std::string> chamberNames{quadrantChamberNames.begin(),quadrantChamberNames.end()};
+
+  chamberNames.insert(chamberNames.end(),slatChamberNames.begin(),slatChamberNames.end());
+
   for (auto chname : chamberNames) {
     auto vol = gGeoManager->GetVolume(chname.c_str());
     BOOST_TEST_REQUIRE((vol != nullptr));
@@ -57,7 +64,7 @@ BOOST_AUTO_TEST_CASE(GetRightNumberOfSlats)
 {
   int nslats{ 0 };
 
-  for (auto chname : chamberNames) {
+  for (auto chname : slatChamberNames) {
     auto vol = gGeoManager->GetVolume(chname.c_str());
     TIter next(vol->GetNodes());
     while (TGeoNode* node = static_cast<TGeoNode*>(next())) {
@@ -67,6 +74,22 @@ BOOST_AUTO_TEST_CASE(GetRightNumberOfSlats)
     }
   }
   BOOST_CHECK_EQUAL(nslats, 140);
+}
+
+BOOST_AUTO_TEST_CASE(GetRightNumberOfQuadrants)
+{
+  int nquads{ 0 };
+
+  for (auto chname : quadrantChamberNames) {
+    auto vol = gGeoManager->GetVolume(chname.c_str());
+    TIter next(vol->GetNodes());
+    while (TGeoNode* node = static_cast<TGeoNode*>(next())) {
+      if (strstr(node->GetName(), "support") == nullptr) {
+        nquads++;
+      }
+    }
+  }
+  BOOST_CHECK_EQUAL(nquads, 16);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
