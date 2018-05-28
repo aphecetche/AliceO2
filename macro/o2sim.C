@@ -31,8 +31,8 @@ void o2sim()
   auto genconfig = confref.getGenerator();
 
   auto run = new FairRunSim();
-  // run->SetImportTGeoToVMC(false); // do not import TGeo to VMC since the latter is built together with TGeo
-  run->SetImportTGeoToVMC(true); // do not import TGeo to VMC since the latter is built together with TGeo
+  //run->SetImportTGeoToVMC(true); // geometry is created by TGeo and then fed to VMC
+  run->SetImportTGeoToVMC(false); // do not import TGeo to VMC since the latter is built together with TGeo
   run->SetSimSetup([confref]() { o2::SimSetup::setup(confref.getMCEngine().c_str()); });
   std::string outputfilename = confref.getOutPrefix() + ".root";
   run->SetOutputFile(outputfilename.c_str());  // Output file
@@ -86,30 +86,6 @@ void o2sim()
     py8Gen->SetParameters(
       ("HeavyIon:bWidth " + std::to_string(confref.getBMax())).c_str()); // impact parameter from 0-x [fm]
     primGen->AddGenerator(py8Gen);
-  } else if (genconfig.compare("fwmugen") == 0) {
-    // a simple "box" generator for forward muons
-    std::cout << "Init box forward muons generator\n";
-    auto boxGen = new FairBoxGenerator(13, 1); /* mu- */
-    boxGen->SetEtaRange(-2.5, -4.0);
-    boxGen->SetPRange(100.0, 100.0);
-    boxGen->SetPhiRange(0., 360.);
-    primGen->AddGenerator(boxGen);
-  } else if (genconfig.compare("fwpigen") == 0) {
-    // a simple "box" generator for forward pions
-    std::cout << "Init box forward muons generator\n";
-    auto boxGen = new FairBoxGenerator(-211, 1); /* pi- */
-    boxGen->SetEtaRange(-2.5, -4.0);
-    boxGen->SetPRange(7.0,7.0);
-    boxGen->SetPhiRange(0., 360.);
-    primGen->AddGenerator(boxGen);
-  } else if (genconfig.compare("fwrootino") == 0) {
-    // a simple "box" generator for forward rootinos
-    std::cout << "Init box forward rootinos generator\n";
-    auto boxGen = new FairBoxGenerator(0,1); /* mu- */
-    boxGen->SetEtaRange(-2.5, -4.0);
-    boxGen->SetPRange(1, 5);
-    boxGen->SetPhiRange(0., 360.);
-    primGen->AddGenerator(boxGen);
   } else {
     LOG(FATAL) << "Invalid generator" << FairLogger::endl;
   }
