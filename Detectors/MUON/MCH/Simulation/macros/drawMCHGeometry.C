@@ -13,14 +13,13 @@
 #include "DetectorsPassive/FrameStructure.h"
 #include "MCHSimulation/Detector.h"
 #include "FairRunSim.h"
-#include "TGeoManager.h"
-#include "TObjArray.h"
-#include "TObjString.h"
-#include "TROOT.h"
-#include "TString.h"
-#include "TSystem.h"
 
-#include "MCHSimulation/SlatGeometry.h"
+#include <TGeoManager.h>
+#include <TObjArray.h>
+#include <TObjString.h>
+#include <TROOT.h>
+#include <TString.h>
+#include <TSystem.h>
 
 #include <boost/program_options.hpp>
 #include <iomanip>
@@ -66,7 +65,7 @@ void drawMCHgeometry()
     TObjString* name;
     while ((name = (TObjString*)iToHide->Next()))
       gGeoManager->GetVolume(name->GetName())->SetVisibility(kFALSE);
-    TString ToShow = "SC05I SC05O SC06I SC06O SC07I SC07O SC08I SC08O SC09I SC09O SC10I SC10O";
+    TString ToShow = "SC01I SC01O SC02I SC02O SC03I SC03O SC04I SC04O SC05I SC05O SC06I SC06O SC07I SC07O SC08I SC08O SC09I SC09O SC10I SC10O";
     TObjArray* lToShow = ToShow.Tokenize(" ");
     TIter* iToShow = new TIter(lToShow);
     while ((name = (TObjString*)iToShow->Next())){
@@ -86,8 +85,6 @@ void drawMCHgeometry()
         printf("Volume %s not found ...\n", name->GetName());
     }
   }
-
-  gGeoManager->GetListOfVolumes()->ls();
 
   gGeoManager->GetTopVolume()->Draw();
   gGeoManager->Export("MCHgeometry.root");

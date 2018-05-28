@@ -4,10 +4,17 @@ O2_SETUP(NAME ${MODULE_NAME})
 
 set(SRCS
    src/Detector.cxx
+   src/Geometry.cxx
+   src/Geometry.h
+   src/Hit.cxx
    src/Materials.cxx
    src/Materials.h
-   src/SlatGeometry.cxx
-   src/SlatGeometry.h
+   src/Station1Geometry.cxx
+   src/Station1Geometry.h
+   src/Station2Geometry.cxx
+   src/Station2Geometry.h
+   src/Station345Geometry.cxx
+   src/Station345Geometry.h
    src/Stepper.cxx
    src/Stepper.h
 )

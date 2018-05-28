@@ -21,7 +21,7 @@
 #include <boost/test/data/test_case.hpp>
 #include <fstream>
 #include <iostream>
-#include "../src/SlatGeometry.h"
+#include "../src/Geometry.h"
 #include "TGeoManager.h"
 #include <iomanip>
 
@@ -33,8 +33,7 @@ struct GEOMETRY {
     if (!gGeoManager) {
       TGeoManager* g = new TGeoManager("TEST", "MCH");
       g->SetTopVolume(g->MakeBox("cave", nullptr, 2000.0, 2000.0, 3000.0));
-      o2::mch::createSlatGeometry();
-      std::cout << "Created slats geometry\n";
+      o2::mch::createGeometry();
     }
   }
 };

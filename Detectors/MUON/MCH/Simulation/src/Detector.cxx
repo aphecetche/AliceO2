@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHSimulation/Detector.h"
-#include "SlatGeometry.h"
+#include "Geometry.h"
 #include "Stepper.h"
 #include "TGeoManager.h"
 #include <sstream>
@@ -34,7 +34,7 @@ Detector::~Detector() = default;
 
 void Detector::defineSensitiveVolumes()
 {
-  for (auto* vol : getSlatSensitiveVolumes()) {
+  for (auto* vol : getSensitiveVolumes()) {
     AddSensitiveVolume(vol);
   }
 }
@@ -47,7 +47,7 @@ void Detector::Initialize()
 
 void Detector::ConstructGeometry()
 {
-  createSlatGeometry();
+  createGeometry();
 }
 
 Bool_t Detector::ProcessHits(FairVolume* v)

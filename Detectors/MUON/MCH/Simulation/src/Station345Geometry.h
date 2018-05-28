@@ -13,10 +13,9 @@
 /// \author Florian Damas <florian.damas@cern.ch>
 /// \date   22 mars 2018
 
-#ifndef O2_MCH_SIMULATION_SLATGEOMETRY_H
-#define O2_MCH_SIMULATION_SLATGEOMETRY_H
+#ifndef O2_MCH_SIMULATION_STATION345GEOMETRY_H
+#define O2_MCH_SIMULATION_STATION345GEOMETRY_H
 
-#include <string>
 #include <vector>
 
 class TGeoVolume;
@@ -26,9 +25,9 @@ namespace o2
 namespace mch
 {
 
-void createSlatGeometry();
+void createStation345Geometry();
 
-std::vector<TGeoVolume*> getSlatSensitiveVolumes();
+std::vector<TGeoVolume*> getStation345SensitiveVolumes();
 
 } // namespace mch
 } // namespace o2

@@ -13,11 +13,10 @@
 /// \author Florian Damas <florian.damas@cern.ch>
 /// \date   22 mars 2018
 
-#ifndef O2_MCH_SIMULATION_SLATMATERIALS_H
-#define O2_MCH_SIMULATION_SLATMATERIALS_H
+#ifndef O2_MCH_SIMULATION_MATERIALS_H
+#define O2_MCH_SIMULATION_MATERIALS_H
 
-#include "DetectorsBase/Detector.h" // for the magnetic field
-#include "DetectorsBase/MaterialManager.h"
+#include <TGeoMedium.h>
 
 namespace o2
 {
@@ -25,61 +24,31 @@ namespace o2
 namespace mch
 {
 
-/// Definition of constants for the elements
-/// The atomic number and the atomic masse values are taken from the 2016 PDG booklet
-/// For the radiation and absorption lengths, we let the Virtual Monte-Carlo compute them internally
-
-// Hydrogen
-const float kZHydrogen = 1.;
-const float kAHydrogen = 1.00794;
-
-// Carbon
-const float kZCarbon = 6.;
-const float kACarbon = 12.0107;
-const float kDensCarbon = 2.265;
-
-// Nitrogen
-const float kZNitrogen = 7.;
-const float kANitrogen = 14.0067;
-
-// Oxygen
-const float kZOxygen = 8.;
-const float kAOxygen = 15.9994;
-
-// Silicon
-const float kZSilicon = 14.;
-const float kASilicon = 28.0855;
-
-// Argon
-const float kZArgon = 18.;
-const float kAArgon = 39.948;
-
-// Copper
-const float kZCopper = 29.;
-const float kACopper = 63.546;
-const float kDensCopper = 8.96;
-
-/// Tracking parameters (values taken from AliMUONCommonGeometryBuilder)
-const float kEpsil{ 0.001 }; // Tracking precision [cm]
-
-// negative values below means "let the MC transport code compute the values"
-const float kMaxfd{ -20. }; // Maximum deflection angle due to magnetic field
-const float kStemax{ -1. }; // Maximum displacement for multiple scattering [cm]
-const float kDeemax{ -.3 }; // Maximum fractional energy loss, DLS
-const float kStmin{ -.8 };  // Minimum step due to continuous processes [cm]
-
-enum Medium { Vacuum, SlatGas, Carbon, Nomex, NomexBulk, Noryl, Copper, FR4, Rohacell, Glue };
+enum Medium {
+  Gas,
+  Carbon,
+  HoneyNomex,
+  BulkNomex,
+  Noryl,
+  Copper,
+  FR4,
+  Rohacell,
+  Glue,
+  Plastic,
+  Epoxy,
+  Inox,
+  St1Rohacell,
+  Aluminium
+};
 
 // Return a pointer to the mch medium number imed.
 // Throws an exception if imed is not within Medium enum
 // and / or medium has not been defined yet.
 TGeoMedium* assertMedium(int imed);
 
-o2::Base::MaterialManager& materialManager();
-
-void createSlatGeometryMaterials();
+void createMaterials();
 
 } // namespace mch
 } // namespace o2
 
-#endif
+#endif // O2_MCH_SIMULATION_MATERIALS_H
