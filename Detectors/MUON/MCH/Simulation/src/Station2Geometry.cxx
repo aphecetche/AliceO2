@@ -83,7 +83,7 @@ TGeoVolume* createQuadrant()
   auto copper = assertMedium(Medium::Copper);
   auto FR4 = assertMedium(Medium::FR4);
   auto rohacell = assertMedium(Medium::Rohacell);
-  auto epoxy = assertMedium(Medium::Epoxy);
+  assertMedium(Medium::Epoxy);
 
   // create and place the different layers in the quadrant
 

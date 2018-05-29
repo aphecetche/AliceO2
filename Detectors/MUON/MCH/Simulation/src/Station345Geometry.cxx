@@ -560,7 +560,6 @@ void createSlats()
     width += kNomexWidth;
 
     panel->AddNode(carbon, 2, new TGeoTranslation(0., 0., width + kCarbonWidth / 2.));
-    width += kCarbonWidth;
 
     // place the panel volume on each side of the slat volume assembly
     x = panelShift / 2.;

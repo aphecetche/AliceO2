@@ -244,8 +244,6 @@ void createFrame(int chamber)
 
   //   Rotation matrices
   auto rot1 = new TGeoRotation("rot1", 90., 90., 90., 180., 0., 0.);   // +90 deg in x-y plane
-  auto rot2 = new TGeoRotation("rot2", 90., 45., 90., 135., 0., 0.);   // +45 deg in x-y plane
-  auto rot3 = new TGeoRotation("rot3", 90., 45., 90., 315., 180., 0.); // +45 deg in x-y + rotation 180 around y
   auto rot4 = new TGeoRotation("rot4", 90., 315., 90., 45., 0., 0.);   // -45 deg in x-y plane
 
   // ___________________Volume thicknesses________________________
