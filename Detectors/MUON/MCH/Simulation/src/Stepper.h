@@ -46,6 +46,7 @@ class Stepper
   std::vector<o2::mch::Hit>* mHits{ nullptr };
   std::array<int, kMaxMCProcess> mProcessCodes{};
   int mNofSteps{ 0 };
+  Point3D<float> mEntrancePoint;
 };
 
 } // namespace mch

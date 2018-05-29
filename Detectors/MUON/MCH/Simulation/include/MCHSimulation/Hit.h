@@ -18,21 +18,25 @@ namespace o2
 namespace mch
 {
 
-class Hit : public ::o2::BasicXYZEHit<float> {
+class Hit : public ::o2::BasicXYZEHit<float>
+{
 
-public:
-  Hit(float x = 0, float y = 0, float z = 0, float tof = 0, float eloss = 0, int trackId = 0, short detElemId = 0, float length = 0.0)
-    : ::o2::BasicXYZEHit<float>(x,y,z,tof,eloss,trackId,detElemId), mLength{ length }
+ public:
+  Hit(int trackId = 0, short detElemId=0, Point3D<float> entrancePoint = {}, const Point3D<float> exitPoint = {},
+      float eloss = 0.0, float length = 0.0, float tof = 0.0)
+    : ::o2::BasicXYZEHit<float>(entrancePoint.x(), entrancePoint.y(), entrancePoint.z(), tof, eloss, trackId, detElemId), mLength{ length }, mExitPoint(exitPoint)
   {
   }
 
+  Point3D<float> entrancePoint() const { return GetPos(); }
+  Point3D<float> exitPoint() const { return mExitPoint; }
+
   float detElemId() const { return GetDetectorID(); }
 
-  private:
-
-  float mLength{0.0};
-
-  ClassDefNV(Hit,1);
+ private:
+  float mLength = {};
+  Point3D<float> mExitPoint = {};
+  ClassDefNV(Hit, 1);
 };
 
 } // namespace mch
