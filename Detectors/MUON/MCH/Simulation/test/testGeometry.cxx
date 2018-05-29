@@ -140,6 +140,9 @@ BOOST_AUTO_TEST_CASE(GetMatrices)
 
   o2::mch::mapping::forEachDetectionElement([](int detElemId) {
     auto t = o2::mch::getTransformation(detElemId, *gGeoManager);
+    Point3D<float> m;
+    t.LocalToMaster({0,0,0},m);
+    std::cout << "DE " << std::setw(4) << detElemId << m << "\n";
   });
 }
 
