@@ -1565,12 +1565,13 @@ o2_define_bucket(
     DetectorsBase
     SimulationDataFormat
     RapidJSON
-
+    mch_contour_bucket
 
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/Detectors/Base/include
     ${CMAKE_SOURCE_DIR}/DataFormats/simulation/include
     ${CMAKE_SOURCE_DIR}/Common/MathUtils/include
+    ${CMAKE_SOURCE_DIR}/Detectors/MUON/MCH/Contour/include
     ${RAPIDJSON_INCLUDEDIR}/include
     ${MS_GSL_INCLUDE_DIR}
 )

@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   Geometry.h
-/// \brief  Interface for MCH geometry creation
+/// @file   Geometry.h
+/// @brief  Interface for MCH geometry creation
 
 #ifndef O2_MCH_SIMULATION_GEOMETRY_H
 #define O2_MCH_SIMULATION_GEOMETRY_H
@@ -23,10 +23,17 @@ namespace o2
 namespace mch
 {
 
-// createGeometry creates MCH geometry and attach it to topVolume
+/// createGeometry creates MCH geometry and attach it to topVolume
 void createGeometry(TGeoVolume& topVolume);
 
+/// get a list of MCH sensitive volumes
 std::vector<TGeoVolume*> getSensitiveVolumes();
+
+/// convenience method to create a top volume if not done otherwise
+TGeoVolume* createAirVacuumCave(const char* name="cave");
+
+/// tree like textual dump of the geometry nodes
+void showGeometryAsTextTree(const char* fromPath="", int maxdepth=2);
 
 } // namespace mch
 } // namespace o2

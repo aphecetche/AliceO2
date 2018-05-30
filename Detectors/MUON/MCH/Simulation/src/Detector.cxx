@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHSimulation/Detector.h"
-#include "Geometry.h"
+#include "MCHSimulation/Geometry.h"
 #include "Stepper.h"
 #include "TGeoManager.h"
 #include <sstream>

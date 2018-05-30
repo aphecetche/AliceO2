@@ -21,11 +21,12 @@
 #include <boost/test/data/test_case.hpp>
 #include <fstream>
 #include <iostream>
-#include "../src/Geometry.h"
 #include "TGeoManager.h"
 #include <iomanip>
 #include "MCHMappingInterface/Segmentation.h"
 #include "MCHSimulation/GeometryTransformer.h"
+#include "MCHSimulation/Radiographer.h"
+#include "MCHSimulation/Geometry.h"
 
 namespace bdata = boost::unit_test::data;
 
@@ -34,7 +35,7 @@ struct GEOMETRY {
   {
     if (!gGeoManager) {
       TGeoManager* g = new TGeoManager("TEST", "MCH");
-      TGeoVolume* top = g->MakeBox("cave", nullptr, 2000.0, 2000.0, 3000.0);
+      TGeoVolume* top = o2::mch::createAirVacuumCave("cave");
       g->SetTopVolume(top);
       o2::mch::createGeometry(*top);
     }
@@ -134,16 +135,31 @@ BOOST_AUTO_TEST_CASE(GetDetElemVolumePath, *boost::unit_test::disabled() * boost
   BOOST_CHECK_EQUAL(codeLines.size(), 156);
 }
 
-BOOST_AUTO_TEST_CASE(GetMatrices)
+BOOST_AUTO_TEST_CASE(GetTransformations)
 {
-  BOOST_REQUIRE(gGeoManager!=nullptr);
+  BOOST_REQUIRE(gGeoManager != nullptr);
 
   o2::mch::mapping::forEachDetectionElement([](int detElemId) {
-    auto t = o2::mch::getTransformation(detElemId, *gGeoManager);
-    Point3D<float> m;
-    t.LocalToMaster({0,0,0},m);
-    std::cout << "DE " << std::setw(4) << detElemId << m << "\n";
+    BOOST_CHECK_NO_THROW((o2::mch::getTransformation(detElemId, *gGeoManager)));
   });
+}
+
+BOOST_AUTO_TEST_CASE(RadLen)
+{
+  // HERE SHOULD CREATE A COARSE HISTOGRAM OF RADLEN FOR ONE DE
+  // and COMPARE WITH A REFERENCE ?
+
+  auto h = o2::mch::getRadio(1025,o2::mch::contour::BBox<float>{-120,-20,120,20},1,1);
+
+  BOOST_CHECK(false);
+}
+
+BOOST_AUTO_TEST_CASE(TextualTreeDump)
+{
+   o2::mch::showGeometryAsTextTree("",3); 
+   o2::mch::showGeometryAsTextTree("",2); 
+   o2::mch::showGeometryAsTextTree("",1); 
+   BOOST_CHECK(false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

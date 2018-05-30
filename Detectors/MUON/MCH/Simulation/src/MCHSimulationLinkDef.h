@@ -14,6 +14,14 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
+#pragma link C++ namespace o2::mch;
+
+#pragma link C++ function o2::mch::getRadio(int,o2::mch::contour::BBox<float>,int);
+#pragma link C++ function o2::mch::createGeometry(TGeoVolume&);
+#pragma link C++ function o2::mch::createAirVacuumCave(const char*);
+#pragma link C++ function o2::mch::getSensitiveVolumes;
+#pragma link C++ function o2::mch::showGeometryAsTextTree(const char*,int);
+
 #pragma link C++ class o2::mch::Detector + ;
 #pragma link C++ class o2::mch::Hit + ;
 #pragma link C++ class std::vector < o2::mch::Hit > +;
