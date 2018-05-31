@@ -15,25 +15,25 @@
 #define O2_MCH_SIMULATION_GEOMETRY_H
 
 #include <vector>
+#include <iostream>
+#include "MathUtils/Cartesian3D.h"
 
 class TGeoVolume;
+class TGeoManager;
 
 namespace o2
 {
 namespace mch
 {
 
-/// createGeometry creates MCH geometry and attach it to topVolume
+/// createGeometry creates MCH geometry and attach it to existing topVolume
 void createGeometry(TGeoVolume& topVolume);
 
 /// get a list of MCH sensitive volumes
 std::vector<TGeoVolume*> getSensitiveVolumes();
 
-/// convenience method to create a top volume if not done otherwise
-TGeoVolume* createAirVacuumCave(const char* name="cave");
-
-/// tree like textual dump of the geometry nodes
-void showGeometryAsTextTree(const char* fromPath="", int maxdepth=2);
+/// get the local-to-global transformation for a given detection element
+o2::Transform3D getTransformation(int detElemId, const TGeoManager& geo);
 
 } // namespace mch
 } // namespace o2

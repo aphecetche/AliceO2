@@ -8,23 +8,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifdef __CLING__
+#ifdef __CINT__
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
+
+#pragma link C++ namespace o2;
 #pragma link C++ namespace o2::mch;
+#pragma link C++ namespace o2::mch::test;
 
-#pragma link C++ function o2::mch::getRadio(int,o2::mch::contour::BBox<float>,int);
-#pragma link C++ function o2::mch::createGeometry(TGeoVolume&);
-#pragma link C++ function o2::mch::createAirVacuumCave(const char*);
+#pragma link C++ class o2::mch::Detector+;
+#pragma link C++ class o2::mch::Hit+;
+#pragma link C++ class std::vector<o2::mch::Hit +;
+#pragma link C++ class o2::Base::DetImpl<o2::mch::Detector>+;
+
+#pragma link C++ function o2::mch::createGeometry;
 #pragma link C++ function o2::mch::getSensitiveVolumes;
-#pragma link C++ function o2::mch::showGeometryAsTextTree(const char*,int);
 
-#pragma link C++ class o2::mch::Detector + ;
-#pragma link C++ class o2::mch::Hit + ;
-#pragma link C++ class std::vector < o2::mch::Hit > +;
-#pragma link C++ class o2::Base::DetImpl < o2::mch::Detector > +;
+#pragma link C++ function o2::mch::test::createStandaloneGeometry;
+#pragma link C++ function o2::mch::test::drawGeometry;
+#pragma link C++ function o2::mch::test::getRadio;
+#pragma link C++ function o2::mch::test::showGeometryAsTextTree;
 
 #endif
