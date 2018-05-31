@@ -31,5 +31,7 @@
 #pragma link C++ function o2::mch::test::drawGeometry;
 #pragma link C++ function o2::mch::test::getRadio;
 #pragma link C++ function o2::mch::test::showGeometryAsTextTree;
+#pragma link C++ function o2::mch::test::setVolumeVisibility;
+#pragma link C++ function o2::mch::test::setVolumeColor;
 
 #endif

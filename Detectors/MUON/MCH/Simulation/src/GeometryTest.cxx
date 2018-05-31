@@ -18,6 +18,7 @@
 #include "TGeoVolume.h"
 #include "TH2F.h"
 #include <iostream>
+#include "TPRegexp.h"
 
 namespace o2
 {
@@ -104,17 +105,61 @@ void createStandaloneGeometry()
   o2::mch::createGeometry(*top);
 }
 
-void setVisibility(const std::vector<std::string>& volnames, bool visible)
+void setVolumeVisibility(const char* pattern, bool visible, bool visibleDaughters)
 {
-  for (auto v : volnames) {
-    auto vol = gGeoManager->GetVolume(v.c_str());
-    if (vol) {
+  TPRegexp re(pattern);
+  TIter next(gGeoManager->GetListOfVolumes());
+  TGeoVolume* vol;
+
+  while ((vol = static_cast<TGeoVolume*>(next()))) {
+    if (TString(vol->GetName()).Contains(re)) {
       vol->SetVisibility(visible);
-      vol->VisibleDaughters(kTRUE);
-    } else {
-      std::cerr << "Volume " << v << " not found !\n";
+      vol->SetVisDaughters(visibleDaughters);
     }
   }
+}
+
+void setVolumeColor(const char* pattern, int lineColor, int fillColor)
+{
+  TPRegexp re(pattern);
+  TIter next(gGeoManager->GetListOfVolumes());
+  TGeoVolume* vol;
+
+  while ((vol = static_cast<TGeoVolume*>(next()))) {
+    if (TString(vol->GetName()).Contains(re)) {
+      vol->SetFillColor(fillColor);
+      vol->SetLineColor(lineColor);
+    }
+  }
+}
+
+void drawOptionPresetBasic()
+{
+  gGeoManager->SetVisLevel(4);
+
+  setVolumeVisibility("cave", false, true);
+
+  // Hide to half-chamber top volumes
+  setVolumeVisibility("^SC", false, true);
+
+  // Hide St345 support panels
+  setVolumeVisibility("support panel", false, false);
+
+  // Hide St345 LV wires
+  setVolumeVisibility(" LV ", false, false);
+
+  // Make St345 carbon panels dark gray
+  setVolumeColor("panel carbon", kGray + 3);
+
+  // Make St345 insulators dark green
+  setVolumeColor("insulator", kGreen + 3);
+
+  // Hide most of St1
+  setVolumeVisibility("SQ", false, true);
+
+  // Only reveal gas module
+  setVolumeVisibility("SA", true, true);
+  setVolumeColor("SA", kCyan - 10);
 }
 
 void drawGeometry()
@@ -123,15 +168,16 @@ void drawGeometry()
 
   createStandaloneGeometry();
 
-  setVisibility({ "cave" }, false);
+  drawOptionPresetBasic();
 
-  const std::vector<std::string> toShow{ "SC01I", "SC01O", "SC02I", "SC02O", "SC03I", "SC03O", "SC04I",
-                                         "SC04O", "SC05I", "SC05O", "SC06I", "SC06O", "SC07I",
-                                         "SC07O", "SC08I", "SC08O", "SC09I", "SC09O", "SC10I", "SC10O" };
+  gGeoManager->GetTopVolume()->Draw("ogl");
 
-  setVisibility(toShow, true);
+  TGLViewer* gl = static_cast<TGLViewer*>(gPad->GetViewer3D("ogl"));
+  TGLCamera& c = gl->CurrentCamera();
 
-  gGeoManager->GetTopVolume()->Draw();
+  // g->SetStyle(TGLRnrCtx::kWireFrame);
+  g->SetStyle(TGLRnrCtx::kOutline);
+  // g->SetStyle(TGLRnrCtx::kFill);
 }
 
 o2::Base::GeometryManager::MatBudget getMatBudget(const o2::Transform3D& t, Vector3D<double>& n, float x, float y, float thickness)

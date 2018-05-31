@@ -32,6 +32,16 @@ void showGeometryAsTextTree(const char* fromPath = "", int maxdepth = 2, std::os
 /// basic drawing of the geometry
 void drawGeometry();
 
+
+/// set the volume and daughter visibility for all volumes with a name matching the regexp pattern
+void setVolumeVisibility(const char* pattern, bool visible, bool visibleDaughters);
+
+/// set the volume line and fill for all volumes with a name matching the regexp pattern
+void setVolumeColor(const char* pattern, int lineColor, int fillColor);
+inline void setVolumeColor(const char* pattern, int color) {
+    setVolumeColor(pattern,color,color);
+}
+
 /// get a radlen radiograph of a given detection element within box with the given granularity
 TH2* getRadio(int detElemId, float xmin, float ymin, float xmax, float ymax, float xstep, float ystep, float thickness = 5 /* cm */);
 
