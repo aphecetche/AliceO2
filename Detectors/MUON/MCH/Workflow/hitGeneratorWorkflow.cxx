@@ -14,19 +14,21 @@
 #include "hitGeneratorWorkflow.h"
 
 #include "Framework/runDataProcessing.h"
-#include "Framework/DataAllocator.h"
+
 #include "Framework/AlgorithmSpec.h"
-#include "Framework/ProcessingContext.h"
-#include "Framework/InitContext.h"
+#include "Framework/DataAllocator.h"
 #include "Framework/DataProcessorSpec.h"
-#include "MCHMappingInterface/Segmentation.h"
-#include <iostream>
-#include <chrono>
-#include <Headers/DataHeader.h>
-#include <Framework/DataProcessingHeader.h>
-#include "Framework/OutputSpec.h"
-#include "generateHitPositions.h"
 #include "Framework/ExternalFairMQDeviceProxy.h"
+#include "Framework/InitContext.h"
+#include "Framework/Lifetime.h"
+#include "Framework/OutputSpec.h"
+#include "Framework/ProcessingContext.h"
+#include "MCHMappingInterface/Segmentation.h"
+#include "generateHitPositions.h"
+#include <Framework/DataProcessingHeader.h>
+#include <Headers/DataHeader.h>
+#include <chrono>
+#include <iostream>
 
 using o2::mch::mapping::Segmentation;
 using namespace std::chrono_literals;
@@ -92,7 +94,7 @@ of::AlgorithmSpec::ProcessCallback initDigitizer(of::InitContext& itx)
     auto ref = ctx.inputs().get("mch-hits");
     auto hits = of::DataRefUtils ::as<FakeHit>(ref);
     LOG(WARNING) << "digitizer #input hits=" << hits.size();
-    auto digits = ctx.allocator().make<FakeDigit>(of::OutputSpec{ "MCH", "DIGITS",
+    auto digits = ctx.outputs().make<FakeDigit>(of::Output{ "MCH", "DIGITS",
     static_cast<o2::header::DataHeader::SubSpecificationType>(detElemId) }, static_cast<size_t>(hits.size()));
     digitize(seg, hits, digits);
     sleep(1);
@@ -110,8 +112,8 @@ of::AlgorithmSpec::ProcessCallback initHitGenerator(of::InitContext& itx)
   LOG(WARNING) << "detElemId=" << detElemId << " nhits=" << nhits;
 
   return [seg, nhits, detElemId](of::ProcessingContext& ctx) {
-    auto outputHits = ctx.allocator().make<FakeHit>(
-      of::OutputSpec{ "MCH", "HITS", static_cast<o2::header::DataHeader::SubSpecificationType>(detElemId) },
+    auto outputHits = ctx.outputs().make<FakeHit>(
+      of::Output{ "MCH", "HITS", static_cast<o2::header::DataHeader::SubSpecificationType>(detElemId) },
       static_cast<size_t>(nhits));
     generateFakeHits(outputHits, seg);
     sleep(1);
@@ -137,7 +139,7 @@ of::DataProcessorSpec hitGeneratorSpec(uint detElemId)
     // clang-format off
       "mch-hit-generator",
       noInput,
-      of::Outputs{{"MCH", "HITS", detElemId, of::OutputSpec::Lifetime::Timeframe}},
+      of::Outputs{{"MCH", "HITS", detElemId, of::Lifetime::Timeframe}},
       of::AlgorithmSpec{initHitGenerator},
       { detElemIdOption("which detection element to generate hits for"),
         nofHitPerDEOption("number of hits to generate per detection element")
@@ -151,7 +153,7 @@ of::DataProcessorSpec hitDumper(uint detElemId)
   return {
     // clang-format off
       "mch-hit-dumper",
-      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::Lifetime::Timeframe}},
       noOutput,
       of::AlgorithmSpec{[](of::ProcessingContext& ctx) {
         LOG(INFO) << "hit dump";
@@ -169,8 +171,8 @@ of::DataProcessorSpec hitDumper(uint detElemId)
   return {
     // clang-format off
       "mch-digitizer",
-      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
-      of::Outputs{{"MCH","DIGITS",detElemId, of::OutputSpec::Lifetime::Timeframe}},
+      of::Inputs{{"mch-hits", "MCH", "HITS", detElemId, of::Lifetime::Timeframe}},
+      of::Outputs{{"MCH","DIGITS",detElemId, of::Lifetime::Timeframe}},
       of::AlgorithmSpec{initDigitizer},
       { detElemIdOption("which detection element to digitize") }
     // clang-format on
@@ -184,7 +186,7 @@ of::InjectorFunction digo2digi(of::OutputSpec spec) {
 
 of::DataProcessorSpec digotizerSpec(uint detElemId)
 {
-  of::OutputSpec outspec{ "MCH", "DIGITS", detElemId, of::OutputSpec::Lifetime::Timeframe };
+  of::OutputSpec outspec{ "MCH", "DIGITS", detElemId, of::Lifetime::Timeframe };
 
   return of::specifyExternalFairMQDeviceProxy(
     // clang-format off
@@ -200,7 +202,7 @@ of::DataProcessorSpec preclusterizerSpec(uint detElemId)
   return {
     // clang-format off
       "mch-preclusterizer",
-      of::Inputs{{"mch-digits", "MCH", "DIGITS", detElemId, of::InputSpec::Lifetime::Timeframe}},
+      of::Inputs{{"mch-digits", "MCH", "DIGITS", detElemId, of::Lifetime::Timeframe}},
       noOutput,
       of::AlgorithmSpec{[](of::ProcessingContext& ctx) {
         auto refs = ctx.inputs().get("mch-digits");
@@ -236,10 +238,9 @@ of::WorkflowSpec digitizerWorkflow(uint detElemId)
       // clang-format on
   };
 }
-void defineDataProcessing(of::WorkflowSpec& specs)
+
+of::WorkflowSpec defineDataProcessing(const of::ConfigContext& configContext)
 {
   //of::WorkflowSpec workflow{ hitGeneratorWorkflow(512) };
-  of::WorkflowSpec workflow{ digitizerWorkflow(512) };
-
-  specs.swap(workflow);
+  return digitizerWorkflow(512);
 }
