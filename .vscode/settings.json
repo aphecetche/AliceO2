@@ -1,6 +1,6 @@
 {
     "cmake.configureSettings": {
-        "CMAKE_INSTALL_PREFIX": "/Users/laurent/alice/sw/osx_x86-64/latest-dpl-mch-test-o2-ninja",
+        "CMAKE_INSTALL_PREFIX": "/Users/laurent/alice/sw/osx_x86-64/O2/latest-dpl-mch-test-o2-ninja",
         "ALICEO2_MODULAR_BUILD": "ON",
         "FairRoot_DIR": "/Users/laurent/alice/sw/osx_x86-64/FairRoot/latest-dpl-mch-test-o2-ninja/",
         "BOOST_ROOT": "/Users/laurent/alice/sw/osx_x86-64/boost/latest-dpl-mch-test-o2-ninja/",
@@ -30,5 +30,9 @@
         "BUILD_TESTING": "OFF",
         "CMAKE_CXX_STANDARD": "14",
     },
-    "cmake.buildDirectory": "/Users/laurent/alice/sw/BUILD/O2-latest-dpl-mch-test/O2"
+    "cmake.buildDirectory": "/Users/laurent/alice/sw/BUILD/O2-latest-dpl-mch-test/O2",
+    "files.associations": {
+        "queue": "cpp",
+        "stack": "cpp"
+    }
 }
