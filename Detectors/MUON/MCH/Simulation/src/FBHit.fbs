@@ -1,0 +1,23 @@
+namespace o2.mch.sim;
+
+struct Pos3D {
+    x:float;
+    y:float;
+    z:float;
+}
+
+table FBHit {
+    track_id:int;
+    de_id:short; 
+    eloss:float;
+    entrance:Pos3D;
+    exit:Pos3D;
+    length:float;
+    tof:float;
+}
+
+table FBHitPayload {
+    hits:[FBHit];
+}
+
+root_type FBHitPayload;
