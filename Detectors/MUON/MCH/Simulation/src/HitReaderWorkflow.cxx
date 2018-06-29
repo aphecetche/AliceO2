@@ -11,7 +11,7 @@
 #include "Framework/WorkflowSpec.h"
 #include "Framework/ConfigContext.h"
 
-#include "HitReaderSpec.h"
+#include "HitReader.h"
 #include <string>
 #include <iostream>
 
@@ -33,7 +33,7 @@ of::WorkflowSpec defineDataProcessing(const of::ConfigContext& configContext)
 
   workflow.emplace_back(of::createSamplerSpec(
     "HitReader",
-    of::AlgorithmSpec{ [hitFileName](of::InitContext& ) { return o2::mch::hitReaderInitCallback(hitFileName); } },
+    of::adaptFromTask<o2::mch::HitReader>(hitFileName.c_str()),
     of::Outputs{ of::OutputSpec{ "MUON", "HITS" } }));
 
   workflow.emplace_back(of::DataProcessorSpec{

@@ -21,16 +21,16 @@
 using namespace o2::framework;
 
 // This is a stateful task, where we send the state downstream.
-class ATask : public Task
+class ATask
 {
  public:
   ATask(int state)
     : mSomeState{ state } {}
-  virtual void init(InitContext& ic) final override
+  void init(InitContext& ic)
   {
     mSomeState += 1;
   }
-  virtual void run(ProcessingContext& pc) final override
+  void run(ProcessingContext& pc)
   {
     auto result = pc.outputs().make<int>({ "dummy" }, 1);
     result[0] = mSomeState;
@@ -44,10 +44,11 @@ class ATask : public Task
 
 // This is a stateless sink, where we verify that the state
 // we receive from ATask is the one we expected.
-class BTask : public Task
+class BTask
 {
  public:
-  virtual void run(ProcessingContext& pc) final
+  void init(InitContext&) {}
+  void run(ProcessingContext& pc)
   {
     auto result = pc.inputs().get<int>("in");
     ASSERT_ERROR(result == 2);

@@ -36,6 +36,6 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-add_executable(mch-hit-reader src/HitReaderWorkflow.cxx src/HitReaderSpec.cxx)
+add_executable(mch-hit-reader src/HitReaderWorkflow.cxx src/HitReader.cxx)
 target_link_libraries(mch-hit-reader Framework MCHSimulation)
 install(TARGETS mch-hit-reader RUNTIME DESTINATION bin)
