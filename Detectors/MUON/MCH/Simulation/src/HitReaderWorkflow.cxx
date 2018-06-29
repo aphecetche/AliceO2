@@ -29,18 +29,16 @@ of::WorkflowSpec defineDataProcessing(const of::ConfigContext& configContext)
 {
   of::WorkflowSpec workflow;
 
-  auto& opt = configContext.options();
-
-  auto hitFileName = opt.get<std::string>("hitfile");
+  auto hitFileName = configContext.options().get<std::string>("hitfile");
 
   workflow.emplace_back(of::createSamplerSpec(
     "HitReader",
-    o2::mch::createHitReaderAlgo(hitFileName.c_str()),
+    of::AlgorithmSpec{ [hitFileName](of::InitContext& ) { return o2::mch::hitReaderInitCallback(hitFileName); } },
     of::Outputs{ of::OutputSpec{ "MUON", "HITS" } }));
 
   workflow.emplace_back(of::DataProcessorSpec{
     "Digitizer",
-    { of::InputSpec{ "mchhits", "MUON","HITS" } },
+    { of::InputSpec{ "mchhits", "MUON", "HITS" } },
     { of::OutputSpec{ "MUON", "DIGITS" } },
     of::AlgorithmSpec{
       [](of::ProcessingContext& pc) {
@@ -52,7 +50,7 @@ of::WorkflowSpec defineDataProcessing(const of::ConfigContext& configContext)
 
   workflow.emplace_back(of::createSinkSpec(
     "DigitDumper",
-    { of::InputSpec{ "mchdigits","MUON","DIGITS" } },
+    { of::InputSpec{ "mchdigits", "MUON", "DIGITS" } },
     of::AlgorithmSpec{ [](of::ProcessingContext& pc) {
       std::cout << "would consume digits here\n";
     } }));

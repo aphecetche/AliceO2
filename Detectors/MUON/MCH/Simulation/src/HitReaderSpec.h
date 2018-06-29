@@ -18,7 +18,7 @@ namespace o2
 namespace mch
 {
 
-o2::framework::AlgorithmSpec createHitReaderAlgo(const char* hitFileName);
+o2::framework::AlgorithmSpec::ProcessCallback hitReaderInitCallback(std::string hitFileName);
 
 }
 } // namespace o2
