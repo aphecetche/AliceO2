@@ -12,7 +12,7 @@
 #include "Framework/AlgorithmSpec.h"
 #include "Framework/InitContext.h"
 #include "Framework/ControlService.h"
-
+#include "MCHSimulation/Hit.h"
 #include "TFile.h"
 #include "TTree.h"
 #include <iostream>
@@ -24,7 +24,8 @@ namespace o2
 namespace mch
 {
 
-namespace impl {
+namespace impl
+{
 
 TFile& getFile(std::string fileName)
 {
@@ -63,8 +64,8 @@ class TreeBranchWrapper
  public:
   TreeBranchWrapper(const char* fileName, const char* treeName, const char* branchName)
     : mFile(impl::getFile(fileName)),
-      mTree(impl::getTree(mFile,treeName)),
-      mBranch(impl::getBranch(mTree,branchName))
+      mTree(impl::getTree(mFile, treeName)),
+      mBranch(impl::getBranch(mTree, branchName))
   {
     std::cout << "TreeBranchWrapper ctor " << this << "\n";
   }
@@ -77,22 +78,24 @@ class TreeBranchWrapper
   TBranch& getBranch() const { return mBranch; }
 };
 
-}
+} // namespace impl
 
-of::AlgorithmSpec createHitReaderAlgo(const char* hitFileName)
+of::AlgorithmSpec::ProcessCallback hitReaderInitCallback(std::string hitFileName)
 {
-  std::cout << "createHitReaderAlgo(" << hitFileName << ")\n";
-
-  auto tbw = std::make_shared<impl::TreeBranchWrapper>(hitFileName, "o2sim", "MCHHit");
-  return of::AlgorithmSpec{ [tbw](of::ProcessingContext& pc) {
+  auto tbw = std::make_shared<impl::TreeBranchWrapper>(hitFileName.c_str(), "o2sim", "MCHHit");
+  return [tbw](of::ProcessingContext& pc) {
     static int i = 0;
-    std::cout << "would work hard here to read " << tbw->getBranch().GetEntries() << " hits... using TreeBranchWrapper " << tbw.get() << "\n";
-    auto hits = pc.outputs().make<int>(of::Output{ "MUON", "HITS" }, i++);
+    std::vector<o2::mch::Hit> *hits{nullptr};
+    tbw->getBranch().SetAddress(&hits);
+    tbw->getBranch().GetEntry(i);
+    std::cout << "would work hard here to read " << hits->size() << " hits...\n";
+    pc.outputs().make<int>(of::Output{ "MUON", "HITS" }, i++);
     sleep(1);
-    if (i>=4) {
+    if (i >= tbw->getBranch().GetEntries()) {
+      LOG(INFO) << tbw->getBranch().GetEntries() << " branch entry reached. Will stop...\n";
       pc.services().get<of::ControlService>().readyToQuit(true);
     }
-  } };
+  };
 }
 
 } // namespace mch
