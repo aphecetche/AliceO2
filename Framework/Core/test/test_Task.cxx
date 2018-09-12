@@ -21,7 +21,7 @@
 using namespace o2::framework;
 
 // This is a stateful task, where we send the state downstream.
-class ATask
+class ATask : public Task
 {
  public:
   ATask(int state)
@@ -44,7 +44,7 @@ class ATask
 
 // This is a stateless sink, where we verify that the state
 // we receive from ATask is the one we expected.
-class BTask
+class BTask : public Task
 {
  public:
   void run(ProcessingContext& pc) final

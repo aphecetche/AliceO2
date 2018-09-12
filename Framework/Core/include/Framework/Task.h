@@ -28,7 +28,6 @@ namespace framework
 ///
 /// The appropriate AlgorithmSpec invoking `Task::init(...)` at
 /// startup and `Task::run(...)` will be created.
-/*
 class Task
 {
  public:
@@ -40,7 +39,6 @@ class Task
   /// be complete.
   virtual void run(ProcessingContext& context) = 0;
 };
-*/
 
 /// Adaptor to make an AlgorithmSpec from a o2::framework::Task
 ///

@@ -38,7 +38,7 @@ class HitReader
 
  private:
   std::string mFileName{""};
-  std::unique_ptr<TreeBranchWrapper> mBranchWrapper{nullptr};
+  std::unique_ptr<TreeBranchWrapper> mBranchWrapper;
   std::vector<o2::mch::Hit>* mHits{nullptr};
   int mEntry{-1};
 };
