@@ -44,6 +44,7 @@ include(CTest)
 include(CheckCompiler)
 #include(CheckFortran)
 
+
 # check if we have a simulation environment
 if (Geant3_FOUND AND Geant4_FOUND AND Geant4VMC_FOUND AND Pythia6_FOUND AND PYTHIA8_FOUND)
   SET (HAVESIMULATION 1)

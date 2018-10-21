@@ -67,6 +67,7 @@ find_package(benchmark QUIET)
 find_package(Arrow)
 find_package(CURL REQUIRED)
 find_package(OpenMP)
+find_package(FlatBuffers REQUIRED)
 
 if (DDS_FOUND)
   add_definitions(-DENABLE_DDS)
