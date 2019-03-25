@@ -2096,11 +2096,13 @@ o2_define_bucket(
     mch_simulation_test_bucket
 
     DEPENDENCIES
+    $<IF:$<BOOL:${benchmark_FOUND}>,benchmark::benchmark,$<0:"">>
     mch_simulation_bucket
     mch_mapping_impl3_bucket
     MCHMappingImpl3
     MCHSimulation
 )
+
 
 o2_define_bucket(
     NAME
