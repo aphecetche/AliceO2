@@ -10,116 +10,52 @@
 
 #include "benchmark/benchmark.h"
 #include "MCHSimulation/Digit.h"
-#include <algorithm>
-#include <numeric>
-#include <iostream>
+#include "DigitMerging.h"
+#include <ctime>
+#include <cstdlib>
 
 using o2::mch::Digit;
 
-std::vector<Digit> mergeDigitsA(const std::vector<Digit>& inputDigits)
-{
-  int iter = 0;
-  int count = 0;
-  int index = 0;
-  std::map<int, int> padidmap;
-  std::set<int> forRemoval;
-  std::vector<Digit> digits{ inputDigits };
-
-  for (auto& digit : digits) {
-    int padid = digit.getPadID();
-    count = padidmap.count(padid);
-    if (count) {
-      std::pair<std::map<int, int>::iterator, std::map<int, int>::iterator> ret;
-
-      ret = padidmap.equal_range(padid);
-      index = ret.first->second;
-      (digits.at(index)).setADC(digits.at(index).getADC() + digit.getADC());
-      forRemoval.emplace(iter);
-    } else {
-      padidmap.emplace(padid, iter);
-    }
-    ++iter;
-  }
-
-  int rmcounts = 0;
-  for (auto& rmindex : forRemoval) {
-    digits.erase(digits.begin() + rmindex - rmcounts);
-    ++rmcounts;
-  }
-  return digits;
-}
-
-std::vector<Digit> mergeDigitsB(const std::vector<Digit>& inputDigits)
-{
-  std::vector<int> indices(inputDigits.size());
-  std::iota(begin(indices), end(indices), 0);
-
-  std::sort(indices.begin(), indices.end(), [&inputDigits](int a, int b) {
-    return inputDigits[a].getPadID() < inputDigits[b].getPadID();
-  });
-
-  std::vector<Digit> digits(inputDigits.size());
-  for (auto i : indices) {
-    digits[i] = inputDigits[indices[i]];
-  }
-  return digits;
-}
-
-void dumpDigits(const std::vector<Digit>& digits)
-{
-  for (auto& d : digits) {
-    std::cout << "[" << d.getPadID() << "," << d.getADC() << " ] ";
-  }
-  std::cout << "\n";
-}
+// createDigits generates N digits with random id
+// (hence some might get duplicated).
 std::vector<Digit> createDigits(int N)
 {
   std::vector<Digit> digits;
-  float dummyadc{ 42.42 };
+  float dummyadc{ 42.0 };
+  std::srand(std::time(nullptr)); // use current time as seed for random generator
+
   for (auto i = 0; i < N; i++) {
-    digits.emplace_back(i, dummyadc);
+    int randomPadID = std::rand() * N;
+    digits.emplace_back(randomPadID, dummyadc);
   }
 
   return digits;
 }
 
-static void benchDigitMergingA(benchmark::State& state)
+// benchDigitMerging create fake digits and merges them
+// using one of the merging functions.
+static void benchDigitMerging(benchmark::State& state)
 {
   auto digits = createDigits(100);
 
+  auto mergingFunction = mergingFunctions()[state.range(0)];
+
   for (auto _ : state) {
-    mergeDigitsA(digits);
+    mergingFunction(digits);
   }
 }
 
-static void benchDigitMergingB(benchmark::State& state)
+// mergingFunctionIndices generate arguments from 0 to # merging functions - 1
+// to be used in the BENCHMARK macro below.
+static void mergingFunctionIndices(benchmark::internal::Benchmark* b)
 {
-  auto digits = createDigits(10);
-
-  for (auto _ : state) {
-    mergeDigitsB(digits);
+  for (auto i = 0; i < mergingFunctions().size(); i++) {
+    b->Args({ i });
   }
 }
 
-struct A {
-  A()
-  {
-    std::cout << "AAAAAAAAAAAA\n";
-    std::vector<Digit> digits;
-    digits.emplace_back(2, 5);
-    digits.emplace_back(3, 6);
-    digits.emplace_back(1, 2);
-    digits.emplace_back(0, 0);
-    digits.emplace_back(0, 1);
-    digits.emplace_back(1, 3);
-    digits.emplace_back(3, 7);
-    digits.emplace_back(1, 4);
-    dumpDigits(digits);
-    dumpDigits(mergeDigitsB(digits));
-  }
-} a;
-
-// BENCHMARK(benchDigitMergingA);
-BENCHMARK(benchDigitMergingB);
+// This effectively register as many benchmarks as there are functions
+// in the mergingFunctions vector.
+BENCHMARK(benchDigitMerging)->Apply(mergingFunctionIndices);
 
 BENCHMARK_MAIN();
