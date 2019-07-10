@@ -19,7 +19,7 @@ o2_add_executable(trackfitter-workflow
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHTracking)
 
-o2_add_executable(trackfinder-workflow
+o2_add_executable(trackfinderoriginal-workflow
         SOURCES
         src/TrackFinderOriginalWorkflow.cxx
         src/ClusterSamplerSpec.cxx
