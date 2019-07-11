@@ -13,6 +13,10 @@ set_package_properties(cub PROPERTIES TYPE REQUIRED)
 
 message(STATUS "Building ITS CUDA tracker")
 
+include(O2CudaCloneTarget)
+
+o2_cuda_clone_target(O2::ITStracking)
+
 o2_add_library(ITStrackingCUDA
                SOURCES src/Context.cu
                        src/DeviceStoreNV.cu
@@ -20,10 +24,22 @@ o2_add_library(ITStrackingCUDA
                        src/TrackerTraitsNV.cu
                        src/VertexerTraitsGPU.cu
                        src/Utils.cu
-               PUBLIC_LINK_LIBRARIES O2::ITStracking cub::cub
+               PUBLIC_LINK_LIBRARIES CUDA_O2_ITStracking cub::cub
                TARGETVARNAME targetName)
+
+get_property(incdir
+             TARGET CUDA_O2_ITStracking
+             PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+
+message(STATUS "1 incdir=${incdir}")
 
 set_property(TARGET ${targetName} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 target_compile_definitions(
   ${targetName} PRIVATE $<TARGET_PROPERTY:O2::ITStracking,COMPILE_DEFINITIONS>)
+
+get_property(incdir
+             TARGET CUDA::O2::ITStracking
+             PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+
+message(STATUS "2 incdir=${incdir}")

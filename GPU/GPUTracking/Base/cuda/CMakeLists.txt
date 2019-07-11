@@ -16,6 +16,11 @@ set(SRCS GPUReconstructionCUDA.cu)
 set(HDRS GPUReconstructionCUDA.h GPUReconstructionCUDAInternals.h)
 
 if(ALIGPU_BUILD_TYPE STREQUAL "O2")
+
+  include(O2CudaCloneTarget)
+
+  o2_cuda_clone_target(O2::GPUTracking)
+
   o2_add_library(
     ${MODULE}
     SOURCES ${SRCS}
@@ -23,7 +28,7 @@ if(ALIGPU_BUILD_TYPE STREQUAL "O2")
       ${CMAKE_SOURCE_DIR}/Detectors/Base/src
       ${CMAKE_SOURCE_DIR}/Detectors/TRD/base/src
       ${CMAKE_SOURCE_DIR}/Detectors/ITSMFT/ITS/tracking/cuda/include
-    PUBLIC_LINK_LIBRARIES O2::GPUTracking
+    PUBLIC_LINK_LIBRARIES CUDA::O2::GPUTracking
     TARGETVARNAME targetName)
 
   target_compile_definitions(

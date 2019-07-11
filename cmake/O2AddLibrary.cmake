@@ -102,14 +102,14 @@ function(o2_add_library baseTargetName)
       endif()
       target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${adir}>)
     endforeach()
-  else()
-    # use sane default (if it exists)
-    if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include)
-      target_include_directories(
-        ${target}
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-    endif()
   endif()
+  # else() use sane default (if it exists)
+  if(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include)
+    target_include_directories(
+      ${target}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
+  endif()
+  # endif()
 
   # set the private include directories if available
   if(A_PRIVATE_INCLUDE_DIRECTORIES)
