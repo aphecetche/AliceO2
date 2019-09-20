@@ -14,4 +14,3 @@ o2_add_executable(
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
         O2::MCHRawImplHelpers RapidJSON::RapidJSON)
-

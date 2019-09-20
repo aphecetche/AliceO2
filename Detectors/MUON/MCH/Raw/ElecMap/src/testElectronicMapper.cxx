@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_SUITE(electronicmapperdummy)
 //   std::cout << "\n";
 // }
 
-auto dslist = createDualSampaMapper();
+auto dslist = o2::mch::raw::createDualSampaMapper();
 
 template <size_t N>
 std::set<int> nofDualSampas(std::array<int, N> deIds)

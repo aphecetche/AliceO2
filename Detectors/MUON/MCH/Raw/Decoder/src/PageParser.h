@@ -14,7 +14,13 @@
 #include <gsl/span>
 #include "MCHRawDecoder/RawDataHeaderHandler.h"
 #include "PayloadDecoder.h"
+#include "CommonConstants/Triggers.h"
+#include "Headers/RAWDataHeader.h"
 
+namespace o2::header
+{
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 namespace
 {
 bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
@@ -38,12 +44,15 @@ class PageParser
   RawDataHeaderHandler<RDH> mRdhHandler;
   PAYLOADDECODER mDecoder;
   uint32_t mOrbit{0};
-  DecoderStat mStats;
+  DecoderStat mStats{};
+  std::set<uint32_t> mOrbitSeen{};
+  std::set<uint32_t> mOrbitJump{};
+  std::set<uint32_t> mOrbitTF{};
 };
 
 template <typename RDH, typename PAYLOADDECODER>
 PageParser<RDH, PAYLOADDECODER>::PageParser(RawDataHeaderHandler<RDH> rdhHandler, PAYLOADDECODER decoder)
-  : mRdhHandler(rdhHandler), mDecoder(decoder), mStats{}
+  : mRdhHandler(rdhHandler), mDecoder(decoder)
 {
 }
 
@@ -55,7 +64,7 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
   size_t index{0};
   uint64_t nbytes{0};
 
-  while ((index + nofRDHWords) < buffer.size()) {
+  while ((index + nofRDHWords) <= buffer.size()) {
     originalRDH = createRDH<RDH>(buffer.subspan(index, nofRDHWords));
     if (!isValid(originalRDH)) {
       std::cout << "Got an invalid RDH\n";
@@ -63,12 +72,17 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
       return mStats;
     }
     if (hasOrbitJump(rdhOrbit(originalRDH), mOrbit)) {
-      ++mStats.nofOrbitJumps;
+      mOrbitJump.insert(mOrbit);
+      mStats.nofOrbitJumps = mOrbitJump.size();
       mDecoder.reset();
-    } else if (rdhOrbit(originalRDH) != mOrbit) {
-      ++mStats.nofOrbitSeen;
     }
     mOrbit = rdhOrbit(originalRDH);
+    mOrbitSeen.insert(mOrbit);
+    mStats.nofOrbitSeen = mOrbitSeen.size();
+    if (originalRDH.triggerType & o2::trigger::TF) {
+      mOrbitTF.insert(mOrbit);
+    }
+    mStats.nofTimeFrameSeen = mOrbitTF.size();
     auto rdhOpt = mRdhHandler(originalRDH);
     if (!rdhOpt.has_value()) {
       break;

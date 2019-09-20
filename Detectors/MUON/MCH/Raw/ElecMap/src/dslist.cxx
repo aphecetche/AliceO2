@@ -11,6 +11,8 @@
 #include "dslist.h"
 #include <map>
 
+namespace o2::mch::raw
+{
 std::function<std::set<int>(int deId)> createDualSampaMapper()
 {
   std::map<int, std::set<int>> dsids;
@@ -180,3 +182,4 @@ std::function<std::set<int>(int deId)> createDualSampaMapper()
     }
   };
 }
+} // namespace o2::mch::raw

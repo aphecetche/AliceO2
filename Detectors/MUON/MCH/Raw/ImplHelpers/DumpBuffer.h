@@ -38,7 +38,7 @@ void dumpBuffer(gsl::span<T> buffer)
   std::cout << "\n";
 }
 
-uint64_t b8to64(gsl::span<uint8_t> buffer, size_t i)
+uint64_t b8to64(gsl::span<const uint8_t> buffer, size_t i)
 {
   return (static_cast<uint64_t>(buffer[i + 0])) |
          (static_cast<uint64_t>(buffer[i + 1]) << 8) |
@@ -62,7 +62,7 @@ void append(std::vector<uint8_t>& buffer, uint64_t w)
   buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0xFF00000000000000)) >> 56));
 }
 
-void dumpBuffer(gsl::span<uint8_t> buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
+void dumpBuffer(gsl::span<const uint8_t> buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
 {
   int i{0};
   int inRDH{0};
@@ -71,6 +71,9 @@ void dumpBuffer(gsl::span<uint8_t> buffer, std::ostream& out = std::cout, size_t
     std::cout << "Should at least get 8 bytes to be able to dump\n";
     return;
   }
+
+  o2::header::RAWDataHeaderV4 rdh;
+
   while ((i < buffer.size() - 7) && i < maxbytes) {
     if (i % 8 == 0) {
       out << fmt::format("\n{:8d} : ", i);
@@ -85,14 +88,21 @@ void dumpBuffer(gsl::span<uint8_t> buffer, std::ostream& out = std::cout, size_t
                        (w & 0x3FF));
     if ((w & 0xFFFF) == 0x4004) {
       inRDH = 8;
+      rdh = o2::mch::raw::createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i, 64));
     }
     if (inRDH) {
       --inRDH;
       if (inRDH == 7) {
         out << "Begin RDH ";
-        auto const rdh = o2::mch::raw::createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i, 64));
-        std::cout << fmt::format("ORBIT {} BX {} FEEID {}", rdhOrbit(rdh), rdhBunchCrossing(rdh),
-                                 rdh.feeId);
+        std::cout << fmt::format("ORBIT {:10d} BX {:5d} FEEID {:6d} SIZE {:6d} {}", rdhOrbit(rdh), rdhBunchCrossing(rdh),
+                                 rdhFeeId(rdh), rdhPayloadSize(rdh),
+                                 o2::mch::raw::triggerTypeAsString(rdh.triggerType));
+      }
+      if (inRDH == 1) {
+        if (rdh.stop) {
+          std::cout << "STOP ";
+        }
+        std::cout << fmt::format("PAGE {:6d} PACKET {:4d}", rdhPageCounter(rdh), rdhPacketCounter(rdh));
       }
       if (inRDH == 0) {
         out << "End RDH ";

@@ -30,7 +30,10 @@
 
 namespace po = boost::program_options;
 
+namespace o2::header
+{
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 
 using namespace o2::mch::raw;
 using RDHv4 = o2::header::RAWDataHeaderV4;
@@ -67,12 +70,23 @@ class DumpOptions
 
   void cruId(uint16_t c) { mCruId = c; }
 
+  bool doNotAggregate() const
+  {
+    return mDoNotAggregate;
+  }
+
+  void doNotAggregate(bool value)
+  {
+    mDoNotAggregate = value;
+  }
+
  private:
   unsigned int mDeId;
   unsigned int mMaxNofRDHs;
   bool mShowRDHs;
   bool mJSON;
   std::optional<uint16_t> mCruId{std::nullopt};
+  bool mDoNotAggregate;
 };
 
 struct Stat {
@@ -115,41 +129,52 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
   std::map<std::string, Stat> statChannel;
 
   memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel](DsElecId dsId,
-                                                                            uint8_t channel, o2::mch::raw::SampaCluster sc) {
+  auto channelHandler = [&opt, &ndigits, &uniqueDS, &uniqueChannel, &statChannel](DsElecId dsId,
+                                                                                  uint8_t channel, o2::mch::raw::SampaCluster sc) {
     auto s = asString(dsId);
     uniqueDS[s]++;
     auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
+    if (opt.doNotAggregate()) {
+      ch += fmt::format("{}", ndigits);
+    }
     auto& stat = statChannel[ch];
-    for (auto d = 0; d < sc.nofSamples(); d++) {
-      stat.incr(sc.samples[d]);
+    if (sc.isClusterSum()) {
+      stat.incr(sc.chargeSum);
+    } else {
+      for (auto d = 0; d < sc.nofSamples(); d++) {
+        stat.incr(sc.samples[d]);
+      }
     }
     ++ndigits;
   };
 
-  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+  //auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperDummy>();
 
   size_t nrdhs{0};
   auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
     nrdhs++;
     if (opt.showRDHs()) {
-      std::cout << nrdhs << "--" << rdh << "\n";
+      std::cout << "RDH #" << nrdhs << "----\n"
+                << rdh << "\n";
     }
     auto r = rdh;
-    auto cruId = r.cruID;
-    if (opt.cruId().has_value()) {
-      // force cruId to externally given value
-      cruId = opt.cruId().value();
+    if (opt.deId() > 0) {
+      auto cruId = r.cruID;
+      if (opt.cruId().has_value()) {
+        // force cruId to externally given value
+        cruId = opt.cruId().value();
+      }
+      auto linkId = rdhLinkId(r);
+      auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
+      if (!solar.has_value()) {
+        std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
+                                 cruId, linkId, opt.deId());
+        return std::nullopt;
+      }
+      r.feeId = solar.value();
     }
-    auto linkId = rdhLinkId(r);
-    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
-    if (!solar.has_value()) {
-      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
-                               cruId, linkId, opt.deId());
-      return std::nullopt;
-    }
-    r.feeId = solar.value();
     return r;
   };
 
@@ -157,18 +182,32 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 
   std::vector<std::chrono::microseconds> timers;
 
-  size_t npages{0};
   DecoderStat decStat;
 
-  while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
-    npages++;
-    decStat = decode(sbuffer);
+  while (nrdhs < opt.maxNofRDHs()) {
+    in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(RDH));
+    if (in.eof()) {
+      break;
+    }
+    auto rdh = createRDH<RDH>(sbuffer);
+    if (!isValid(rdh)) {
+      throw std::invalid_argument("rdh invalid");
+    }
+    auto p = rdh.offsetToNext;
+    if (p) {
+      in.read(reinterpret_cast<char*>(&buffer[sizeof(RDH)]), p - sizeof(RDH));
+      if (in.eof()) {
+        break;
+      }
+      decStat = decode(sbuffer.subspan(0, p));
+    }
   }
 
   if (!opt.json()) {
-    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
+    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen\n";
     std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
     std::cout << decStat << "\n";
+    std::cout << statChannel.size() << "\n";
   }
   return statChannel;
 }
@@ -211,6 +250,7 @@ int main(int argc, char* argv[])
   bool userLogic{false}; // default format is bareformat...
   bool chargeSum{false}; //... in sample mode
   bool jsonOutput{false};
+  bool doNotAggregate{false};
 
   // clang-format off
   generic.add_options()
@@ -221,8 +261,9 @@ int main(int argc, char* argv[])
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
       ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format")
-      ("de,d",po::value<unsigned int>(&deId)->required(),"detection element id of the data to be decoded")
+      ("de,d",po::value<unsigned int>(&deId),"detection element id of the data to be decoded")
       ("cru",po::value<uint16_t>(),"force cruId")
+      ("all,a",po::bool_switch(&doNotAggregate),"do not aggregate channels (i.e. get all digits)")
       ;
   // clang-format on
 
@@ -245,6 +286,7 @@ int main(int argc, char* argv[])
 
   DumpOptions opt(deId, nrdhs, showRDHs, jsonOutput);
   std::map<std::string, Stat> statChannel;
+  opt.doNotAggregate(doNotAggregate);
 
   if (vm.count("cru")) {
     opt.cruId(vm["cru"].as<uint16_t>());
