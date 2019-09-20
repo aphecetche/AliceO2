@@ -56,6 +56,7 @@ additional_commands = {
             "SOURCES": '+',
             "PUBLIC_INCLUDE_DIRECTORIES": '*',
             "PUBLIC_LINK_LIBRARIES": '*',
+            "PRIVATE_LINK_LIBRARIES": '*',
             "PRIVATE_INCLUDE_DIRECTORIES": '*',
             "TARGETVARNAME": '*',
         }

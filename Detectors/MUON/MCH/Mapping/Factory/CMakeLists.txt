@@ -8,10 +8,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-add_subdirectory(Base)
-add_subdirectory(Contour)
-add_subdirectory(Mapping)
-add_subdirectory(PreClustering)
-add_subdirectory(Simulation)
-add_subdirectory(Tracking)
-add_subdirectory(Raw)
+o2_add_library(MCHMappingFactory
+        SOURCES src/CreateSegmentation.cxx
+        PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 fmt::fmt)
