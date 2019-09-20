@@ -56,7 +56,6 @@ int forEachRDH(gsl::span<const std::byte> buffer, std::function<void(const RDH&,
 // beware : this version might modify the RDH, hence the buffer
 template <typename RDH>
 int forEachRDH(gsl::span<std::byte> buffer, std::function<void(RDH&, gsl::span<std::byte>::size_type offset)> f);
-
 } // namespace o2::mch::raw
 
 #endif

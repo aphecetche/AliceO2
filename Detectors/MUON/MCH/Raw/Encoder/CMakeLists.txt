@@ -9,11 +9,12 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawEncoder
-        SOURCES
-        Payload/Encoder.cxx
-        Payload/BitSet.cxx
-        Payload/ElinkEncoder.cxx
-        Payload/DataBlock.cxx
+        SOURCES src/Encoder.cxx src/BitSet.cxx src/ElinkEncoder.cxx
+        src/Paginator.cxx src/Counter.cxx
+        src/FeeIdRange.cxx src/Inserter.cxx
+        src/DataBlock.cxx src/Normalizer.cxx
+        src/CruLinkSetter.cxx
+        src/DigitEncoder.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap
         O2::MCHBase
@@ -42,6 +43,12 @@ if(BUILD_TESTING)
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
+        o2_add_test(normalizer
+                SOURCES src/testNormalizer.cxx src/CruBufferCreator.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
+
         o2_add_test(bitset
                 SOURCES Payload/testBitSet.cxx
                 COMPONENT_NAME mchraw
@@ -54,6 +61,25 @@ if(BUILD_TESTING)
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
+        o2_add_test(paginator
+                SOURCES src/testPaginator.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
+
+        o2_add_test(counter
+                SOURCES src/testCounter.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                O2::MCHRawImplHelpers)
+
+        o2_add_test(inserter
+                SOURCES src/testInserter.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                O2::MCHRawImplHelpers)
 endif()
 
 if(benchmark_FOUND)

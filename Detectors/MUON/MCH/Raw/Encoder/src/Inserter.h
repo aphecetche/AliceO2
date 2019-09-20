@@ -8,9 +8,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_DECODER_PAGE_PARSER_H
-#define O2_MCH_RAW_DECODER_PAGE_PARSER_H
+#ifndef O2_MCH_RAW_ENCODER_INSERTER_H
+#define O2_MCH_RAW_ENCODER_INSERTER_H
 
-#include "MCHRawDecoder/PageDecoder.h"
+#include <gsl/span>
+#include <cstdint>
+#include <vector>
+#include "CommonDataFormat/InteractionRecord.h"
+#include <set>
+
+namespace o2::mch::raw
+{
+uint32_t equalizeHBFPerFeeId(gsl::span<const uint8_t> buffer,
+                             std::vector<uint8_t>& outBuffer,
+                             const std::set<uint16_t>& feeIds,
+                             o2::InteractionRecord currentIR);
 
 } // namespace o2::mch::raw
+
+#endif

@@ -95,7 +95,7 @@ template <typename CHARGESUM>
 size_t BareGBTDecoder<CHARGESUM>::append(Payload bytes)
 {
   if (bytes.size() % 16 != 0) {
-    throw std::invalid_argument("can only bytes by group of 16 (i.e. 128 bits)");
+    throw std::invalid_argument(fmt::format("can only append bytes by group of 16 (i.e. 128 bits) but got a size of {}", bytes.size()));
   }
   size_t n{0};
   for (int j = 0; j < bytes.size(); j += 16) {

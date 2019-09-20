@@ -69,26 +69,42 @@ uint16_t SampaCluster::nof10BitWords() const
   return n10;
 }
 
+std::string asString(const SampaCluster& sc)
+{
+  std::string s = fmt::format("ts {:4d} ", sc.timestamp);
+  if (sc.isClusterSum()) {
+    s += fmt::format("q {:6d}", sc.chargeSum);
+  } else {
+    s += fmt::format("n {:4d} q [ ", sc.samples.size());
+    for (auto sa : sc.samples) {
+      s += fmt::format("{:4d} ", sa);
+    }
+    s += "]";
+  }
+  return s;
+}
+
 std::ostream& operator<<(std::ostream& os, const SampaCluster& sc)
 {
-  os << fmt::format("ts {:4d} ", sc.timestamp);
-  if (sc.isClusterSum()) {
-    os << fmt::format("q {:6d}", sc.chargeSum);
-  } else {
-    os << fmt::format("n {:4d} q [ ", sc.samples.size());
-    for (auto s : sc.samples) {
-      os << fmt::format("{:4d} ", s);
-    }
-    os << "]";
-  }
+  os << asString(sc);
   return os;
 }
 
-std::string asString(const SampaCluster& sc)
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::ChargeSumMode>(uint16_t ts, float adc)
 {
-  std::stringstream s;
-  s << sc;
-  return s.str();
+  return {raw::SampaCluster(ts, static_cast<uint32_t>(adc))};
+}
+
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, float adc)
+{
+  uint32_t a = static_cast<uint32_t>(adc);
+  std::vector<uint16_t> samples;
+
+  samples.emplace_back(static_cast<uint16_t>((a & 0xFFC00) >> 10));
+  samples.emplace_back(static_cast<uint16_t>(a & 0x3FF));
+  return {raw::SampaCluster(ts, samples)};
 }
 
 } // namespace raw

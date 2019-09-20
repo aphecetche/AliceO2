@@ -76,6 +76,9 @@ void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<const std::byte> buffer, std
     std::cout << "Should at least get 8 bytes to be able to dump\n";
     return;
   }
+
+  o2::header::RAWDataHeaderV4 rdh;
+
   while ((i < buffer.size() - 7) && i < maxbytes) {
     if (i % 8 == 0) {
       out << fmt::format("\n{:8d} : ", i);
@@ -90,14 +93,21 @@ void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<const std::byte> buffer, std
                        (w & 0x3FF));
     if ((w & 0xFFFF) == 0x4004) {
       inRDH = 8;
+      rdh = o2::mch::raw::createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i, 64));
     }
     if (inRDH) {
       --inRDH;
       if (inRDH == 7) {
         out << "Begin RDH ";
-        auto const rdh = o2::mch::raw::createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i, 64));
-        std::cout << fmt::format("ORBIT {} BX {} FEEID {}", rdhOrbit(rdh), rdhBunchCrossing(rdh),
-                                 rdh.feeId);
+        std::cout << fmt::format("ORBIT {:10d} BX {:5d} FEEID {:6d} SIZE {:6d} {}", rdhOrbit(rdh), rdhBunchCrossing(rdh),
+                                 rdhFeeId(rdh), rdhPayloadSize(rdh),
+                                 o2::mch::raw::triggerTypeAsString(rdh.triggerType));
+      }
+      if (inRDH == 1) {
+        if (rdh.stop) {
+          std::cout << "STOP ";
+        }
+        std::cout << fmt::format("PAGE {:6d} PACKET {:4d}", rdhPageCounter(rdh), rdhPacketCounter(rdh));
       }
       if (inRDH == 0) {
         out << "End RDH ";

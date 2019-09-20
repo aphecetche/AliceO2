@@ -35,20 +35,23 @@ extern std::array<int, 156> deIdsForAllMCH;
     */
 ///@{
 
+using Elec2DetMapper = std::function<std::optional<DsDetId>(DsElecId)>;
+
 /// From (solarId,groupdId,index) to (deId,dsId)
 /// timestamp is foreseen to specify a data taking period (not used for the moment)
 /// use 0 to get the latest mapping
 template <typename T>
-std::function<std::optional<DsDetId>(DsElecId)> createElec2DetMapper(gsl::span<int> deIds,
-                                                                     uint64_t timestamp = 0);
+Elec2DetMapper createElec2DetMapper(gsl::span<int> deIds,
+                                    uint64_t timestamp = 0);
 
+using Det2ElecMapper = std::function<std::optional<DsElecId>(DsDetId id)>;
 /// From (deId,dsId) to (solarId,groupId,index) for a given list of detection elements
 template <typename T>
-std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper(gsl::span<int> deIds);
+Det2ElecMapper createDet2ElecMapper(gsl::span<int> deIds);
 
 /// From (deId,dsId) to (solarId,groupId,index) for all detection elements
 template <typename T>
-std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper()
+Det2ElecMapper createDet2ElecMapper()
 {
   return createDet2ElecMapper<T>(deIdsForAllMCH);
 }
@@ -80,6 +83,8 @@ extern std::array<int, 13> deIdsOfCH7R;
 extern std::array<int, 13> deIdsOfCH7L;
 extern std::array<int, 13> deIdsOfCH8R;
 extern std::array<int, 13> deIdsOfCH8L;
+
+std::function<std::set<int>(int deId)> createDualSampaMapper();
 
 } // namespace o2::mch::raw
 

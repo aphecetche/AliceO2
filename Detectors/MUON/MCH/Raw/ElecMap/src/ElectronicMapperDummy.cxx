@@ -26,7 +26,7 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
 {
   std::map<uint16_t, uint32_t> e2d;
 
-  auto dslist = createDualSampaMapper();
+  auto dslist = o2::mch::raw::createDualSampaMapper();
 
   uint16_t n{0};
   uint16_t solarId{0};
@@ -72,7 +72,7 @@ std::map<uint32_t, uint16_t> buildFeeLinkId2SolarIdMap()
   uint16_t n{0};
   uint16_t solarId{0};
 
-  auto dslist = createDualSampaMapper();
+  auto dslist = o2::mch::raw::createDualSampaMapper();
 
   for (auto deId : o2::mch::raw::deIdsForAllMCH) {
     // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)

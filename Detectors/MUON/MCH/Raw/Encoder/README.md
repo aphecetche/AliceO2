@@ -58,4 +58,22 @@ encoder->moveToBuffer(buffer);
 
 At this stage the buffer contains (header,payload) blocks for all the
 interactions you looped over. But it is *not* yet a valid raw data, as it lacks
-RDHs (and has mch-specific headers instead).
+RDHs (and has mch-specific headers instead). The `normalizeBuffer` must then
+ be used to reach that state.
+
+```.cpp
+vector<uint8_t> raw;
+o2::mch::raw::normalizeBuffer(buffer,raw,interactions);
+```
+
+Now `raw` vector should contain an almost valid MCH raw data buffer, consisting
+of (RDH,payload) blocks. There is one last step, which is to assign a "valid"
+(cruId,linkId) to each RDH, i.e. to go from `feeId` (that was transported to
+the RDH from the `DataBlockHeader`) to a (cruId,linkId) pair.
+
+```.cpp
+auto solar2cru = createSolar2CruLinkMapper<SomeElecMapType>();
+assignCruLink(buffer, solar2cru);
+```
+
+where `SomeElecMapType` is one of the electronic mapping supported types.
