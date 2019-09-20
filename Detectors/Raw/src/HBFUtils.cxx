@@ -89,3 +89,17 @@ void HBFUtils::dumpRDH(const o2::header::RAWDataHeaderV5& rdh)
     printf("\n");
   }
 }
+
+uint32_t HBFUtils::triggerType(const o2::InteractionRecord& rec) const
+{
+  auto tfhb = getTFandHBinTF(rec);
+  uint32_t tt{0};
+
+  if (rec.bc == mFirstIR.bc) { // we are starting a new HB
+    tt |= o2::trigger::ORBIT | o2::trigger::HB;
+    if (tfhb.second == 0) { // we are starting a new TF
+      tt |= o2::trigger::TF;
+    }
+  }
+  return tt;
+}

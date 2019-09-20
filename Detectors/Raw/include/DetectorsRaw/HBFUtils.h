@@ -75,6 +75,9 @@ class HBFUtils
     return std::pair<int, int>(hbf / mNHBFPerTF, hbf);
   }
 
+  ///< get the base triggerType for given IR
+  uint32_t triggerType(const IR& rec) const;
+
   ///< create RDH for given IR
   template <class H>
   H createRDH(const IR& rec) const;
@@ -144,20 +147,12 @@ class HBFUtils
 template <>
 inline o2::header::RAWDataHeaderV4 HBFUtils::createRDH<o2::header::RAWDataHeaderV4>(const o2::InteractionRecord& rec) const
 {
-  auto tfhb = getTFandHBinTF(rec);
   o2::header::RAWDataHeaderV4 rdh;
   rdh.triggerBC = rec.bc;
   rdh.triggerOrbit = rec.orbit;
-
   rdh.heartbeatBC = mFirstIR.bc;
   rdh.heartbeatOrbit = rec.orbit;
-  //
-  if (rec.bc == mFirstIR.bc) { // if we are starting new HB, set the HB trigger flag
-    rdh.triggerType |= o2::trigger::ORBIT | o2::trigger::HB;
-    if (tfhb.second == 0) { // if we are starting new TF, set the TF trigger flag
-      rdh.triggerType |= o2::trigger::TF;
-    }
-  }
+  rdh.triggerType |= triggerType(rec);
   return rdh;
 }
 
@@ -165,18 +160,10 @@ inline o2::header::RAWDataHeaderV4 HBFUtils::createRDH<o2::header::RAWDataHeader
 template <>
 inline o2::header::RAWDataHeaderV5 HBFUtils::createRDH<o2::header::RAWDataHeaderV5>(const o2::InteractionRecord& rec) const
 {
-  auto tfhb = getTFandHBinTF(rec);
   o2::header::RAWDataHeaderV5 rdh;
-
   rdh.bunchCrossing = mFirstIR.bc;
   rdh.orbit = rec.orbit;
-  //
-  if (rec.bc == mFirstIR.bc) { // if we are starting new HB, set the HB trigger flag
-    rdh.triggerType |= o2::trigger::ORBIT | o2::trigger::HB;
-    if (tfhb.second == 0) { // if we are starting new TF, set the TF trigger flag
-      rdh.triggerType |= o2::trigger::TF;
-    }
-  }
+  rdh.triggerType |= triggerType(rec);
   return rdh;
 }
 

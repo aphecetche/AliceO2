@@ -29,6 +29,7 @@ struct DecoderStat {
   uint64_t nofOrbitJumps{0};
   uint64_t nofOrbitSeen{0};
   uint64_t nofBytesUsed{0};
+  uint64_t nofTimeFrameSeen{0};
 };
 
 std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat);

@@ -57,16 +57,6 @@ o2::header::RAWDataHeaderV4 getTestRDH()
   return rdh;
 }
 
-BOOST_AUTO_TEST_CASE(AppendRDH32)
-{
-  auto rdh = getTestRDH();
-  std::vector<uint32_t> buffer;
-  appendRDH<o2::header::RAWDataHeaderV4>(buffer, rdh);
-  auto tb = testBuffer32();
-  BOOST_CHECK_EQUAL(buffer.size(), tb.size());
-  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(tb)));
-}
-
 BOOST_AUTO_TEST_CASE(AppendRDH8)
 {
   auto rdh = getTestRDH();
@@ -75,20 +65,6 @@ BOOST_AUTO_TEST_CASE(AppendRDH8)
   auto tb = testBuffer8();
   BOOST_CHECK_EQUAL(buffer.size(), tb.size());
   BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(tb)));
-}
-
-BOOST_AUTO_TEST_CASE(CreateRDHFromBuffer32)
-{
-  auto buffer = testBuffer32();
-  auto rdh = createRDH<o2::header::RAWDataHeaderV4>(buffer);
-  BOOST_CHECK_EQUAL(rdh.word0, 0x0706050403020100);
-  BOOST_CHECK_EQUAL(rdh.word1, 0x0F0E0D0C0B0A0908);
-  BOOST_CHECK_EQUAL(rdh.word2, 0x1716151413121110);
-  BOOST_CHECK_EQUAL(rdh.word3, 0x1F1E1D1C1B1A1918);
-  BOOST_CHECK_EQUAL(rdh.word4, 0x2726252423222120);
-  BOOST_CHECK_EQUAL(rdh.word5, 0x2F2E2D2C2B2A2928);
-  BOOST_CHECK_EQUAL(rdh.word6, 0x3736353433323130);
-  BOOST_CHECK_EQUAL(rdh.word7, 0x3F3E3D3C3B3A3938);
 }
 
 BOOST_AUTO_TEST_CASE(CreateRDHFromBuffer8)

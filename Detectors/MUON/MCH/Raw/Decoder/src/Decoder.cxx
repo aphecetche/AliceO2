@@ -45,9 +45,10 @@ Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler 
 
 std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat)
 {
-  out << fmt::format("Nof orbits seen {} - Nof orbits jumps {}",
+  out << fmt::format("Nof orbits seen {} - Nof orbits jumps {} - Nof timeframes seen {}",
                      decStat.nofOrbitSeen,
-                     decStat.nofOrbitJumps);
+                     decStat.nofOrbitJumps,
+                     decStat.nofTimeFrameSeen);
   return out;
 }
 

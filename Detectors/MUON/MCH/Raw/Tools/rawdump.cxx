@@ -122,8 +122,12 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
     auto& stat = statChannel[ch];
-    for (auto d = 0; d < sc.nofSamples(); d++) {
-      stat.incr(sc.samples[d]);
+    if (sc.isClusterSum()) {
+      stat.incr(sc.chargeSum);
+    } else {
+      for (auto d = 0; d < sc.nofSamples(); d++) {
+        stat.incr(sc.samples[d]);
+      }
     }
     ++ndigits;
   };
@@ -134,7 +138,8 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
   auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
     nrdhs++;
     if (opt.showRDHs()) {
-      std::cout << nrdhs << "--" << rdh << "\n";
+      std::cout << "RDH #" << nrdhs << "----\n"
+                << rdh << "\n";
     }
     auto r = rdh;
     auto cruId = r.cruID;
@@ -157,16 +162,29 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 
   std::vector<std::chrono::microseconds> timers;
 
-  size_t npages{0};
   DecoderStat decStat;
 
-  while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
-    npages++;
-    decStat = decode(sbuffer);
+  while (nrdhs < opt.maxNofRDHs()) {
+    in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(RDH));
+    if (in.eof()) {
+      break;
+    }
+    auto rdh = createRDH<RDH>(sbuffer);
+    if (!isValid(rdh)) {
+      throw std::invalid_argument("rdh invalid");
+    }
+    auto p = rdh.offsetToNext;
+    if (p) {
+      in.read(reinterpret_cast<char*>(&buffer[sizeof(RDH)]), p - sizeof(RDH));
+      if (in.eof()) {
+        break;
+      }
+      decStat = decode(sbuffer.subspan(0, p));
+    }
   }
 
   if (!opt.json()) {
-    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
+    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen\n";
     std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
     std::cout << decStat << "\n";
   }

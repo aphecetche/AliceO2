@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <fmt/format.h>
+#include <string>
 
 namespace o2
 {
@@ -83,6 +84,11 @@ void assertNotMixingClusters(const std::vector<SampaCluster>& data)
     }
   }
 }
+
+std::string asString(const SampaCluster& sc);
+
+template <typename CHARGESUM>
+std::vector<SampaCluster> createSampaClusters(uint16_t ts, float adc);
 
 std::ostream& operator<<(std::ostream& os, const SampaCluster& sc);
 } // namespace raw

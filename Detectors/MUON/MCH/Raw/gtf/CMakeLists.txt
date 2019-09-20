@@ -8,13 +8,16 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-o2_add_library(MCHRawCommon
-        SOURCES src/RDHManip.cxx src/SampaHeader.cxx src/SampaCluster.cxx src/RDHFieldsV4.cxx
-        PUBLIC_LINK_LIBRARIES fmt::fmt ms_gsl::ms_gsl Boost::boost
-        O2::Headers
-        O2::CommonConstants
-        PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
+o2_add_executable(generate-timeframe
+        SOURCES gentimeframe.cxx gtfGenerateDigits.cxx
+        COMPONENT_NAME mch
+        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
+        O2::Steer
+        O2::MCHSimulation
+        O2::MCHMappingFactory
+        O2::MCHRawImplHelpers
+        O2::DetectorsRaw
+        fmt::fmt
+        Boost::program_options)
 
-if(BUILD_TESTING)
-        add_subdirectory(test)
-endif()
+
