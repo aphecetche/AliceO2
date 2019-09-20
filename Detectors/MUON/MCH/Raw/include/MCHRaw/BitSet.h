@@ -1,0 +1,167 @@
+// Copyright CERN and copyright holders of ALICE O2. This software is
+// distributed under the terms of the GNU General Public License v3 (GPL
+// Version 3), copied verbatim in the file "COPYING".
+//
+// See http://alice-o2.web.cern.ch/license for full licensing information.
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+#ifndef O2_MCH_RAW_BITSET_H
+#define O2_MCH_RAW_BITSET_H
+
+#include <cstdlib>
+#include <vector>
+#include <string_view>
+#include <string>
+#include <gsl/span>
+
+namespace o2
+{
+namespace mch
+{
+namespace raw
+{
+
+class BitSet
+{
+
+ public:
+  // creates a bitset of initial size = n bits
+  explicit BitSet(int n);
+
+  // fromString returns a BitSet using a string composed of '0' (meaning
+  // bit unset) and '1' (meaning bit set) characters
+  // the length of the resulting bitset is that of the string.
+  static BitSet fromString(std::string_view s);
+
+  // fromUint8 returns a bitset initialized with the 8-bits value v
+  static BitSet fromUint8(uint8_t v);
+  // fromUint16 returns a bitset initialized with the 16-bits value v
+  static BitSet fromUint16(uint16_t v);
+  // fromUint32 returns a bitset initialized with the 32-bits value v
+  static BitSet fromUint32(uint32_t v);
+  // fromUint64 returns a bitset initialized with the 64-bits value v
+  static BitSet fromUint64(uint64_t v);
+
+  // check equality
+  bool operator==(const BitSet& rhs) const;
+  bool operator!=(const BitSet& rhs) const;
+
+  // any returns true if any of the bits is set
+  bool any() const;
+
+  // appends a bit at the current position (i.e. len-1)
+  void append(bool val);
+
+  ///@{
+  // appends the n first bits from a x-bits word.
+  // if n is < 0 it is computed for val (using log2(val)+1)
+  // otherwise it should be >= log2(val)+1 and <=x
+  // and the exact number of specified bits will be set
+  // (to 0 or 1)
+  void appendUint8(uint8_t val, int n = -1);
+  void appendUint16(uint16_t val, int n = -1);
+  void appendUint32(uint32_t val, int n = -1);
+  void appendUint64(uint64_t val, int n = -1);
+  ///@}
+
+  // count returns the number of bits set at 1
+  int count() const;
+
+  // sets all the bits to false (i.e. resets)
+  void clear();
+
+  // sets the value of the bit at given pos
+  void set(int pos, bool val);
+
+  // gets the value of the bit at given pos
+  bool get(int pos) const;
+
+  // grows the BitSet so it can accomodate at least n bits. Returns true if size changed.
+  bool grow(int n);
+
+  // last returns a bitset containing the last n bits of the bitset
+  // if there's not enough bits, throw an exception
+  BitSet last(int n) const;
+
+  // return the max number of bits this object can hold
+  int size() const { return mSize; }
+
+  // return the max number of bits any bitset can hold
+  static int maxSize() { return 32768; }
+
+  // return the number of bits we are current holding
+  int len() const { return mLen; }
+
+  // pruneFirst removes the first n bits from the bitset
+  void pruneFirst(int n);
+
+  void setFast(int pos, bool val);
+
+  void setFromBytes(gsl::span<uint8_t> bytes);
+
+  // setRangeFromString populates the bits at indice [a,b] (inclusive range)
+  // from the characters in the string: 0 to unset the bit (=false)
+  // or 1 to set the bit (=true).
+  // A string containing anything else than '0' or '1' is invalid and
+  // triggers an exception
+  void setRangeFromString(int a, int b, std::string_view s);
+
+  // setRangeFromUint8 populates the bits at indices [a,b] (inclusive range)
+  // with the bits of value v. b-a must be <=8 otherwise throws an exception
+  void setRangeFromUint8(int a, int b, uint8_t v);
+
+  // setRangeFromUint16 populates the bits at indices [a,b] (inclusive range)
+  // with the bits of value v. b-a must be <=16 otherwise throws an exception
+  void setRangeFromUint16(int a, int b, uint16_t v);
+
+  // setRangeFromUint32 populates the bits at indices [a,b] (inclusive range)
+  // with the bits of value v. b-a must be <=32 otherwise throws an exception
+  void setRangeFromUint32(int a, int b, uint32_t v);
+
+  // setRangeFromUint64 populates the bits at indices [a,b] (inclusive range)
+  // with the bits of value v. b-a must be <=64 otherwise throws an exception
+  void setRangeFromUint64(int a, int b, uint64_t v);
+
+  // returns a textual representation of the BitSet
+  // where the LSB is on the left
+  std::string stringLSBLeft() const;
+
+  // returns a textual representation of the BitSet
+  // where the LSB is on the right
+  std::string stringLSBRight() const;
+
+  // subset returns a subset of the bitset.
+  // subset is not a slice (i.e. not a reference, but a copy of the internals)
+  // [a,b] inclusive
+  BitSet subset(int a, int b) const;
+
+  // uint8 converts the bit set into a 8-bits value, if possible.
+  // if b is negative, it is set to the bitset length
+  uint8_t uint8(int a, int b) const;
+
+  // uint16 converts the bit set into a 16-bits value, if possible.
+  // if b is negative, it is set to the bitset length
+  uint16_t uint16(int a, int b) const;
+
+  // uint32 converts the bit set into a 32-bits value, if possible.
+  // if b is negative, it is set to the bitset length
+  uint32_t uint32(int a, int b) const;
+
+  // uint64 converts the bit set into a 64-bits value, if possible.
+  // if b is negative, it is set to the bitset length
+  uint64_t uint64(int a, int b) const;
+
+ private:
+  int mSize; // max number of bits we can hold
+  int mLen;  // actual number of bits we are holding
+  std::vector<uint8_t> mBytes;
+};
+
+} // namespace raw
+} // namespace mch
+} // namespace o2
+
+#endif
