@@ -22,6 +22,7 @@
 #include <fstream>
 #include "MCHRaw/Encoder.h"
 #include <fmt/printf.h>
+#include "MCHRaw/ELink.h"
 
 using namespace o2::mch::raw;
 using RDH = o2::Header::RAWDataHeader;
@@ -55,11 +56,10 @@ BOOST_AUTO_TEST_CASE(GenerateRDH)
   out.write((char*)&rdh, sizeof(rdh));
 }
 
-BOOST_AUTO_TEST_CASE(EncodeOneDS)
+void encode1(BitSet& bs, int& n)
 {
   Encoder enc;
-  BitSet bs(8192);
-  int n{0};
+  n = 0;
 
   std::vector<int> chid = {1, 5, 13, 31};
   std::vector<int> chval = {10, 50, 130, 310};
@@ -74,9 +74,54 @@ BOOST_AUTO_TEST_CASE(EncodeOneDS)
   n += chid.size();
 
   enc.appendOneDualSampa(bs, 3, 0, chid, chval);
+}
 
+int encode2(BitSet& bs, int& n)
+{
+  // generate a bitset, starting with m "garbage" bits
+  // returns m
+
+  // some garbage first
+  int m = 13;
+  for (int i = 0; i < m; i++) {
+    bs.append(static_cast<bool>(rand() % 2));
+  }
+  // then a sync
+  bs.append(sampaSync().uint64(), 50);
+  // then the data
+  encode1(bs, n);
+  return m + 50;
+}
+
+BOOST_AUTO_TEST_CASE(EncodeOneDS)
+{
+  int n{0};
+  BitSet bs(8192);
+  encode1(bs, n);
   BOOST_CHECK_EQUAL(bs.len(), n * (50 + 40));
-  std::cout << bs.stringLSBLeft() << "\n";
+}
+
+BOOST_AUTO_TEST_CASE(TestELinkDecoding)
+{
+  int n{0};
+  BitSet bs(1);
+
+  // bs.append(sampaSync().uint64(), 50);
+  // std::cout << sampaSync() << "\n";
+  // std::cout << bs.stringLSBLeft() << "\n";
+  // std::cout << bs.stringLSBRight() << "\n";
+  //
+  // bs.clear();
+  int m = encode2(bs, n);
+  BOOST_CHECK_EQUAL(bs.len(), m + n * (50 + 40));
+
+  ELink e(12);
+
+  for (int i = 0; i < bs.len() - 1; i += 2) {
+    e.append(bs.get(i), bs.get(i + 1));
+  }
+
+  std::cout << "elink=" << e << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()
