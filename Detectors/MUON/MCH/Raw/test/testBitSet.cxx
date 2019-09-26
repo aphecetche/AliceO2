@@ -48,6 +48,11 @@ BOOST_AUTO_TEST_CASE(TestAppend)
   bs.append(false);
   bs.append(true);
   BOOST_CHECK_EQUAL(bs.uint8(0, 5), 0x13);
+  BitSet bs2(8192);
+  BOOST_CHECK_EQUAL(bs2.size(), 8192);
+  BOOST_CHECK_EQUAL(bs2.len(), 0);
+  bs2.append(static_cast<uint64_t>(0x1555540F00113), 50);
+  BOOST_CHECK_EQUAL(bs2.len(), 50);
 }
 
 BOOST_AUTO_TEST_CASE(TestPruneFirst)
