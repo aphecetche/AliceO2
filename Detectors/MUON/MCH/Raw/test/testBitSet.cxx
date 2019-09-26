@@ -115,47 +115,48 @@ BOOST_AUTO_TEST_CASE(TestString)
 
 BOOST_AUTO_TEST_CASE(TestFromString)
 {
-  BOOST_CHECK_THROW(BitSet::fromString("00011x"), std::invalid_argument);
-  BitSet bs = BitSet::fromString("01011011");
+  BOOST_CHECK_THROW(BitSet("00011x"), std::invalid_argument);
+  BitSet bs("01011011");
+  BOOST_CHECK_EQUAL(bs.len(), 8);
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "01011011");
 }
 
 BOOST_AUTO_TEST_CASE(TestRangeFromString)
 {
-  BitSet bs = BitSet::fromString("110011");
+  BitSet bs("110011");
   BOOST_CHECK_NO_THROW(bs.setRangeFromString(2, 3, "11"));
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "111111");
   BOOST_CHECK_THROW(bs.setRangeFromString(2, 3, "x-"), std::invalid_argument);
   BOOST_CHECK_THROW(bs.setRangeFromString(4, 1, "101"), std::invalid_argument);
   BOOST_CHECK_THROW(bs.setRangeFromString(32, 38, "1100"), std::invalid_argument);
   BOOST_CHECK_NO_THROW(bs.setRangeFromString(32, 38, "1100110"));
-  BOOST_CHECK_THROW(BitSet::fromString("abcd"), std::invalid_argument);
+  BOOST_CHECK_THROW(BitSet("abcd"), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(TestFromIntegers)
 {
   uint64_t v = 0xF0F8FCFEFF3F3F1F;
-  BitSet bs = BitSet::fromUint64(v);
+  BitSet bs = BitSet::from(v);
   std::string s = "1111100011111100111111001111111101111111001111110001111100001111";
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), s);
   uint64_t x = bs.uint64(0, 63);
   BOOST_CHECK_EQUAL(x, v);
 
-  bs = BitSet::fromUint8(0x13);
+  bs = BitSet::from(static_cast<uint8_t>(0x13));
   BOOST_CHECK_EQUAL(bs.uint8(0, 7), 0x13);
 
-  bs = BitSet::fromUint16(0x8000);
+  bs = BitSet::from(static_cast<uint16_t>(0x8000));
   BOOST_CHECK_EQUAL(bs.uint16(0, 15), 0x8000);
 
-  bs = BitSet::fromUint32(0xF0008000);
+  bs = BitSet::from(static_cast<uint32_t>(0xF0008000));
   BOOST_CHECK_EQUAL(bs.uint32(0, 31), 0xF0008000);
 
   bs = BitSet(150);
-  BOOST_CHECK_THROW(bs.setRangeFromUint8(0, 9, 0), std::invalid_argument);
-  BOOST_CHECK_THROW(bs.setRangeFromUint16(9, 32, 0), std::invalid_argument);
-  BOOST_CHECK_THROW(bs.setRangeFromUint32(24, 57, 0), std::invalid_argument);
-  BOOST_CHECK_THROW(bs.setRangeFromUint64(56, 122, 0), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(bs.setRangeFromUint8(0, 7, 0xFF));
+  BOOST_CHECK_THROW(bs.setRangeFromUint(0, 9, static_cast<uint8_t>(0)), std::invalid_argument);
+  BOOST_CHECK_THROW(bs.setRangeFromUint(9, 32, static_cast<uint16_t>(0)), std::invalid_argument);
+  BOOST_CHECK_THROW(bs.setRangeFromUint(24, 57, static_cast<uint32_t>(0)), std::invalid_argument);
+  BOOST_CHECK_THROW(bs.setRangeFromUint(56, 122, static_cast<uint64_t>(0)), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(bs.setRangeFromUint(0, 7, static_cast<uint8_t>(0xFF)));
   BOOST_CHECK_EQUAL(bs.len(), 8);
 }
 
@@ -163,8 +164,8 @@ BOOST_AUTO_TEST_CASE(TestRangeFromUint16)
 {
   uint16_t v = 0xF0F8;
 
-  auto bs = BitSet::fromUint16(v);
-  bs.setRangeFromUint16(12, 14, 0);
+  auto bs = BitSet::from(v);
+  bs.setRangeFromUint(12, 14, static_cast<uint16_t>(0));
   BOOST_CHECK_EQUAL(bs.uint16(0, 15), 0x80F8);
 }
 
@@ -172,8 +173,8 @@ BOOST_AUTO_TEST_CASE(TestRangeFromUint32)
 {
   uint32_t v = 0xF0F8FCFE;
 
-  auto bs = BitSet::fromUint32(v);
-  bs.setRangeFromUint32(28, 30, 0);
+  auto bs = BitSet::from(v);
+  bs.setRangeFromUint(28, 30, static_cast<uint32_t>(0));
   BOOST_CHECK_EQUAL(bs.uint32(0, 31), 0x80F8FCFE);
 }
 
@@ -181,8 +182,8 @@ BOOST_AUTO_TEST_CASE(TestRangeFromUint64)
 {
   uint64_t v = 0xF0F8FCFEFF3F3F1F;
 
-  auto bs = BitSet::fromUint64(v);
-  bs.setRangeFromUint64(60, 62, 0);
+  auto bs = BitSet::from(v);
+  bs.setRangeFromUint(60, 62, static_cast<uint64_t>(0));
   uint64_t expected = 0x80F8FCFEFF3F3F1F;
   BOOST_CHECK_EQUAL(bs.uint64(0, 63), expected);
 }
@@ -190,10 +191,10 @@ BOOST_AUTO_TEST_CASE(TestRangeFromUint64)
 BOOST_AUTO_TEST_CASE(TestRangeFromIntegers)
 {
   BitSet bs(64);
-  BOOST_CHECK_NO_THROW(bs.setRangeFromUint8(0, 5, 0x13));
+  BOOST_CHECK_NO_THROW(bs.setRangeFromUint(0, 5, static_cast<uint8_t>(0x13)));
   bs.set(8, true);
-  BOOST_CHECK_NO_THROW(bs.setRangeFromUint8(20, 23, 0xF));
-  BOOST_CHECK_NO_THROW(bs.setRangeFromUint32(29, 48, 0xAAAAA));
+  BOOST_CHECK_NO_THROW(bs.setRangeFromUint(20, 23, static_cast<uint8_t>(0xF)));
+  BOOST_CHECK_NO_THROW(bs.setRangeFromUint(29, 48, static_cast<uint32_t>(0xAAAAA)));
   BOOST_CHECK_EQUAL(bs.uint64(0, 63), 0x1555540F00113);
 }
 
@@ -209,16 +210,16 @@ BOOST_AUTO_TEST_CASE(TestFromBytes)
 
 BOOST_AUTO_TEST_CASE(TestIsEqual)
 {
-  auto b1 = BitSet::fromString("110011");
-  auto b2 = BitSet::fromString("110011");
+  BitSet b1("110011");
+  BitSet b2("110011");
   BOOST_CHECK(b1 == b2);
-  b2 = BitSet::fromString("1010");
+  b2 = BitSet("1010");
   BOOST_CHECK(b1 != b2);
 }
 
 BOOST_AUTO_TEST_CASE(TestSub)
 {
-  auto bs = BitSet::fromString("110011");
+  BitSet bs("110011");
   auto b = bs.subset(2, 4);
   BOOST_CHECK_EQUAL(b.stringLSBLeft(), "001");
   b.set(1, true);
@@ -227,14 +228,14 @@ BOOST_AUTO_TEST_CASE(TestSub)
 
 BOOST_AUTO_TEST_CASE(TestUint64)
 {
-  BitSet bs = BitSet::fromString("110011");
+  BitSet bs("110011");
   auto v2 = bs.uint64(0, 5);
   BOOST_CHECK_EQUAL(v2, 51);
   v2 = bs.uint64(0, 1);
   BOOST_CHECK_EQUAL(v2, 3);
 
   uint64_t v = UINT64_C(0xFFFFFFFFFFFFFFFF);
-  bs = BitSet::fromUint64(v);
+  bs = BitSet::from(v);
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "1111111111111111111111111111111111111111111111111111111111111111");
   auto x = bs.uint64(0, 63);
   BOOST_CHECK_EQUAL(x, v);
@@ -251,7 +252,7 @@ BOOST_AUTO_TEST_CASE(TestGrow)
 BOOST_AUTO_TEST_CASE(TestUint16)
 {
   uint16_t v = 0xFFFF;
-  BitSet bs = BitSet::fromUint16(v);
+  BitSet bs = BitSet::from(v);
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "1111111111111111");
   auto x = bs.uint16(0, 15);
   BOOST_CHECK_EQUAL(x, v);
@@ -260,7 +261,7 @@ BOOST_AUTO_TEST_CASE(TestUint16)
 BOOST_AUTO_TEST_CASE(TestUint32)
 {
   uint32_t v = 0xFFFFFFFF;
-  BitSet bs = BitSet::fromUint32(v);
+  BitSet bs = BitSet::from(v);
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "11111111111111111111111111111111");
   auto x = bs.uint32(0, 31);
   BOOST_CHECK_EQUAL(x, v);
@@ -268,9 +269,9 @@ BOOST_AUTO_TEST_CASE(TestUint32)
 
 BOOST_AUTO_TEST_CASE(TestLast)
 {
-  auto bs = BitSet::fromString("1010110101111");
-  BOOST_CHECK(bs.last(4) == BitSet::fromString("1111"));
-  BOOST_CHECK(bs.last(6) == BitSet::fromString("101111"));
+  BitSet bs("1010110101111");
+  BOOST_CHECK(bs.last(4) == BitSet("1111"));
+  BOOST_CHECK(bs.last(6) == BitSet("101111"));
 }
 
 BOOST_AUTO_TEST_CASE(TestEmptyBitSet)
@@ -319,7 +320,7 @@ BOOST_AUTO_TEST_CASE(TestAppendUint32)
   BitSet bs(32);
   auto C = UINT32_C(0XDA1E5AFE);
 
-  bs.appendUint32(C);
+  bs.append(C);
 
   BOOST_CHECK_EQUAL(bs.len(), 32);
   BOOST_CHECK_EQUAL(bs.uint32(0, 31), C);
@@ -336,7 +337,7 @@ BOOST_AUTO_TEST_CASE(TestAppendUint64)
   BitSet bs(64);
 
   auto C = UINT64_C(0x1555540f00113);
-  bs.appendUint64(C, 64);
+  bs.append(C, 64);
 
   BOOST_CHECK_EQUAL(bs.len(), 64);
   BOOST_CHECK_EQUAL(bs.uint64(0, 63), C);
@@ -353,11 +354,11 @@ BOOST_AUTO_TEST_CASE(TestAppendUint8)
 
   uint8_t a(42);
 
-  BOOST_CHECK_THROW(bs.appendUint8(a, 9), std::invalid_argument);
+  BOOST_CHECK_THROW(bs.append(a, 9), std::invalid_argument);
 
   // append bits, letting appendUint8 compute the number
   // of actual bits to add
-  BOOST_CHECK_NO_THROW(bs.appendUint8(a));
+  BOOST_CHECK_NO_THROW(bs.append(a));
 
   BOOST_CHECK_EQUAL(bs.len(), 6);
   BOOST_CHECK_EQUAL(bs.uint8(0, 5), a);
@@ -367,12 +368,12 @@ BOOST_AUTO_TEST_CASE(TestAppendUint8)
 
   bs.clear();
   // append bits, forcing 8 bits to be added
-  bs.appendUint8(a, 8);
+  bs.append(a, 8);
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "01010100");
   BOOST_CHECK_EQUAL(bs.uint8(0, 7), a);
 
-  bs = BitSet::fromString("111");
-  bs.appendUint8(128, 8);
+  bs = BitSet("111");
+  bs.append(static_cast<uint8_t>(128), 8);
 
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "11100000001");
 }
