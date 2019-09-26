@@ -169,6 +169,15 @@ bool isHeartbeat(uint64_t header)
   return true;
 }
 
+} // namespace
+
+namespace o2
+{
+namespace mch
+{
+namespace raw
+{
+
 std::string packetTypeName(o2::mch::raw::SampaPacketType pkt)
 {
   if (pkt == o2::mch::raw::SampaPacketType::HeartBeat) {
@@ -197,15 +206,6 @@ std::string packetTypeName(o2::mch::raw::SampaPacketType pkt)
   }
   throw std::out_of_range("should not happen");
 }
-
-} // namespace
-
-namespace o2
-{
-namespace mch
-{
-namespace raw
-{
 
 SampaHeader::SampaHeader(uint64_t value) : mValue(value)
 {
@@ -384,7 +384,7 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
   uint64_t one = 1;
   std::vector<int> sep = {5, 6, 9, 19, 23, 28, 48};
   for (int i = 0; i < 50; i++) {
-    os << ((sh.asUint64() & (one << i)) ? "1" : "0");
+    os << ((sh.uint64() & (one << i)) ? "1" : "0");
     if (std::find(begin(sep), end(sep), i) != sep.end()) {
       os << "|";
     }
