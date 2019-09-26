@@ -21,6 +21,17 @@ namespace mch
 namespace raw
 {
 
+enum class SampaPacketType : uint8_t {
+  HeartBeat = 0,
+  DataTruncated = 1,
+  Sync = 2,
+  DataTruncatedTriggerTooEarly = 3,
+  Data = 4,
+  DataNumWords = 5,
+  DataTriggerTooEarly = 6,
+  DataTriggerTooEarlyNumWords = 7
+};
+
 class SampaHeader
 {
  public:
@@ -35,7 +46,7 @@ class SampaHeader
   // if any of those limits are not respected, the ctor throws an exception
   explicit SampaHeader(uint8_t hamming,
                        bool p,
-                       uint8_t pkt,
+                       SampaPacketType pkt,
                        uint16_t numWords,
                        uint8_t h,
                        uint8_t ch,
@@ -51,7 +62,7 @@ class SampaHeader
 
   uint8_t hammingCode() const;
   bool headerParity() const;
-  uint8_t packetType() const;
+  SampaPacketType packetType() const;
   uint16_t nbOf10BitWords() const;
   uint8_t chipAddress() const;
   uint8_t channelAddress() const;
@@ -60,7 +71,7 @@ class SampaHeader
 
   void hammingCode(uint8_t hamming);
   void headerParity(bool p);
-  void packetType(uint8_t pkt);
+  void packetType(SampaPacketType pkt);
   void nbOf10BitWords(uint16_t nofwords);
   void chipAddress(uint8_t h);
   void channelAddress(uint8_t ch);
