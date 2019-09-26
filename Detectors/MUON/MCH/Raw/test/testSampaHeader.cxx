@@ -61,9 +61,8 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetPacketType)
 {
   SampaHeader sh;
 
-  BOOST_CHECK_THROW(sh.packetType(1 << 3), std::invalid_argument);
-  sh.packetType(0x7);
-  BOOST_CHECK_EQUAL(sh.packetType(), 7);
+  sh.packetType(SampaPacketType::DataTriggerTooEarlyNumWords);
+  BOOST_CHECK(sh.packetType() == SampaPacketType::DataTriggerTooEarlyNumWords);
 }
 
 BOOST_AUTO_TEST_CASE(SampaHeaderSetNumberOf10BitsWords)
@@ -166,17 +165,15 @@ BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithIncorrectNumberOfPartialBitsShouldThrow)
   // h is 4 bits max
   // ch is 5 bits max
   // bx is 20 bits max
-  BOOST_CHECK_THROW(SampaHeader(1 << 6, true, 0, 0, 0, 0, 0, true),
+  BOOST_CHECK_THROW(SampaHeader(1 << 6, true, SampaPacketType::HeartBeat, 0, 0, 0, 0, true),
                     std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 1 << 3, 0, 0, 0, 0, true),
+  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 1 << 10, 0, 0, 0, true),
                     std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 1 << 10, 0, 0, 0, true),
+  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 1 << 4, 0, 0, true),
                     std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 1 << 4, 0, 0, true),
+  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 0, 1 << 5, 0, true),
                     std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 0, 1 << 5, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 0, 0, 1 << 20, true),
+  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 0, 0, 1 << 20, true),
                     std::invalid_argument);
 }
 
@@ -184,6 +181,19 @@ BOOST_AUTO_TEST_CASE(CheckSampaSyncIsExpectedValue)
 {
   SampaHeader h(0x1555540f00113);
   BOOST_CHECK(sampaSync() == h);
+}
+
+BOOST_AUTO_TEST_CASE(SetChannelAddressTwice)
+{
+  SampaHeader h;
+
+  h.packetType(SampaPacketType::Data);
+  h.channelAddress(1);
+  BOOST_CHECK_EQUAL(h.channelAddress(), 1);
+  h.channelAddress(31);
+  BOOST_CHECK_EQUAL(h.channelAddress(), 31);
+  h.channelAddress(5);
+  BOOST_CHECK_EQUAL(h.channelAddress(), 5);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

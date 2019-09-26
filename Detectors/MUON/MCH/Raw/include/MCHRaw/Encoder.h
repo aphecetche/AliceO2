@@ -28,7 +28,7 @@ class Encoder
   // just use it to start
   // should either return a bytes buffer or write into one give bytes buffer
   // (as we know beforehand how many bytes are required) ?
-  BitSet oneDS(int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs);
+  void appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs);
 };
 } // namespace raw
 } // namespace mch

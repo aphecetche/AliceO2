@@ -10,6 +10,7 @@
 
 #include "MCHRaw/Encoder.h"
 #include "MCHRaw/SampaHeader.h"
+#include <iostream>
 
 namespace
 {
@@ -23,9 +24,36 @@ int computeHamming(uint64_t header)
 namespace o2::mch::raw
 {
 
-BitSet Encoder::oneDS(int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs)
+void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs)
 {
-  return BitSet::from(sampaSync().asUint64());
+  // for the moment assume dsid==chipAddress and chid==channelAddress
+  // but really here will have to convert (dsid,chid) => (chipAddress,channelAddress)
+  // where channels is {chid}
+
+  if (channels.size() != adcs.size()) {
+    throw std::invalid_argument("channels and adcs arrays should have the same size");
+  }
+
+  SampaHeader h;
+  h.chipAddress(dsid);
+  h.bunchCrossingCounter(0x80000);
+
+  for (int i = 0; i < channels.size(); i++) {
+
+    h.packetType(SampaPacketType::Data);
+    h.channelAddress(channels[i]);
+
+    std::cout << h << "\n";
+    bs.append(h.asUint64(), 50);
+
+    uint16_t nofSamples = 1;
+    uint16_t timestamp = 0;
+    uint32_t chargeSum = adcs[i];
+
+    bs.append(nofSamples, 10);
+    bs.append(timestamp, 10);
+    bs.append(chargeSum, 20);
+  }
 }
 
 } // namespace o2::mch::raw

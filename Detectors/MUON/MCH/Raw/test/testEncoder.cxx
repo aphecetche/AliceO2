@@ -58,11 +58,26 @@ BOOST_AUTO_TEST_CASE(GenerateRDH)
 BOOST_AUTO_TEST_CASE(EncodeOneDS)
 {
   Encoder enc;
+  BitSet bs(8192);
+  int n{0};
 
-  std::array<int, 3> chid = {1, 5, 63};
-  std::array<int, 3> chval = {10, 50, 630};
-  auto bs = enc.oneDS(101, 0, chid, chval);
-  BOOST_CHECK_EQUAL(bs.uint64(0, 49), sampaSync().asUint64());
+  std::vector<int> chid = {1, 5, 13, 31};
+  std::vector<int> chval = {10, 50, 130, 310};
+
+  enc.appendOneDualSampa(bs, 9, 0, chid, chval);
+
+  n += chid.size();
+
+  chid = {1, 6, 14, 26, 27, 30};
+  chval = {10, 60, 14, 260, 270, 300};
+
+  n += chid.size();
+
+  enc.appendOneDualSampa(bs, 3, 0, chid, chval);
+
+  BOOST_CHECK_EQUAL(bs.len(), n * (50 + 40));
+  std::cout << bs.stringLSBLeft() << "\n";
 }
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
