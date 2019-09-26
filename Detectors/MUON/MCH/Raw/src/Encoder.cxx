@@ -43,8 +43,8 @@ void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<
     h.packetType(SampaPacketType::Data);
     h.channelAddress(channels[i]);
 
-    std::cout << h << "\n";
-    bs.append(h.asUint64(), 50);
+    // std::cout << h << "\n";
+    bs.append(h.uint64(), 50);
 
     uint16_t nofSamples = 1;
     uint16_t timestamp = 0;
