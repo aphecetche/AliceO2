@@ -4,6 +4,8 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 namespace
 {
@@ -55,48 +57,12 @@ constexpr uint64_t channelAddress(uint64_t header)
 
 constexpr uint64_t bunchCrossingCounter(uint64_t header)
 {
-  return ((header & BUNCH_CROSSING_OFFSET) >> BUNCH_CROSSING_OFFSET);
+  return ((header & BUNCH_CROSSING_MASK) >> BUNCH_CROSSING_OFFSET);
 }
 
 constexpr uint64_t payloadParity(uint64_t header)
 {
   return ((header & PARITY_MASK) >> PARITY_OFFSET);
-}
-
-constexpr uint64_t sampaHeader(uint64_t hamming,
-                               uint64_t p,
-                               uint64_t pkt,
-                               uint64_t numWords,
-                               uint64_t h,
-                               uint64_t ch,
-                               uint64_t bx,
-                               uint64_t dp)
-
-{
-  // 50 bits
-
-  return (hamming << HAMMING_CODE_OFFSET) +
-           (p << HEADER_PARITY_OFFSET) +
-           (pkt << PACKET_TYPE_OFFSET) +
-           (numWords << NUMBER_OF_1OBITS_WORDS_OFFSET) +
-           (h << CHIP_ADDRESS_OFFSET) +
-           (ch << CHANNEL_ADDRESS_OFFSET) +
-           (bx << BUNCH_CROSSING_OFFSET) +
-           (dp << PARITY_OFFSET) &
-         UINT64_C(0x3FFFFFFFFFFFF);
-}
-
-constexpr uint64_t sampaSync()
-{
-  return sampaHeader(
-    0x13,
-    0,
-    2,
-    0,
-    0xf,
-    0,
-    0xAAAAA,
-    0);
 }
 
 template <typename T>
@@ -123,34 +89,32 @@ void assertNofBits(T value, int n)
   }
 }
 
-bool checkBit(uint64_t value, int i, bool bitStatus, std::string& error)
+bool checkBit(uint64_t value, int i, bool bitStatus)
 {
-  bool rv = (value >> i & 1) == bitStatus;
-  if (!rv) {
-    error += fmt::sprintf("bit %2d should be %d\n", i, bitStatus);
-  }
-  return rv;
+  return (value >> i & 1) == bitStatus;
 }
 
-bool isValidHeader(uint64_t header, std::string& error)
+bool isHeartbeat(uint64_t header)
 {
-  if (!nofBitsBelowLimit(header, 50)) {
-    return false;
-  }
   // - bits 7-9 must be zero
+  // - bits 10-19 must be zero
   // - bits 24,26,28 must be one
   // - bits 25,27 must be zero
   // - bit 49 must be zero
-  checkBit(header, 7, false, error);
-  checkBit(header, 8, false, error);
-  checkBit(header, 9, false, error);
-  checkBit(header, 24, true, error);
-  checkBit(header, 26, true, error);
-  checkBit(header, 28, true, error);
-  checkBit(header, 25, false, error);
-  checkBit(header, 27, false, error);
-  checkBit(header, 49, false, error);
-  return error.empty();
+  for (int i = 7; i <= 9; i++) {
+    if (!checkBit(header, i, false)) {
+      return false;
+    }
+  }
+  for (int i = 10; i <= 19; i++) {
+    if (!checkBit(header, i, false)) {
+      return false;
+    }
+  }
+  if (!checkBit(header, 24, true) || !checkBit(header, 26, true) || !checkBit(header, 28, true) || !checkBit(header, 25, false) || !checkBit(header, 27, false) || !checkBit(header, 49, false)) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace
@@ -164,9 +128,8 @@ namespace raw
 
 SampaHeader::SampaHeader(uint64_t value) : mValue(value)
 {
-  std::string error;
-  if (!isValidHeader(value, error)) {
-    throw std::invalid_argument(fmt::sprintf("%x is not a valid header value :\n%s", value, error));
+  if (!nofBitsBelowLimit(value, 50)) {
+    throw std::invalid_argument(fmt::sprintf("%x is not a valid header value", value));
   }
 }
 
@@ -179,24 +142,80 @@ SampaHeader::SampaHeader(uint8_t hamming,
                          uint32_t bx,
                          bool dp) : mValue{0}
 {
-  assertNofBits(hamming, 6);
-  assertNofBits(pkt, 3);
-  assertNofBits(numWords, 10);
+  hammingCode(hamming);
+  headerParity(p);
+  packetType(pkt);
+  nbOf10BitWords(numWords);
+  chipAddress(h);
+  channelAddress(ch);
+  bunchCrossingCounter(bx);
+  payloadParity(dp);
+}
+
+void SampaHeader::headerParity(bool p)
+{
+  mValue += (static_cast<uint64_t>(p) << HEADER_PARITY_OFFSET);
+}
+
+void SampaHeader::payloadParity(bool dp)
+{
+  mValue += (static_cast<uint64_t>(dp) << PARITY_OFFSET);
+}
+
+void SampaHeader::chipAddress(uint8_t h)
+{
   assertNofBits(h, 4);
+  mValue += (static_cast<uint64_t>(h) << CHIP_ADDRESS_OFFSET);
+}
+
+void SampaHeader::channelAddress(uint8_t ch)
+{
   assertNofBits(ch, 5);
+  mValue += (static_cast<uint64_t>(ch) << CHANNEL_ADDRESS_OFFSET);
+}
+
+void SampaHeader::bunchCrossingCounter(uint32_t bx)
+{
   assertNofBits(bx, 20);
-  mValue = (hamming << HAMMING_CODE_OFFSET) +
-           (static_cast<uint64_t>(p) << HEADER_PARITY_OFFSET) +
-           (pkt << PACKET_TYPE_OFFSET) +
-           (numWords << NUMBER_OF_1OBITS_WORDS_OFFSET) +
-           (h << CHIP_ADDRESS_OFFSET) +
-           (ch << CHANNEL_ADDRESS_OFFSET) +
-           (bx << BUNCH_CROSSING_OFFSET) +
-           (static_cast<uint64_t>(dp) << PARITY_OFFSET);
-  std::string error;
-  if (!isValidHeader(mValue, error)) {
-    throw std::invalid_argument(fmt::sprintf("%x is not a valid header value :\n%s", mValue, error));
-  }
+  mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET);
+}
+
+void SampaHeader::hammingCode(uint8_t hamming)
+{
+  assertNofBits(hamming, 6);
+  mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET);
+}
+
+void SampaHeader::nbOf10BitWords(uint16_t nofwords)
+{
+  assertNofBits(nofwords, 10);
+  mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET);
+}
+
+void SampaHeader::packetType(uint8_t pkt)
+{
+  assertNofBits(pkt, 3);
+  mValue += (static_cast<uint64_t>(pkt) << PACKET_TYPE_OFFSET);
+}
+
+bool SampaHeader::operator<(const SampaHeader& rhs) const
+{
+  return bunchCrossingCounter() < rhs.bunchCrossingCounter();
+}
+
+bool SampaHeader::operator>(const SampaHeader& rhs) const
+{
+  return bunchCrossingCounter() > rhs.bunchCrossingCounter();
+}
+
+bool SampaHeader::operator<=(const SampaHeader& rhs) const
+{
+  return bunchCrossingCounter() <= rhs.bunchCrossingCounter();
+}
+
+bool SampaHeader::operator>=(const SampaHeader& rhs) const
+{
+  return bunchCrossingCounter() >= rhs.bunchCrossingCounter();
 }
 
 bool SampaHeader::operator==(const SampaHeader& rhs) const
@@ -209,6 +228,10 @@ bool SampaHeader::operator!=(const SampaHeader& rhs) const
   return !(*this == rhs);
 }
 
+bool SampaHeader::isHeartbeat() const
+{
+  return ::isHeartbeat(mValue);
+}
 uint8_t SampaHeader::hammingCode() const
 {
   // 6 bits
@@ -268,6 +291,29 @@ SampaHeader sampaSync()
     0);
 }
 
+std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
+{
+  uint64_t one = 1;
+  std::vector<int> sep = {5, 6, 9, 19, 23, 28, 48};
+  for (int i = 0; i < 50; i++) {
+    os << ((sh.asUint64() & (one << i)) ? "1" : "0");
+    if (std::find(begin(sep), end(sep), i) != sep.end()) {
+      os << "|";
+    }
+  }
+  os << "\n";
+  os << fmt::sprintf("%6x %d %3x %10x %4x %5x %20x %d",
+                     sh.hammingCode(),
+                     sh.headerParity(),
+                     sh.packetType(),
+                     sh.nbOf10BitWords(),
+                     sh.chipAddress(),
+                     sh.channelAddress(),
+                     sh.bunchCrossingCounter(),
+                     sh.payloadParity())
+     << "\n";
+  return os;
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2

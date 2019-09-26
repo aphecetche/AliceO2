@@ -11,12 +11,21 @@
 #include "MCHRaw/Encoder.h"
 #include "MCHRaw/SampaHeader.h"
 
+namespace
+{
+
+int computeHamming(uint64_t header)
+{
+  return 0;
+}
+} // namespace
+
 namespace o2::mch::raw
 {
 
 BitSet Encoder::oneDS(int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs)
 {
-  return BitSet::fromUint64(sampaSync().asUint64());
+  return BitSet::from(sampaSync().asUint64());
 }
 
 } // namespace o2::mch::raw

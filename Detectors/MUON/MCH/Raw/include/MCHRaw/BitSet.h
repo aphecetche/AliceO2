@@ -31,19 +31,18 @@ class BitSet
   // creates a bitset of initial size = n bits
   explicit BitSet(int n);
 
-  // fromString returns a BitSet using a string composed of '0' (meaning
+  // returns a BitSet using a string composed of '0' (meaning
   // bit unset) and '1' (meaning bit set) characters
   // the length of the resulting bitset is that of the string.
-  static BitSet fromString(std::string_view s);
+  explicit BitSet(std::string_view s);
 
-  // fromUint8 returns a bitset initialized with the 8-bits value v
-  static BitSet fromUint8(uint8_t v);
-  // fromUint16 returns a bitset initialized with the 16-bits value v
-  static BitSet fromUint16(uint16_t v);
-  // fromUint32 returns a bitset initialized with the 32-bits value v
-  static BitSet fromUint32(uint32_t v);
-  // fromUint64 returns a bitset initialized with the 64-bits value v
-  static BitSet fromUint64(uint64_t v);
+  ///@{
+  // from returns a bitset initialized with the x-bits value v
+  static BitSet from(uint8_t v);
+  static BitSet from(uint16_t v);
+  static BitSet from(uint32_t v);
+  static BitSet from(uint64_t v);
+  ///@}
 
   // check equality
   bool operator==(const BitSet& rhs) const;
@@ -61,10 +60,10 @@ class BitSet
   // otherwise it should be >= log2(val)+1 and <=x
   // and the exact number of specified bits will be set
   // (to 0 or 1)
-  void appendUint8(uint8_t val, int n = -1);
-  void appendUint16(uint16_t val, int n = -1);
-  void appendUint32(uint32_t val, int n = -1);
-  void appendUint64(uint64_t val, int n = -1);
+  void append(uint8_t val, int n = -1);
+  void append(uint16_t val, int n = -1);
+  void append(uint32_t val, int n = -1);
+  void append(uint64_t val, int n = -1);
   ///@}
 
   // count returns the number of bits set at 1
@@ -109,21 +108,14 @@ class BitSet
   // triggers an exception
   void setRangeFromString(int a, int b, std::string_view s);
 
-  // setRangeFromUint8 populates the bits at indices [a,b] (inclusive range)
-  // with the bits of value v. b-a must be <=8 otherwise throws an exception
-  void setRangeFromUint8(int a, int b, uint8_t v);
-
-  // setRangeFromUint16 populates the bits at indices [a,b] (inclusive range)
-  // with the bits of value v. b-a must be <=16 otherwise throws an exception
-  void setRangeFromUint16(int a, int b, uint16_t v);
-
-  // setRangeFromUint32 populates the bits at indices [a,b] (inclusive range)
-  // with the bits of value v. b-a must be <=32 otherwise throws an exception
-  void setRangeFromUint32(int a, int b, uint32_t v);
-
-  // setRangeFromUint64 populates the bits at indices [a,b] (inclusive range)
-  // with the bits of value v. b-a must be <=64 otherwise throws an exception
-  void setRangeFromUint64(int a, int b, uint64_t v);
+  ///@{
+  // setRangeFromUint(a,b,uintX_t) populates the bits at indices [a,b] (inclusive range)
+  // with the bits of value v. b-a must be <=X otherwise throws an exception
+  void setRangeFromUint(int a, int b, uint8_t v);
+  void setRangeFromUint(int a, int b, uint16_t v);
+  void setRangeFromUint(int a, int b, uint32_t v);
+  void setRangeFromUint(int a, int b, uint64_t v);
+  ///@}
 
   // returns a textual representation of the BitSet
   // where the LSB is on the left
