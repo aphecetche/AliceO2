@@ -194,6 +194,7 @@ BOOST_AUTO_TEST_CASE(SetChannelAddressTwice)
   BOOST_CHECK_EQUAL(h.channelAddress(), 31);
   h.channelAddress(5);
   BOOST_CHECK_EQUAL(h.channelAddress(), 5);
+  std::cout << h << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

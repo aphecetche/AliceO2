@@ -61,7 +61,7 @@ T uint(const BitSet& bs, int a, int b)
 }
 
 template <typename T>
-void appendT(BitSet& bs, T val, int n)
+int appendT(BitSet& bs, T val, int n)
 {
   if (n <= 0) {
     if (val > 0) {
@@ -83,6 +83,7 @@ void appendT(BitSet& bs, T val, int n)
       bs.append(false);
     }
   }
+  return n;
 } // namespace
 
 bool isValidString(std::string_view s)
@@ -138,29 +139,30 @@ bool BitSet::operator!=(const BitSet& rhs) const
   return !(*this == rhs);
 }
 
-void BitSet::append(bool val)
+int BitSet::append(bool val)
 {
   set(len(), val);
+  return 1;
 }
 
-void BitSet::append(uint8_t val, int n)
+int BitSet::append(uint8_t val, int n)
 {
-  appendT<uint8_t>(*this, val, n);
+  return appendT<uint8_t>(*this, val, n);
 }
 
-void BitSet::append(uint16_t val, int n)
+int BitSet::append(uint16_t val, int n)
 {
-  appendT<uint16_t>(*this, val, n);
+  return appendT<uint16_t>(*this, val, n);
 }
 
-void BitSet::append(uint32_t val, int n)
+int BitSet::append(uint32_t val, int n)
 {
-  appendT<uint32_t>(*this, val, n);
+  return appendT<uint32_t>(*this, val, n);
 }
 
-void BitSet::append(uint64_t val, int n)
+int BitSet::append(uint64_t val, int n)
 {
-  appendT<uint64_t>(*this, val, n);
+  return appendT<uint64_t>(*this, val, n);
 }
 
 bool BitSet::any() const
