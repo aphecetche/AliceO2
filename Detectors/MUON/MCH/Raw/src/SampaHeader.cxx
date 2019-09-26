@@ -18,6 +18,51 @@ constexpr uint64_t CHANNEL_ADDRESS_OFFSET = 24;
 constexpr uint64_t BUNCH_CROSSING_OFFSET = 29;
 constexpr uint64_t PARITY_OFFSET = 49;
 
+constexpr uint64_t HAMMING_CODE_NOFBITS = HEADER_PARITY_OFFSET - HAMMING_CODE_OFFSET;
+constexpr uint64_t HEADER_PARITY_NOFBITS = PACKET_TYPE_OFFSET - HEADER_PARITY_OFFSET;
+constexpr uint64_t PACKET_TYPE_NOFBITS = NUMBER_OF_1OBITS_WORDS_OFFSET - PACKET_TYPE_OFFSET;
+constexpr uint64_t NUMBER_OF_1OBITS_WORDS_NOFBITS = CHIP_ADDRESS_OFFSET - NUMBER_OF_1OBITS_WORDS_OFFSET;
+constexpr uint64_t CHIP_ADDRESS_NOFBITS = CHANNEL_ADDRESS_OFFSET - CHIP_ADDRESS_OFFSET;
+constexpr uint64_t CHANNEL_ADDRESS_NOFBITS = BUNCH_CROSSING_OFFSET - CHANNEL_ADDRESS_OFFSET;
+constexpr uint64_t BUNCH_CROSSING_NOFBITS = PARITY_OFFSET - BUNCH_CROSSING_OFFSET;
+constexpr uint64_t PARITY_NOFBITS = 50 - PARITY_OFFSET;
+
+struct CHECKNOFBITS {
+
+  CHECKNOFBITS()
+  {
+    if (HAMMING_CODE_NOFBITS != 6) {
+      throw std::invalid_argument(fmt::format("HAMMING_CODE_NOFBITS is {0}. Should be 6", HAMMING_CODE_NOFBITS));
+    }
+    if (HEADER_PARITY_NOFBITS != 1) {
+      throw std::invalid_argument(fmt::format("HEADER_PARITY_NOFBITS is {0}. Should be 1", HEADER_PARITY_NOFBITS));
+    }
+    if (PACKET_TYPE_NOFBITS != 3) {
+      throw std::invalid_argument(fmt::format("PACKET_TYPE_NOFBITS is {0}. Should be 3", PACKET_TYPE_NOFBITS));
+      throw;
+    }
+    if (NUMBER_OF_1OBITS_WORDS_NOFBITS != 10) {
+      throw std::invalid_argument(fmt::format("NUMBER_OF_1OBITS_WORDS_NOFBITS is {0}. Should be 10", NUMBER_OF_1OBITS_WORDS_NOFBITS));
+    }
+    if (CHIP_ADDRESS_NOFBITS != 4) {
+      throw std::invalid_argument(fmt::format("CHIP_ADDRESS_NOFBITS is {0}. Should be 4", CHIP_ADDRESS_NOFBITS));
+    }
+    if (CHANNEL_ADDRESS_NOFBITS != 5) {
+      throw std::invalid_argument(fmt::format("CHANNEL_ADDRESS_NOFBITS is {0}. Should be 5", CHANNEL_ADDRESS_NOFBITS));
+    }
+    if (BUNCH_CROSSING_NOFBITS != 20) {
+      throw std::invalid_argument(fmt::format("BUNCH_CROSSING_NOFBITS is {0}. Should be 20", BUNCH_CROSSING_NOFBITS));
+    }
+    if (PARITY_NOFBITS != 1) {
+      throw std::invalid_argument(fmt::format("PARITY_NOFBITS is {0}. Should be 1", PARITY_NOFBITS));
+
+      throw;
+    }
+  }
+};
+
+CHECKNOFBITS checknofbits;
+
 constexpr uint64_t HAMMING_CODE_MASK = 0x000000000003F;
 constexpr uint64_t HEADER_PARITY_MASK = 0x0000000000040;
 constexpr uint64_t PACKET_TYPE_MASK = 0x0000000000380;
@@ -94,6 +139,13 @@ bool checkBit(uint64_t value, int i, bool bitStatus)
   return (value >> i & 1) == bitStatus;
 }
 
+void resetBits(uint64_t& value, int a, int n)
+{
+  for (int i = a; i <= a + n; i++) {
+    value &= ~(static_cast<uint64_t>(1) << i);
+  }
+}
+
 bool isHeartbeat(uint64_t header)
 {
   // - bits 7-9 must be zero
@@ -117,6 +169,35 @@ bool isHeartbeat(uint64_t header)
   return true;
 }
 
+std::string packetTypeName(o2::mch::raw::SampaPacketType pkt)
+{
+  if (pkt == o2::mch::raw::SampaPacketType::HeartBeat) {
+    return "HeartBeat";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::DataTruncated) {
+    return "DataTruncated";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::Sync) {
+    return "Sync";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::DataTruncatedTriggerTooEarly) {
+    return "DataTruncatedTriggerTooEarly";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::Data) {
+    return "Data";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::DataNumWords) {
+    return "DataNumWords";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::DataTriggerTooEarly) {
+    return "DataTriggerTooEarl";
+  }
+  if (pkt == o2::mch::raw::SampaPacketType::DataTriggerTooEarlyNumWords) {
+    return "DataTriggerTooEarlyNumWords";
+  }
+  throw std::out_of_range("should not happen");
+}
+
 } // namespace
 
 namespace o2
@@ -135,7 +216,7 @@ SampaHeader::SampaHeader(uint64_t value) : mValue(value)
 
 SampaHeader::SampaHeader(uint8_t hamming,
                          bool p,
-                         uint8_t pkt,
+                         SampaPacketType pkt,
                          uint16_t numWords,
                          uint8_t h,
                          uint8_t ch,
@@ -154,47 +235,54 @@ SampaHeader::SampaHeader(uint8_t hamming,
 
 void SampaHeader::headerParity(bool p)
 {
+  resetBits(mValue, HEADER_PARITY_OFFSET, HEADER_PARITY_NOFBITS);
   mValue += (static_cast<uint64_t>(p) << HEADER_PARITY_OFFSET);
 }
 
 void SampaHeader::payloadParity(bool dp)
 {
+  resetBits(mValue, PARITY_OFFSET, PARITY_NOFBITS);
   mValue += (static_cast<uint64_t>(dp) << PARITY_OFFSET);
 }
 
 void SampaHeader::chipAddress(uint8_t h)
 {
-  assertNofBits(h, 4);
+  assertNofBits(h, CHIP_ADDRESS_NOFBITS);
+  resetBits(mValue, CHIP_ADDRESS_OFFSET, CHIP_ADDRESS_NOFBITS);
   mValue += (static_cast<uint64_t>(h) << CHIP_ADDRESS_OFFSET);
 }
 
 void SampaHeader::channelAddress(uint8_t ch)
 {
-  assertNofBits(ch, 5);
+  assertNofBits(ch, CHANNEL_ADDRESS_NOFBITS);
+  resetBits(mValue, CHANNEL_ADDRESS_OFFSET, CHANNEL_ADDRESS_NOFBITS);
   mValue += (static_cast<uint64_t>(ch) << CHANNEL_ADDRESS_OFFSET);
 }
 
 void SampaHeader::bunchCrossingCounter(uint32_t bx)
 {
-  assertNofBits(bx, 20);
+  assertNofBits(bx, BUNCH_CROSSING_NOFBITS);
+  resetBits(mValue, BUNCH_CROSSING_OFFSET, BUNCH_CROSSING_NOFBITS);
   mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET);
 }
 
 void SampaHeader::hammingCode(uint8_t hamming)
 {
-  assertNofBits(hamming, 6);
+  assertNofBits(hamming, HAMMING_CODE_NOFBITS);
+  resetBits(mValue, HAMMING_CODE_OFFSET, HAMMING_CODE_NOFBITS);
   mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET);
 }
 
 void SampaHeader::nbOf10BitWords(uint16_t nofwords)
 {
-  assertNofBits(nofwords, 10);
+  assertNofBits(nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
+  resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
   mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET);
 }
 
-void SampaHeader::packetType(uint8_t pkt)
+void SampaHeader::packetType(SampaPacketType pkt)
 {
-  assertNofBits(pkt, 3);
+  resetBits(mValue, PACKET_TYPE_OFFSET, PACKET_TYPE_NOFBITS);
   mValue += (static_cast<uint64_t>(pkt) << PACKET_TYPE_OFFSET);
 }
 
@@ -243,10 +331,10 @@ bool SampaHeader::headerParity() const
   return ::headerParity(mValue) == 1;
 }
 
-uint8_t SampaHeader::packetType() const
+SampaPacketType SampaHeader::packetType() const
 {
   // 3 bits
-  return ::packetType(mValue) & 0x7;
+  return static_cast<SampaPacketType>(::packetType(mValue) & 0x7);
 }
 
 uint16_t SampaHeader::nbOf10BitWords() const
@@ -283,7 +371,7 @@ SampaHeader sampaSync()
   return SampaHeader(
     0x13,
     0,
-    2,
+    SampaPacketType::Sync,
     0,
     0xf,
     0,
@@ -302,15 +390,16 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
     }
   }
   os << "\n";
-  os << fmt::sprintf("%6x %d %3x %10x %4x %5x %20x %d",
+  os << fmt::sprintf("%6x %d %3x %10x %4x %5x %20x %d [ %s ]",
                      sh.hammingCode(),
                      sh.headerParity(),
-                     sh.packetType(),
+                     static_cast<uint8_t>(sh.packetType()),
                      sh.nbOf10BitWords(),
                      sh.chipAddress(),
                      sh.channelAddress(),
                      sh.bunchCrossingCounter(),
-                     sh.payloadParity())
+                     sh.payloadParity(),
+                     packetTypeName(sh.packetType()))
      << "\n";
   return os;
 }
