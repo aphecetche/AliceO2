@@ -1,5 +1,5 @@
 o2_add_library(MCHRaw
-        SOURCES src/BitSet.cxx src/Encoder.cxx src/SampaHeader.cxx
+        SOURCES src/BitSet.cxx src/Encoder.cxx src/SampaHeader.cxx src/ELink.cxx
         PUBLIC_LINK_LIBRARIES fmt::fmt ms_gsl::ms_gsl)
 
 o2_add_executable(rawdump

@@ -78,7 +78,7 @@ class SampaHeader
   void bunchCrossingCounter(uint32_t bx);
   void payloadParity(bool dp);
 
-  uint64_t asUint64() const { return mValue; }
+  uint64_t uint64() const { return mValue; }
 
   bool isHeartbeat() const;
 
@@ -87,6 +87,8 @@ class SampaHeader
 };
 
 SampaHeader sampaSync();
+
+std::string packetTypeName(SampaPacketType pkt);
 
 std::ostream& operator<<(std::ostream& os, const SampaHeader& sh);
 
