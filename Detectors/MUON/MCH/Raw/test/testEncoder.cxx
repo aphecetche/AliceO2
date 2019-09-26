@@ -30,69 +30,6 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
-BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithMoreThan50BitsShouldThrow)
-{
-  BOOST_CHECK_THROW(SampaHeader(static_cast<uint64_t>(1) << 50), std::invalid_argument);
-}
-
-BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithInvalidBitsShouldThrow)
-{
-  uint64_t h = 0x3FFFFEAFFFFFF; // completely invalid value to start with
-  uint64_t one = 1;
-
-  // - bits 7-9 must be zero
-  // - bits 24,26,28 must be one
-  // - bits 25,27 must be zero
-  // - bit 49 must be zero
-
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 25);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 27);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 49);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 7);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 8);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h &= ~(one << 9);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h |= (one << 24);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h |= (one << 26);
-  BOOST_CHECK_THROW(SampaHeader a(h), std::invalid_argument);
-  h |= (one << 28);
-  BOOST_CHECK_NO_THROW(SampaHeader a(h));
-}
-
-BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithIncorrectNumberOfPartialBitsShouldThrow)
-{
-  // hamming is 6 bits max
-  // pkt is 3 bits max
-  // numWords is 10 bits max
-  // h is 4 bits max
-  // ch is 5 bits max
-  // bx is 20 bits max
-  BOOST_CHECK_THROW(SampaHeader(1 << 6, true, 0, 0, 0, 0, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 1 << 3, 0, 0, 0, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 1 << 10, 0, 0, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 1 << 4, 0, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 0, 1 << 5, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, 0, 0, 0, 0, 1 << 20, true),
-                    std::invalid_argument);
-}
-
-BOOST_AUTO_TEST_CASE(CheckSampaSyncIsExpectedValue)
-{
-  BOOST_CHECK(sampaSync() == SampaHeader(0x1555540f00113));
-}
-
 BOOST_AUTO_TEST_CASE(GenerateRDH)
 {
   std::array<std::byte, 8192> page;

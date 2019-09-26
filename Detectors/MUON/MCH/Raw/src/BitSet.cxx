@@ -115,6 +115,11 @@ BitSet::BitSet(int n)
   mLen = 0;
 }
 
+BitSet::BitSet(std::string_view s) : mSize(1), mLen(0), mBytes(1)
+{
+  setRangeFromString(0, s.size() - 1, s);
+}
+
 bool BitSet::operator==(const BitSet& rhs) const
 {
   if (len() != rhs.len()) {
@@ -138,22 +143,22 @@ void BitSet::append(bool val)
   set(len(), val);
 }
 
-void BitSet::appendUint8(uint8_t val, int n)
+void BitSet::append(uint8_t val, int n)
 {
   appendT<uint8_t>(*this, val, n);
 }
 
-void BitSet::appendUint16(uint16_t val, int n)
+void BitSet::append(uint16_t val, int n)
 {
   appendT<uint16_t>(*this, val, n);
 }
 
-void BitSet::appendUint32(uint32_t val, int n)
+void BitSet::append(uint32_t val, int n)
 {
   appendT<uint32_t>(*this, val, n);
 }
 
-void BitSet::appendUint64(uint64_t val, int n)
+void BitSet::append(uint64_t val, int n)
 {
   appendT<uint64_t>(*this, val, n);
 }
@@ -185,39 +190,31 @@ int BitSet::count() const
   return n;
 }
 
-BitSet BitSet::fromString(std::string_view s)
-{
-  assertString(s);
-  BitSet bs(s.size());
-  bs.setRangeFromString(0, s.size() - 1, s);
-  return bs;
-}
-
-BitSet BitSet::fromUint8(uint8_t v)
+BitSet BitSet::from(uint8_t v)
 {
   BitSet bs(8);
-  bs.setRangeFromUint8(0, 7, v);
+  bs.setRangeFromUint(0, 7, v);
   return bs;
 }
 
-BitSet BitSet::fromUint16(uint16_t v)
+BitSet BitSet::from(uint16_t v)
 {
   BitSet bs(16);
-  bs.setRangeFromUint16(0, 15, v);
+  bs.setRangeFromUint(0, 15, v);
   return bs;
 }
 
-BitSet BitSet::fromUint32(uint32_t v)
+BitSet BitSet::from(uint32_t v)
 {
   BitSet bs(32);
-  bs.setRangeFromUint32(0, 31, v);
+  bs.setRangeFromUint(0, 31, v);
   return bs;
 }
 
-BitSet BitSet::fromUint64(uint64_t v)
+BitSet BitSet::from(uint64_t v)
 {
   BitSet bs(64);
-  bs.setRangeFromUint64(0, 63, v);
+  bs.setRangeFromUint(0, 63, v);
   return bs;
 }
 
@@ -326,22 +323,22 @@ void BitSet::setRangeFromString(int a, int b, std::string_view s)
   }
 }
 
-void BitSet::setRangeFromUint8(int a, int b, uint8_t v)
+void BitSet::setRangeFromUint(int a, int b, uint8_t v)
 {
   setRangeFromIntegerFast<uint8_t>(*this, a, b, v);
 }
 
-void BitSet::setRangeFromUint16(int a, int b, uint16_t v)
+void BitSet::setRangeFromUint(int a, int b, uint16_t v)
 {
   setRangeFromIntegerFast<uint16_t>(*this, a, b, v);
 }
 
-void BitSet::setRangeFromUint32(int a, int b, uint32_t v)
+void BitSet::setRangeFromUint(int a, int b, uint32_t v)
 {
   setRangeFromIntegerFast<uint32_t>(*this, a, b, v);
 }
 
-void BitSet::setRangeFromUint64(int a, int b, uint64_t v)
+void BitSet::setRangeFromUint(int a, int b, uint64_t v)
 {
   setRangeFromIntegerFast<uint64_t>(*this, a, b, v);
 }
