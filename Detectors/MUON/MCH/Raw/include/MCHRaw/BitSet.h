@@ -52,18 +52,19 @@ class BitSet
   bool any() const;
 
   // appends a bit at the current position (i.e. len-1)
-  void append(bool val);
+  int append(bool val);
 
   ///@{
   // appends the n first bits from a x-bits word.
   // if n is < 0 it is computed for val (using log2(val)+1)
   // otherwise it should be >= log2(val)+1 and <=x
   // and the exact number of specified bits will be set
-  // (to 0 or 1)
-  void append(uint8_t val, int n = -1);
-  void append(uint16_t val, int n = -1);
-  void append(uint32_t val, int n = -1);
-  void append(uint64_t val, int n = -1);
+  // (to 0 or 1).
+  // returns the number of bits actually added
+  int append(uint8_t val, int n = -1);
+  int append(uint16_t val, int n = -1);
+  int append(uint32_t val, int n = -1);
+  int append(uint64_t val, int n = -1);
   ///@}
 
   // count returns the number of bits set at 1
