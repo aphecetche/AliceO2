@@ -12,6 +12,7 @@
 #define O2_MCH_RAW_SAMPA_HEADER
 
 #include <cstdlib>
+#include <iostream>
 
 namespace o2
 {
@@ -23,14 +24,7 @@ namespace raw
 class SampaHeader
 {
  public:
-  // value must but be 50 bits-wide max, and :
-  // - bits 7-9 must be zero
-  // - bits 24,26,28 must be one
-  // - bits 25,27 must be zero
-  // - bit 49 must be zero
-  // otherwise the ctor throws
-  // an exception
-  explicit SampaHeader(uint64_t value);
+  explicit SampaHeader(uint64_t value = 0);
 
   // hamming is 6 bits max
   // pkt is 3 bits max
@@ -50,6 +44,10 @@ class SampaHeader
 
   bool operator==(const SampaHeader& rhs) const;
   bool operator!=(const SampaHeader& rhs) const;
+  bool operator<(const SampaHeader& rhs) const;
+  bool operator<=(const SampaHeader& rhs) const;
+  bool operator>(const SampaHeader& rhs) const;
+  bool operator>=(const SampaHeader& rhs) const;
 
   uint8_t hammingCode() const;
   bool headerParity() const;
@@ -60,13 +58,26 @@ class SampaHeader
   uint32_t bunchCrossingCounter() const;
   bool payloadParity() const;
 
+  void hammingCode(uint8_t hamming);
+  void headerParity(bool p);
+  void packetType(uint8_t pkt);
+  void nbOf10BitWords(uint16_t nofwords);
+  void chipAddress(uint8_t h);
+  void channelAddress(uint8_t ch);
+  void bunchCrossingCounter(uint32_t bx);
+  void payloadParity(bool dp);
+
   uint64_t asUint64() const { return mValue; }
+
+  bool isHeartbeat() const;
 
  public:
   uint64_t mValue;
 };
 
 SampaHeader sampaSync();
+
+std::ostream& operator<<(std::ostream& os, const SampaHeader& sh);
 
 } // namespace raw
 } // namespace mch
