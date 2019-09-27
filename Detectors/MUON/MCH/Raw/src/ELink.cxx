@@ -21,17 +21,18 @@ namespace o2::mch::raw
 
 std::ostream& operator<<(std::ostream& os, const ELink& e)
 {
-  os << fmt::sprintf("ELINK ID %d nsync %d checkpoint %d indata %d len %d\n",
-                     e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len());
+  os << fmt::sprintf("ELINK ID %d nsync %d checkpoint %d indata %d len %d nbits seen %llu headers %llu\n",
+                     e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
   return os;
 }
 
-ELink::ELink(int id) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(8192), mSampaHeader(0)
+ELink::ELink(int id) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0)
 {
 }
 
 bool ELink::append(bool bit)
 {
+  ++mNofBitSeen;
   mBitSet.append(bit);
   if (mBitSet.len() != mCheckpoint) {
     return true;
@@ -101,6 +102,7 @@ bool ELink::process()
   }
 
   mSampaHeader = SampaHeader(mBitSet.last(HEADERSIZE).uint64(0, 49));
+  ++mNofHeaderSeen;
 
   std::cout << packetTypeName(mSampaHeader.packetType()) << "\n";
 
@@ -112,8 +114,8 @@ bool ELink::process()
       // data with a problem is still data, i.e. there will
       // probably be some data words to read in
     case SampaPacketType::Data:
-      clear(10 * mSampaHeader.nbOf10BitWords());
-      std::cout << mSampaHeader << "\n";
+      clear(10 * mSampaHeader.nof10BitWords());
+      std::cout << mSampaHeader << " n10bits=" << mSampaHeader.nof10BitWords() << "\n";
       mIsInData = true;
       return true;
       break;
@@ -138,6 +140,8 @@ bool ELink::process()
 void ELink::getPacket()
 {
   // here we should get chuncks of 10 bits.
+  // a sampa packet is (header+payload) for one channel
+
   std::cout << "FIXME: write getPacket\n";
 }
 

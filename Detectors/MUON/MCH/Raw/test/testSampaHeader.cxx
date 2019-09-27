@@ -23,9 +23,39 @@
 
 using namespace o2::mch::raw;
 
+uint64_t allones = 0x3FFFFFFFFFFFF;
+uint64_t allbutbx = 0x200001FFFFFFF;
+uint64_t allbut10bits = 0x3FFFFFFF003FF;
+
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(sampaheader)
+
+BOOST_AUTO_TEST_CASE(SampaHeaderCtorBunchCrossingCounter)
+{
+  SampaHeader expected(static_cast<uint8_t>(0x3F),
+                       true,
+                       SampaPacketType::DataTriggerTooEarlyNumWords,
+                       static_cast<uint16_t>(0x3FF),
+                       static_cast<uint16_t>(0xF),
+                       static_cast<uint16_t>(0x1F),
+                       static_cast<uint32_t>(0),
+                       true);
+  BOOST_CHECK_EQUAL(expected.uint64(), allbutbx);
+}
+
+BOOST_AUTO_TEST_CASE(SampaHeaderCtorNof10BitsWords)
+{
+  SampaHeader expected(static_cast<uint8_t>(0x3F),
+                       true,
+                       SampaPacketType::DataTriggerTooEarlyNumWords,
+                       static_cast<uint16_t>(0),
+                       static_cast<uint16_t>(0xF),
+                       static_cast<uint16_t>(0x1F),
+                       static_cast<uint32_t>(0xFFFFF),
+                       true);
+  BOOST_CHECK_EQUAL(expected.uint64(), allbut10bits);
+}
 
 BOOST_AUTO_TEST_CASE(SampaHeaderEqualityOperators)
 {
@@ -69,9 +99,11 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetNumberOf10BitsWords)
 {
   SampaHeader sh;
 
-  BOOST_CHECK_THROW(sh.nbOf10BitWords(1 << 10), std::invalid_argument);
-  sh.nbOf10BitWords(0x3FF);
-  BOOST_CHECK_EQUAL(sh.nbOf10BitWords(), 0x3FF);
+  BOOST_CHECK_THROW(sh.nof10BitWords(1 << 10), std::invalid_argument);
+  sh.nof10BitWords(0x3FF);
+  BOOST_CHECK_EQUAL(sh.nof10BitWords(), 0x3FF);
+  sh.nof10BitWords(0);
+  BOOST_CHECK_EQUAL(sh.nof10BitWords(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(SampaHeaderSetChipAddress)
@@ -81,6 +113,10 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetChipAddress)
   BOOST_CHECK_THROW(sh.chipAddress(1 << 4), std::invalid_argument);
   sh.chipAddress(0xF);
   BOOST_CHECK_EQUAL(sh.chipAddress(), 0xF);
+  sh.chipAddress(0);
+  BOOST_CHECK_EQUAL(sh.chipAddress(), 0);
+  sh.chipAddress(1);
+  BOOST_CHECK_EQUAL(sh.chipAddress(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(SampaHeaderSetChannelAddress)
