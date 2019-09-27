@@ -43,6 +43,8 @@ class ELink
   int mNofSync;
   BitSet mBitSet;
   SampaHeader mSampaHeader;
+  uint64_t mNofBitSeen;
+  uint64_t mNofHeaderSeen;
 };
 
 } // namespace raw
