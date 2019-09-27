@@ -63,7 +63,7 @@ class SampaHeader
   uint8_t hammingCode() const;
   bool headerParity() const;
   SampaPacketType packetType() const;
-  uint16_t nbOf10BitWords() const;
+  uint16_t nof10BitWords() const;
   uint8_t chipAddress() const;
   uint8_t channelAddress() const;
   uint32_t bunchCrossingCounter() const;
@@ -72,7 +72,7 @@ class SampaHeader
   void hammingCode(uint8_t hamming);
   void headerParity(bool p);
   void packetType(SampaPacketType pkt);
-  void nbOf10BitWords(uint16_t nofwords);
+  void nof10BitWords(uint16_t nofwords);
   void chipAddress(uint8_t h);
   void channelAddress(uint8_t ch);
   void bunchCrossingCounter(uint32_t bx);
