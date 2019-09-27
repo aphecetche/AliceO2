@@ -75,6 +75,7 @@ int appendT(BitSet& bs, T val, int n)
     throw std::invalid_argument(fmt::format("n={0} is invalid :  should be between 0 and {1}",
                                             n, sizeof(T)));
   }
+
   for (T i = 0; i < static_cast<T>(n); i++) {
     T p = static_cast<T>(1) << i;
     if ((val & p)) {
@@ -102,23 +103,52 @@ void assertString(std::string_view s)
 
 } // namespace
 
-BitSet::BitSet(int n)
+BitSet::BitSet() : mSize(0), mLen(0), mBytes{nullptr}
 {
-  if (n < 1) {
-    throw std::invalid_argument("n should be >=1");
-  }
-  auto nbytes = n / 8;
-  if (n % 8 > 0) {
-    nbytes++;
-  }
-  mBytes.resize(nbytes);
-  mSize = n;
-  mLen = 0;
 }
 
-BitSet::BitSet(std::string_view s) : mSize(1), mLen(0), mBytes(1)
+BitSet::BitSet(uint8_t v) : mSize(8), mLen(0), mBytes(new std::vector<uint8_t>(1, 0))
+{
+  setRangeFromUint(0, 7, v);
+}
+
+BitSet::BitSet(uint16_t v) : mSize(16), mLen(0), mBytes(new std::vector<uint8_t>(2, 0))
+{
+  setRangeFromUint(0, 15, v);
+}
+
+BitSet::BitSet(uint32_t v) : mSize(32), mLen(0), mBytes(new std::vector<uint8_t>(4, 0))
+{
+  setRangeFromUint(0, 31, v);
+}
+
+BitSet::BitSet(uint64_t v) : mSize(64), mLen(0), mBytes(new std::vector<uint8_t>(8, 0))
+{
+  setRangeFromUint(0, 63, v);
+}
+
+BitSet::BitSet(std::string_view s) : mSize(0), mLen(0), mBytes{nullptr}
 {
   setRangeFromString(0, s.size() - 1, s);
+}
+
+BitSet::~BitSet()
+{
+  delete mBytes;
+}
+
+BitSet& BitSet::operator=(const BitSet& rhs)
+{
+  mSize = 0;
+  mLen = 0;
+  mBytes = nullptr;
+  if (rhs.mBytes) {
+    mBytes = new std::vector<uint8_t>(*(rhs.mBytes));
+    mSize = rhs.size();
+    mLen = rhs.len();
+  }
+
+  return *this;
 }
 
 bool BitSet::operator==(const BitSet& rhs) const
@@ -137,6 +167,13 @@ bool BitSet::operator==(const BitSet& rhs) const
 bool BitSet::operator!=(const BitSet& rhs) const
 {
   return !(*this == rhs);
+}
+
+void BitSet::allocate()
+{
+  mBytes = new std::vector<uint8_t>(1, 0);
+  mSize = 8;
+  mLen = 0;
 }
 
 int BitSet::append(bool val)
@@ -177,7 +214,7 @@ bool BitSet::any() const
 
 void BitSet::clear()
 {
-  std::fill(begin(mBytes), end(mBytes), 0);
+  std::fill(begin((*mBytes)), end((*mBytes)), 0);
   mLen = 0;
 }
 
@@ -192,59 +229,38 @@ int BitSet::count() const
   return n;
 }
 
-BitSet BitSet::from(uint8_t v)
-{
-  BitSet bs(8);
-  bs.setRangeFromUint(0, 7, v);
-  return bs;
-}
-
-BitSet BitSet::from(uint16_t v)
-{
-  BitSet bs(16);
-  bs.setRangeFromUint(0, 15, v);
-  return bs;
-}
-
-BitSet BitSet::from(uint32_t v)
-{
-  BitSet bs(32);
-  bs.setRangeFromUint(0, 31, v);
-  return bs;
-}
-
-BitSet BitSet::from(uint64_t v)
-{
-  BitSet bs(64);
-  bs.setRangeFromUint(0, 63, v);
-  return bs;
-}
-
 bool BitSet::get(int pos) const
 {
   if (pos < 0 || pos > size()) {
     throw std::out_of_range(fmt::format("pos {0} is out of bounds", pos));
   }
   uint8_t i = static_cast<uint8_t>(pos);
-  auto b = mBytes[i / 8];
+  auto b = (*mBytes)[i / 8];
   i %= 8;
   return ((b >> i) & 1) == 1;
 }
 
 bool BitSet::grow(int n)
 {
+  if (!size()) {
+    allocate();
+  }
+
   if (n <= size()) {
     return false;
   }
   if (n > BitSet::maxSize()) {
     throw std::length_error(fmt::format("trying to allocate a bitset of more than {0} bytes", BitSet::maxSize()));
   }
-  auto nbytes = mBytes.size();
+  if (!mBytes) {
+    allocate();
+  }
+  auto nbytes = mBytes->size();
   while (nbytes * 8 < n) {
     nbytes *= 2;
   }
-  mBytes.resize(nbytes);
-  mSize = mBytes.capacity() * 8;
+  mBytes->resize(nbytes);
+  mSize = mBytes->capacity() * 8;
   return true;
 }
 
@@ -288,7 +304,7 @@ void BitSet::set(int pos, bool val)
 void BitSet::setFast(int pos, bool val)
 {
   uint8_t ix = pos % 8;
-  auto& b = mBytes[pos / 8];
+  auto& b = (*mBytes)[pos / 8];
   if (val) {
     b |= (static_cast<uint8_t>(1) << ix);
   } else {
@@ -301,10 +317,13 @@ void BitSet::setFast(int pos, bool val)
 
 void BitSet::setFromBytes(gsl::span<uint8_t> bytes)
 {
-  mBytes.clear();
-  std::copy(bytes.begin(), bytes.end(), std::back_inserter(mBytes));
-  mBytes.resize(bytes.size());
-  mLen = mBytes.size() * 8;
+  if (mSize < bytes.size() * 8) {
+    grow(bytes.size() * 8);
+  }
+  mBytes->clear();
+  std::copy(bytes.begin(), bytes.end(), std::back_inserter((*mBytes)));
+  mBytes->resize(bytes.size());
+  mLen = mBytes->size() * 8;
   mSize = mLen;
 }
 
@@ -376,7 +395,7 @@ BitSet BitSet::subset(int a, int b) const
   if (a >= size() || b > size() || b < a) {
     throw std::invalid_argument(fmt::format("Range [{0},{1}] is incorrect", a, b));
   }
-  BitSet sub(b - a + 1);
+  BitSet sub;
   for (int i = a; i <= b; i++) {
     sub.set(i - a, get(i));
   }
