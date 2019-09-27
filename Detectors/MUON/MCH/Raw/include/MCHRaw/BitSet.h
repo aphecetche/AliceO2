@@ -28,21 +28,23 @@ class BitSet
 {
 
  public:
-  // creates a bitset of initial size = n bits
-  explicit BitSet(int n);
-
-  // returns a BitSet using a string composed of '0' (meaning
+  BitSet();
+  // construct a BitSet using a string composed of '0' (meaning
   // bit unset) and '1' (meaning bit set) characters
   // the length of the resulting bitset is that of the string.
   explicit BitSet(std::string_view s);
 
   ///@{
-  // from returns a bitset initialized with the x-bits value v
-  static BitSet from(uint8_t v);
-  static BitSet from(uint16_t v);
-  static BitSet from(uint32_t v);
-  static BitSet from(uint64_t v);
+  // construct a bitset initialized with the x-bits value v
+  explicit BitSet(uint8_t v);
+  explicit BitSet(uint16_t v);
+  explicit BitSet(uint32_t v);
+  explicit BitSet(uint64_t v);
   ///@}
+
+  ~BitSet();
+
+  BitSet& operator=(const BitSet& rhs);
 
   // check equality
   bool operator==(const BitSet& rhs) const;
@@ -147,10 +149,12 @@ class BitSet
   // if b is negative, it is set to the bitset length
   uint64_t uint64(int a, int b) const;
 
+  void allocate();
+
  private:
   int mSize; // max number of bits we can hold
   int mLen;  // actual number of bits we are holding
-  std::vector<uint8_t> mBytes;
+  std::vector<uint8_t>* mBytes;
 };
 
 } // namespace raw
