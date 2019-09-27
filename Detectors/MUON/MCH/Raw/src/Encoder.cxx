@@ -38,7 +38,7 @@ void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<
 
   SampaHeader h;
   h.chipAddress(dsid);
-  h.bunchCrossingCounter(0x80000);
+  h.bunchCrossingCounter(0x80000 + dsid);
 
   for (int i = 0; i < channels.size(); i++) {
 
@@ -49,10 +49,7 @@ void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<
     h.nof10BitWords(4);
     bs.append(h.uint64(), 50);
     n50++;
-    std::cout << ">>>>\n";
-    std::cout << "N50=" << n50 << "\n";
-    std::cout << h << "\n";
-    std::cout << "<<<<\n";
+    std::cout << h << "N50=" << n50 << "\n";
 
     uint16_t nofSamples = 1;
     uint16_t timestamp = 0;
