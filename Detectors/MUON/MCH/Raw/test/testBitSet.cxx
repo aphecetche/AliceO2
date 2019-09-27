@@ -24,6 +24,7 @@
 
 using namespace o2::mch::raw;
 
+uint64_t allones = 0x3FFFFFFFFFFFF;
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(bitset)
@@ -285,6 +286,7 @@ BOOST_AUTO_TEST_CASE(TestEmptyBitSet)
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "");
   BOOST_CHECK_EQUAL(bs.stringLSBRight(), "");
   BOOST_CHECK_EQUAL(bs.len(), 0);
+  BOOST_CHECK_EQUAL(bs.size(), 0);
 }
 
 std::string bitNumberScale(int n, int nspaces, bool right2left)
@@ -347,6 +349,17 @@ BOOST_AUTO_TEST_CASE(TestAppendUint64)
   std::cout << bitNumberScale(64, 6, false) << "\n\n";
   std::cout << fmt::format("BS <- {0}\n", bs.stringLSBRight());
   std::cout << bitNumberScale(64, 6, true) << "\n\n";
+}
+
+BOOST_AUTO_TEST_CASE(TestAppendUint64Bis)
+{
+  BitSet bs;
+
+  for (int i = 0; i < 10; i++) {
+    bs.set(i, true);
+  }
+  BOOST_CHECK_EQUAL(bs.len(), 64);
+  BOOST_CHECK_EQUAL(bs.uint64(0, 63), allones);
 }
 
 BOOST_AUTO_TEST_CASE(TestAppendUint8)
