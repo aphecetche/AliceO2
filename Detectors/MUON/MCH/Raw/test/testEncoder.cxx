@@ -59,14 +59,13 @@ BOOST_AUTO_TEST_CASE(GenerateRDH)
 void encode1(BitSet& bs, int& n)
 {
   Encoder enc;
-  n = 0;
 
   std::vector<int> chid = {1, 5, 13, 31};
   std::vector<int> chval = {10, 50, 130, 310};
 
   enc.appendOneDualSampa(bs, 9, 0, chid, chval);
 
-  n += chid.size();
+  n = chid.size();
 
   chid = {1, 6, 14, 26, 27, 30};
   chval = {10, 60, 14, 260, 270, 300};
@@ -96,7 +95,7 @@ int encode2(BitSet& bs, int& n)
 BOOST_AUTO_TEST_CASE(EncodeOneDS)
 {
   int n{0};
-  BitSet bs(8192);
+  BitSet bs;
   encode1(bs, n);
   BOOST_CHECK_EQUAL(bs.len(), n * (50 + 40));
 }
@@ -104,7 +103,7 @@ BOOST_AUTO_TEST_CASE(EncodeOneDS)
 BOOST_AUTO_TEST_CASE(TestELinkDecoding)
 {
   int n{0};
-  BitSet bs(1);
+  BitSet bs;
 
   // bs.append(sampaSync().uint64(), 50);
   // std::cout << sampaSync() << "\n";
@@ -121,6 +120,7 @@ BOOST_AUTO_TEST_CASE(TestELinkDecoding)
     e.append(bs.get(i), bs.get(i + 1));
   }
 
+  std::cout << "nof bits : " << bs.len() << "\n";
   std::cout << "elink=" << e << "\n";
 }
 

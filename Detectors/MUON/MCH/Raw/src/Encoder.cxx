@@ -26,6 +26,8 @@ namespace o2::mch::raw
 
 void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs)
 {
+  static int n50{0};
+
   // for the moment assume dsid==chipAddress and chid==channelAddress
   // but really here will have to convert (dsid,chid) => (chipAddress,channelAddress)
   // where channels is {chid}
@@ -44,7 +46,13 @@ void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<
     h.channelAddress(channels[i]);
 
     // std::cout << h << "\n";
+    h.nof10BitWords(4);
     bs.append(h.uint64(), 50);
+    n50++;
+    std::cout << ">>>>\n";
+    std::cout << "N50=" << n50 << "\n";
+    std::cout << h << "\n";
+    std::cout << "<<<<\n";
 
     uint16_t nofSamples = 1;
     uint16_t timestamp = 0;
