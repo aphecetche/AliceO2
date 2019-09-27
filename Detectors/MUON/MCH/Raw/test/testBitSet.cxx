@@ -20,7 +20,6 @@
 #include "MCHRaw/BitSet.h"
 #include <vector>
 #include <fmt/format.h>
-#include "MCHRaw/SampaHeader.h"
 
 using namespace o2::mch::raw;
 
@@ -156,8 +155,6 @@ BOOST_AUTO_TEST_CASE(TestFromIntegers)
   BOOST_CHECK_EQUAL(bs.uint32(0, 31), 0xF0008000);
 
   bs = BitSet{};
-  BOOST_CHECK_EQUAL(bs.size(), 0);
-  BOOST_CHECK_EQUAL(bs.len(), 0);
   BOOST_CHECK_THROW(bs.setRangeFromUint(0, 9, static_cast<uint8_t>(0)), std::invalid_argument);
   BOOST_CHECK_THROW(bs.setRangeFromUint(9, 32, static_cast<uint16_t>(0)), std::invalid_argument);
   BOOST_CHECK_THROW(bs.setRangeFromUint(24, 57, static_cast<uint32_t>(0)), std::invalid_argument);
@@ -250,7 +247,7 @@ BOOST_AUTO_TEST_CASE(TestUint64)
 BOOST_AUTO_TEST_CASE(TestGrow)
 {
   BitSet bs(static_cast<uint16_t>(0xFFFF));
-  BOOST_CHECK_EQUAL(bs.grow(16), false);
+  BOOST_CHECK_EQUAL(bs.grow(15), false);
   BOOST_CHECK_THROW(bs.grow((BitSet::maxSize() + 1)), std::length_error);
   BOOST_CHECK_EQUAL(bs.grow(34), true);
 }
@@ -285,8 +282,9 @@ BOOST_AUTO_TEST_CASE(TestEmptyBitSet)
   BitSet bs;
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "");
   BOOST_CHECK_EQUAL(bs.stringLSBRight(), "");
+  BOOST_CHECK_EQUAL(bs.isEmpty(), true);
   BOOST_CHECK_EQUAL(bs.len(), 0);
-  BOOST_CHECK_EQUAL(bs.size(), 0);
+  BOOST_CHECK(bs.size() > 0);
 }
 
 std::string bitNumberScale(int n, int nspaces, bool right2left)
@@ -326,11 +324,10 @@ BOOST_AUTO_TEST_CASE(TestAppendUint32)
   BOOST_CHECK_EQUAL(bs.len(), 32);
   BOOST_CHECK_EQUAL(bs.uint32(0, 31), C);
 
-  std::cout << fmt::format("BS -> {0}\n", bs.stringLSBLeft());
-  std::cout << bitNumberScale(32, 6, false) << "\n\n";
-
-  std::cout << fmt::format("BS <- {0}\n", bs.stringLSBRight());
-  std::cout << bitNumberScale(32, 6, true) << "\n\n";
+  // std::cout << fmt::format("BS -> {0}\n", bs.stringLSBLeft());
+  // std::cout << bitNumberScale(32, 6, false) << "\n\n";
+  // std::cout << fmt::format("BS <- {0}\n", bs.stringLSBRight());
+  // std::cout << bitNumberScale(32, 6, true) << "\n\n";
 }
 
 BOOST_AUTO_TEST_CASE(TestAppendUint64)
@@ -341,25 +338,23 @@ BOOST_AUTO_TEST_CASE(TestAppendUint64)
   bs.append(C, 64);
 
   BOOST_CHECK_EQUAL(bs.len(), 64);
-  std::cout << SampaHeader(bs.uint64(0, 63)) << "\n";
-  std::cout << sampaSync() << "\n";
   BOOST_CHECK_EQUAL(bs.uint64(0, 63), C);
 
-  std::cout << fmt::format("BS -> {0}\n", bs.stringLSBLeft());
-  std::cout << bitNumberScale(64, 6, false) << "\n\n";
-  std::cout << fmt::format("BS <- {0}\n", bs.stringLSBRight());
-  std::cout << bitNumberScale(64, 6, true) << "\n\n";
+  // std::cout << fmt::format("BS -> {0}\n", bs.stringLSBLeft());
+  // std::cout << bitNumberScale(64, 6, false) << "\n\n";
+  // std::cout << fmt::format("BS <- {0}\n", bs.stringLSBRight());
+  // std::cout << bitNumberScale(64, 6, true) << "\n\n";
 }
 
 BOOST_AUTO_TEST_CASE(TestAppendUint64Bis)
 {
   BitSet bs;
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 50; i++) {
     bs.set(i, true);
   }
-  BOOST_CHECK_EQUAL(bs.len(), 64);
-  BOOST_CHECK_EQUAL(bs.uint64(0, 63), allones);
+  BOOST_CHECK_EQUAL(bs.len(), 50);
+  BOOST_CHECK_EQUAL(bs.uint64(0, 49), allones);
 }
 
 BOOST_AUTO_TEST_CASE(TestAppendUint8)
