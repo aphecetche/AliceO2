@@ -86,7 +86,7 @@ constexpr uint64_t packetType(uint64_t header)
   return ((header & PACKET_TYPE_MASK) >> PACKET_TYPE_OFFSET);
 }
 
-constexpr uint64_t nbOf10BitWords(uint64_t header)
+constexpr uint64_t nof10BitWords(uint64_t header)
 {
   return ((header & NUMBER_OF_1OBITS_WORDS_MASK) >> NUMBER_OF_1OBITS_WORDS_OFFSET);
 }
@@ -141,7 +141,7 @@ bool checkBit(uint64_t value, int i, bool bitStatus)
 
 void resetBits(uint64_t& value, int a, int n)
 {
-  for (int i = a; i <= a + n; i++) {
+  for (int i = a; i < a + n; i++) {
     value &= ~(static_cast<uint64_t>(1) << i);
   }
 }
@@ -226,7 +226,7 @@ SampaHeader::SampaHeader(uint8_t hamming,
   hammingCode(hamming);
   headerParity(p);
   packetType(pkt);
-  nbOf10BitWords(numWords);
+  nof10BitWords(numWords);
   chipAddress(h);
   channelAddress(ch);
   bunchCrossingCounter(bx);
@@ -273,7 +273,7 @@ void SampaHeader::hammingCode(uint8_t hamming)
   mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET);
 }
 
-void SampaHeader::nbOf10BitWords(uint16_t nofwords)
+void SampaHeader::nof10BitWords(uint16_t nofwords)
 {
   assertNofBits(nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
   resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
@@ -337,10 +337,10 @@ SampaPacketType SampaHeader::packetType() const
   return static_cast<SampaPacketType>(::packetType(mValue) & 0x7);
 }
 
-uint16_t SampaHeader::nbOf10BitWords() const
+uint16_t SampaHeader::nof10BitWords() const
 {
   // 10 bits
-  return ::nbOf10BitWords(mValue) & 0x3FF;
+  return ::nof10BitWords(mValue) & 0x3FF;
 }
 
 uint8_t SampaHeader::chipAddress() const
@@ -394,7 +394,7 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
                      sh.hammingCode(),
                      sh.headerParity(),
                      static_cast<uint8_t>(sh.packetType()),
-                     sh.nbOf10BitWords(),
+                     sh.nof10BitWords(),
                      sh.chipAddress(),
                      sh.channelAddress(),
                      sh.bunchCrossingCounter(),
