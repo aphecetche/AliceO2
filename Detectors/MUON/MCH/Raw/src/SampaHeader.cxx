@@ -390,7 +390,7 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
     }
   }
   os << "\n";
-  os << fmt::sprintf("%6x %d %3x %10x %4x %5x %20x %d [ %s ]",
+  os << fmt::sprintf("%6x %d %3x %10x %4x %5x %20x %d (0x%x) | %s",
                      sh.hammingCode(),
                      sh.headerParity(),
                      static_cast<uint8_t>(sh.packetType()),
@@ -399,6 +399,7 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
                      sh.channelAddress(),
                      sh.bunchCrossingCounter(),
                      sh.payloadParity(),
+                     sh.uint64(),
                      packetTypeName(sh.packetType()))
      << "\n";
   return os;
