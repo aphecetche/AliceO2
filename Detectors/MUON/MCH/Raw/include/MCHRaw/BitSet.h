@@ -29,6 +29,7 @@ class BitSet
 
  public:
   BitSet();
+
   // construct a BitSet using a string composed of '0' (meaning
   // bit unset) and '1' (meaning bit set) characters
   // the length of the resulting bitset is that of the string.
@@ -41,10 +42,6 @@ class BitSet
   explicit BitSet(uint32_t v);
   explicit BitSet(uint64_t v);
   ///@}
-
-  ~BitSet();
-
-  BitSet& operator=(const BitSet& rhs);
 
   // check equality
   bool operator==(const BitSet& rhs) const;
@@ -75,6 +72,9 @@ class BitSet
   // sets all the bits to false (i.e. resets)
   void clear();
 
+  // returns true if we hold not bit at all
+  bool isEmpty() const { return len() == 0; }
+
   // sets the value of the bit at given pos
   void set(int pos, bool val);
 
@@ -88,8 +88,8 @@ class BitSet
   // if there's not enough bits, throw an exception
   BitSet last(int n) const;
 
-  // return the max number of bits this object can hold
-  // (is a multiple of 8)
+  // return the max number of bits this object can currently hold
+  // it is a multiple of 8.
   int size() const { return mSize; }
 
   // return the max number of bits any bitset can hold
@@ -150,12 +150,10 @@ class BitSet
   // if b is negative, it is set to the bitset length
   uint64_t uint64(int a, int b) const;
 
-  bool allocate(int n);
-
  private:
   int mSize; // max number of bits we can hold
   int mLen;  // actual number of bits we are holding
-  std::vector<uint8_t>* mBytes;
+  std::vector<uint8_t> mBytes;
 };
 
 } // namespace raw
