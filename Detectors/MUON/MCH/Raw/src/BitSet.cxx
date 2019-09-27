@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <iostream>
 #include <stdexcept>
 
@@ -63,6 +64,7 @@ T uint(const BitSet& bs, int a, int b)
 template <typename T>
 int appendT(BitSet& bs, T val, int n)
 {
+  fmt::printf("append %x n=%d\n", val, n);
   if (n <= 0) {
     if (val > 0) {
       n = static_cast<int>(std::floor(log2(val)) + 1);
@@ -78,7 +80,7 @@ int appendT(BitSet& bs, T val, int n)
 
   for (T i = 0; i < static_cast<T>(n); i++) {
     T p = static_cast<T>(1) << i;
-    if ((val & p)) {
+    if ((val & p) == p) {
       bs.append(true);
     } else {
       bs.append(false);
@@ -169,11 +171,13 @@ bool BitSet::operator!=(const BitSet& rhs) const
   return !(*this == rhs);
 }
 
-void BitSet::allocate()
+bool BitSet::allocate(int n)
 {
-  mBytes = new std::vector<uint8_t>(1, 0);
-  mSize = 8;
+  std::cout << "allocate(" << n << ")\n";
+  mBytes = new std::vector<uint8_t>(n / 8, 0);
+  mSize = n;
   mLen = 0;
+  return true;
 }
 
 int BitSet::append(bool val)
@@ -240,27 +244,64 @@ bool BitSet::get(int pos) const
   return ((b >> i) & 1) == 1;
 }
 
+void showBytes(std::string_view msg, const std::vector<uint8_t>& bytes)
+{
+  std::cout << msg << "\n";
+  for (auto b : bytes) {
+    fmt::printf("%d ", b);
+  }
+  std::cout << "\n";
+}
 bool BitSet::grow(int n)
 {
-  if (!size()) {
-    allocate();
+  bool verbose{true};
+  // if (n == 9 || n == 17)
+  //   verbose = true;
+  // if (verbose) {
+  //   std::cout << "grow(" << n << ") size=" << size() << " len=" << len() << "\n";
+  //   std::cout << stringLSBLeft() << "\n";
+  // }
+  if (n == 0) {
+    n = 8;
   }
-
-  if (n <= size()) {
+  if (n < 0) {
+    throw std::invalid_argument("n should be >= 0");
+  }
+  if (n < size()) {
     return false;
   }
   if (n > BitSet::maxSize()) {
     throw std::length_error(fmt::format("trying to allocate a bitset of more than {0} bytes", BitSet::maxSize()));
   }
   if (!mBytes) {
-    allocate();
+    return allocate(n);
   }
   auto nbytes = mBytes->size();
+  if (verbose) {
+    std::cout << "nbytes=" << nbytes << " -> ";
+  }
   while (nbytes * 8 < n) {
     nbytes *= 2;
   }
-  mBytes->resize(nbytes);
-  mSize = mBytes->capacity() * 8;
+  if (verbose) {
+    std::cout << nbytes << "\n";
+  }
+  if (verbose) {
+    showBytes("before resize", *mBytes);
+    fmt::printf("val=%x\n", uint64(0, len() - 2));
+    std::cout << "\t\t" << stringLSBLeft() << "\n";
+  }
+  mBytes->resize(nbytes, 0);
+  if (verbose) {
+    showBytes("after resize", *mBytes);
+    fmt::printf("val=%x\n", uint64(0, len() - 2));
+    std::cout << "\t\t" << stringLSBLeft() << "\n";
+  }
+  mSize = mBytes->size() * 8;
+  if (verbose) {
+    std::cout << "\t\tend grow size=" << size() << " len=" << len() << "\n";
+    std::cout << "\t\t" << stringLSBLeft() << "\n";
+  }
   return true;
 }
 
@@ -292,6 +333,8 @@ void BitSet::pruneFirst(int n)
 
 void BitSet::set(int pos, bool val)
 {
+  fmt::printf("begin set(%d,%d) size %d len %d %s must grow %d\n", pos, val, size(), len(), stringLSBLeft(),
+              (pos >= mSize));
   if (pos >= mSize) {
     grow(pos);
   }
@@ -299,12 +342,13 @@ void BitSet::set(int pos, bool val)
     throw std::invalid_argument("pos should be > 0");
   }
   setFast(pos, val);
+  fmt::printf("end   set(%d,%d) size %d len %d %s\n\n", pos, val, size(), len(), stringLSBLeft());
 }
 
 void BitSet::setFast(int pos, bool val)
 {
   uint8_t ix = pos % 8;
-  auto& b = (*mBytes)[pos / 8];
+  uint8_t& b = (*mBytes)[pos / 8];
   if (val) {
     b |= (static_cast<uint8_t>(1) << ix);
   } else {
@@ -366,7 +410,7 @@ void BitSet::setRangeFromUint(int a, int b, uint64_t v)
 
 std::string BitSet::stringLSBLeft() const
 {
-  std::string s;
+  std::string s{""};
   for (int i = 0; i < len(); i++) {
     if (get(i)) {
       s += "1";
@@ -379,7 +423,7 @@ std::string BitSet::stringLSBLeft() const
 
 std::string BitSet::stringLSBRight() const
 {
-  std::string s;
+  std::string s{""};
   for (int i = len() - 1; i >= 0; i--) {
     if (get(i)) {
       s += "1";

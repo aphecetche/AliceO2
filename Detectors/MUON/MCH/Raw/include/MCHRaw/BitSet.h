@@ -89,6 +89,7 @@ class BitSet
   BitSet last(int n) const;
 
   // return the max number of bits this object can hold
+  // (is a multiple of 8)
   int size() const { return mSize; }
 
   // return the max number of bits any bitset can hold
@@ -149,7 +150,7 @@ class BitSet
   // if b is negative, it is set to the bitset length
   uint64_t uint64(int a, int b) const;
 
-  void allocate();
+  bool allocate(int n);
 
  private:
   int mSize; // max number of bits we can hold
