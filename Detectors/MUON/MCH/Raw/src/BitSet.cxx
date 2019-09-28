@@ -208,10 +208,8 @@ bool BitSet::get(int pos) const
   if (pos < 0 || pos > size()) {
     throw std::out_of_range(fmt::format("pos {0} is out of bounds", pos));
   }
-  uint8_t i = static_cast<uint8_t>(pos);
-  auto b = mBytes[i / 8];
-  i %= 8;
-  return ((b >> i) & 1) == 1;
+  auto b = mBytes[pos / 8];
+  return ((b >> (pos % 8)) & 1) == 1;
 }
 
 bool BitSet::grow(int n)
@@ -275,11 +273,15 @@ void BitSet::setFast(int pos, bool val)
 {
   uint8_t ix = pos % 8;
   uint8_t& b = mBytes[pos / 8];
+
+  uint8_t mask = 1 << ix;
+
   if (val) {
-    b |= (static_cast<uint8_t>(1) << ix);
+    b |= mask;
   } else {
-    b &= ~(static_cast<uint8_t>(1) << ix);
+    b &= ~mask;
   }
+
   if ((pos + 1) > mLen) {
     mLen = pos + 1;
   }
@@ -366,6 +368,7 @@ BitSet BitSet::subset(int a, int b) const
     throw std::invalid_argument(fmt::format("Range [{0},{1}] is incorrect", a, b));
   }
   BitSet sub;
+  sub.grow(b - a);
   for (int i = a; i <= b; i++) {
     sub.set(i - a, get(i));
   }
