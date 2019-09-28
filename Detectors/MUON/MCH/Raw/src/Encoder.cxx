@@ -11,6 +11,7 @@
 #include "MCHRaw/Encoder.h"
 #include "MCHRaw/SampaHeader.h"
 #include <iostream>
+#include <fmt/printf.h>
 
 namespace
 {
@@ -24,6 +25,30 @@ int computeHamming(uint64_t header)
 namespace o2::mch::raw
 {
 
+namespace
+{
+void show(const BitSet& bs, int a, int b)
+{
+  auto s = bs.subset(a, a + b - 1);
+  fmt::printf("%s = %d = %x\n", s.stringLSBLeft(), s.uint64(0, b - 1),
+              s.uint64(0, b - 1));
+}
+
+} // namespace
+
+// void dump(BitSet& bs, int start, int size)
+// {
+//   int n{0};
+//   while (n < size) {
+//     std::cout << SampaHeader(bs.subset(n + start, n + start + 49).uint64(0, 49));
+//     show(bs, n + start + 50, 10);
+//     show(bs, n + start + 60, 10);
+//     show(bs, n + start + 70, 20);
+//     std::cout << "\n";
+//     n += 90;
+//   }
+// }
+//
 void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<int> channels, gsl::span<int> adcs)
 {
   static int n50{0};
@@ -40,25 +65,28 @@ void Encoder::appendOneDualSampa(BitSet& bs, int dsid, int timestamp, gsl::span<
   h.chipAddress(dsid);
   h.bunchCrossingCounter(0x80000 + dsid);
 
+  auto ix = bs.len();
+
   for (int i = 0; i < channels.size(); i++) {
+
+    int s = bs.len();
 
     h.packetType(SampaPacketType::Data);
     h.channelAddress(channels[i]);
 
-    // std::cout << h << "\n";
     h.nof10BitWords(4);
     bs.append(h.uint64(), 50);
     n50++;
-    std::cout << h << "N50=" << n50 << "\n";
 
     uint16_t nofSamples = 1;
-    uint16_t timestamp = 0;
-    uint32_t chargeSum = adcs[i];
+    uint16_t timestamp = 100 + i;
+    uint32_t chargeSum = static_cast<uint32_t>(adcs[i]);
 
     bs.append(nofSamples, 10);
     bs.append(timestamp, 10);
     bs.append(chargeSum, 20);
   }
+  std::cout << h << "N50=" << n50 << "\n";
 }
 
 } // namespace o2::mch::raw
