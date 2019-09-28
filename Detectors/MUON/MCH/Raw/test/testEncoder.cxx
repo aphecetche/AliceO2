@@ -65,8 +65,8 @@ void encode1(BitSet& bs, int& n)
   std::vector<int> chid = {1, 5, 13, 31};
   std::vector<int> chval = {10, 50, 130, 310};
 
-  // enc.appendOneDualSampa(bs, 9, 0, chid, chval);
-  // n += chid.size();
+  enc.appendOneDualSampa(bs, 9, 0, chid, chval);
+  n += chid.size();
 
   chid = {1, 6, 14, 26, 27, 30};
   chval = {10, 60, 14, 260, 270, 300};
