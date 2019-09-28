@@ -387,6 +387,64 @@ BOOST_AUTO_TEST_CASE(TestAppendUint8)
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), "11100000001");
 }
 
+void compare(std::string_view s1, std::string_view s2)
+{
+  if (s1.size() != s2.size()) {
+    std::cout << "sizes differ\n";
+    return;
+  }
+  std::vector<int> dif;
+
+  for (auto i = 0; i < s1.size(); i++) {
+    if (s1[i] != s2[i]) {
+      dif.push_back(i);
+    }
+  }
+  if (dif.size()) {
+    std::cout << "indices of " << dif.size() << " differences:\n";
+    for (auto d : dif) {
+      std::cout << d << " ";
+    }
+    std::cout << "\n";
+  }
+}
+
+BOOST_AUTO_TEST_CASE(TestLongAppend)
+{
+  std::string expected = "11010101010110010101011011100011000011101000010110010100101100010100001001100100110010110100000000111100110110101101101110001111010110010010000101101111101110101011011111100101101010111011011111000010011010000100111111001000011010100111101101011110110001010";
+  BitSet bs;
+
+  for (int i = 0; i < expected.size(); i++) {
+    if (expected[i] == '1') {
+      bs.append(true);
+    } else {
+      bs.append(false);
+    }
+    if (bs.stringLSBLeft() != expected.substr(0, bs.len())) {
+      std::cout << "diff\n";
+    }
+  }
+  BOOST_CHECK_EQUAL(bs.stringLSBLeft(), expected);
+}
+
+BOOST_AUTO_TEST_CASE(TestLoopAppend)
+{
+  std::string expected;
+  BitSet bs;
+
+  std::srand(std::time(nullptr));
+  for (int i = 0; i < 2500; i++) {
+    bool bit = static_cast<bool>(rand() % 2);
+    if (bit) {
+      expected += "1";
+    } else {
+      expected += "0";
+    }
+    bs.append(bit);
+  }
+  BOOST_CHECK_EQUAL(bs.stringLSBLeft(), expected);
+}
+
 // BenchmarkSetRangeFromUint8
 // BenchmarkSetRangeFromUint32
 
