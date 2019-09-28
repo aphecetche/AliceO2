@@ -115,7 +115,6 @@ bool ELink::process()
       // probably be some data words to read in
     case SampaPacketType::Data:
       clear(10 * mSampaHeader.nof10BitWords());
-      std::cout << mSampaHeader << " n10bits=" << mSampaHeader.nof10BitWords() << "\n";
       mIsInData = true;
       return true;
       break;
@@ -137,12 +136,23 @@ bool ELink::process()
   return true;
 }
 
+void show(const BitSet& bs, int a, int b)
+{
+  auto s = bs.subset(a, b);
+  std::cout << s.stringLSBLeft() << " = " << s.uint32(0, b - a - 1) << "\n";
+}
+
 void ELink::getPacket()
 {
   // here we should get chuncks of 10 bits.
   // a sampa packet is (header+payload) for one channel
 
-  std::cout << "FIXME: write getPacket\n";
+  // up to checkpoint bits should be our data
+
+  std::cout << "FIXME: write getPacket checkpoint=" << mCheckpoint << "\n";
+  show(mBitSet, 0, 9);
+  show(mBitSet, 10, 19);
+  show(mBitSet, 20, 39);
 }
 
 } // namespace o2::mch::raw
