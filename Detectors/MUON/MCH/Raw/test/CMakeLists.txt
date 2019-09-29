@@ -1,6 +1,14 @@
+o2_add_test(elink-decoder
+        SOURCES
+        testElinkDecoder.cxx common.cxx
+        COMPONENT_NAME mch
+        LABELS "mch;raw"
+        PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw
+        Boost::boost)
+
 o2_add_test(elink-encoder
         SOURCES
-        testElinkEncoder.cxx
+        testElinkEncoder.cxx common.cxx
         COMPONENT_NAME mch
         LABELS "mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw

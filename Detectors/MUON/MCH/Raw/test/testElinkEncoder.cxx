@@ -19,6 +19,7 @@
 #include "RAWDataHeader.h"
 #include <fstream>
 #include <fmt/printf.h>
+#include "common.h"
 
 using namespace o2::mch::raw;
 
@@ -103,14 +104,8 @@ BOOST_AUTO_TEST_CASE(EncodeSamples20BitsIfOnlyOneSample)
 
 BOOST_AUTO_TEST_CASE(EncodeOneDSChargeSum)
 {
-  ElinkEncoder enc(9);
-
-  enc.addChannelChargeSum(1, 20, 101);
-  enc.addChannelChargeSum(5, 100, 505);
-  enc.addChannelChargeSum(13, 260, 1313);
-  enc.addChannelChargeSum(31, 620, 3131);
-
-  BOOST_CHECK_EQUAL(enc.len(), 4 * 90);
+  ElinkEncoder enc = encoderExample1();
+  BOOST_CHECK_EQUAL(enc.len(), 13 + 50 + 4 * 90);
 }
 
 BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
@@ -123,6 +118,14 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
   enc.addChannelSamples(31, 620, {31});
 
   BOOST_CHECK_EQUAL(enc.len(), 4 * (50 + 20) + 14 * 10);
+}
+
+BOOST_AUTO_TEST_CASE(EncoderGetShouldThrowIfBitNumberIsBeyondLen)
+{
+  ElinkEncoder enc = encoderExample1();
+
+  BOOST_CHECK_THROW(enc.get(enc.len()), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
