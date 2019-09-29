@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
   return os;
 }
 
-ElinkDecoder::ElinkDecoder(int id) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0)
+ElinkDecoder::ElinkDecoder(int id, PacketHandler packetHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mPacketHandler(packetHandler)
 {
 }
 
@@ -144,17 +144,19 @@ void show(const BitSet& bs, int a, int b)
 
 void ElinkDecoder::getPacket()
 {
-  // here we should get chuncks of 10 bits.
-  // a sampa packet is (header+payload) for one channel
-
-  // up to checkpoint bits should be our data
-  // (and mSampaHeader has the chip,ch combo
-
-  std::cout << "FIXME: write getPacket checkpoint=" << mCheckpoint
-            << " chip= " << (int)mSampaHeader.chipAddress() << " ch= " << (int)mSampaHeader.channelAddress() << "\n";
-  show(mBitSet, 0, 9);
-  show(mBitSet, 10, 19);
-  show(mBitSet, 20, 39);
+  // FIXME: should get the information here whether
+  // we have a packet consisting of 10-bits data sample
+  // or 20-bits chargeSum...
+  //
+  // assuming 20-bits chargeSum for the moment.
+  //
+  //uint16_t nsamples = mBitSet.uint16(0,9);
+  uint16_t timestamp = mBitSet.uint16(10, 19);
+  uint32_t chargeSum = mBitSet.uint32(20, 39);
+  mPacketHandler(mSampaHeader.chipAddress(),
+                 mSampaHeader.channelAddress(),
+                 timestamp,
+                 chargeSum);
 }
 
 } // namespace o2::mch::raw
