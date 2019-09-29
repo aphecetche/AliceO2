@@ -55,26 +55,5 @@ BOOST_AUTO_TEST_CASE(GenerateRDH)
   out.write((char*)&rdh, sizeof(rdh));
 }
 
-BOOST_AUTO_TEST_CASE(TestELinkDecoding)
-{
-  int n{0};
-  BitSet bs;
-
-  BOOST_CHECK(false);
-  // FIXME: write me again
-
-  // int m = encode2(bs, n);
-  // BOOST_CHECK_EQUAL(bs.len(), m + n * (50 + 40));
-  //
-  // ElinkDecoder e(12);
-  //
-  // for (int i = 0; i < bs.len() - 1; i += 2) {
-  //   e.append(bs.get(i), bs.get(i + 1));
-  // }
-  //
-  // std::cout << "nof bits : " << bs.len() << "\n";
-  // std::cout << "elink=" << e << "\n";
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
