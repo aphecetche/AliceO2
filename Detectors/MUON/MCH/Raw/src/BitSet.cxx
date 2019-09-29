@@ -22,6 +22,12 @@ namespace
 {
 
 template <typename T>
+int nofBits(T val)
+{
+  return static_cast<int>(std::floor(log2(1.0 * val)) + 1);
+}
+
+template <typename T>
 void assertRange(int a, int b, T s)
 {
   if (a > b || b - a >= sizeof(T) * 8) {
@@ -65,7 +71,7 @@ int appendT(BitSet& bs, T val, int n)
 {
   if (n <= 0) {
     if (val > 0) {
-      n = static_cast<int>(std::floor(log2(val)) + 1);
+      n = nofBits(val);
     } else {
       n = 1;
     }
@@ -242,6 +248,23 @@ BitSet BitSet::last(int n) const
     throw std::logic_error("subset not of the expected len");
   }
   return subbs;
+}
+
+int nofBits(uint8_t val)
+{
+  return nofBits<uint8_t>(val);
+}
+int nofBits(uint16_t val)
+{
+  return nofBits<uint16_t>(val);
+}
+int nofBits(uint32_t val)
+{
+  return nofBits<uint32_t>(val);
+}
+int nofBits(uint64_t val)
+{
+  return nofBits<uint64_t>(val);
 }
 
 void BitSet::pruneFirst(int n)
