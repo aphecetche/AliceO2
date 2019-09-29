@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELINK_H
-#define O2_MCH_RAW_ELINK_H
+#ifndef O2_MCH_RAW_ELINK_DECODER_H
+#define O2_MCH_RAW_ELINK_DECODER_H
 
 #include "BitSet.h"
 #include "SampaHeader.h"
@@ -22,10 +22,10 @@ namespace mch
 namespace raw
 {
 
-class ELink
+class ElinkDecoder
 {
  public:
-  ELink(int id);
+  ElinkDecoder(int id);
   bool append(bool bit0, bool bit1);
 
  private:
@@ -34,7 +34,7 @@ class ELink
   void findSync();
   void getPacket();
   bool append(bool bit);
-  friend std::ostream& operator<<(std::ostream& os, const ELink& e);
+  friend std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e);
 
  private:
   int mId;
