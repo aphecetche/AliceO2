@@ -28,6 +28,8 @@ class ElinkEncoder
  public:
   explicit ElinkEncoder(int dsid);
 
+  uint8_t id() const;
+
   void bunchCrossingCounter(uint32_t bx);
   void addChannelSamples(uint8_t chid, uint16_t timestamp, const std::vector<uint16_t>& samples);
   void addChannelChargeSum(uint8_t chid, uint16_t timestamp, uint32_t chargeSum,
@@ -35,6 +37,7 @@ class ElinkEncoder
   void addSync();
   void addRandomBits(int n);
 
+  bool get(int i) const;
   int len() const;
   void clear();
 

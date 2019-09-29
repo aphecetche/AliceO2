@@ -41,16 +41,6 @@ void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
   mSampaHeader.bunchCrossingCounter(bx);
 }
 
-void ElinkEncoder::setHeader(uint8_t chid, uint16_t n10)
-{
-  assertNofBits("chid", chid, 5);
-  assertNofBits("nof10BitWords", n10, 10);
-  mSampaHeader.packetType(SampaPacketType::Data);
-  mSampaHeader.nof10BitWords(n10);
-  mSampaHeader.channelAddress(chid);
-  computeHamming(mSampaHeader);
-}
-
 void ElinkEncoder::addHeader(uint8_t chid, const std::vector<uint16_t>& samples)
 {
   int n10 = 2; // nofsamples + timestamp
@@ -129,9 +119,32 @@ void ElinkEncoder::clear()
   mBitSet.clear();
 }
 
+bool ElinkEncoder::get(int i) const
+{
+  if (i >= len()) {
+    throw std::invalid_argument("trying to access bit past the end of our bitset");
+  }
+  return mBitSet.get(i);
+}
+
+uint8_t ElinkEncoder::id() const
+{
+  return mDsId;
+}
+
 int ElinkEncoder::len() const
 {
   return mBitSet.len();
+}
+
+void ElinkEncoder::setHeader(uint8_t chid, uint16_t n10)
+{
+  assertNofBits("chid", chid, 5);
+  assertNofBits("nof10BitWords", n10, 10);
+  mSampaHeader.packetType(SampaPacketType::Data);
+  mSampaHeader.nof10BitWords(n10);
+  mSampaHeader.channelAddress(chid);
+  computeHamming(mSampaHeader);
 }
 
 } // namespace o2::mch::raw
