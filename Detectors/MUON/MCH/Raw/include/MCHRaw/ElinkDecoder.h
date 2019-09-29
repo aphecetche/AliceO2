@@ -14,6 +14,7 @@
 #include "BitSet.h"
 #include "SampaHeader.h"
 #include <iostream>
+#include <functional>
 
 namespace o2
 {
@@ -22,10 +23,12 @@ namespace mch
 namespace raw
 {
 
+typedef std::function<void(uint8_t, uint8_t, uint16_t, uint32_t)> PacketHandler;
+
 class ElinkDecoder
 {
  public:
-  ElinkDecoder(int id);
+  ElinkDecoder(int id, PacketHandler packetHandler);
   bool append(bool bit0, bool bit1);
 
  private:
@@ -45,6 +48,7 @@ class ElinkDecoder
   SampaHeader mSampaHeader;
   uint64_t mNofBitSeen;
   uint64_t mNofHeaderSeen;
+  PacketHandler mPacketHandler;
 };
 
 } // namespace raw
