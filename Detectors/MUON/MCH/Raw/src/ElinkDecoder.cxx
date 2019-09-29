@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHRaw/ELink.h"
+#include "MCHRaw/ElinkDecoder.h"
 #include <stdexcept>
 #include <fmt/printf.h>
 
@@ -19,18 +19,18 @@ constexpr int HEADERSIZE = 50;
 namespace o2::mch::raw
 {
 
-std::ostream& operator<<(std::ostream& os, const ELink& e)
+std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
   os << fmt::sprintf("ELINK ID %d nsync %d checkpoint %d indata %d len %d nbits seen %llu headers %llu\n",
                      e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
   return os;
 }
 
-ELink::ELink(int id) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0)
+ElinkDecoder::ElinkDecoder(int id) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0)
 {
 }
 
-bool ELink::append(bool bit)
+bool ElinkDecoder::append(bool bit)
 {
   ++mNofBitSeen;
   mBitSet.append(bit);
@@ -40,18 +40,18 @@ bool ELink::append(bool bit)
   return process();
 }
 
-bool ELink::append(bool bit0, bool bit1)
+bool ElinkDecoder::append(bool bit0, bool bit1)
 {
   return append(bit0) && append(bit1);
 }
 
-void ELink::clear(int checkpoint)
+void ElinkDecoder::clear(int checkpoint)
 {
   mBitSet.clear();
   mCheckpoint = checkpoint;
 }
 
-void ELink::findSync()
+void ElinkDecoder::findSync()
 {
   if (mNofSync != 0) {
     throw std::logic_error("wrong logic 2");
@@ -74,7 +74,7 @@ void ELink::findSync()
 // as either a Sampa Header or Sampa data block.
 // If it's neither, then set the checkpoint at the current length
 // plus two bits.
-bool ELink::process()
+bool ElinkDecoder::process()
 {
   if (mBitSet.len() != mCheckpoint) {
     throw std::logic_error("wrong logic somewhere");
@@ -124,7 +124,7 @@ bool ELink::process()
       return true;
       break;
     case SampaPacketType::HeartBeat:
-      fmt::printf("ELink %d: HEARTBEAT found. Should be doing sth about it ?\n", mId);
+      fmt::printf("ElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mId);
       clear(HEADERSIZE);
       return true;
       break;
@@ -142,14 +142,16 @@ void show(const BitSet& bs, int a, int b)
   std::cout << s.stringLSBLeft() << " = " << s.uint32(0, b - a - 1) << "\n";
 }
 
-void ELink::getPacket()
+void ElinkDecoder::getPacket()
 {
   // here we should get chuncks of 10 bits.
   // a sampa packet is (header+payload) for one channel
 
   // up to checkpoint bits should be our data
+  // (and mSampaHeader has the chip,ch combo
 
-  std::cout << "FIXME: write getPacket checkpoint=" << mCheckpoint << "\n";
+  std::cout << "FIXME: write getPacket checkpoint=" << mCheckpoint
+            << " chip= " << (int)mSampaHeader.chipAddress() << " ch= " << (int)mSampaHeader.channelAddress() << "\n";
   show(mBitSet, 0, 9);
   show(mBitSet, 10, 19);
   show(mBitSet, 20, 39);
