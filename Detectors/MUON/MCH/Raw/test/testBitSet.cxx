@@ -433,7 +433,7 @@ BOOST_AUTO_TEST_CASE(TestLoopAppend)
   BitSet bs;
 
   std::srand(std::time(nullptr));
-  for (int i = 0; i < 2500; i++) {
+  for (int i = 0; i < BitSet::maxSize(); i++) {
     bool bit = static_cast<bool>(rand() % 2);
     if (bit) {
       expected += "1";
@@ -443,6 +443,12 @@ BOOST_AUTO_TEST_CASE(TestLoopAppend)
     bs.append(bit);
   }
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), expected);
+}
+
+BOOST_AUTO_TEST_CASE(TestNofBits)
+{
+  BOOST_CHECK_EQUAL(nofBits(static_cast<uint8_t>(15)), 4);
+  BOOST_CHECK_EQUAL(nofBits(static_cast<uint32_t>(0xFFFFF)), 20);
 }
 
 // BenchmarkSetRangeFromUint8
