@@ -30,11 +30,13 @@ class ElinkDecoder
  public:
   ElinkDecoder(int id, PacketHandler packetHandler);
   bool append(bool bit0, bool bit1);
+  bool finalize();
 
  private:
   bool process();
   void clear(int checkpoint);
   void findSync();
+  bool getData();
   void getPacket();
   bool append(bool bit);
   friend std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e);
