@@ -128,5 +128,16 @@ BOOST_AUTO_TEST_CASE(EncoderGetShouldThrowIfBitNumberIsBeyondLen)
   BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
 }
 
+BOOST_AUTO_TEST_CASE(EncoderFillWithSync)
+{
+  ElinkEncoder enc = encoderExample1();
+  auto s = enc.len();
+  enc.fillWithSync(s + 154);
+  BOOST_CHECK_EQUAL(enc.len(), s + 154);
+  BOOST_CHECK_EQUAL(enc.range(s, s + 49), sampaSync().uint64());
+  BOOST_CHECK_EQUAL(enc.range(s + 50, s + 99), sampaSync().uint64());
+  BOOST_CHECK_EQUAL(enc.range(s + 100, s + 149), sampaSync().uint64());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
