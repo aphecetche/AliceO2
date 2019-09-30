@@ -451,8 +451,5 @@ BOOST_AUTO_TEST_CASE(TestNofBits)
   BOOST_CHECK_EQUAL(nofBits(static_cast<uint32_t>(0xFFFFF)), 20);
 }
 
-// BenchmarkSetRangeFromUint8
-// BenchmarkSetRangeFromUint32
-
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
