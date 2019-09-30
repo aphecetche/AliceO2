@@ -16,6 +16,12 @@ o2_add_test(gbt-encoder
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw Boost::boost)
 
+o2_add_test(gbt-decoder
+            SOURCES testGBTDecoder.cxx
+            COMPONENT_NAME mch
+            LABELS "mch;raw"
+            PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw Boost::boost)
+
 o2_add_test(sampa-header
             SOURCES testSampaHeader.cxx
             COMPONENT_NAME mch

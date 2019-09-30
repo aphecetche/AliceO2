@@ -23,9 +23,12 @@ void computeHamming(SampaHeader& sampaHeader)
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(int dsid) : mDsId(dsid), mSampaHeader{}, mBitSet{}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}
 {
-  mSampaHeader.chipAddress(dsid);
+  if (id > 39) {
+    throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
+  }
+  mSampaHeader.chipAddress(mDsId);
 }
 
 void assertNofBits(std::string_view msg, uint64_t value, int allowed)
@@ -101,20 +104,23 @@ void ElinkEncoder::addSync()
   mBitSet.append(sampaSync().uint64(), 50);
 }
 
-void ElinkEncoder::fillWithSync(int upto)
+int ElinkEncoder::fillWithSync(int upto)
 {
   BitSet sync{sampaSync().uint64()};
   int ix{0};
   int i{len()};
+  int n{0};
 
   while (i < upto) {
     mBitSet.set(i, sync.get(ix));
+    n++;
     i++;
     ix++;
     if (ix == 50) {
       ix = 0;
     }
   }
+  return n;
 }
 
 uint64_t ElinkEncoder::range(int a, int b) const
