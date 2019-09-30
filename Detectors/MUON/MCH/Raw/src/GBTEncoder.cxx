@@ -11,29 +11,13 @@
 #include "MCHRaw/GBTEncoder.h"
 #include <fmt/printf.h>
 #include <stdexcept>
+#include "MakeArray.h"
 
 using namespace o2::mch::raw;
 
-namespace
-{
-template <typename CTOR, size_t... S>
-std::array<std::invoke_result_t<CTOR, size_t>, sizeof...(S)> makeArray(CTOR&& ctor,
-                                                                       std::index_sequence<S...>)
-{
-  return std::array<std::invoke_result_t<CTOR, size_t>, sizeof...(S)>{{ctor(S)...}};
-}
-
-template <size_t N, typename CTOR>
-std::array<std::invoke_result_t<CTOR, size_t>, N> makeArray(CTOR&& ctor)
-{
-  return makeArray(std::forward<CTOR>(ctor), std::make_index_sequence<N>());
-}
-
-} // namespace
-
 // FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
 // the right range 0..15 itself ? Or have the mapping at this level already ?
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i % 16); })}, mGBTWords{}, mElinksInSync{true}
+GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mElinkHasAtLeastOneSync{false}, mGBTWords{}, mElinksInSync{true}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -45,6 +29,10 @@ void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId,
   mElinksInSync = false;
   if (elinkId < 0 || elinkId > 39) {
     throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
+  }
+  if (!mElinkHasAtLeastOneSync[elinkId]) {
+    mElinks[elinkId].addSync();
+    mElinkHasAtLeastOneSync[elinkId] = true;
   }
   mElinks[elinkId].bunchCrossingCounter(bx);
   mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
@@ -58,12 +46,10 @@ void GBTEncoder::elink2gbt()
   }
 
   int n = mElinks[0].len();
-  uint80_t one{1};
 
   for (int i = 0; i < n; i++) {
-    uint80_t w{0};
+    GBTWord w{0};
     for (int j = 0; j < 40; j++) {
-      uint80_t mask = one << j;
       bool v = mElinks[j].get(i);
       if (v) {
         bit_set(w, j);
@@ -91,7 +77,10 @@ void GBTEncoder::finalize()
   // align all elink sizes to the biggest one by adding
   // sync words
   for (auto i = 0; i < mElinks.size(); i++) {
-    mElinks[i].fillWithSync(e->len());
+    int n = mElinks[i].fillWithSync(e->len());
+    if (n > 50) {
+      mElinkHasAtLeastOneSync[i] = true;
+    }
   }
 
   // signals that the elinks have now the same size
@@ -100,9 +89,15 @@ void GBTEncoder::finalize()
   // convert elinks to GBT words
   elink2gbt();
 
+  clear();
+}
+
+void GBTEncoder::clear()
+{
   // clear the elinks
   for (auto i = 0; i < mElinks.size(); i++) {
     mElinks[i].clear();
+    mElinkHasAtLeastOneSync[i] = false;
   }
 }
 
@@ -111,7 +106,7 @@ size_t GBTEncoder::size() const
   return mGBTWords.size();
 }
 
-GBTEncoder::uint80_t GBTEncoder::getWord(int i) const
+GBTWord GBTEncoder::getWord(int i) const
 {
   return mGBTWords[i];
 }
