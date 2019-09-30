@@ -15,6 +15,7 @@
 #include "SampaHeader.h"
 #include <iostream>
 #include <functional>
+#include "MCHRaw/PacketHandler.h"
 
 namespace o2
 {
@@ -23,12 +24,10 @@ namespace mch
 namespace raw
 {
 
-typedef std::function<void(uint8_t, uint8_t, uint16_t, uint32_t)> PacketHandler;
-
 class ElinkDecoder
 {
  public:
-  ElinkDecoder(int id, PacketHandler packetHandler);
+  ElinkDecoder(uint8_t id, PacketHandler packetHandler);
   bool append(bool bit0, bool bit1);
   bool finalize();
 
@@ -42,7 +41,7 @@ class ElinkDecoder
   friend std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e);
 
  private:
-  int mId;
+  uint8_t mId;
   int mCheckpoint;
   bool mIsInData;
   int mNofSync;

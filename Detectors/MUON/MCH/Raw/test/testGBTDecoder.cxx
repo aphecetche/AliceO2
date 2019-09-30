@@ -8,27 +8,35 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#define BOOST_TEST_MODULE Test MCHRaw GBTEncoder
+#define BOOST_TEST_MODULE Test MCHRaw GBTDecoder
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
+#include "MCHRaw/GBTDecoder.h"
 #include "MCHRaw/GBTEncoder.h"
 #include <array>
 
 using namespace o2::mch::raw;
 
-BOOST_AUTO_TEST_SUITE(o2_mch_raw)
-
-BOOST_AUTO_TEST_SUITE(gbtencoder)
-
-BOOST_AUTO_TEST_CASE(GBTEncoderLinkIdMustBeBetween0And23)
+void handlePacket(uint8_t chip, uint8_t channel, uint16_t timetamp,
+                  uint32_t chargeSum)
 {
-  BOOST_CHECK_THROW(GBTEncoder enc(24), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(GBTEncoder enc(23));
+  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
+            << "\n";
 }
 
-BOOST_AUTO_TEST_CASE(GBTEncoderAddChannels)
+BOOST_AUTO_TEST_SUITE(o2_mch_raw)
+
+BOOST_AUTO_TEST_SUITE(gbtdecoder)
+
+BOOST_AUTO_TEST_CASE(GBTDecoderLinkIdMustBeBetween0And23)
+{
+  BOOST_CHECK_THROW(GBTDecoder enc(24, handlePacket), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(GBTDecoder enc(23, handlePacket));
+}
+
+BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
 {
   GBTEncoder enc(0);
   uint32_t bx(0);
@@ -42,10 +50,14 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddChannels)
   enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
   enc.finalize();
-  // for (auto i = 0; i < enc.size(); i++) {
-  //   std::cout << std::hex << "0x" << enc.getWord(i) << "\n";
-  // }
   BOOST_CHECK_EQUAL(enc.size(), 50 + 270);
+
+  GBTDecoder dec(0, handlePacket);
+  for (auto i = 0; i < enc.size(); i++) {
+    // std::cout << std::hex << "0x" << enc.getWord(i) << "\n";
+    dec.append(enc.getWord(i));
+  }
+  dec.printStatus();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
