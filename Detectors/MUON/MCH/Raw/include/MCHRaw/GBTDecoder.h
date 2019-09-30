@@ -8,12 +8,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_GBT_ENCODER_H
-#define O2_MCH_RAW_GBT_ENCODER_H
+#ifndef O2_MCH_RAW_GBT_DECODER_H
+#define O2_MCH_RAW_GBT_DECODER_H
 
 #include <array>
-#include "MCHRaw/ElinkEncoder.h"
+#include "MCHRaw/ElinkDecoder.h"
 #include "MCHRaw/GBTWord.h"
+#include "MCHRaw/PacketHandler.h"
 
 namespace o2
 {
@@ -22,29 +23,18 @@ namespace mch
 namespace raw
 {
 
-class GBTEncoder
+class GBTDecoder
 {
  public:
-  GBTEncoder(int linkId);
+  GBTDecoder(int linkId, PacketHandler packetHandler);
 
-  void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
+  void append(GBTWord w);
 
-  void finalize();
-
-  size_t size() const;
-  GBTWord getWord(int i) const;
-
-  void clear();
-
- private:
-  void elink2gbt();
+  void printStatus();
 
  private:
   int mId;
-  bool mElinksInSync;
-  std::array<ElinkEncoder, 40> mElinks;
-  std::array<bool, 40> mElinkHasAtLeastOneSync;
-  std::vector<GBTWord> mGBTWords;
+  std::array<ElinkDecoder, 40> mElinks;
 };
 } // namespace raw
 } // namespace mch
