@@ -4,7 +4,7 @@ using namespace o2::mch::raw;
 
 ElinkEncoder encoderExample1()
 {
-  ElinkEncoder enc(9);
+  ElinkEncoder enc(0, 9);
 
   enc.addRandomBits(13);
   enc.addSync();

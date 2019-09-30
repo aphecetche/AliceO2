@@ -35,6 +35,12 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(elinkdecoder)
 
+BOOST_AUTO_TEST_CASE(ELinkDecoderIdMustBeBetween0And39)
+{
+  BOOST_CHECK_THROW(ElinkDecoder dec(40, handlePacket), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(ElinkDecoder dec(39, handlePacket));
+}
+
 BOOST_AUTO_TEST_CASE(TestELinkDecoding)
 {
   ElinkEncoder enc = encoderExample1();
