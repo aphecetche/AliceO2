@@ -29,14 +29,20 @@ BOOST_AUTO_TEST_SUITE(elinkencoder)
 
 BOOST_AUTO_TEST_CASE(ElinkEncoderCtorMustUse4BitsOnlyForDsId)
 {
-  BOOST_CHECK_THROW(ElinkEncoder enc(32), std::invalid_argument);
-  BOOST_CHECK_THROW(ElinkEncoder enc(16), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(ElinkEncoder enc(15));
+  BOOST_CHECK_THROW(ElinkEncoder enc(0, 32), std::invalid_argument);
+  BOOST_CHECK_THROW(ElinkEncoder enc(0, 16), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(ElinkEncoder enc(0, 15));
+}
+
+BOOST_AUTO_TEST_CASE(ElinkEncoderIdMustBeBetween0And39)
+{
+  BOOST_CHECK_THROW(ElinkEncoder enc(40, 0), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(ElinkEncoder enc(39, 0));
 }
 
 BOOST_AUTO_TEST_CASE(BunchCrossingCounterMustBeWithin20Bits)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
 
   BOOST_CHECK_THROW(enc.bunchCrossingCounter(0x1FFFFF), std::invalid_argument);
   enc.bunchCrossingCounter(0xFFFFF);
@@ -45,27 +51,27 @@ BOOST_AUTO_TEST_CASE(BunchCrossingCounterMustBeWithin20Bits)
 
 BOOST_AUTO_TEST_CASE(ElinkEncoderCtorBuildsAnEmptyBitSet)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
   BOOST_CHECK_EQUAL(enc.len(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(ElinkEncoderAddRandomBits)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
   enc.addRandomBits(13);
   BOOST_CHECK_EQUAL(enc.len(), 13);
 }
 
 BOOST_AUTO_TEST_CASE(ElinkEncoderAddSync)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
   enc.addSync();
   BOOST_CHECK_EQUAL(enc.len(), 50);
 }
 
 BOOST_AUTO_TEST_CASE(EncodeChannelId5Bits)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
 
   BOOST_CHECK_THROW(enc.addChannelChargeSum(32, 20, 10),
                     std::invalid_argument);
@@ -77,7 +83,7 @@ BOOST_AUTO_TEST_CASE(EncodeChannelId5Bits)
 
 BOOST_AUTO_TEST_CASE(EncodeTimeStamp10Bits)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
 
   BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 0x7FF, 10),
                     std::invalid_argument);
@@ -86,7 +92,7 @@ BOOST_AUTO_TEST_CASE(EncodeTimeStamp10Bits)
 
 BOOST_AUTO_TEST_CASE(EncodeSamples10BitsIfSeveralSamples)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
 
   BOOST_CHECK_THROW(enc.addChannelSamples(31, 0, {0x7FF, 0x1FF}),
                     std::invalid_argument);
@@ -95,7 +101,7 @@ BOOST_AUTO_TEST_CASE(EncodeSamples10BitsIfSeveralSamples)
 
 BOOST_AUTO_TEST_CASE(EncodeSamples20BitsIfOnlyOneSample)
 {
-  ElinkEncoder enc(0);
+  ElinkEncoder enc(0, 0);
 
   BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 0, 0x1FFFFF),
                     std::invalid_argument);
@@ -110,7 +116,7 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSChargeSum)
 
 BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
 {
-  ElinkEncoder enc(9);
+  ElinkEncoder enc(0, 9);
 
   enc.addChannelSamples(1, 20, {1, 10, 100, 10, 1});
   enc.addChannelSamples(5, 100, {5, 50, 5});

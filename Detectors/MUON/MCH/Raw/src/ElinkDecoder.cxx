@@ -23,11 +23,15 @@ std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
   os << fmt::sprintf("ELINK ID %d nsync %d checkpoint %d indata %d len %d nbits seen %llu headers %llu\n",
                      e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
+  os << e.mBitSet.stringLSBLeft() << "\n";
   return os;
 }
 
-ElinkDecoder::ElinkDecoder(int id, PacketHandler packetHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mPacketHandler(packetHandler)
+ElinkDecoder::ElinkDecoder(uint8_t id, PacketHandler packetHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mPacketHandler(packetHandler)
 {
+  if (id > 39) {
+    throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
+  }
 }
 
 bool ElinkDecoder::append(bool bit)
