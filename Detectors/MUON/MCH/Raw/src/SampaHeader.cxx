@@ -207,11 +207,17 @@ std::string packetTypeName(o2::mch::raw::SampaPacketType pkt)
   throw std::out_of_range("should not happen");
 }
 
-SampaHeader::SampaHeader(uint64_t value) : mValue(value)
+SampaHeader::SampaHeader(uint64_t value) : mValue(0)
+{
+  uint64(value);
+}
+
+void SampaHeader::uint64(uint64_t value)
 {
   if (!nofBitsBelowLimit(value, 50)) {
     throw std::invalid_argument(fmt::sprintf("%x is not a valid header value", value));
   }
+  mValue = value;
 }
 
 SampaHeader::SampaHeader(uint8_t hamming,

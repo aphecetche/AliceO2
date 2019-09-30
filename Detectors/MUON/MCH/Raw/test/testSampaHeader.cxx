@@ -16,10 +16,7 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
-#include <iostream>
 #include "MCHRaw/SampaHeader.h"
-#include <fstream>
-#include <fmt/printf.h>
 
 using namespace o2::mch::raw;
 
@@ -230,7 +227,6 @@ BOOST_AUTO_TEST_CASE(SetChannelAddressTwice)
   BOOST_CHECK_EQUAL(h.channelAddress(), 31);
   h.channelAddress(5);
   BOOST_CHECK_EQUAL(h.channelAddress(), 5);
-  std::cout << h << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()
