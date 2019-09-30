@@ -41,7 +41,7 @@ void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
   mSampaHeader.bunchCrossingCounter(bx);
 }
 
-void ElinkEncoder::addHeader(uint8_t chid, const std::vector<uint16_t>& samples)
+void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
 {
   int n10 = 2; // nofsamples + timestamp
   // check all samples are 10 bits
@@ -49,25 +49,25 @@ void ElinkEncoder::addHeader(uint8_t chid, const std::vector<uint16_t>& samples)
     assertNofBits("sample", s, 10);
     n10++;
   }
-  setHeader(chid, n10);
+  setHeader(chId, n10);
   // append header to bitset
   mBitSet.append(mSampaHeader.uint64(), 50);
 }
 
-void ElinkEncoder::addHeader(uint8_t chid, uint32_t chargeSum)
+void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
 {
   int n10 = 4; // nofsamples + timestamp + 20 bits of chargeSum
   assertNofBits("chargeSum", chargeSum, 20);
-  setHeader(chid, n10);
+  setHeader(chId, n10);
   // append header to bitset
   mBitSet.append(mSampaHeader.uint64(), 50);
 }
 
-void ElinkEncoder::addChannelSamples(uint8_t chid,
+void ElinkEncoder::addChannelSamples(uint8_t chId,
                                      uint16_t timestamp,
                                      const std::vector<uint16_t>& samples)
 {
-  addHeader(chid, samples);
+  addHeader(chId, samples);
 
   assertNofBits("timestamp", timestamp, 10);
 
@@ -80,12 +80,12 @@ void ElinkEncoder::addChannelSamples(uint8_t chid,
   }
 }
 
-void ElinkEncoder::addChannelChargeSum(uint8_t chid,
+void ElinkEncoder::addChannelChargeSum(uint8_t chId,
                                        uint16_t timestamp,
                                        uint32_t chargeSum,
                                        uint16_t nsamples)
 {
-  addHeader(chid, chargeSum);
+  addHeader(chId, chargeSum);
 
   // append samples to bitset
   assertNofBits("nsamples", nsamples, 10);
@@ -99,6 +99,27 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chid,
 void ElinkEncoder::addSync()
 {
   mBitSet.append(sampaSync().uint64(), 50);
+}
+
+void ElinkEncoder::fillWithSync(int upto)
+{
+  BitSet sync{sampaSync().uint64()};
+  int ix{0};
+  int i{len()};
+
+  while (i < upto) {
+    mBitSet.set(i, sync.get(ix));
+    i++;
+    ix++;
+    if (ix == 50) {
+      ix = 0;
+    }
+  }
+}
+
+uint64_t ElinkEncoder::range(int a, int b) const
+{
+  return mBitSet.subset(a, b).uint64(0, b - a + 1);
 }
 
 void ElinkEncoder::addRandomBits(int n)
@@ -137,13 +158,13 @@ int ElinkEncoder::len() const
   return mBitSet.len();
 }
 
-void ElinkEncoder::setHeader(uint8_t chid, uint16_t n10)
+void ElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
 {
-  assertNofBits("chid", chid, 5);
+  assertNofBits("chId", chId, 5);
   assertNofBits("nof10BitWords", n10, 10);
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
-  mSampaHeader.channelAddress(chid);
+  mSampaHeader.channelAddress(chId);
   computeHamming(mSampaHeader);
 }
 
