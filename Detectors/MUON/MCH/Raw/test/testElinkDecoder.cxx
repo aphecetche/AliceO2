@@ -52,6 +52,8 @@ BOOST_AUTO_TEST_CASE(TestELinkDecoding)
     e.append(enc.get(i), enc.get(i + 1));
   }
 
+  e.finalize();
+
   std::cout << "nof bits : " << enc.len() << "\n";
   std::cout << "elink=" << e << "\n";
   std::cout << "npackets=" << npackets << "\n";
