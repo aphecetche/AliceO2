@@ -31,22 +31,25 @@ class ElinkEncoder
   uint8_t id() const;
 
   void bunchCrossingCounter(uint32_t bx);
-  void addChannelSamples(uint8_t chid, uint16_t timestamp, const std::vector<uint16_t>& samples);
-  void addChannelChargeSum(uint8_t chid, uint16_t timestamp, uint32_t chargeSum,
+  void addChannelSamples(uint8_t chId, uint16_t timestamp, const std::vector<uint16_t>& samples);
+  void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
                            uint16_t nsamples = 1);
   void addSync();
   void addRandomBits(int n);
+  void fillWithSync(int upto);
 
   bool get(int i) const;
   int len() const;
   void clear();
 
+  uint64_t range(int a, int b) const;
+
   friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc);
 
  private:
-  void addHeader(uint8_t chid, const std::vector<uint16_t>& samples);
-  void addHeader(uint8_t chid, uint32_t chargeSum);
-  void setHeader(uint8_t chid, uint16_t n10);
+  void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
+  void addHeader(uint8_t chId, uint32_t chargeSum);
+  void setHeader(uint8_t chId, uint16_t n10);
 
  private:
   unsigned short mDsId : 5;
