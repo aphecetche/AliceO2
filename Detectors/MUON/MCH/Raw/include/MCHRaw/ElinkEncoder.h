@@ -26,7 +26,7 @@ namespace raw
 class ElinkEncoder
 {
  public:
-  explicit ElinkEncoder(int dsid);
+  explicit ElinkEncoder(uint8_t id, uint8_t dsid);
 
   uint8_t id() const;
 
@@ -36,7 +36,7 @@ class ElinkEncoder
                            uint16_t nsamples = 1);
   void addSync();
   void addRandomBits(int n);
-  void fillWithSync(int upto);
+  int fillWithSync(int upto);
 
   bool get(int i) const;
   int len() const;
@@ -52,7 +52,8 @@ class ElinkEncoder
   void setHeader(uint8_t chId, uint16_t n10);
 
  private:
-  unsigned short mDsId : 5;
+  uint8_t mId;
+  uint8_t mDsId;
   SampaHeader mSampaHeader;
   BitSet mBitSet;
 };
