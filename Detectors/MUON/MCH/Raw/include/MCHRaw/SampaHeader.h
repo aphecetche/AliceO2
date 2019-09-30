@@ -79,6 +79,7 @@ class SampaHeader
   void payloadParity(bool dp);
 
   uint64_t uint64() const { return mValue; }
+  void uint64(uint64_t value);
 
   bool isHeartbeat() const;
 
