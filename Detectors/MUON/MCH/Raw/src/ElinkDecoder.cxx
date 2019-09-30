@@ -51,6 +51,23 @@ void ElinkDecoder::clear(int checkpoint)
   mCheckpoint = checkpoint;
 }
 
+bool ElinkDecoder::getData()
+{
+  getPacket();
+  mBitSet.clear();
+  mCheckpoint = HEADERSIZE;
+  mIsInData = false;
+  return true;
+}
+
+bool ElinkDecoder::finalize()
+{
+  if (mIsInData) {
+    return getData();
+  }
+  return false;
+}
+
 void ElinkDecoder::findSync()
 {
   if (mNofSync != 0) {
@@ -59,7 +76,7 @@ void ElinkDecoder::findSync()
   if (mIsInData) {
     throw std::logic_error("wrong logic 3");
   }
-  mSampaHeader = SampaHeader(mBitSet.last(HEADERSIZE).uint64(0, 49));
+  mSampaHeader.uint64(mBitSet.last(HEADERSIZE).uint64(0, 49));
   if (mSampaHeader != sampaSync()) {
     mCheckpoint++;
     return;
@@ -88,12 +105,7 @@ bool ElinkDecoder::process()
   }
 
   if (mIsInData) {
-    // data mode, just decode ourselves into a set of sampa packets
-    getPacket();
-    mBitSet.clear();
-    mCheckpoint = HEADERSIZE;
-    mIsInData = false;
-    return true;
+    return getData();
   }
 
   // looking for a header
@@ -101,7 +113,7 @@ bool ElinkDecoder::process()
     throw std::logic_error(fmt::sprintf("wrong logic 5 checkpoint %d HeaderSize %d", mCheckpoint, HEADERSIZE));
   }
 
-  mSampaHeader = SampaHeader(mBitSet.last(HEADERSIZE).uint64(0, 49));
+  mSampaHeader.uint64(mBitSet.last(HEADERSIZE).uint64(0, 49));
   ++mNofHeaderSeen;
 
   std::cout << packetTypeName(mSampaHeader.packetType()) << "\n";
