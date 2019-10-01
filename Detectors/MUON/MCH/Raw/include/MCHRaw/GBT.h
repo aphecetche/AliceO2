@@ -8,10 +8,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELINK_GBTWORD_H
-#define O2_MCH_RAW_ELINK_GBTWORD_H
+#ifndef O2_MCH_RAW_GBT_H
+#define O2_MCH_RAW_GBT_H
 
 #include <boost/multiprecision/cpp_int.hpp>
-namespace bmp = boost::multiprecision;
-typedef bmp::number<bmp::cpp_int_backend<80, 80, bmp::unsigned_magnitude, bmp::checked, void>> GBTWord;
+
+namespace o2::mch::raw
+{
+typedef boost::multiprecision::checked_uint128_t uint128_t;
+}
+
 #endif
