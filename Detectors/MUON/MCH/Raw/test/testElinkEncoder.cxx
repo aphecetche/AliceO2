@@ -16,7 +16,6 @@
 #include <iostream>
 #include "MCHRaw/ElinkEncoder.h"
 #include "MCHRaw/SampaHeader.h"
-#include "RAWDataHeader.h"
 #include <fstream>
 #include <fmt/printf.h>
 #include "common.h"
