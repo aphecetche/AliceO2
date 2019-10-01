@@ -15,9 +15,8 @@
 
 using namespace o2::mch::raw;
 
-// FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
-// the right range 0..15 itself ? Or have the mapping at this level already ?
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mElinkHasAtLeastOneSync{false}, mGBTWords{}, mElinksInSync{true}
+// FIXME: instead of i % 16 for dsid , get a "real" mapping in there
+GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mGBTWords{}, mElinksInSync{true}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -30,9 +29,8 @@ void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId,
   if (elinkId < 0 || elinkId > 39) {
     throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
   }
-  if (!mElinkHasAtLeastOneSync[elinkId]) {
+  if (!mElinks[elinkId].nofSync()) {
     mElinks[elinkId].addSync();
-    mElinkHasAtLeastOneSync[elinkId] = true;
   }
   mElinks[elinkId].bunchCrossingCounter(bx);
   mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
@@ -47,15 +45,16 @@ void GBTEncoder::elink2gbt()
 
   int n = mElinks[0].len();
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i += 2) {
     GBTWord w{0};
-    for (int j = 0; j < 40; j++) {
-      bool v = mElinks[j].get(i);
-      if (v) {
-        bit_set(w, j);
-      } else {
-        bit_unset(w, j);
-        ;
+    for (int j = 0; j < 80; j += 2) {
+      for (int k = 0; k <= 1; k++) {
+        bool v = mElinks[j / 2].get(i + k);
+        if (v) {
+          bit_set(w, j + k);
+        } else {
+          bit_unset(w, j + k);
+        }
       }
     }
     mGBTWords.push_back(w);
@@ -77,10 +76,7 @@ void GBTEncoder::finalize()
   // align all elink sizes to the biggest one by adding
   // sync words
   for (auto i = 0; i < mElinks.size(); i++) {
-    int n = mElinks[i].fillWithSync(e->len());
-    if (n > 50) {
-      mElinkHasAtLeastOneSync[i] = true;
-    }
+    mElinks[i].fillWithSync(e->len());
   }
 
   // signals that the elinks have now the same size
@@ -97,7 +93,6 @@ void GBTEncoder::clear()
   // clear the elinks
   for (auto i = 0; i < mElinks.size(); i++) {
     mElinks[i].clear();
-    mElinkHasAtLeastOneSync[i] = false;
   }
 }
 
@@ -109,4 +104,13 @@ size_t GBTEncoder::size() const
 GBTWord GBTEncoder::getWord(int i) const
 {
   return mGBTWords[i];
+}
+
+void GBTEncoder::printStatus()
+{
+  std::cout << "GBTEncoder(" << mId << ")::printStatus\n";
+  std::cout << "mElinksInSync=" << mElinksInSync << " # GBTwords = " << mGBTWords.size() << "\n";
+  for (auto& e : mElinks) {
+    std::cout << e << "\n";
+  }
 }

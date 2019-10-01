@@ -50,13 +50,13 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
   enc.finalize();
-  BOOST_CHECK_EQUAL(enc.size(), 50 + 270);
+  BOOST_CHECK_EQUAL(enc.size(), 160); // nof gbt words
 
   GBTDecoder dec(0, handlePacket);
   for (auto i = 0; i < enc.size(); i++) {
-    // std::cout << std::hex << "0x" << enc.getWord(i) << "\n";
     dec.append(enc.getWord(i));
   }
+
   dec.printStatus();
 }
 
