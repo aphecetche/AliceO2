@@ -43,6 +43,8 @@ class GBTEncoder
 
   void fillWithSync(int upto);
 
+  int maxPhase() const;
+
  private:
   void elink2gbt();
 

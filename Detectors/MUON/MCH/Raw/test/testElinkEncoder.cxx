@@ -54,18 +54,12 @@ BOOST_AUTO_TEST_CASE(ElinkEncoderCtorBuildsAnEmptyBitSet)
   BOOST_CHECK_EQUAL(enc.len(), 0);
 }
 
-BOOST_AUTO_TEST_CASE(ElinkEncoderAddRandomBits)
+BOOST_AUTO_TEST_CASE(ElinkEncoderAdd)
 {
   ElinkEncoder enc(0, 0);
-  enc.addRandomBits(13);
-  BOOST_CHECK_EQUAL(enc.len(), 13);
-}
-
-BOOST_AUTO_TEST_CASE(ElinkEncoderAddSync)
-{
-  ElinkEncoder enc(0, 0);
-  enc.addSync();
-  BOOST_CHECK_EQUAL(enc.len(), 50);
+  enc.addChannelChargeSum(31, 20, 10);
+  int expectedSize = 50 + enc.phase() + 90;
+  BOOST_CHECK_EQUAL(enc.len(), expectedSize);
 }
 
 BOOST_AUTO_TEST_CASE(EncodeChannelId5Bits)
@@ -110,7 +104,7 @@ BOOST_AUTO_TEST_CASE(EncodeSamples20BitsIfOnlyOneSample)
 BOOST_AUTO_TEST_CASE(EncodeOneDSChargeSum)
 {
   ElinkEncoder enc = encoderExample1();
-  BOOST_CHECK_EQUAL(enc.len(), 13 + 50 + 4 * 90);
+  BOOST_CHECK_EQUAL(enc.len(), enc.phase() + 50 + 4 * 90);
 }
 
 BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
@@ -122,7 +116,7 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
   enc.addChannelSamples(13, 260, {13, 14, 15, 15, 13});
   enc.addChannelSamples(31, 620, {31});
 
-  BOOST_CHECK_EQUAL(enc.len(), 4 * (50 + 20) + 14 * 10);
+  BOOST_CHECK_EQUAL(enc.len(), enc.phase() + 50 + 4 * (50 + 20) + 14 * 10);
 }
 
 BOOST_AUTO_TEST_CASE(EncoderGetShouldThrowIfBitNumberIsBeyondLen)

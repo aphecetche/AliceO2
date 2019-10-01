@@ -23,14 +23,12 @@ void computeHamming(SampaHeader& sampaHeader)
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mPhase{static_cast<int>(rand() % 20)}
 {
   if (id > 39) {
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
   }
   mSampaHeader.chipAddress(mDsId);
-  // simulate a different phase between elinks by starting off with a few random bits
-  addRandomBits(static_cast<int>(rand() % 20));
 }
 
 void assertNofBits(std::string_view msg, uint64_t value, int allowed)
@@ -72,6 +70,8 @@ void ElinkEncoder::addChannelSamples(uint8_t chId,
                                      uint16_t timestamp,
                                      const std::vector<uint16_t>& samples)
 {
+  assertSync();
+
   addHeader(chId, samples);
 
   assertNofBits("timestamp", timestamp, 10);
@@ -90,6 +90,8 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
                                        uint32_t chargeSum,
                                        uint16_t nsamples)
 {
+  assertSync();
+
   addHeader(chId, chargeSum);
 
   // append samples to bitset
@@ -101,18 +103,34 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
   mBitSet.append(chargeSum, 20);
 }
 
-void ElinkEncoder::addSync()
+void ElinkEncoder::assertPhase()
 {
+  if (len() == 0) {
+    // simulate a different phase between elinks by starting off with a few random bits
+    addRandomBits(mPhase);
+  }
+}
+
+void ElinkEncoder::assertSync()
+{
+  if (len()) {
+    if (mNofSync == 0) {
+      throw std::logic_error("mNofSync should be > 0 here");
+    }
+    return;
+  }
+  assertPhase();
   mBitSet.append(sampaSync().uint64(), 50);
   ++mNofSync;
 }
 
 int ElinkEncoder::fillWithSync(int upto)
 {
+  assertPhase();
   BitSet sync{sampaSync().uint64()};
   int ix{0};
   int i{len()};
-  int n{0};
+  int n{0}; // number of bits added
 
   while (i < upto) {
     mBitSet.set(i, sync.get(ix));
@@ -134,6 +152,9 @@ uint64_t ElinkEncoder::range(int a, int b) const
 
 void ElinkEncoder::addRandomBits(int n)
 {
+  if (n < 0) {
+    throw std::invalid_argument("cannot add a negative amount of bits");
+  }
   for (int i = 0; i < n; i++) {
     mBitSet.append(static_cast<bool>(rand() % 2));
   }
@@ -146,7 +167,7 @@ std::string compact(const BitSet& bs)
 
   int i = 0;
   int nsync = 0;
-  while (i < bs.len()) {
+  while (i + 49 < bs.len()) {
     bool sync{false};
     while (bs.subset(i, i + 49).uint64(0, 49) == sampaSync().uint64()) {
       i += 50;
@@ -166,8 +187,8 @@ std::string compact(const BitSet& bs)
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu | %s",
-                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
+  os << fmt::sprintf("ELINK ID %2d DSID %2d phase %2d nsync %3llu len %6llu | %s",
+                     enc.mId, enc.mDsId, enc.mPhase, enc.mNofSync, enc.mBitSet.len(),
                      compact(enc.mBitSet));
   return os;
 }
@@ -181,7 +202,7 @@ void ElinkEncoder::clear()
 bool ElinkEncoder::get(int i) const
 {
   if (i >= len()) {
-    throw std::invalid_argument("trying to access bit past the end of our bitset");
+    throw std::invalid_argument(fmt::format("trying to access bit {} which is past the end of our bitset of len {}", i, len()));
   }
   return mBitSet.get(i);
 }
