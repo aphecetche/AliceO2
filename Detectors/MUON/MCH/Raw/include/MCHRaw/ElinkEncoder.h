@@ -34,8 +34,6 @@ class ElinkEncoder
   void addChannelSamples(uint8_t chId, uint16_t timestamp, const std::vector<uint16_t>& samples);
   void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
                            uint16_t nsamples = 1);
-  void addSync();
-  void addRandomBits(int n);
   int fillWithSync(int upto);
 
   bool get(int i) const;
@@ -48,9 +46,14 @@ class ElinkEncoder
 
   uint64_t nofSync() const { return mNofSync; }
 
+  int phase() const { return mPhase; }
+
  private:
   void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
   void addHeader(uint8_t chId, uint32_t chargeSum);
+  void assertPhase();
+  void assertSync();
+  void addRandomBits(int n);
   void setHeader(uint8_t chId, uint16_t n10);
 
  private:
@@ -59,6 +62,7 @@ class ElinkEncoder
   SampaHeader mSampaHeader;
   BitSet mBitSet;
   uint64_t mNofSync;
+  int mPhase;
 };
 
 } // namespace raw

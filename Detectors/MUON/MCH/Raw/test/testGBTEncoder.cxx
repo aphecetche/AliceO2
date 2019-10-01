@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderLinkIdMustBeBetween0And23)
   BOOST_CHECK_NO_THROW(GBTEncoder enc(23));
 }
 
-BOOST_AUTO_TEST_CASE(GBTEncoderAddChannels)
+BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
 {
   GBTEncoder enc(0);
   uint32_t bx(0);
@@ -41,11 +41,23 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddChannels)
   enc.addChannelChargeSum(bx, elinkId, ts, 33, 133);
   enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
+  int expectedSize = enc.maxLen() / 2;
+  enc.finalize();                              // warning : after finalize, enc.maxLen() is back to zero
+  BOOST_CHECK_EQUAL(enc.size(), expectedSize); // nof gbt words
+}
+
+BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
+{
+  GBTEncoder enc(0);
+  uint32_t bx(0);
+  uint16_t ts(0);
+  int elinkId = 0;
+  for (int i = 0; i < 64; i++) {
+    enc.addChannelChargeSum(bx, elinkId, ts, i, i * 10);
+  }
+  int expectedSize = enc.maxLen() / 2;
   enc.finalize();
-  // for (auto i = 0; i < enc.size(); i++) {
-  //   std::cout << std::hex << "0x" << enc.getWord(i) << "\n";
-  // }
-  BOOST_CHECK_EQUAL(enc.size(), 160); // nof gbt words
+  BOOST_CHECK_EQUAL(enc.size(), expectedSize); // nof gbt words
 }
 
 BOOST_AUTO_TEST_SUITE_END()
