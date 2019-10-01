@@ -36,6 +36,8 @@ class GBTEncoder
 
   void clear();
 
+  void printStatus();
+
  private:
   void elink2gbt();
 
@@ -43,7 +45,6 @@ class GBTEncoder
   int mId;
   bool mElinksInSync;
   std::array<ElinkEncoder, 40> mElinks;
-  std::array<bool, 40> mElinkHasAtLeastOneSync;
   std::vector<GBTWord> mGBTWords;
 };
 } // namespace raw
