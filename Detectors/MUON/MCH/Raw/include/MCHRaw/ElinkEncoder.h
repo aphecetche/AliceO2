@@ -46,6 +46,8 @@ class ElinkEncoder
 
   friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc);
 
+  uint64_t nofSync() const { return mNofSync; }
+
  private:
   void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
   void addHeader(uint8_t chId, uint32_t chargeSum);
@@ -56,6 +58,7 @@ class ElinkEncoder
   uint8_t mDsId;
   SampaHeader mSampaHeader;
   BitSet mBitSet;
+  uint64_t mNofSync;
 };
 
 } // namespace raw

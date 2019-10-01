@@ -23,7 +23,7 @@ void computeHamming(SampaHeader& sampaHeader)
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}
 {
   if (id > 39) {
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
@@ -102,6 +102,7 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
 void ElinkEncoder::addSync()
 {
   mBitSet.append(sampaSync().uint64(), 50);
+  ++mNofSync;
 }
 
 int ElinkEncoder::fillWithSync(int upto)
@@ -118,6 +119,7 @@ int ElinkEncoder::fillWithSync(int upto)
     ix++;
     if (ix == 50) {
       ix = 0;
+      mNofSync++;
     }
   }
   return n;
@@ -137,6 +139,8 @@ void ElinkEncoder::addRandomBits(int n)
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
+  os << fmt::sprintf("ELINK ID %d DSID %d nsync %llu len %llu\n",
+                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len());
   os << enc.mBitSet.stringLSBLeft();
   return os;
 }
@@ -144,6 +148,7 @@ std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 void ElinkEncoder::clear()
 {
   mBitSet.clear();
+  mNofSync = 0;
 }
 
 bool ElinkEncoder::get(int i) const
