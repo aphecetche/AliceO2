@@ -10,6 +10,7 @@
 
 #include "MCHRaw/ElinkDecoder.h"
 #include <stdexcept>
+#include <fmt/format.h>
 #include <fmt/printf.h>
 
 namespace
@@ -21,9 +22,9 @@ namespace o2::mch::raw
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
-  os << fmt::sprintf("ELINK ID %d nsync %d checkpoint %d indata %d len %d nbits seen %llu headers %llu\n",
-                     e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
-  os << e.mBitSet.stringLSBLeft() << "\n";
+  os << fmt::format("ELINK ID {} nsync {} checkpoint {} indata {} len {} nbits seen {} headers {}\n",
+                    e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
+  os << e.mBitSet.stringLSBLeft();
   return os;
 }
 
@@ -85,8 +86,6 @@ void ElinkDecoder::findSync()
     mCheckpoint++;
     return;
   }
-  std::cout << "Found SYNC " << (*this) << "\n";
-  std::cout << mSampaHeader << "\n";
   clear(HEADERSIZE);
   mNofSync++;
 }
@@ -120,8 +119,6 @@ bool ElinkDecoder::process()
   mSampaHeader.uint64(mBitSet.last(HEADERSIZE).uint64(0, 49));
   ++mNofHeaderSeen;
 
-  std::cout << packetTypeName(mSampaHeader.packetType()) << "\n";
-
   switch (mSampaHeader.packetType()) {
     case SampaPacketType::DataTruncated:
     case SampaPacketType::DataTruncatedTriggerTooEarly:
@@ -150,12 +147,6 @@ bool ElinkDecoder::process()
       break;
   }
   return true;
-}
-
-void show(const BitSet& bs, int a, int b)
-{
-  auto s = bs.subset(a, b);
-  std::cout << s.stringLSBLeft() << " = " << s.uint32(0, b - a - 1) << "\n";
 }
 
 void ElinkDecoder::getPacket()
