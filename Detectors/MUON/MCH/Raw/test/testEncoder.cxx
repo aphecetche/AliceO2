@@ -18,13 +18,13 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include "MCHRaw/SampaHeader.h"
-#include "RAWDataHeader.h"
+#include "MCHRaw/RAWDataHeader.h"
 #include <fstream>
 #include <fmt/printf.h>
 #include "MCHRaw/ElinkDecoder.h"
 
 using namespace o2::mch::raw;
-using RDH = o2::Header::RAWDataHeader;
+using RDH = o2::mch::raw::RAWDataHeader;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 

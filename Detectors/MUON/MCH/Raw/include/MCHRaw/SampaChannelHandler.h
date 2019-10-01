@@ -8,15 +8,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_PACKET_HANDLER_H
-#define O2_MCH_RAW_PACKET_HANDLER_H
+#ifndef O2_MCH_RAW_SAMPA_CHANNEL_HANDLER_H
+#define O2_MCH_RAW_SAMPA_CHANNEL_HANDLER_H
 
 #include <functional>
 #include <cstdlib>
 
 namespace o2::mch::raw
 {
-typedef std::function<void(uint8_t, uint8_t, uint16_t, uint32_t)> PacketHandler;
-}
+typedef std::function<void(uint8_t chip, uint8_t channel, uint16_t timestamp, uint32_t chargeSum)> SampaChannelHandler;
+
+} // namespace o2::mch::raw
 
 #endif
