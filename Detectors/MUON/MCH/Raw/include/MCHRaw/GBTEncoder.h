@@ -13,7 +13,7 @@
 
 #include <array>
 #include "MCHRaw/ElinkEncoder.h"
-#include "MCHRaw/GBTWord.h"
+#include "MCHRaw/GBT.h"
 
 namespace o2
 {
@@ -29,14 +29,19 @@ class GBTEncoder
 
   void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
 
-  void finalize();
+  void finalize(int alignToSize = 0);
 
   size_t size() const;
-  GBTWord getWord(int i) const;
+
+  int maxLen() const;
+
+  uint128_t getWord(int i) const;
 
   void clear();
 
   void printStatus();
+
+  void fillWithSync(int upto);
 
  private:
   void elink2gbt();
@@ -45,7 +50,7 @@ class GBTEncoder
   int mId;
   bool mElinksInSync;
   std::array<ElinkEncoder, 40> mElinks;
-  std::vector<GBTWord> mGBTWords;
+  std::vector<uint128_t> mGBTWords;
 };
 } // namespace raw
 } // namespace mch

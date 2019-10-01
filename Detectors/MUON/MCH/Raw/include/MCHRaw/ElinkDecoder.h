@@ -15,7 +15,7 @@
 #include "SampaHeader.h"
 #include <iostream>
 #include <functional>
-#include "MCHRaw/PacketHandler.h"
+#include "MCHRaw/SampaChannelHandler.h"
 
 namespace o2
 {
@@ -27,7 +27,7 @@ namespace raw
 class ElinkDecoder
 {
  public:
-  ElinkDecoder(uint8_t id, PacketHandler packetHandler);
+  ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler);
   bool append(bool bit0, bool bit1);
   bool finalize();
 
@@ -49,7 +49,7 @@ class ElinkDecoder
   SampaHeader mSampaHeader;
   uint64_t mNofBitSeen;
   uint64_t mNofHeaderSeen;
-  PacketHandler mPacketHandler;
+  SampaChannelHandler mSampaChannelHandler;
 };
 
 } // namespace raw
