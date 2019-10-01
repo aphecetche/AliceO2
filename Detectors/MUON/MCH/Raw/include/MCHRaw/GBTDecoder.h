@@ -35,6 +35,7 @@ class GBTDecoder
  private:
   int mId;
   std::array<ElinkDecoder, 40> mElinks;
+  int mNofGBTWordsSeens;
 };
 } // namespace raw
 } // namespace mch
