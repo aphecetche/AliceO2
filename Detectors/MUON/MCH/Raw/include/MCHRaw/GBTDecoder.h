@@ -13,8 +13,8 @@
 
 #include <array>
 #include "MCHRaw/ElinkDecoder.h"
-#include "MCHRaw/GBTWord.h"
-#include "MCHRaw/PacketHandler.h"
+#include "MCHRaw/SampaChannelHandler.h"
+#include "MCHRaw/GBT.h"
 
 namespace o2
 {
@@ -26,9 +26,9 @@ namespace raw
 class GBTDecoder
 {
  public:
-  GBTDecoder(int linkId, PacketHandler packetHandler);
+  GBTDecoder(int linkId, SampaChannelHandler sampaChannelHandler);
 
-  void append(GBTWord w);
+  void append(uint128_t w);
 
   void printStatus();
 

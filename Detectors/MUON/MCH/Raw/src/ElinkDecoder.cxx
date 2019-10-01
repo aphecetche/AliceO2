@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
   return os;
 }
 
-ElinkDecoder::ElinkDecoder(uint8_t id, PacketHandler packetHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mPacketHandler(packetHandler)
+ElinkDecoder::ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mSampaChannelHandler(sampaChannelHandler)
 {
   if (id > 39) {
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
@@ -160,10 +160,10 @@ void ElinkDecoder::getPacket()
   //uint16_t nsamples = mBitSet.uint16(0,9);
   uint16_t timestamp = mBitSet.uint16(10, 19);
   uint32_t chargeSum = mBitSet.uint32(20, 39);
-  mPacketHandler(mSampaHeader.chipAddress(),
-                 mSampaHeader.channelAddress(),
-                 timestamp,
-                 chargeSum);
+  mSampaChannelHandler(mSampaHeader.chipAddress(),
+                       mSampaHeader.channelAddress(),
+                       timestamp,
+                       chargeSum);
 }
 
 } // namespace o2::mch::raw

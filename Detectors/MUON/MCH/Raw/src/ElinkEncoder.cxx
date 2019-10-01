@@ -29,6 +29,8 @@ ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSa
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
   }
   mSampaHeader.chipAddress(mDsId);
+  // simulate a different phase between elinks by starting off with a few random bits
+  addRandomBits(static_cast<int>(rand() % 20));
 }
 
 void assertNofBits(std::string_view msg, uint64_t value, int allowed)
@@ -137,11 +139,36 @@ void ElinkEncoder::addRandomBits(int n)
   }
 }
 
+std::string compact(const BitSet& bs)
+{
+  // replaces multiple sync patterns by nxSYNC
+  std::string s;
+
+  int i = 0;
+  int nsync = 0;
+  while (i < bs.len()) {
+    bool sync{false};
+    while (bs.subset(i, i + 49).uint64(0, 49) == sampaSync().uint64()) {
+      i += 50;
+      nsync++;
+      sync = true;
+    }
+    if (sync) {
+      s += fmt::format("[{}SYNC]", nsync);
+    } else {
+      nsync = 0;
+      s += bs.get(i) ? "1" : "0";
+      i++;
+    }
+  }
+  return s;
+}
+
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %d DSID %d nsync %llu len %llu\n",
-                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len());
-  os << enc.mBitSet.stringLSBLeft();
+  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu | %s",
+                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
+                     compact(enc.mBitSet));
   return os;
 }
 
