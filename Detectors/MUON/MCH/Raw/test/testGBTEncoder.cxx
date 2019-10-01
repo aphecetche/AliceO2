@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddChannels)
   // for (auto i = 0; i < enc.size(); i++) {
   //   std::cout << std::hex << "0x" << enc.getWord(i) << "\n";
   // }
-  BOOST_CHECK_EQUAL(enc.size(), 50 + 270);
+  BOOST_CHECK_EQUAL(enc.size(), 160); // nof gbt words
 }
 
 BOOST_AUTO_TEST_SUITE_END()
