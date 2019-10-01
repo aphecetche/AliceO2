@@ -22,7 +22,7 @@ using namespace o2::mch::raw;
 void handlePacket(uint8_t chip, uint8_t channel, uint16_t timetamp,
                   uint32_t chargeSum)
 {
-  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
+  std::cout << "Decoder callback got: chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
             << "\n";
 }
 
@@ -49,15 +49,14 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   enc.addChannelChargeSum(bx, elinkId, ts, 33, 133);
   enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
+  int expectedSize = enc.maxLen() / 2;
   enc.finalize();
-  BOOST_CHECK_EQUAL(enc.size(), 160); // nof gbt words
+  BOOST_CHECK_EQUAL(enc.size(), expectedSize); // nof gbt words
 
   GBTDecoder dec(0, handlePacket);
   for (auto i = 0; i < enc.size(); i++) {
     dec.append(enc.getWord(i));
   }
-
-  dec.printStatus();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

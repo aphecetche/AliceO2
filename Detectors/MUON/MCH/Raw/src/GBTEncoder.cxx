@@ -29,9 +29,6 @@ void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId,
   if (elinkId < 0 || elinkId > 39) {
     throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
   }
-  if (!mElinks[elinkId].nofSync()) {
-    mElinks[elinkId].addSync();
-  }
   mElinks[elinkId].bunchCrossingCounter(bx);
   mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
 }
@@ -45,7 +42,7 @@ void GBTEncoder::elink2gbt()
 
   int n = mElinks[0].len();
 
-  for (int i = 0; i < n; i += 2) {
+  for (int i = 0; i < n - 1; i += 2) {
     uint128_t w{0};
     for (int j = 0; j < 80; j += 2) {
       for (int k = 0; k <= 1; k++) {
@@ -69,6 +66,16 @@ int GBTEncoder::maxLen() const
                               return a.len() < b.len();
                             });
   return e->len();
+}
+
+int GBTEncoder::maxPhase() const
+{
+  // find the elink which has the biggest phase
+  auto e = std::max_element(begin(mElinks), end(mElinks),
+                            [](const ElinkEncoder& a, const ElinkEncoder& b) {
+                              return a.phase() < b.phase();
+                            });
+  return e->phase();
 }
 
 void GBTEncoder::fillWithSync(int upto)
