@@ -15,7 +15,7 @@ using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 // FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
 // the right range 0..15 itself ? Or have the mapping at this level already ?
-GBTDecoder::GBTDecoder(int linkId, PacketHandler packetHandler) : mId(linkId), mElinks{::makeArray<40>([packetHandler](size_t i) { return ElinkDecoder(i % 16, packetHandler); })}
+GBTDecoder::GBTDecoder(int linkId, PacketHandler packetHandler) : mId(linkId), mElinks{::makeArray<40>([packetHandler](size_t i) { return ElinkDecoder(i % 16, packetHandler); })}, mNofGBTWordsSeens{0}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -24,14 +24,16 @@ GBTDecoder::GBTDecoder(int linkId, PacketHandler packetHandler) : mId(linkId), m
 
 void GBTDecoder::append(GBTWord w)
 {
+  ++mNofGBTWordsSeens;
   // dispatch the 80 bits to the underlaying elinks (2 bits per elink)
   for (int i = 0; i < 80; i += 2) {
-    mElinks[i / 2].append(bit_test(w, i + 1), bit_test(w, i + 1));
+    mElinks[i / 2].append(bit_test(w, i), bit_test(w, i + 1));
   }
 }
 
 void GBTDecoder::printStatus()
 {
+  std::cout << fmt::format("GBTDecoder({}) # GBT words seen {}\n", mId, mNofGBTWordsSeens);
   for (auto& e : mElinks) {
     std::cout << e << "\n";
   }
