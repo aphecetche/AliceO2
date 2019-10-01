@@ -46,7 +46,7 @@ void GBTEncoder::elink2gbt()
   int n = mElinks[0].len();
 
   for (int i = 0; i < n; i += 2) {
-    GBTWord w{0};
+    uint128_t w{0};
     for (int j = 0; j < 80; j += 2) {
       for (int k = 0; k <= 1; k++) {
         bool v = mElinks[j / 2].get(i + k);
@@ -61,23 +61,37 @@ void GBTEncoder::elink2gbt()
   }
 }
 
-void GBTEncoder::finalize()
+int GBTEncoder::maxLen() const
 {
-  if (mElinksInSync) {
-    return;
-  }
-
   // find the elink which has the more bits
   auto e = std::max_element(begin(mElinks), end(mElinks),
                             [](const ElinkEncoder& a, const ElinkEncoder& b) {
                               return a.len() < b.len();
                             });
+  return e->len();
+}
 
-  // align all elink sizes to the biggest one by adding
-  // sync words
+void GBTEncoder::fillWithSync(int upto)
+{
+  // align all elink sizes by adding sync bits
   for (auto i = 0; i < mElinks.size(); i++) {
-    mElinks[i].fillWithSync(e->len());
+    mElinks[i].fillWithSync(upto);
   }
+}
+
+void GBTEncoder::finalize(int alignToSize)
+{
+  if (mElinksInSync) {
+    return;
+  }
+
+  // compute align size if not given
+  if (alignToSize <= 0) {
+    alignToSize = maxLen();
+  }
+
+  // align sizes of all elinks by adding sync bits
+  fillWithSync(alignToSize);
 
   // signals that the elinks have now the same size
   mElinksInSync = true;
@@ -85,6 +99,7 @@ void GBTEncoder::finalize()
   // convert elinks to GBT words
   elink2gbt();
 
+  // reset all the links
   clear();
 }
 
@@ -101,7 +116,7 @@ size_t GBTEncoder::size() const
   return mGBTWords.size();
 }
 
-GBTWord GBTEncoder::getWord(int i) const
+uint128_t GBTEncoder::getWord(int i) const
 {
   return mGBTWords[i];
 }
@@ -109,7 +124,9 @@ GBTWord GBTEncoder::getWord(int i) const
 void GBTEncoder::printStatus()
 {
   std::cout << "GBTEncoder(" << mId << ")::printStatus\n";
-  std::cout << "mElinksInSync=" << mElinksInSync << " # GBTwords = " << mGBTWords.size() << "\n";
+  std::cout << fmt::format("elinks are in sync : {} # GBTwords : {}", mElinksInSync,
+                           mGBTWords.size())
+            << "\n";
   for (auto& e : mElinks) {
     std::cout << e << "\n";
   }
