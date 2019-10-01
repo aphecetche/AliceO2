@@ -101,7 +101,7 @@ class BitSet
   int size() const { return mSize; }
 
   // return the max number of bits any bitset can hold
-  static int maxSize() { return 1024; }
+  static int maxSize() { return 8192; }
 
   // return the number of bits we are current holding
   int len() const { return mLen; }
