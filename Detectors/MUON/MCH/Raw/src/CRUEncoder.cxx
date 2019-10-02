@@ -84,28 +84,30 @@ void CRUEncoder::align()
   }
 }
 
-const GBTEncoder& CRUEncoder::maxElement() const
+void CRUEncoder::clear()
+{
+  for (auto& gbt : mGBTs) {
+    gbt.clear();
+  }
+}
+
+int CRUEncoder::len() const
 {
   auto e = std::max_element(begin(mGBTs), end(mGBTs),
                             [](const GBTEncoder& a, const GBTEncoder& b) {
                               return a.len() < b.len();
                             });
-  return *e;
+  return e->len();
 }
 
-int CRUEncoder::phase() const
+void CRUEncoder::gbts2buffer()
 {
-  // return the phase of the widest GBT
-  if (len()) {
-    return maxElement().phase();
+  if (!areGBTsAligned()) {
+    throw std::logic_error("must align GBTs before converting them to buffer words");
   }
-  return -1;
-}
-
-int CRUEncoder::len() const
-{
-  // find the GBT which has the more bits
-  return maxElement().len();
+  for (auto& gbt : mGBTs) {
+    gbt.elink2gbt();
+  }
 }
 
 void CRUEncoder::finalize()
@@ -120,7 +122,7 @@ void CRUEncoder::finalize()
 
 void CRUEncoder::printStatus() const
 {
-  std::cout << fmt::format("CRUEncoder({}) buffer size {} gbts are{}aligned len {} phase {}", mId, mBuffer.size(), (areGBTsAligned() ? " " : " not "), len(), phase()) << "\n";
+  std::cout << fmt::format("CRUEncoder({}) buffer size {} gbts are{}aligned len {}", mId, mBuffer.size(), (areGBTsAligned() ? " " : " not "), len()) << "\n";
 
   if (mTriggerInfoChanges.size()) {
     for (int i = 0; i < mTriggerInfoChanges.size(); i++) {
