@@ -14,6 +14,7 @@
 #include <fmt/printf.h>
 #include <fmt/format.h>
 #include "MCHRaw/BitSet.h"
+#include "NofBits.h"
 
 namespace o2::mch::raw
 {
@@ -29,13 +30,6 @@ ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid) : mId(id), mDsId(dsid), mSa
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
   }
   mSampaHeader.chipAddress(mDsId);
-}
-
-void assertNofBits(std::string_view msg, uint64_t value, int allowed)
-{
-  if (nofBits(value) > allowed) {
-    throw std::invalid_argument(fmt::sprintf("%s=0x%x has %d bits, which is more than the %d allowed", msg, value, nofBits(value), allowed));
-  }
 }
 
 void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
@@ -113,10 +107,7 @@ void ElinkEncoder::assertPhase()
 
 void ElinkEncoder::assertSync()
 {
-  if (len()) {
-    if (mNofSync == 0) {
-      throw std::logic_error("mNofSync should be > 0 here");
-    }
+  if (mNofSync) {
     return;
   }
   assertPhase();
@@ -163,6 +154,10 @@ void ElinkEncoder::addRandomBits(int n)
 std::string compact(const BitSet& bs)
 {
   // replaces multiple sync patterns by nxSYNC
+
+  if (bs.size() < 49) {
+    return bs.stringLSBLeft();
+  }
   std::string s;
 
   int i = 0;
@@ -181,6 +176,9 @@ std::string compact(const BitSet& bs)
       s += bs.get(i) ? "1" : "0";
       i++;
     }
+  }
+  for (int j = i; j < bs.len(); j++) {
+    s += bs.get(j) ? "1" : "0";
   }
   return s;
 }

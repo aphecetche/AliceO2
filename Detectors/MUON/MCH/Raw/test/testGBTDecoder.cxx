@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   enc.addChannelChargeSum(bx, elinkId, ts, 33, 133);
   enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
-  int expectedSize = enc.maxLen() / 2;
+  int expectedSize = enc.len() / 2;
   enc.finalize();
   BOOST_CHECK_EQUAL(enc.size(), expectedSize); // nof gbt words
 
