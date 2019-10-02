@@ -138,5 +138,33 @@ BOOST_AUTO_TEST_CASE(EncoderFillWithSync)
   BOOST_CHECK_EQUAL(enc.range(s + 100, s + 149), sampaSync().uint64());
 }
 
+BOOST_AUTO_TEST_CASE(EncoderPhase)
+{
+  std::cout << sampaSync() << "\n";
+  ElinkEncoder e1(0, 0, 5);
+  ElinkEncoder e2(1, 0, 10);
+  std::cout << e1 << "\n";
+  std::cout << e2 << "\n";
+  e1.addTestBit(true);
+  e1.addTestBit(true);
+  e1.addTestBit(false);
+  e1.addTestBit(true);
+
+  e2.addTestBit(true);
+  e2.addTestBit(true);
+  e2.addTestBit(false);
+  e2.addTestBit(true);
+
+  std::cout << "\n";
+  std::cout << e1 << "\n";
+  std::cout << e2 << "\n";
+
+  e1.fillWithSync(70);
+  e2.fillWithSync(70);
+  std::cout << "\n";
+  std::cout << e1 << "\n";
+  std::cout << e2 << "\n";
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
