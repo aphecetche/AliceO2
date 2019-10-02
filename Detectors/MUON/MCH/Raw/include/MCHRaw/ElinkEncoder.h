@@ -26,7 +26,7 @@ namespace raw
 class ElinkEncoder
 {
  public:
-  explicit ElinkEncoder(uint8_t id, uint8_t dsid);
+  explicit ElinkEncoder(uint8_t id, uint8_t dsid, int phase = 0);
 
   uint8_t id() const;
 
@@ -48,12 +48,13 @@ class ElinkEncoder
 
   int phase() const { return mPhase; }
 
+  void addTestBit(bool value);
+
  private:
   void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
   void addHeader(uint8_t chId, uint32_t chargeSum);
   void assertPhase();
   void assertSync();
-  void addRandomBits(int n);
   void setHeader(uint8_t chId, uint16_t n10);
 
  private:
@@ -63,6 +64,7 @@ class ElinkEncoder
   BitSet mBitSet;
   uint64_t mNofSync;
   int mPhase;
+  int mSyncIndex;
 };
 
 } // namespace raw

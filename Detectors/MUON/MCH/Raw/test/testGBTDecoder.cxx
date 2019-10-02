@@ -59,5 +59,29 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   }
 }
 
+BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoderWithAdditionAfterFinalize)
+{
+  GBTEncoder enc(0);
+  uint32_t bx(0);
+  uint16_t ts(0);
+  int elinkId = 4;
+  enc.addChannelChargeSum(bx, elinkId, ts, 1, 10);
+  enc.printStatus();
+  enc.finalize();
+  std::cout << "\nafter first finalize\n";
+  enc.printStatus();
+  enc.addChannelChargeSum(bx, elinkId, ts, 2, 20);
+  enc.printStatus();
+  enc.finalize();
+  std::cout << "\nafter second finalize\n";
+  enc.printStatus();
+
+  GBTDecoder dec(0, handlePacket);
+  for (auto i = 0; i < enc.size(); i++) {
+    dec.append(enc.getWord(i));
+  }
+  dec.printStatus();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
