@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(CRUEncoderCtor)
   cru.addChannelChargeSum(bx, solarId, elinkId, ts, 33, 133);
   cru.addChannelChargeSum(bx, solarId, elinkId, ts, 63, 163);
 
-  BOOST_CHECK_EQUAL(cru.len(), cru.phase() + 50 + 3 * 90);
+  BOOST_CHECK_GE(cru.len(), 50 + 3 * 90);
 
   std::cout << "\nSTEP 2\n";
   cru.printStatus();
@@ -71,15 +71,34 @@ BOOST_AUTO_TEST_CASE(CRUEncoderCtor)
   elinkId = 10;
 
   cru.addChannelChargeSum(bx, solarId, elinkId, ts, 42, 420);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 43, 430);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 44, 440);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 45, 450);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 46, 460);
 
-  BOOST_CHECK_EQUAL(cru.len(), cru.phase() + 50 + 3 * 90 + 4 * 90);
+  BOOST_CHECK_GE(cru.len(), 50 + 3 * 90 + 5 * 90);
 
   std::cout << "\nSTEP 4\n";
   cru.printStatus();
 
-  cru.finalize();
+  cru.align();
 
   std::cout << "\nSTEP 5\n";
+  cru.printStatus();
+
+  cru.gbts2buffer();
+
+  std::cout << "\nSTEP 6\n";
+  cru.printStatus();
+
+  cru.clear();
+
+  std::cout << "\nSTEP 7(after clear\n";
+  cru.printStatus();
+
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 42, 420);
+
+  std::cout << "\nSTEP 8\n";
   cru.printStatus();
 }
 
