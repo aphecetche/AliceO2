@@ -49,9 +49,11 @@ class CRUEncoder
 
   int len() const;
 
-  int phase() const;
-
   bool areGBTsAligned() const;
+
+  void gbts2buffer();
+
+  void clear();
 
  private:
   uint8_t mId;
@@ -60,8 +62,6 @@ class CRUEncoder
   RAWDataHeader mRDH;
   std::vector<uint32_t> mBuffer;
   std::array<GBTEncoder, 24> mGBTs;
-
-  const GBTEncoder& maxElement() const;
 
   struct TriggerInfoChange {
     int len;

@@ -42,6 +42,7 @@ bool ElinkDecoder::append(bool bit)
   if (mBitSet.len() != mCheckpoint) {
     return true;
   }
+  //return true;
   return process();
 }
 
