@@ -16,7 +16,7 @@
 using namespace o2::mch::raw;
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mGBTWords{}
+GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, i); })}, mGBTWords{}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -57,28 +57,13 @@ void GBTEncoder::elink2gbt()
   }
 }
 
-const ElinkEncoder& GBTEncoder::maxElement() const
+int GBTEncoder::len() const
 {
   auto e = std::max_element(begin(mElinks), end(mElinks),
                             [](const ElinkEncoder& a, const ElinkEncoder& b) {
                               return a.len() < b.len();
                             });
-  return *e;
-}
-
-int GBTEncoder::len() const
-{
-  // find the widest elink (i.e. the one which has more bits)
-  return maxElement().len();
-}
-
-int GBTEncoder::phase() const
-{
-  // return the phase of the widest elink
-  if (len()) {
-    return maxElement().phase();
-  }
-  return -1;
+  return e->len();
 }
 
 bool GBTEncoder::areElinksAligned() const
@@ -111,11 +96,20 @@ void GBTEncoder::finalize(int alignToSize)
     alignToSize = len();
   }
 
+  std::cout << "GBTEncoder::finalize before align\n";
+  printStatus();
+
   // align sizes of all elinks by adding sync bits
   align(alignToSize);
 
+  std::cout << "GBTEncoder::finalize after align\n";
+  printStatus();
+
   // convert elinks to GBT words
   elink2gbt();
+
+  std::cout << "GBTEncoder::finalize after elink2gbt\n";
+  printStatus();
 
   // reset all the links
   clear();
@@ -141,7 +135,7 @@ uint128_t GBTEncoder::getWord(int i) const
 
 void GBTEncoder::printStatus() const
 {
-  std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {} phase {}\n", mId, areElinksAligned(), mGBTWords.size(), len(), phase());
+  std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {}\n", mId, areElinksAligned(), mGBTWords.size(), len());
   // for (auto& e : mElinks) { // FIXME:
   for (int i = 0; i < 12; i++) {
     const auto& e = mElinks[i];
