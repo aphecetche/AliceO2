@@ -16,7 +16,7 @@
 using namespace o2::mch::raw;
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mGBTWords{}, mElinksInSync{true}
+GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16); })}, mGBTWords{}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -25,7 +25,6 @@ GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](siz
 
 void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum)
 {
-  mElinksInSync = false;
   if (elinkId < 0 || elinkId > 39) {
     throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
   }
@@ -36,7 +35,7 @@ void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId,
 void GBTEncoder::elink2gbt()
 {
   // convert elinks content to actual GBT words
-  if (!mElinksInSync) {
+  if (!areElinksAligned()) {
     throw std::logic_error("should not call elink2gbt before all elinks are synched !");
   }
 
@@ -58,27 +57,42 @@ void GBTEncoder::elink2gbt()
   }
 }
 
-int GBTEncoder::maxLen() const
+const ElinkEncoder& GBTEncoder::maxElement() const
 {
-  // find the elink which has the more bits
   auto e = std::max_element(begin(mElinks), end(mElinks),
                             [](const ElinkEncoder& a, const ElinkEncoder& b) {
                               return a.len() < b.len();
                             });
-  return e->len();
+  return *e;
 }
 
-int GBTEncoder::maxPhase() const
+int GBTEncoder::len() const
 {
-  // find the elink which has the biggest phase
-  auto e = std::max_element(begin(mElinks), end(mElinks),
-                            [](const ElinkEncoder& a, const ElinkEncoder& b) {
-                              return a.phase() < b.phase();
-                            });
-  return e->phase();
+  // find the widest elink (i.e. the one which has more bits)
+  return maxElement().len();
 }
 
-void GBTEncoder::fillWithSync(int upto)
+int GBTEncoder::phase() const
+{
+  // return the phase of the widest elink
+  if (len()) {
+    return maxElement().phase();
+  }
+  return -1;
+}
+
+bool GBTEncoder::areElinksAligned() const
+{
+  auto len = mElinks[0].len();
+  for (auto i = 1; i < mElinks.size(); i++) {
+    if (mElinks[i].len() != len) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void GBTEncoder::align(int upto)
 {
   // align all elink sizes by adding sync bits
   for (auto i = 0; i < mElinks.size(); i++) {
@@ -88,20 +102,17 @@ void GBTEncoder::fillWithSync(int upto)
 
 void GBTEncoder::finalize(int alignToSize)
 {
-  if (mElinksInSync) {
+  if (areElinksAligned()) {
     return;
   }
 
   // compute align size if not given
   if (alignToSize <= 0) {
-    alignToSize = maxLen();
+    alignToSize = len();
   }
 
   // align sizes of all elinks by adding sync bits
-  fillWithSync(alignToSize);
-
-  // signals that the elinks have now the same size
-  mElinksInSync = true;
+  align(alignToSize);
 
   // convert elinks to GBT words
   elink2gbt();
@@ -128,13 +139,12 @@ uint128_t GBTEncoder::getWord(int i) const
   return mGBTWords[i];
 }
 
-void GBTEncoder::printStatus()
+void GBTEncoder::printStatus() const
 {
-  std::cout << "GBTEncoder(" << mId << ")::printStatus\n";
-  std::cout << fmt::format("elinks are in sync : {} # GBTwords : {}", mElinksInSync,
-                           mGBTWords.size())
-            << "\n";
-  for (auto& e : mElinks) {
+  std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {} phase {}\n", mId, areElinksAligned(), mGBTWords.size(), len(), phase());
+  // for (auto& e : mElinks) { // FIXME:
+  for (int i = 0; i < 12; i++) {
+    const auto& e = mElinks[i];
     std::cout << e << "\n";
   }
 }
