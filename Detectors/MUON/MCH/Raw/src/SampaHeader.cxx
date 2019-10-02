@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include "NofBits.h"
 
 namespace
 {
@@ -110,30 +111,6 @@ constexpr uint64_t payloadParity(uint64_t header)
   return ((header & PARITY_MASK) >> PARITY_OFFSET);
 }
 
-template <typename T>
-bool nofBitsBelowLimit(T value, int n)
-{
-  bool rv{true};
-  uint64_t val{0};
-  for (uint64_t i = n; i < sizeof(value) * 8; i++) {
-    val |= (static_cast<T>(1) << i);
-  }
-  if (static_cast<uint64_t>(value) & val) {
-    rv = false;
-  }
-  return rv;
-}
-
-template <typename T>
-void assertNofBits(T value, int n)
-{
-  // throws an exception if value is not contained within n bits
-  if (!nofBitsBelowLimit(value, n)) {
-    throw std::invalid_argument(fmt::format("{0} should only be {1} bits-long",
-                                            value, n));
-  }
-}
-
 bool checkBit(uint64_t value, int i, bool bitStatus)
 {
   return (value >> i & 1) == bitStatus;
@@ -214,9 +191,7 @@ SampaHeader::SampaHeader(uint64_t value) : mValue(0)
 
 void SampaHeader::uint64(uint64_t value)
 {
-  if (!nofBitsBelowLimit(value, 50)) {
-    throw std::invalid_argument(fmt::sprintf("%x is not a valid header value", value));
-  }
+  assertNofBits("sampa header", value, 50);
   mValue = value;
 }
 
@@ -253,35 +228,35 @@ void SampaHeader::payloadParity(bool dp)
 
 void SampaHeader::chipAddress(uint8_t h)
 {
-  assertNofBits(h, CHIP_ADDRESS_NOFBITS);
+  assertNofBits("chip", h, CHIP_ADDRESS_NOFBITS);
   resetBits(mValue, CHIP_ADDRESS_OFFSET, CHIP_ADDRESS_NOFBITS);
   mValue += (static_cast<uint64_t>(h) << CHIP_ADDRESS_OFFSET);
 }
 
 void SampaHeader::channelAddress(uint8_t ch)
 {
-  assertNofBits(ch, CHANNEL_ADDRESS_NOFBITS);
+  assertNofBits("ch", ch, CHANNEL_ADDRESS_NOFBITS);
   resetBits(mValue, CHANNEL_ADDRESS_OFFSET, CHANNEL_ADDRESS_NOFBITS);
   mValue += (static_cast<uint64_t>(ch) << CHANNEL_ADDRESS_OFFSET);
 }
 
 void SampaHeader::bunchCrossingCounter(uint32_t bx)
 {
-  assertNofBits(bx, BUNCH_CROSSING_NOFBITS);
+  assertNofBits("bx", bx, BUNCH_CROSSING_NOFBITS);
   resetBits(mValue, BUNCH_CROSSING_OFFSET, BUNCH_CROSSING_NOFBITS);
   mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET);
 }
 
 void SampaHeader::hammingCode(uint8_t hamming)
 {
-  assertNofBits(hamming, HAMMING_CODE_NOFBITS);
+  assertNofBits("hamming", hamming, HAMMING_CODE_NOFBITS);
   resetBits(mValue, HAMMING_CODE_OFFSET, HAMMING_CODE_NOFBITS);
   mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET);
 }
 
 void SampaHeader::nof10BitWords(uint16_t nofwords)
 {
-  assertNofBits(nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
+  assertNofBits("nof10BitWords", nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
   resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
   mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET);
 }
