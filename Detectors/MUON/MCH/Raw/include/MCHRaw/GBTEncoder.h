@@ -43,13 +43,9 @@ class GBTEncoder
 
   void align(int upto);
 
-  int phase() const;
-
   bool areElinksAligned() const;
 
- private:
   void elink2gbt();
-  const ElinkEncoder& maxElement() const;
 
  private:
   int mId;
