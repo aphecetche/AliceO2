@@ -24,14 +24,6 @@ namespace mch
 namespace raw
 {
 
-///@{
-// return the number of bits required to hold value
-int nofBits(uint8_t val);
-int nofBits(uint16_t val);
-int nofBits(uint32_t val);
-int nofBits(uint64_t val);
-///@}
-
 class BitSet
 {
 
