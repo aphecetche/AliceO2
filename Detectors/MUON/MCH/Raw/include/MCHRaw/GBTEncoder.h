@@ -33,24 +33,26 @@ class GBTEncoder
 
   size_t size() const;
 
-  int maxLen() const;
+  int len() const;
 
   uint128_t getWord(int i) const;
 
   void clear();
 
-  void printStatus();
+  void printStatus() const;
 
-  void fillWithSync(int upto);
+  void align(int upto);
 
-  int maxPhase() const;
+  int phase() const;
+
+  bool areElinksAligned() const;
 
  private:
   void elink2gbt();
+  const ElinkEncoder& maxElement() const;
 
  private:
   int mId;
-  bool mElinksInSync;
   std::array<ElinkEncoder, 40> mElinks;
   std::vector<uint128_t> mGBTWords;
 };

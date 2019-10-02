@@ -445,11 +445,5 @@ BOOST_AUTO_TEST_CASE(TestLoopAppend)
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), expected);
 }
 
-BOOST_AUTO_TEST_CASE(TestNofBits)
-{
-  BOOST_CHECK_EQUAL(nofBits(static_cast<uint8_t>(15)), 4);
-  BOOST_CHECK_EQUAL(nofBits(static_cast<uint32_t>(0xFFFFF)), 20);
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,5 +1,5 @@
 o2_add_library(MCHRaw
-        SOURCES src/BitSet.cxx src/ElinkEncoder.cxx src/SampaHeader.cxx src/ElinkDecoder.cxx src/GBTEncoder.cxx src/GBTDecoder.cxx src/CRUEncoder.cxx
+        SOURCES src/BitSet.cxx src/ElinkEncoder.cxx src/SampaHeader.cxx src/ElinkDecoder.cxx src/GBTEncoder.cxx src/GBTDecoder.cxx src/CRUEncoder.cxx src/NofBits.cxx
         PUBLIC_LINK_LIBRARIES fmt::fmt ms_gsl::ms_gsl Boost::boost)
 
 o2_add_executable(rawdump

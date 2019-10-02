@@ -13,9 +13,12 @@
 
 #include <cstdlib>
 #include <vector>
+#include <map>
 
 #include "MCHRaw/GBTEncoder.h"
 #include "MCHRaw/RAWDataHeader.h" // FIXME: get this from an authoritative source
+#include <iostream>
+#include <fmt/format.h>
 
 namespace o2::mch::raw
 {
@@ -30,20 +33,55 @@ class CRUEncoder
 
   void finalize();
 
-  void printStatus();
+  void printStatus() const;
 
-  // to be used until next call
-  // for all generated RDHs
-  void addOrbitBC(uint32_t orbit, uint16_t bunchcounter);
+  // sets the trigger (orbit,bunchCrossing) to be used
+  // for all generated RDHs (until next call to this method).
+  // causes the alignment of the underlying gbts.
+  void addOrbitBC(uint32_t orbit, uint16_t bunchCrossing);
+
+  void align();
+
+  void addRDH(int len,
+              uint8_t linkId,
+              uint16_t pagesCounter,
+              bool lastPage);
+
+  int len() const;
+
+  int phase() const;
+
+  bool areGBTsAligned() const;
 
  private:
   uint8_t mId;
   uint32_t mOrbit;
-  uint16_t mBunchCounter;
+  uint16_t mBunchCrossing;
   RAWDataHeader mRDH;
   std::vector<uint32_t> mBuffer;
   std::array<GBTEncoder, 24> mGBTs;
+
+  const GBTEncoder& maxElement() const;
+
+  struct TriggerInfoChange {
+    int len;
+    uint32_t orbit;
+    uint16_t bc;
+    bool operator<(const TriggerInfoChange& rhs) const
+    {
+      return len < rhs.len;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const TriggerInfoChange& tic)
+    {
+      os << fmt::format("len {} orbit {} bc {}", tic.len, tic.orbit, tic.bc);
+      return os;
+    }
+  };
+
+  std::vector<TriggerInfoChange> mTriggerInfoChanges;
 };
+
 } // namespace o2::mch::raw
 
 #endif
