@@ -445,5 +445,35 @@ BOOST_AUTO_TEST_CASE(TestLoopAppend)
   BOOST_CHECK_EQUAL(bs.stringLSBLeft(), expected);
 }
 
+BOOST_AUTO_TEST_CASE(TestLimitedCtor)
+{
+  BOOST_CHECK_THROW(BitSet bs(static_cast<uint8_t>(123), 9), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(BitSet bs(static_cast<uint8_t>(123), 4));
+  BitSet bs(static_cast<uint8_t>(123), 4);
+  BOOST_CHECK_EQUAL(bs.uint8(0, 3), 11);
+}
+
+BOOST_AUTO_TEST_CASE(TestCircularAppend)
+{
+  uint64_t syncValue = 0x1555540F00113;
+  BitSet bs;
+  BitSet sync(syncValue, 50);
+
+  int next = circularAppend(bs, sync, 0, 10);
+  BOOST_CHECK_EQUAL(bs.len(), 10);
+  BOOST_CHECK_EQUAL(bs, sync.subset(0, 9));
+  BOOST_CHECK_EQUAL(next, 10);
+
+  next = circularAppend(bs, sync, next, 40);
+  BOOST_CHECK_EQUAL(bs.len(), 50);
+  BOOST_CHECK_EQUAL(bs, sync);
+  BOOST_CHECK_EQUAL(next, 0);
+
+  next = circularAppend(bs, sync, next, 145);
+  BitSet expected("110010001000000000001111000000101010101010101010101100100010000000000011110000001010101010101010101011001000100000000000111100000010101010101010101010110010001000000000001111000000101010101010101");
+
+  BOOST_CHECK_EQUAL(bs, expected);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

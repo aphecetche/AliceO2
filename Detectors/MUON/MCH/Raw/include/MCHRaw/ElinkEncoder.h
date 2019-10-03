@@ -34,7 +34,7 @@ class ElinkEncoder
   void addChannelSamples(uint8_t chId, uint16_t timestamp, const std::vector<uint16_t>& samples);
   void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
                            uint16_t nsamples = 1);
-  int fillWithSync(int upto);
+  void fillWithSync(int upto);
 
   bool get(int i) const;
   int len() const;
@@ -45,8 +45,6 @@ class ElinkEncoder
   friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc);
 
   uint64_t nofSync() const { return mNofSync; }
-
-  int phase() const { return mPhase; }
 
   void addTestBit(bool value);
 
@@ -63,7 +61,6 @@ class ElinkEncoder
   SampaHeader mSampaHeader;
   BitSet mBitSet;
   uint64_t mNofSync;
-  int mPhase;
   int mSyncIndex;
 };
 
