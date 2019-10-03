@@ -23,8 +23,10 @@ constexpr int phase(int i)
   //
   // if > 0 it will set a fixed phase at the beginning of the life
   // of the ElinkEncoder
+  //
+  // returning zero will simply disable the phase
 
-  return -1;
+  return i == 4 ? 1 : i + 10;
 }
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
@@ -35,7 +37,7 @@ GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](siz
   }
 }
 
-void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum)
+void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum)
 {
   if (elinkId < 0 || elinkId > 39) {
     throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
@@ -111,6 +113,9 @@ void GBTEncoder::finalize(int alignToSize)
   // align sizes of all elinks by adding sync bits
   align(alignToSize);
 
+  std::cout << fmt::format("GBTEncoder({})::finalize after align\n", mId);
+  printStatus(7);
+
   // convert elinks to GBT words
   elink2gbt();
 
@@ -136,11 +141,14 @@ uint128_t GBTEncoder::getWord(int i) const
   return mGBTWords[i];
 }
 
-void GBTEncoder::printStatus() const
+void GBTEncoder::printStatus(int maxelink) const
 {
   std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {}\n", mId, areElinksAligned(), mGBTWords.size(), len());
-  // for (auto& e : mElinks) { // FIXME:
-  for (int i = 0; i < 12; i++) {
+  auto n = mElinks.size();
+  if (maxelink > 0) {
+    n = maxelink;
+  }
+  for (int i = 0; i < n; i++) {
     const auto& e = mElinks[i];
     std::cout << e << "\n";
   }

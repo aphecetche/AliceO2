@@ -15,22 +15,18 @@
 #include <fmt/format.h>
 #include "MCHRaw/BitSet.h"
 #include "NofBits.h"
+#include "CompactBitSetString.h"
 
 namespace o2::mch::raw
 {
-
-const BitSet& SYNC()
-{
-  static BitSet sync(sampaSync().uint64(), 50);
-  return sync;
-}
+const BitSet sync(sampaSync().uint64(), 50);
 
 void computeHamming(SampaHeader& sampaHeader)
 {
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}, mNofBitSeen{0}
 {
   if (id > 39) {
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
@@ -43,15 +39,10 @@ ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId
   }
   for (int i = 0; i < phase; i++) {
     mBitSet.append(static_cast<bool>(rand() % 2));
+    mNofBitSeen++;
   }
 
   mSampaHeader.chipAddress(mDsId);
-}
-
-void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
-{
-  assertNofBits("bx", bx, 20);
-  mSampaHeader.bunchCrossingCounter(bx);
 }
 
 void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
@@ -65,6 +56,7 @@ void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
   setHeader(chId, n10);
   // append header to bitset
   mBitSet.append(mSampaHeader.uint64(), 50);
+  mNofBitSeen += 50;
 }
 
 void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
@@ -74,6 +66,7 @@ void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
   setHeader(chId, n10);
   // append header to bitset
   mBitSet.append(mSampaHeader.uint64(), 50);
+  mNofBitSeen += 50;
 }
 
 void ElinkEncoder::addChannelSamples(uint8_t chId,
@@ -89,9 +82,11 @@ void ElinkEncoder::addChannelSamples(uint8_t chId,
   // append samples to bitset
   mBitSet.append(static_cast<uint16_t>(samples.size()), 10);
   mBitSet.append(timestamp, 10);
+  mNofBitSeen += 20;
 
   for (auto s : samples) {
     mBitSet.append(s, 10);
+    mNofBitSeen += 10;
   }
 }
 
@@ -111,27 +106,45 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
   mBitSet.append(nsamples, 10);
   mBitSet.append(timestamp, 10);
   mBitSet.append(chargeSum, 20);
+  mNofBitSeen += 40;
 }
 
 void ElinkEncoder::addTestBit(bool value)
 {
   mBitSet.append(value);
+  mNofBitSeen++;
 }
 
 void ElinkEncoder::assertSync()
 {
-  if (mNofSync) {
-    return;
+  bool firstSync = (mNofSync == 0);
+
+  // if mSyncIndex is not zero it means
+  // we have a pending sync to finish to transmit
+  // (said otherwise we're not aligned to an expected 50bits mark)
+  bool pendingSync = (mSyncIndex != 0);
+
+  if (firstSync || pendingSync) {
+    for (int i = mSyncIndex; i < 50; i++) {
+      mBitSet.append(sync.get(i));
+      mNofBitSeen++;
+    }
+    mSyncIndex = 0;
   }
-  mBitSet.append(SYNC().uint64(0, 49), 50);
-  ++mNofSync;
+}
+
+void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
+{
+  assertNofBits("bx", bx, 20);
+  mSampaHeader.bunchCrossingCounter(bx);
 }
 
 void ElinkEncoder::fillWithSync(int upto)
 {
   auto d = upto - len();
-  mSyncIndex = circularAppend(mBitSet, SYNC(), 0, d);
+  mSyncIndex = circularAppend(mBitSet, sync, mSyncIndex, d);
   mNofSync += d / 50;
+  mNofBitSeen += d;
 }
 
 uint64_t ElinkEncoder::range(int a, int b) const
@@ -139,44 +152,12 @@ uint64_t ElinkEncoder::range(int a, int b) const
   return mBitSet.subset(a, b).uint64(0, b - a + 1);
 }
 
-std::string compact(const BitSet& bs)
-{
-  // replaces multiple sync patterns by nxSYNC
-
-  if (bs.size() < 49) {
-    return bs.stringLSBLeft();
-  }
-  std::string s;
-
-  int i = 0;
-  int nsync = 0;
-  while (i + 49 < bs.len()) {
-    bool sync{false};
-    while (bs.subset(i, i + 49) == SYNC()) {
-      i += 50;
-      nsync++;
-      sync = true;
-    }
-    if (sync) {
-      s += fmt::format("[{}SYNC]", nsync);
-    } else {
-      nsync = 0;
-      s += bs.get(i) ? "1" : "0";
-      i++;
-    }
-  }
-  for (int j = i; j < bs.len(); j++) {
-    s += bs.get(j) ? "1" : "0";
-  }
-  return s;
-}
-
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu syncindex %2d| %s",
+  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d | %s",
                      enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
-                     enc.mSyncIndex,
-                     compact(enc.mBitSet));
+                     enc.mSyncIndex, enc.mNofBitSeen,
+                     compactString(enc.mBitSet));
   return os;
 }
 
