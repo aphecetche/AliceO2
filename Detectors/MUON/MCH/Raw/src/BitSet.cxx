@@ -382,7 +382,8 @@ std::string BitSet::stringLSBRight() const
 BitSet BitSet::subset(int a, int b) const
 {
   if (a >= size() || b > size() || b < a) {
-    throw std::invalid_argument(fmt::format("Range [{0},{1}] is incorrect", a, b));
+    auto msg = fmt::format("BitSet::subset : range [{},{}] is incorrect. size={}", a, b, size());
+    throw std::invalid_argument(msg);
   }
   BitSet sub;
   sub.grow(b - a);
