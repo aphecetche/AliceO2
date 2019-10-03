@@ -19,11 +19,13 @@
 
 using namespace o2::mch::raw;
 
-void handlePacket(uint8_t chip, uint8_t channel, uint16_t timetamp,
-                  uint32_t chargeSum)
+SampaChannelHandler handlePacket(std::string_view msg)
 {
-  std::cout << "Decoder callback got: chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
-            << "\n";
+  return [msg](uint8_t chip, uint8_t channel, uint16_t timetamp,
+               uint32_t chargeSum) {
+    std::cout << msg << ": Decoder callback got: chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
+              << "\n";
+  };
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -32,8 +34,8 @@ BOOST_AUTO_TEST_SUITE(gbtdecoder)
 
 BOOST_AUTO_TEST_CASE(GBTDecoderLinkIdMustBeBetween0And23)
 {
-  BOOST_CHECK_THROW(GBTDecoder enc(24, handlePacket), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(GBTDecoder enc(23, handlePacket));
+  BOOST_CHECK_THROW(GBTDecoder enc(24, handlePacket("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(GBTDecoder enc(23, handlePacket("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
@@ -53,34 +55,27 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   enc.finalize();
   BOOST_CHECK_EQUAL(enc.size(), expectedSize); // nof gbt words
 
-  GBTDecoder dec(0, handlePacket);
+  GBTDecoder dec(0, handlePacket("GBTDecoderFromKnownEncoder"));
   for (auto i = 0; i < enc.size(); i++) {
     dec.append(enc.getWord(i));
   }
 }
 
-BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoderWithAdditionAfterFinalize)
+BOOST_AUTO_TEST_CASE(GBTDecoderWithAdditionAfterFinalize)
 {
   GBTEncoder enc(0);
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkId = 4;
   enc.addChannelChargeSum(bx, elinkId, ts, 1, 10);
-  enc.printStatus();
   enc.finalize();
-  std::cout << "\nafter first finalize\n";
-  enc.printStatus();
   enc.addChannelChargeSum(bx, elinkId, ts, 2, 20);
-  enc.printStatus();
   enc.finalize();
-  std::cout << "\nafter second finalize\n";
-  enc.printStatus();
 
-  GBTDecoder dec(0, handlePacket);
+  GBTDecoder dec(0, handlePacket("GBTDecoderWithAdditionAfterFinalize"));
   for (auto i = 0; i < enc.size(); i++) {
     dec.append(enc.getWord(i));
   }
-  dec.printStatus();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

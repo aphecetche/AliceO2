@@ -12,10 +12,11 @@
 #define O2_MCH_RAW_BITSET_H
 
 #include <cstdlib>
-#include <vector>
-#include <string_view>
-#include <string>
 #include <gsl/span>
+#include <iostream>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace o2
 {
@@ -37,10 +38,10 @@ class BitSet
 
   ///@{
   // construct a bitset initialized with the x-bits value v
-  explicit BitSet(uint8_t v);
-  explicit BitSet(uint16_t v);
-  explicit BitSet(uint32_t v);
-  explicit BitSet(uint64_t v);
+  explicit BitSet(uint8_t v, int n = -1);
+  explicit BitSet(uint16_t v, int n = -1);
+  explicit BitSet(uint32_t v, int n = -1);
+  explicit BitSet(uint64_t v, int n = -1);
   ///@}
 
   // check equality
@@ -156,6 +157,9 @@ class BitSet
   std::vector<uint8_t> mBytes;
 };
 
+int circularAppend(BitSet& bs, const BitSet& ringBuffer, int startBit, int n);
+
+std::ostream& operator<<(std::ostream& os, const BitSet& bs);
 } // namespace raw
 } // namespace mch
 } // namespace o2

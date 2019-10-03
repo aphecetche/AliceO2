@@ -15,8 +15,20 @@
 
 using namespace o2::mch::raw;
 
+constexpr int phase(int i)
+{
+  // generate the phase for the i-th ElinkEncoder
+  // the default value of -1 means it will be random and decided
+  // by the ElinkEncoder ctor
+  //
+  // if > 0 it will set a fixed phase at the beginning of the life
+  // of the ElinkEncoder
+
+  return -1;
+}
+
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, i); })}, mGBTWords{}
+GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGBTWords{}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
@@ -96,20 +108,11 @@ void GBTEncoder::finalize(int alignToSize)
     alignToSize = len();
   }
 
-  std::cout << "GBTEncoder::finalize before align\n";
-  printStatus();
-
   // align sizes of all elinks by adding sync bits
   align(alignToSize);
 
-  std::cout << "GBTEncoder::finalize after align\n";
-  printStatus();
-
   // convert elinks to GBT words
   elink2gbt();
-
-  std::cout << "GBTEncoder::finalize after elink2gbt\n";
-  printStatus();
 
   // reset all the links
   clear();

@@ -19,25 +19,32 @@
 namespace o2::mch::raw
 {
 
+const BitSet& SYNC()
+{
+  static BitSet sync(sampaSync().uint64(), 50);
+  return sync;
+}
+
 void computeHamming(SampaHeader& sampaHeader)
 {
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mPhase{phase}, mSyncIndex{0}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}
 {
   if (id > 39) {
     throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
   }
+
+  // the phase is used to "simulate" a possible different timing alignment between elinks. Just using here as random bits (does not really matter).
+
   if (phase < 0) {
-    mPhase = static_cast<int>(rand() % 20) % 49;
-  } else {
-    if (phase > 49) {
-      throw std::invalid_argument(fmt::sprintf("phase = %d should be between -1 and 49", phase));
-    }
-    mPhase = static_cast<uint8_t>(phase);
+    phase = static_cast<int>(rand() % 20);
   }
-  mSyncIndex = 49 - mPhase;
+  for (int i = 0; i < phase; i++) {
+    mBitSet.append(static_cast<bool>(rand() % 2));
+  }
+
   mSampaHeader.chipAddress(mDsId);
 }
 
@@ -73,7 +80,6 @@ void ElinkEncoder::addChannelSamples(uint8_t chId,
                                      uint16_t timestamp,
                                      const std::vector<uint16_t>& samples)
 {
-  assertPhase();
   assertSync();
 
   addHeader(chId, samples);
@@ -94,7 +100,6 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
                                        uint32_t chargeSum,
                                        uint16_t nsamples)
 {
-  assertPhase();
   assertSync();
 
   addHeader(chId, chargeSum);
@@ -110,21 +115,7 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
 
 void ElinkEncoder::addTestBit(bool value)
 {
-  assertPhase();
   mBitSet.append(value);
-}
-
-void ElinkEncoder::assertPhase()
-{
-  if (len() == 0) {
-    // simulate a different phase between elinks
-    // the phase m is chosen as the m last bits of a sync word
-    BitSet sync{sampaSync().uint64()};
-    for (int i = mSyncIndex + 1; i < 50; i++) {
-      mBitSet.append(sync.get(i));
-    }
-    mSyncIndex = 0;
-  }
 }
 
 void ElinkEncoder::assertSync()
@@ -132,31 +123,15 @@ void ElinkEncoder::assertSync()
   if (mNofSync) {
     return;
   }
-  mBitSet.append(sampaSync().uint64(), 50);
+  mBitSet.append(SYNC().uint64(0, 49), 50);
   ++mNofSync;
 }
 
-int ElinkEncoder::fillWithSync(int upto)
+void ElinkEncoder::fillWithSync(int upto)
 {
-  assertPhase();
-  BitSet sync{sampaSync().uint64()};
-  int ix{mSyncIndex + 1};
-  int i{len()};
-  int n{0}; // number of bits added
-
-  while (i < upto) {
-    mBitSet.set(i, sync.get(ix));
-    n++;
-    i++;
-    ix++;
-    mSyncIndex++;
-    mSyncIndex %= 40;
-    if (ix == 50) {
-      ix = 0;
-      mNofSync++;
-    }
-  }
-  return n;
+  auto d = upto - len();
+  mSyncIndex = circularAppend(mBitSet, SYNC(), 0, d);
+  mNofSync += d / 50;
 }
 
 uint64_t ElinkEncoder::range(int a, int b) const
@@ -177,7 +152,7 @@ std::string compact(const BitSet& bs)
   int nsync = 0;
   while (i + 49 < bs.len()) {
     bool sync{false};
-    while (bs.subset(i, i + 49).uint64(0, 49) == sampaSync().uint64()) {
+    while (bs.subset(i, i + 49) == SYNC()) {
       i += 50;
       nsync++;
       sync = true;
@@ -198,8 +173,8 @@ std::string compact(const BitSet& bs)
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %2d DSID %2d phase %2d nsync %3llu len %6llu syncindex %2d| %s",
-                     enc.mId, enc.mDsId, enc.mPhase, enc.mNofSync, enc.mBitSet.len(),
+  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu syncindex %2d| %s",
+                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
                      enc.mSyncIndex,
                      compact(enc.mBitSet));
   return os;
