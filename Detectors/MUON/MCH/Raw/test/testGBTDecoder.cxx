@@ -63,18 +63,41 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
 
 BOOST_AUTO_TEST_CASE(GBTDecoderWithAdditionAfterFinalize)
 {
+  bool verboseEncoder(false);
   GBTEncoder enc(0);
   uint32_t bx(0);
   uint16_t ts(0);
-  int elinkId = 4;
+  int elinkId = 2;
   enc.addChannelChargeSum(bx, elinkId, ts, 1, 10);
+  if (verboseEncoder) {
+    std::cout << "before 1st finalize\n";
+    enc.printStatus(5);
+  }
   enc.finalize();
+  if (verboseEncoder) {
+    std::cout << "after 1st finalize\n";
+    enc.printStatus(5);
+  }
   enc.addChannelChargeSum(bx, elinkId, ts, 2, 20);
+  elinkId = 4;
+  enc.addChannelChargeSum(bx, elinkId, ts, 4, 40);
+  enc.addChannelChargeSum(bx, elinkId, ts, 5, 50);
+  if (verboseEncoder) {
+    std::cout << "before 2nd finalize\n";
+    enc.printStatus(5);
+  }
   enc.finalize();
-
+  if (verboseEncoder) {
+    std::cout << "after 2nd finalize\n";
+    enc.printStatus(5);
+  }
+  bool verboseDecoder(true);
   GBTDecoder dec(0, handlePacket("GBTDecoderWithAdditionAfterFinalize"));
   for (auto i = 0; i < enc.size(); i++) {
     dec.append(enc.getWord(i));
+  }
+  if (verboseDecoder) {
+    dec.printStatus(5);
   }
 }
 
