@@ -130,6 +130,9 @@ void ElinkEncoder::assertSync()
       mNofBitSeen++;
     }
     mSyncIndex = 0;
+    if (firstSync) {
+      mNofSync++;
+    }
   }
 }
 
