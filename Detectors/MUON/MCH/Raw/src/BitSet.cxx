@@ -108,24 +108,40 @@ BitSet::BitSet() : mSize(8), mLen(0), mBytes(1)
 {
 }
 
-BitSet::BitSet(uint8_t v) : mSize(8), mLen(0), mBytes(1)
+BitSet::BitSet(uint8_t v, int n) : mSize(n > 0 ? n : 8), mLen(0), mBytes(1)
 {
-  setRangeFromUint(0, 7, v);
+  if (n <= 0) {
+    n = 8;
+  }
+  assertRange(1, n - 1, v);
+  setRangeFromUint(0, n - 1, v);
 }
 
-BitSet::BitSet(uint16_t v) : mSize(16), mLen(0), mBytes(2)
+BitSet::BitSet(uint16_t v, int n) : mSize(n > 0 ? n : 16), mLen(0), mBytes(2)
 {
-  setRangeFromUint(0, 15, v);
+  if (n <= 0) {
+    n = 16;
+  }
+  assertRange(1, n - 1, v);
+  setRangeFromUint(0, n - 1, v);
 }
 
-BitSet::BitSet(uint32_t v) : mSize(32), mLen(0), mBytes(4)
+BitSet::BitSet(uint32_t v, int n) : mSize(n > 0 ? n : 32), mLen(0), mBytes(4)
 {
-  setRangeFromUint(0, 31, v);
+  if (n <= 0) {
+    n = 32;
+  }
+  assertRange(1, n - 1, v);
+  setRangeFromUint(0, n - 1, v);
 }
 
-BitSet::BitSet(uint64_t v) : mSize(64), mLen(0), mBytes(8)
+BitSet::BitSet(uint64_t v, int n) : mSize(n > 0 ? n : 64), mLen(0), mBytes(8)
 {
-  setRangeFromUint(0, 63, v);
+  if (n <= 0) {
+    n = 64;
+  }
+  assertRange(1, n - 1, v);
+  setRangeFromUint(0, n - 1, v);
 }
 
 BitSet::BitSet(std::string_view s) : mSize(8), mLen(0), mBytes(1)
@@ -396,4 +412,26 @@ uint64_t BitSet::uint64(int a, int b) const
   return uint<uint64_t>(*this, a, b);
 }
 
+// append n bits to BitSet bs.
+// those n bits are taken from ringBuffer, starting at ringBuffer[startBit]
+// return the value of startBit to be used for a future call to this method
+// so the sequence of ringBuffer is not lost.
+int circularAppend(BitSet& bs, const BitSet& ringBuffer, int startBit, int n)
+{
+  int ix = startBit;
+
+  while (n > 0) {
+    bs.append(ringBuffer.get(ix));
+    --n;
+    ix++;
+    ix %= ringBuffer.len();
+  }
+  return ix;
+}
+
+std::ostream& operator<<(std::ostream& os, const BitSet& bs)
+{
+  os << bs.stringLSBLeft();
+  return os;
+}
 } // namespace o2::mch::raw
