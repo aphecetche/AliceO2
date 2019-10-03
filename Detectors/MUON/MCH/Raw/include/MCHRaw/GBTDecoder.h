@@ -32,6 +32,8 @@ class GBTDecoder
 
   void printStatus(int maxelink = -1) const;
 
+  void finalize();
+
  private:
   int mId;
   std::array<ElinkDecoder, 40> mElinks;
