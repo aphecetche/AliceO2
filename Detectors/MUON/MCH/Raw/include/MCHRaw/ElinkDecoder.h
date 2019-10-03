@@ -31,6 +31,10 @@ class ElinkDecoder
   bool append(bool bit0, bool bit1);
   bool finalize();
 
+  int len() const;
+
+  void verbose(bool val);
+
  private:
   bool process();
   void clear(int checkpoint);
@@ -46,10 +50,12 @@ class ElinkDecoder
   bool mIsInData;
   int mNofSync;
   BitSet mBitSet;
+  BitSet mTotal;
   SampaHeader mSampaHeader;
   uint64_t mNofBitSeen;
   uint64_t mNofHeaderSeen;
   SampaChannelHandler mSampaChannelHandler;
+  bool mVerbose;
 };
 
 } // namespace raw

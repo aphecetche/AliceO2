@@ -27,7 +27,7 @@ class GBTEncoder
  public:
   GBTEncoder(int linkId);
 
-  void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
+  void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum);
 
   void finalize(int alignToSize = 0);
 
@@ -39,7 +39,7 @@ class GBTEncoder
 
   void clear();
 
-  void printStatus() const;
+  void printStatus(int maxelink = -1) const;
 
   void align(int upto);
 
