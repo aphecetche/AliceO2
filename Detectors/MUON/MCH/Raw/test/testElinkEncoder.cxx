@@ -110,6 +110,7 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSChargeSum)
   enc.addChannelChargeSum(5, 100, 505);
   enc.addChannelChargeSum(13, 260, 1313);
   enc.addChannelChargeSum(31, 620, 3131);
+  std::cout << enc << "\n";
   BOOST_CHECK_EQUAL(enc.len(), initialSize + 50 + 4 * 90);
 }
 
