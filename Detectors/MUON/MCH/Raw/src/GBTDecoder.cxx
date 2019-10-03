@@ -37,6 +37,13 @@ void GBTDecoder::append(uint128_t w)
   }
 }
 
+void GBTDecoder::finalize()
+{
+  for (auto& e : mElinks) {
+    e.finalize();
+  }
+}
+
 void GBTDecoder::printStatus(int maxelink) const
 {
   std::cout << fmt::format("GBTDecoder({}) # GBT words seen {}\n", mId, mNofGBTWordsSeens);

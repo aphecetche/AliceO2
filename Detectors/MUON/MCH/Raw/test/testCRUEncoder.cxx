@@ -34,32 +34,20 @@ BOOST_AUTO_TEST_CASE(CRUEncoderCtor)
   uint8_t elinkId(0);
   uint16_t ts(0);
 
-  std::cout << "\nSTEP 0\n";
-  cru.printStatus();
-
   cru.addOrbitBC(12345, 123);
 
-  std::cout << "\nSTEP 1\n";
-  cru.printStatus();
-
   cru.addChannelChargeSum(bx, solarId, elinkId, ts, 0, 10);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 60, 160);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 16, 160);
 
   elinkId = 3;
 
   cru.addChannelChargeSum(bx, solarId, elinkId, ts, 3, 13);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 33, 133);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 63, 163);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 13, 133);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 23, 163);
 
   BOOST_CHECK_GE(cru.len(), 50 + 3 * 90);
 
-  std::cout << "\nSTEP 2\n";
-  cru.printStatus();
-
   cru.addOrbitBC(12345, 456);
-
-  std::cout << "\nSTEP 3\n";
-  cru.printStatus();
 
   elinkId = 2;
 
@@ -70,35 +58,22 @@ BOOST_AUTO_TEST_CASE(CRUEncoderCtor)
 
   elinkId = 10;
 
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 42, 420);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 43, 430);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 44, 440);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 45, 450);
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 46, 460);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 22, 420);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 23, 430);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 24, 440);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 25, 450);
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 26, 460);
 
   BOOST_CHECK_GE(cru.len(), 50 + 3 * 90 + 5 * 90);
 
-  std::cout << "\nSTEP 4\n";
-  cru.printStatus();
-
   cru.align();
-
-  std::cout << "\nSTEP 5\n";
-  cru.printStatus();
 
   cru.gbts2buffer();
 
-  std::cout << "\nSTEP 6\n";
-  cru.printStatus();
-
   cru.clear();
 
-  std::cout << "\nSTEP 7(after clear\n";
-  cru.printStatus();
+  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 12, 420);
 
-  cru.addChannelChargeSum(bx, solarId, elinkId, ts, 42, 420);
-
-  std::cout << "\nSTEP 8\n";
   cru.printStatus();
 }
 

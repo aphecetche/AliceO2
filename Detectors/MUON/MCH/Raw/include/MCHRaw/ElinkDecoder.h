@@ -33,8 +33,6 @@ class ElinkDecoder
 
   int len() const;
 
-  void verbose(bool val);
-
  private:
   bool process();
   void clear(int checkpoint);

@@ -29,23 +29,15 @@ class GBTEncoder
 
   void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum);
 
-  void finalize(int alignToSize = 0);
-
-  size_t size() const;
-
-  int len() const;
-
-  uint128_t getWord(int i) const;
-
-  void clear();
-
-  void printStatus(int maxelink = -1) const;
-
-  void align(int upto);
-
   bool areElinksAligned() const;
-
+  int len() const;
+  size_t size() const;
+  uint128_t getWord(int i) const;
+  void align(int upto);
+  void clear();
   void elink2gbt();
+  void finalize(int alignToSize = 0);
+  void printStatus(int maxelink = -1) const;
 
  private:
   int mId;

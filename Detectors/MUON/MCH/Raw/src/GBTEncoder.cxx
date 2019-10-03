@@ -15,19 +15,7 @@
 
 using namespace o2::mch::raw;
 
-constexpr int phase(int i)
-{
-  // generate the phase for the i-th ElinkEncoder
-  // the default value of -1 means it will be random and decided
-  // by the ElinkEncoder ctor
-  //
-  // if > 0 it will set a fixed phase at the beginning of the life
-  // of the ElinkEncoder
-  //
-  // returning zero will simply disable the phase
-
-  return i == 4 ? 1 : i + 10;
-}
+constexpr int phase(int i);
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
 GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGBTWords{}
@@ -44,6 +32,33 @@ void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t time
   }
   mElinks[elinkId].bunchCrossingCounter(bx);
   mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
+}
+
+void GBTEncoder::align(int upto)
+{
+  // align all elink sizes by adding sync bits
+  for (auto i = 0; i < mElinks.size(); i++) {
+    mElinks[i].fillWithSync(upto);
+  }
+}
+
+bool GBTEncoder::areElinksAligned() const
+{
+  auto len = mElinks[0].len();
+  for (auto i = 1; i < mElinks.size(); i++) {
+    if (mElinks[i].len() != len) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void GBTEncoder::clear()
+{
+  // clear the elinks
+  for (auto i = 0; i < mElinks.size(); i++) {
+    mElinks[i].clear();
+  }
 }
 
 void GBTEncoder::elink2gbt()
@@ -71,34 +86,6 @@ void GBTEncoder::elink2gbt()
   }
 }
 
-int GBTEncoder::len() const
-{
-  auto e = std::max_element(begin(mElinks), end(mElinks),
-                            [](const ElinkEncoder& a, const ElinkEncoder& b) {
-                              return a.len() < b.len();
-                            });
-  return e->len();
-}
-
-bool GBTEncoder::areElinksAligned() const
-{
-  auto len = mElinks[0].len();
-  for (auto i = 1; i < mElinks.size(); i++) {
-    if (mElinks[i].len() != len) {
-      return false;
-    }
-  }
-  return true;
-}
-
-void GBTEncoder::align(int upto)
-{
-  // align all elink sizes by adding sync bits
-  for (auto i = 0; i < mElinks.size(); i++) {
-    mElinks[i].fillWithSync(upto);
-  }
-}
-
 void GBTEncoder::finalize(int alignToSize)
 {
   if (areElinksAligned()) {
@@ -113,9 +100,6 @@ void GBTEncoder::finalize(int alignToSize)
   // align sizes of all elinks by adding sync bits
   align(alignToSize);
 
-  std::cout << fmt::format("GBTEncoder({})::finalize after align\n", mId);
-  printStatus(7);
-
   // convert elinks to GBT words
   elink2gbt();
 
@@ -123,22 +107,18 @@ void GBTEncoder::finalize(int alignToSize)
   clear();
 }
 
-void GBTEncoder::clear()
-{
-  // clear the elinks
-  for (auto i = 0; i < mElinks.size(); i++) {
-    mElinks[i].clear();
-  }
-}
-
-size_t GBTEncoder::size() const
-{
-  return mGBTWords.size();
-}
-
 uint128_t GBTEncoder::getWord(int i) const
 {
   return mGBTWords[i];
+}
+
+int GBTEncoder::len() const
+{
+  auto e = std::max_element(begin(mElinks), end(mElinks),
+                            [](const ElinkEncoder& a, const ElinkEncoder& b) {
+                              return a.len() < b.len();
+                            });
+  return e->len();
 }
 
 void GBTEncoder::printStatus(int maxelink) const
@@ -152,4 +132,25 @@ void GBTEncoder::printStatus(int maxelink) const
     const auto& e = mElinks[i];
     std::cout << e << "\n";
   }
+}
+
+size_t GBTEncoder::size() const
+{
+  return mGBTWords.size();
+}
+
+constexpr int phase(int i)
+{
+  // generate the phase for the i-th ElinkEncoder
+  // the default value of -1 means it will be random and decided
+  // by the ElinkEncoder ctor
+  //
+  // if > 0 it will set a fixed phase at the beginning of the life
+  // of the ElinkEncoder
+  //
+  // returning zero will simply disable the phase
+
+  // return i == 4 ? 1 : i + 10;
+  // return i + 10;
+  return -1;
 }
