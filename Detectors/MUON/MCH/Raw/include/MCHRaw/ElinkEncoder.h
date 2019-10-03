@@ -62,6 +62,7 @@ class ElinkEncoder
   BitSet mBitSet;
   uint64_t mNofSync;
   int mSyncIndex;
+  uint64_t mNofBitSeen;
 };
 
 } // namespace raw
