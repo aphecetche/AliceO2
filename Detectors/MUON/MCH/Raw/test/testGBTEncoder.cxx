@@ -49,6 +49,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
 BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
 {
   GBTEncoder enc(0);
+  auto initialSize = enc.len();
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkId = 0;
