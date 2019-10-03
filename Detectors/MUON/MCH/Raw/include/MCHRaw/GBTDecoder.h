@@ -30,7 +30,7 @@ class GBTDecoder
 
   void append(uint128_t w);
 
-  void printStatus();
+  void printStatus(int maxelink = -1) const;
 
  private:
   int mId;
