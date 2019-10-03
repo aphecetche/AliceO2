@@ -13,12 +13,18 @@
 #include "MakeArray.h"
 using namespace o2::mch::raw;
 using namespace boost::multiprecision;
+
 // FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
 // the right range 0..15 itself ? Or have the mapping at this level already ?
 GBTDecoder::GBTDecoder(int linkId, SampaChannelHandler sampaChannelHandler) : mId(linkId), mElinks{::makeArray<40>([sampaChannelHandler](size_t i) { return ElinkDecoder(i % 16, sampaChannelHandler); })}, mNofGBTWordsSeens{0}
 {
   if (linkId < 0 || linkId > 23) {
     throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
+  }
+  if (linkId == 0) {
+    // mElinks[0].verbose(true);
+    // mElinks[2].verbose(true);
+    // mElinks[4].verbose(true);
   }
 }
 
@@ -31,10 +37,15 @@ void GBTDecoder::append(uint128_t w)
   }
 }
 
-void GBTDecoder::printStatus()
+void GBTDecoder::printStatus(int maxelink) const
 {
   std::cout << fmt::format("GBTDecoder({}) # GBT words seen {}\n", mId, mNofGBTWordsSeens);
-  for (auto& e : mElinks) {
+  auto n = mElinks.size();
+  if (maxelink > 0) {
+    n = maxelink;
+  }
+  for (int i = 0; i < n; i++) {
+    const auto& e = mElinks[i];
     std::cout << e << "\n";
   }
 }
