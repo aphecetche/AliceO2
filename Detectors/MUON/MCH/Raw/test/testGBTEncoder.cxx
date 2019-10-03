@@ -35,11 +35,11 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
   uint16_t ts(0);
   int elinkId = 0;
   enc.addChannelChargeSum(bx, elinkId, ts, 0, 10);
-  enc.addChannelChargeSum(bx, elinkId, ts, 60, 160);
+  enc.addChannelChargeSum(bx, elinkId, ts, 31, 160);
   elinkId = 3;
   enc.addChannelChargeSum(bx, elinkId, ts, 3, 13);
-  enc.addChannelChargeSum(bx, elinkId, ts, 33, 133);
-  enc.addChannelChargeSum(bx, elinkId, ts, 63, 163);
+  enc.addChannelChargeSum(bx, elinkId, ts, 13, 133);
+  enc.addChannelChargeSum(bx, elinkId, ts, 23, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(bx, 40, ts, 0, 10), std::invalid_argument);
   int expectedSize = enc.len() / 2;
   enc.finalize();                              // warning : after finalize, enc.len() is back to zero
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
   uint16_t ts(0);
   int elinkId = 0;
   for (int i = 0; i < 64; i++) {
-    enc.addChannelChargeSum(bx, elinkId, ts, i, i * 10);
+    enc.addChannelChargeSum(bx, elinkId, ts, i % 32, i * 10);
   }
   int expectedSize = enc.len() / 2;
   enc.finalize();
