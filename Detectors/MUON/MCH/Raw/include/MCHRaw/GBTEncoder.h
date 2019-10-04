@@ -39,6 +39,8 @@ class GBTEncoder
   void finalize(int alignToSize = 0);
   void printStatus(int maxelink = -1) const;
 
+  void toBuffer(std::vector<uint32_t>& buffer);
+
  private:
   int mId;
   std::array<ElinkEncoder, 40> mElinks;

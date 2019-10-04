@@ -108,6 +108,8 @@ void CRUEncoder::gbts2buffer()
   for (auto& gbt : mGBTs) {
     gbt.elink2gbt();
   }
+  // at this stage must also convert the (orbit,bx) indices from (bit)position(=len)
+  // to (gbt words)positions
 }
 
 void CRUEncoder::finalize()
