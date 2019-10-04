@@ -134,6 +134,21 @@ void GBTEncoder::printStatus(int maxelink) const
   }
 }
 
+void GBTEncoder::toBuffer(std::vector<uint32_t>& buffer)
+{
+  constexpr uint128_t m = 0xFFFFFFFFuLL;
+  uint128_t w0 = m;
+  uint128_t w1 = m << 32;
+  uint128_t w2 = m << 64;
+  uint128_t w3 = m << 96;
+  for (auto& g : mGBTWords) {
+    buffer.emplace_back(static_cast<uint32_t>(g & m));
+    buffer.emplace_back(static_cast<uint32_t>((g & w1) >> 32));
+    buffer.emplace_back(static_cast<uint32_t>((g & w2) >> 64));
+    buffer.emplace_back(static_cast<uint32_t>((g & w3) >> 96));
+  }
+}
+
 size_t GBTEncoder::size() const
 {
   return mGBTWords.size();
