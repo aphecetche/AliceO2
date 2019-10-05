@@ -151,10 +151,11 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromBuffer)
   }
   dec.finalize();
   std::vector<std::string> expected{
-    "chip-2-ch-1-ts-0-q-10",
-    "chip-2-ch-2-ts-0-q-20",
-    "chip-4-ch-4-ts-0-q-40",
-    "chip-4-ch-5-ts-0-q-50"};
+    "chip-3-ch-13-ts-12-q-163",
+    "chip-3-ch-31-ts-12-q-133",
+    "chip-3-ch-3-ts-12-q-13",
+    "chip-0-ch-31-ts-12-q-160",
+    "chip-0-ch-0-ts-12-q-10"};
   BOOST_CHECK_EQUAL(result.size(), expected.size());
   BOOST_CHECK(std::is_permutation(begin(result), end(result), begin(expected)));
 }
