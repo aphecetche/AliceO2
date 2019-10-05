@@ -44,7 +44,7 @@ void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3)
   uint128_t b66_95 = w2;
   uint128_t b96_127 = w3;
 
-  uint128_t gbtWord = b0_31 & (b31_65 << 32) & (b66_95 << 64) & (b96_127 << 96);
+  uint128_t gbtWord = b0_31 | (b31_65 << 32) | (b66_95 << 64) | (b96_127 << 96);
   append(gbtWord);
 }
 
