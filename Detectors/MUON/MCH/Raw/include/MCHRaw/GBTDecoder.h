@@ -28,13 +28,14 @@ class GBTDecoder
  public:
   GBTDecoder(int linkId, SampaChannelHandler sampaChannelHandler);
 
-  void append(uint128_t w);
-
   void append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3);
 
   void printStatus(int maxelink = -1) const;
 
   void finalize();
+
+ private:
+  void append(uint128_t w);
 
  private:
   int mId;

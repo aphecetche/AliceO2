@@ -1,9 +1,10 @@
-#ifndef O2_MCH_RAW_HEADER_RAWDATAHEADER_H
-#define O2_MCH_RAW_HEADER_RAWDATAHEADER_H
+#ifndef O2_MCH_RAW_RAWDATAHEADER_H
+#define O2_MCH_RAW_RAWDATAHEADER_H
 
 // FIXME : get this from an authoritative source instead !
 
 #include <cstdint>
+#include <iostream>
 
 namespace o2
 {
@@ -11,7 +12,7 @@ namespace mch
 {
 namespace raw
 {
-typedef struct _RAWDataHeaderV4 {
+struct RAWDataHeaderV4 {
   // 32-bits words
 
   union {
@@ -144,8 +145,7 @@ typedef struct _RAWDataHeaderV4 {
       uint32_t zero12; /// bit 0 to 31: reserved
     };
   };
-
-} RAWDataHeaderV4;
+};
 
 using RAWDataHeader = RAWDataHeaderV4;
 
@@ -153,4 +153,5 @@ using RAWDataHeader = RAWDataHeaderV4;
 } // namespace mch
 } // namespace o2
 
-#endif // ALICEO2_HEADER_RAWDATAHEADER_H
+std::ostream& operator<<(std::ostream& os, const o2::mch::raw::RAWDataHeader& rdh);
+#endif

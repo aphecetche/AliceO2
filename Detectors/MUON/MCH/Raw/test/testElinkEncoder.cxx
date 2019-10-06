@@ -39,15 +39,6 @@ BOOST_AUTO_TEST_CASE(ElinkEncoderIdMustBeBetween0And39)
   BOOST_CHECK_NO_THROW(ElinkEncoder enc(39, 0));
 }
 
-BOOST_AUTO_TEST_CASE(BunchCrossingCounterMustBeWithin20Bits)
-{
-  ElinkEncoder enc(0, 0);
-
-  BOOST_CHECK_THROW(enc.bunchCrossingCounter(0x1FFFFF), std::invalid_argument);
-  enc.bunchCrossingCounter(0xFFFFF);
-  BOOST_CHECK_NO_THROW(enc.bunchCrossingCounter(0xFFFFF));
-}
-
 BOOST_AUTO_TEST_CASE(ElinkEncoderCtorBuildsAnEmptyBitSet)
 {
   ElinkEncoder enc(0, 0);
@@ -110,7 +101,6 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSChargeSum)
   enc.addChannelChargeSum(5, 100, 505);
   enc.addChannelChargeSum(13, 260, 1313);
   enc.addChannelChargeSum(31, 620, 3131);
-  std::cout << enc << "\n";
   BOOST_CHECK_EQUAL(enc.len(), initialSize + 50 + 4 * 90);
 }
 
@@ -145,34 +135,6 @@ BOOST_AUTO_TEST_CASE(EncoderFillWithSync)
   BOOST_CHECK_EQUAL(enc.range(s, s + 49), sampaSync().uint64());
   BOOST_CHECK_EQUAL(enc.range(s + 50, s + 99), sampaSync().uint64());
   BOOST_CHECK_EQUAL(enc.range(s + 100, s + 149), sampaSync().uint64());
-}
-
-BOOST_AUTO_TEST_CASE(EncoderPhase)
-{
-  std::cout << sampaSync() << "\n";
-  ElinkEncoder e1(0, 0, 5);
-  ElinkEncoder e2(1, 0, 10);
-  std::cout << e1 << "\n";
-  std::cout << e2 << "\n";
-  e1.addTestBit(true);
-  e1.addTestBit(true);
-  e1.addTestBit(false);
-  e1.addTestBit(true);
-
-  e2.addTestBit(true);
-  e2.addTestBit(true);
-  e2.addTestBit(false);
-  e2.addTestBit(true);
-
-  std::cout << "\n";
-  std::cout << e1 << "\n";
-  std::cout << e2 << "\n";
-
-  e1.fillWithSync(70);
-  e2.fillWithSync(70);
-  std::cout << "\n";
-  std::cout << e1 << "\n";
-  std::cout << e2 << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

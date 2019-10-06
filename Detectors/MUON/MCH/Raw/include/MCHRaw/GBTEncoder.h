@@ -25,26 +25,51 @@ namespace raw
 class GBTEncoder
 {
  public:
-  GBTEncoder(int linkId);
+  GBTEncoder(int cruId, int gbtId);
 
-  void addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum);
+  ///@{ Main interface
+  /// add the integrated charge for one channel
+  void addChannelChargeSum(uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum);
 
-  bool areElinksAligned() const;
-  int len() const;
-  size_t size() const;
-  uint128_t getWord(int i) const;
-  void align(int upto);
-  void clear();
-  void elink2gbt();
-  void finalize(int alignToSize = 0);
+  /// reset local bunch-crossing counter
+  /// (the one that is used in the sampa headers)
+  void resetLocalBunchCrossing();
+
+  /// The internal GBT words that have been accumulated so far are
+  /// _moved_ (i.e. deleted from this object) to the external buffer.
+  /// Returns the number of words added to buffer.
+  size_t moveToBuffer(std::vector<uint32_t>& buffer);
+  ///@}
+
+  ///@{ Methods mainly used for testing
+  /// Print the current status of the encoder, for as much as maxelink elinks.
   void printStatus(int maxelink = -1) const;
-
-  void toBuffer(std::vector<uint32_t>& buffer);
+  /// get the number of internal 32-bits words we have accumulated so far
+  size_t nofWords() const;
+  ///@}
 
  private:
-  int mId;
+  bool areElinksAligned() const;
+
+  int len() const;
+
+  size_t size() const;
+
+  uint128_t getWord(int i) const;
+
+  void align(int upto);
+
+  void elink2gbt();
+
+  void clear();
+
+  void finalize(int alignToSize = 0);
+
+ private:
+  int mCruId;
+  int mGbtId;
   std::array<ElinkEncoder, 40> mElinks;
-  std::vector<uint128_t> mGBTWords;
+  std::vector<uint128_t> mGbtWords;
 };
 } // namespace raw
 } // namespace mch
