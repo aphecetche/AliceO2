@@ -8,6 +8,7 @@ o2_add_library(MCHRaw
                        src/CRUEncoder.cxx
                        src/NofBits.cxx
                        src/CompactBitSetString.cxx
+                       src/RAWDataHeader.cxx
                PUBLIC_LINK_LIBRARIES fmt::fmt ms_gsl::ms_gsl Boost::boost)
 
 o2_add_executable(rawdump

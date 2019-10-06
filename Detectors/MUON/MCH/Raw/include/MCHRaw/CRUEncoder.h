@@ -16,7 +16,6 @@
 #include <map>
 
 #include "MCHRaw/GBTEncoder.h"
-#include "MCHRaw/RAWDataHeader.h" // FIXME: get this from an authoritative source
 #include <iostream>
 #include <fmt/format.h>
 
@@ -27,59 +26,29 @@ class CRUEncoder
 {
 
  public:
-  CRUEncoder(uint8_t cruId);
+  CRUEncoder(uint16_t cruId);
 
-  void addChannelChargeSum(uint32_t bx, uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
+  void addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
 
-  void finalize();
-
-  void printStatus() const;
+  void printStatus(int maxgbt = -1) const;
 
   // sets the trigger (orbit,bunchCrossing) to be used
   // for all generated RDHs (until next call to this method).
   // causes the alignment of the underlying gbts.
-  void addOrbitBC(uint32_t orbit, uint16_t bunchCrossing);
+  void startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
 
-  void align();
-
-  void addRDH(int len,
-              uint8_t linkId,
-              uint16_t pagesCounter,
-              bool lastPage);
-
-  int len() const;
-
-  bool areGBTsAligned() const;
-
-  void gbts2buffer();
-
-  void clear();
+  size_t moveToBuffer(std::vector<uint32_t>& buffer);
 
  private:
-  uint8_t mId;
+  void closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
+  void gbts2buffer(uint32_t orbit, uint16_t bunchCrossing);
+
+ private:
+  uint16_t mId;
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
-  RAWDataHeader mRDH;
   std::vector<uint32_t> mBuffer;
   std::array<GBTEncoder, 24> mGBTs;
-
-  struct TriggerInfoChange {
-    int len;
-    uint32_t orbit;
-    uint16_t bc;
-    bool operator<(const TriggerInfoChange& rhs) const
-    {
-      return len < rhs.len;
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const TriggerInfoChange& tic)
-    {
-      os << fmt::format("len {} orbit {} bc {}", tic.len, tic.orbit, tic.bc);
-      return os;
-    }
-  };
-
-  std::vector<TriggerInfoChange> mTriggerInfoChanges;
 };
 
 } // namespace o2::mch::raw
