@@ -28,32 +28,45 @@ class ElinkEncoder
  public:
   explicit ElinkEncoder(uint8_t id, uint8_t dsid, int phase = 0);
 
-  uint8_t id() const;
+  /// @{ add channel information.
+  /// either in the form of a single charge sum,
+  /// or as vector of individual adc samples.
 
-  void bunchCrossingCounter(uint32_t bx);
+  /// vector of adc samples
   void addChannelSamples(uint8_t chId, uint16_t timestamp, const std::vector<uint16_t>& samples);
+
+  /// single charge sum
   void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
                            uint16_t nsamples = 1);
+  ///@}
+
+  void clear();
+
   void fillWithSync(int upto);
 
   bool get(int i) const;
-  int len() const;
-  void clear();
 
-  uint64_t range(int a, int b) const;
+  uint8_t id() const;
+
+  int len() const;
+
+  void resetLocalBunchCrossing();
 
   friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc);
 
-  uint64_t nofSync() const { return mNofSync; }
-
-  void addTestBit(bool value);
+  uint64_t range(int a, int b) const;
 
  private:
   void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
   void addHeader(uint8_t chId, uint32_t chargeSum);
+  void append(bool value);
+  void append10(uint16_t value);
+  void append20(uint32_t value);
+  void append50(uint64_t value);
   void assertPhase();
   void assertSync();
   void setHeader(uint8_t chId, uint16_t n10);
+  uint64_t nofSync() const { return mNofSync; }
 
  private:
   uint8_t mId;
@@ -63,6 +76,8 @@ class ElinkEncoder
   uint64_t mNofSync;
   int mSyncIndex;
   uint64_t mNofBitSeen;
+  int mPhase;
+  uint32_t mLocalBunchCrossing;
 };
 
 } // namespace raw
