@@ -9,131 +9,141 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHRaw/CRUEncoder.h"
+#include "Assertions.h"
+#include "MCHRaw/RAWDataHeader.h"
 #include "MakeArray.h"
-#include <fmt/format.h>
-#include "NofBits.h"
 #include <algorithm>
+#include <fmt/format.h>
 
-using namespace o2::mch::raw;
-
-CRUEncoder::CRUEncoder(uint8_t cruId) : mId(cruId), mRDH{}, mBuffer(1024), mGBTs{::makeArray<24>([](size_t i) { return GBTEncoder(i); })}, mTriggerInfoChanges{}
+namespace o2
 {
-  assertNofBits("cruId", cruId, 12);
-  mRDH.cruId = cruId;
-  mRDH.dpwId = 0; // FIXME: fill this ?
+namespace mch
+{
+namespace raw
+{
+
+using ::operator<<;
+
+CRUEncoder::CRUEncoder(uint16_t cruId) : mId(cruId), mOrbit{}, mBunchCrossing{}, mBuffer{}, mGBTs{::makeArray<24>([cruId](size_t i) { return GBTEncoder(cruId, i); })}
+{
+  assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
+  mBuffer.reserve(1 << 10);
 }
 
-void CRUEncoder::addChannelChargeSum(uint32_t bx, uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum)
+void CRUEncoder::addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum)
 {
-  mGBTs[solarId].addChannelChargeSum(bx, elinkId, chId, timestamp, chargeSum);
+  mGBTs[solarId].addChannelChargeSum(elinkId, chId, timestamp, chargeSum);
 }
 
-void CRUEncoder::addOrbitBC(uint32_t orbit, uint16_t bunchCrossing)
+RAWDataHeader createRDH(uint16_t cruId, uint32_t orbit, uint16_t bunchCrossing,
+                        uint16_t memorySize)
 {
-  if (len()) {
-    align();
-  }
-  mTriggerInfoChanges.push_back({len(), orbit, bunchCrossing});
+  RAWDataHeader rdh;
+
+  rdh.cruId = cruId;
+  rdh.dpwId = 0; // FIXME: fill this ?
+  rdh.feeId = 0; //FIXME: what is this field supposed to contain ? unclear to me.
+  rdh.priorityBit = 0;
+  rdh.blockLength = memorySize; // FIXME: the blockLength disappears in RDHv5 ?
+  rdh.memorySize = memorySize;
+  rdh.packetCounter = 0; // FIXME: fill this ?
+  rdh.triggerType = 0;   // FIXME: fill this ?
+  rdh.detectorField = 0; // FIXME: fill this ?
+  rdh.par = 0;           // FIXME: fill this ?
+  rdh.stopBit = 0;
+  rdh.pagesCounter = 1;
+  rdh.triggerOrbit = orbit;
+  rdh.heartbeatOrbit = orbit; // FIXME: RDHv5 has only triggerOrbit ?
+  rdh.triggerBC = bunchCrossing;
+  rdh.heartbeatBC = bunchCrossing; // FIXME: RDHv5 has only triggerBC ?
+
+  return rdh;
 }
 
-void CRUEncoder::addRDH(int len,
-                        uint8_t linkId,
-                        uint16_t pagesCounter,
-                        bool lastPage)
+void dumpRDH(const RAWDataHeader& rdh)
 {
-  constexpr int PAGE_SIZE = 8192;
-
-  mRDH.feeId = 0; //FIXME: what is this field supposed to contain ? unclear to me.
-  mRDH.priorityBit = 0;
-  mRDH.blockLength = PAGE_SIZE - mRDH.headerSize; // FIXME: the blockLength disappears in RDHv5 ?
-  mRDH.offsetNextPacket = PAGE_SIZE;
-  mRDH.memorySize = 0;    //FIXME: fill this ?
-  mRDH.packetCounter = 0; // FIXME: fill this ?
-  mRDH.triggerType = 0;   // FIXME: fill this ?
-  mRDH.detectorField = 0; // FIXME: fill this ?
-  mRDH.par = 0;           // FIXME: fill this ?
-  mRDH.stopBit = lastPage;
-  mRDH.pagesCounter = pagesCounter;
-
-  auto it = std::lower_bound(begin(mTriggerInfoChanges), end(mTriggerInfoChanges), TriggerInfoChange{len, 0, 0});
-  auto orbit = it->orbit;
-  auto bunchCrossing = it->bc;
-
-  mRDH.triggerOrbit = orbit;
-  mRDH.heartbeatOrbit = orbit; // FIXME: RDHv5 has only triggerOrbit ?
-  mRDH.triggerBC = bunchCrossing;
-  mRDH.heartbeatBC = bunchCrossing; // FIXME: RDHv5 has only triggerBC ?
+  std::cout << std::string(13, '-') << "RDH" << std::string(46, '-') << "\n";
+  std::cout << rdh;
+  std::cout << std::string(13 + 46 + strlen("RDH"), '-') << "\n";
 }
 
-bool CRUEncoder::areGBTsAligned() const
+void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
 {
-  auto len = mGBTs[0].len();
-  for (int i = 1; i < mGBTs.size(); i++) {
-    if (mGBTs[i].len() != len) {
-      return false;
-    }
-  }
-  return true;
-}
+  // get the words buffer from all our gbts, and prepend each one with a
+  // RDH
 
-void CRUEncoder::align()
-{
-  int l = len();
+  auto prev = mBuffer.size();
+
   for (auto& gbt : mGBTs) {
-    gbt.align(l);
+    std::vector<uint32_t> gbtBuffer;
+    gbtBuffer.emplace_back(0x00000000);
+    gbtBuffer.emplace_back(0x22222222);
+    gbtBuffer.emplace_back(0x44444444);
+    gbtBuffer.emplace_back(0x66666666);
+    // gbt.moveToBuffer(gbtBuffer);
+    auto rdh = createRDH(mId, orbit, bunchCrossing, sizeof(gbtBuffer));
+    dumpRDH(rdh);
+    size_t index = mBuffer.size();
+    std::cout << fmt::format("index={} rdh size {} gbtbuffer elements {}\n",
+                             index, sizeof(rdh), gbtBuffer.size());
+    mBuffer.resize(mBuffer.size() + sizeof(rdh) / 4 + gbtBuffer.size());
+    memcpy(&mBuffer[index], &rdh, sizeof(rdh));
+    memcpy(&mBuffer[index] + sizeof(rdh), &gbtBuffer[0], gbtBuffer.size() * sizeof(gbtBuffer[0]));
+    break;
   }
+  std::cout << fmt::format("gbts2buffer : orbit {} bx {} buffer size {} => {}\n",
+                           orbit, bunchCrossing, prev, mBuffer.size());
 }
 
-void CRUEncoder::clear()
+size_t CRUEncoder::moveToBuffer(std::vector<uint32_t>& buffer)
 {
-  for (auto& gbt : mGBTs) {
-    gbt.clear();
+  closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  for (auto& w : mBuffer) {
+    buffer.emplace_back(w);
   }
+  auto s = mBuffer.size();
+  mBuffer.clear();
+  return s;
 }
 
-int CRUEncoder::len() const
+void CRUEncoder::printStatus(int maxgbt) const
 {
-  auto e = std::max_element(begin(mGBTs), end(mGBTs),
-                            [](const GBTEncoder& a, const GBTEncoder& b) {
-                              return a.len() < b.len();
-                            });
-  return e->len();
-}
+  std::cout << fmt::format("CRUEncoder({}) buffer size {}\n", mId, mBuffer.size());
 
-void CRUEncoder::gbts2buffer()
-{
-  if (!areGBTsAligned()) {
-    throw std::logic_error("must align GBTs before converting them to buffer words");
+  int n = mGBTs.size();
+  if (maxgbt > 0 && maxgbt <= n) {
+    n = maxgbt;
   }
-  for (auto& gbt : mGBTs) {
-    gbt.elink2gbt();
-  }
-  // at this stage must also convert the (orbit,bx) indices from (bit)position(=len)
-  // to (gbt words)positions
-}
-
-void CRUEncoder::finalize()
-{
-  // here should :
-  // - add padding so all GBTs have the same amount of data words (i.e. "align" them)
-  // - split data into 8KB chunks, each with its own RDH
-  // - call a callback with each 8KB page ? (so it can e.g. be written to disk) ?
-
-  align();
-}
-
-void CRUEncoder::printStatus() const
-{
-  std::cout << fmt::format("CRUEncoder({}) buffer size {} gbts are{}aligned len {}", mId, mBuffer.size(), (areGBTsAligned() ? " " : " not "), len()) << "\n";
-
-  if (mTriggerInfoChanges.size()) {
-    for (int i = 0; i < mTriggerInfoChanges.size(); i++) {
-      std::cout << mTriggerInfoChanges[i] << "\n";
-    }
-  }
-  //for (auto& gbt : mGBTs) {
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < n; i++) {
     const auto& gbt = mGBTs[i];
-    gbt.printStatus();
+    gbt.printStatus(5);
+  }
+
+  for (int i = 0; i < mBuffer.size(); i++) {
+    std::cout << fmt::format("{:10X} ", mBuffer[i]);
+    if ((i + 1) % 4 == 0) {
+      std::cout << "\n";
+    }
   }
 }
+
+void CRUEncoder::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  if (orbit && bunchCrossing) {
+    gbts2buffer(orbit, bunchCrossing);
+  }
+}
+
+void CRUEncoder::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
+  // build a buffer with the _previous_ (orbit,bx)
+  closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  // then save the (orbit,bx) for next time
+  mOrbit = orbit;
+  mBunchCrossing = bunchCrossing;
+}
+
+} // namespace raw
+} // namespace mch
+} // namespace o2
