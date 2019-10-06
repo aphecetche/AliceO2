@@ -9,13 +9,14 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHRaw/ElinkEncoder.h"
-#include "MCHRaw/SampaHeader.h"
-#include <iostream>
-#include <fmt/printf.h>
-#include <fmt/format.h>
-#include "MCHRaw/BitSet.h"
-#include "NofBits.h"
+#include "Assertions.h"
 #include "CompactBitSetString.h"
+#include "MCHRaw/BitSet.h"
+#include "MCHRaw/SampaHeader.h"
+#include "NofBits.h"
+#include <fmt/format.h>
+#include <fmt/printf.h>
+#include <iostream>
 
 namespace o2::mch::raw
 {
@@ -26,47 +27,22 @@ void computeHamming(SampaHeader& sampaHeader)
   // FIXME: compute hamming and parities
 }
 
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}, mNofBitSeen{0}
+ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t dsid, int phase) : mId(id), mDsId(dsid), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}, mNofBitSeen{0}, mLocalBunchCrossing{0}, mPhase{phase}
 {
-  if (id > 39) {
-    throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
-  }
+  assertIsInRange("id", id, 0, 39);
 
-  // the phase is used to "simulate" a possible different timing alignment between elinks. Just using here as random bits (does not really matter).
+  // the phase is used to "simulate" a possible different timing alignment between elinks.
 
   if (phase < 0) {
-    phase = static_cast<int>(rand() % 20);
+    mPhase = static_cast<int>(rand() % 20);
   }
-  for (int i = 0; i < phase; i++) {
-    mBitSet.append(static_cast<bool>(rand() % 2));
-    mNofBitSeen++;
+
+  for (int i = 0; i < mPhase; i++) {
+    // filling the phase with random bits
+    append(static_cast<bool>(rand() % 2));
   }
 
   mSampaHeader.chipAddress(mDsId);
-}
-
-void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
-{
-  int n10 = 2; // nofsamples + timestamp
-  // check all samples are 10 bits
-  for (auto s : samples) {
-    assertNofBits("sample", s, 10);
-    n10++;
-  }
-  setHeader(chId, n10);
-  // append header to bitset
-  mBitSet.append(mSampaHeader.uint64(), 50);
-  mNofBitSeen += 50;
-}
-
-void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
-{
-  int n10 = 4; // nofsamples + timestamp + 20 bits of chargeSum
-  assertNofBits("chargeSum", chargeSum, 20);
-  setHeader(chId, n10);
-  // append header to bitset
-  mBitSet.append(mSampaHeader.uint64(), 50);
-  mNofBitSeen += 50;
 }
 
 void ElinkEncoder::addChannelSamples(uint8_t chId,
@@ -80,13 +56,11 @@ void ElinkEncoder::addChannelSamples(uint8_t chId,
   assertNofBits("timestamp", timestamp, 10);
 
   // append samples to bitset
-  mBitSet.append(static_cast<uint16_t>(samples.size()), 10);
-  mBitSet.append(timestamp, 10);
-  mNofBitSeen += 20;
+  append10(static_cast<uint16_t>(samples.size()));
+  append10(timestamp);
 
   for (auto s : samples) {
-    mBitSet.append(s, 10);
-    mNofBitSeen += 10;
+    append10(s);
   }
 }
 
@@ -103,16 +77,55 @@ void ElinkEncoder::addChannelChargeSum(uint8_t chId,
   assertNofBits("nsamples", nsamples, 10);
   assertNofBits("timestamp", timestamp, 10);
 
-  mBitSet.append(nsamples, 10);
-  mBitSet.append(timestamp, 10);
-  mBitSet.append(chargeSum, 20);
-  mNofBitSeen += 40;
+  append10(nsamples);
+  append10(timestamp);
+  append20(chargeSum);
 }
 
-void ElinkEncoder::addTestBit(bool value)
+void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
+{
+  int n10 = 2; // nofsamples + timestamp
+  // check all samples are 10 bits
+  for (auto s : samples) {
+    assertNofBits("sample", s, 10);
+    n10++;
+  }
+  setHeader(chId, n10);
+  // append header to bitset
+  append50(mSampaHeader.uint64());
+}
+
+void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
+{
+  int n10 = 4; // nofsamples + timestamp + 20 bits of chargeSum
+  assertNofBits("chargeSum", chargeSum, 20);
+  setHeader(chId, n10);
+  // append header to bitset
+  append50(mSampaHeader.uint64());
+}
+
+void ElinkEncoder::append(bool value)
 {
   mBitSet.append(value);
   mNofBitSeen++;
+}
+
+void ElinkEncoder::append10(uint16_t value)
+{
+  mBitSet.append(value, 10);
+  mNofBitSeen += 10;
+}
+
+void ElinkEncoder::append20(uint32_t value)
+{
+  mBitSet.append(value, 20);
+  mNofBitSeen += 20;
+}
+
+void ElinkEncoder::append50(uint64_t value)
+{
+  mBitSet.append(value, 50);
+  mNofBitSeen += 50;
 }
 
 void ElinkEncoder::assertSync()
@@ -126,8 +139,7 @@ void ElinkEncoder::assertSync()
 
   if (firstSync || pendingSync) {
     for (int i = mSyncIndex; i < 50; i++) {
-      mBitSet.append(sync.get(i));
-      mNofBitSeen++;
+      append(sync.get(i));
     }
     mSyncIndex = 0;
     if (firstSync) {
@@ -136,10 +148,9 @@ void ElinkEncoder::assertSync()
   }
 }
 
-void ElinkEncoder::bunchCrossingCounter(uint32_t bx)
+void ElinkEncoder::clear()
 {
-  assertNofBits("bx", bx, 20);
-  mSampaHeader.bunchCrossingCounter(bx);
+  mBitSet.clear();
 }
 
 void ElinkEncoder::fillWithSync(int upto)
@@ -150,30 +161,9 @@ void ElinkEncoder::fillWithSync(int upto)
   mNofBitSeen += d;
 }
 
-uint64_t ElinkEncoder::range(int a, int b) const
-{
-  return mBitSet.subset(a, b).uint64(0, b - a + 1);
-}
-
-std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
-{
-  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d | %s",
-                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
-                     enc.mSyncIndex, enc.mNofBitSeen,
-                     compactString(enc.mBitSet));
-  return os;
-}
-
-void ElinkEncoder::clear()
-{
-  mBitSet.clear();
-}
-
 bool ElinkEncoder::get(int i) const
 {
-  if (i >= len()) {
-    throw std::invalid_argument(fmt::format("trying to access bit {} which is past the end of our bitset of len {}", i, len()));
-  }
+  assertIsInRange("i", i, 0, len() - 1);
   return mBitSet.get(i);
 }
 
@@ -187,14 +177,34 @@ int ElinkEncoder::len() const
   return mBitSet.len();
 }
 
+uint64_t ElinkEncoder::range(int a, int b) const
+{
+  return mBitSet.subset(a, b).uint64(0, b - a + 1);
+}
+
+void ElinkEncoder::resetLocalBunchCrossing()
+{
+  mLocalBunchCrossing = mPhase;
+}
+
 void ElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
 {
   assertNofBits("chId", chId, 5);
   assertNofBits("nof10BitWords", n10, 10);
+  mSampaHeader.bunchCrossingCounter(mLocalBunchCrossing);
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
   mSampaHeader.channelAddress(chId);
   computeHamming(mSampaHeader);
+}
+
+std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
+{
+  os << fmt::sprintf("ELINK ID %2d DSID %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d | %s",
+                     enc.mId, enc.mDsId, enc.mNofSync, enc.mBitSet.len(),
+                     enc.mSyncIndex, enc.mNofBitSeen,
+                     compactString(enc.mBitSet));
+  return os;
 }
 
 } // namespace o2::mch::raw
