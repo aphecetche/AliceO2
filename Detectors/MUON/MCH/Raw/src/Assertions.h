@@ -8,15 +8,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_COMMON_H
-#define O2_MCH_RAW_TEST_COMMON_H
+#ifndef O2_MCH_RAW_ASSERTIONS_H
+#define O2_MCH_RAW_ASSERTIONS_H
 
-#include "MCHRaw/ElinkEncoder.h"
-#include <vector>
-#include <array>
+#include <fmt/format.h>
 
-o2::mch::raw::ElinkEncoder encoderExample1();
-std::vector<uint32_t> getEncodedBuffer();
-extern std::array<uint32_t, 664> REF_BUFFER;
+inline void assertIsInRange(std::string what, int value, int min, int max)
+{
+  if (value < min || value > max) {
+    throw std::invalid_argument(fmt::format("{} should be between {} and {} but is {}", what, min, max, value));
+  }
+}
 
 #endif

@@ -12,25 +12,21 @@
 #include <fmt/printf.h>
 #include <stdexcept>
 #include "MakeArray.h"
+#include "Assertions.h"
 
 using namespace o2::mch::raw;
 
 constexpr int phase(int i);
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
-GBTEncoder::GBTEncoder(int linkId) : mId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGBTWords{}
+GBTEncoder::GBTEncoder(int cruId, int linkId) : mCruId(cruId), mGbtId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGbtWords{}
 {
-  if (linkId < 0 || linkId > 23) {
-    throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
-  }
+  assertIsInRange("linkId", linkId, 0, 23);
 }
 
-void GBTEncoder::addChannelChargeSum(uint32_t bx, uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum)
+void GBTEncoder::addChannelChargeSum(uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum)
 {
-  if (elinkId < 0 || elinkId > 39) {
-    throw std::invalid_argument(fmt::sprintf("elinkId %d should be between 0 and 39", elinkId));
-  }
-  mElinks[elinkId].bunchCrossingCounter(bx);
+  assertIsInRange("elinkId", elinkId, 0, 39);
   mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
 }
 
@@ -82,7 +78,7 @@ void GBTEncoder::elink2gbt()
         }
       }
     }
-    mGBTWords.push_back(w);
+    mGbtWords.push_back(w);
   }
 }
 
@@ -109,9 +105,12 @@ void GBTEncoder::finalize(int alignToSize)
 
 uint128_t GBTEncoder::getWord(int i) const
 {
-  return mGBTWords[i];
+  return mGbtWords[i];
 }
 
+/// len returns the maximum number of bits currently stored
+/// in our Elinks (i.e. the numbe of bits of the widest of
+/// our 40 elinks).
 int GBTEncoder::len() const
 {
   auto e = std::max_element(begin(mElinks), end(mElinks),
@@ -123,9 +122,9 @@ int GBTEncoder::len() const
 
 void GBTEncoder::printStatus(int maxelink) const
 {
-  std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {}\n", mId, areElinksAligned(), mGBTWords.size(), len());
+  std::cout << fmt::format("GBTEncoder({}) elinks are in sync : {} # GBTwords : {} len {}\n", mGbtId, areElinksAligned(), mGbtWords.size(), len());
   auto n = mElinks.size();
-  if (maxelink > 0) {
+  if (maxelink > 0 && maxelink <= n) {
     n = maxelink;
   }
   for (int i = 0; i < n; i++) {
@@ -134,24 +133,36 @@ void GBTEncoder::printStatus(int maxelink) const
   }
 }
 
-void GBTEncoder::toBuffer(std::vector<uint32_t>& buffer)
+size_t GBTEncoder::moveToBuffer(std::vector<uint32_t>& buffer)
 {
+  finalize();
   constexpr uint128_t m = 0xFFFFFFFFuLL;
   uint128_t w0 = m;
   uint128_t w1 = m << 32;
   uint128_t w2 = m << 64;
   uint128_t w3 = m << 96;
-  for (auto& g : mGBTWords) {
+  size_t n{0};
+  for (auto& g : mGbtWords) {
     buffer.emplace_back(static_cast<uint32_t>(g & m));
     buffer.emplace_back(static_cast<uint32_t>((g & w1) >> 32));
     buffer.emplace_back(static_cast<uint32_t>((g & w2) >> 64));
     buffer.emplace_back(static_cast<uint32_t>((g & w3) >> 96));
+    n += 4;
+  }
+  mGbtWords.clear();
+  return n;
+}
+
+void GBTEncoder::resetLocalBunchCrossing()
+{
+  for (auto i = 0; i < mElinks.size(); i++) {
+    mElinks[i].resetLocalBunchCrossing();
   }
 }
 
 size_t GBTEncoder::size() const
 {
-  return mGBTWords.size();
+  return mGbtWords.size();
 }
 
 constexpr int phase(int i)
@@ -165,7 +176,8 @@ constexpr int phase(int i)
   //
   // returning zero will simply disable the phase
 
+  return 0;
   // return i == 4 ? 1 : i + 10;
   // return i + 10;
-  return -1;
+  // return -1;
 }

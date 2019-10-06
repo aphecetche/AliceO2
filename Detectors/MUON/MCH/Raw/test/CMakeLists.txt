@@ -23,13 +23,13 @@ o2_add_test(elink-encoder
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
 
 o2_add_test(gbt-decoder
-            SOURCES testGBTDecoder.cxx
+            SOURCES testGBTDecoder.cxx common.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
 
 o2_add_test(gbt-encoder
-            SOURCES testGBTEncoder.cxx
+            SOURCES testGBTEncoder.cxx common.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
