@@ -64,6 +64,8 @@ void GBTEncoder::elink2gbt()
     throw std::logic_error("should not call elink2gbt before all elinks are synched !");
   }
 
+  auto prev = mGbtWords.size();
+
   int n = mElinks[0].len();
 
   for (int i = 0; i < n - 1; i += 2) {

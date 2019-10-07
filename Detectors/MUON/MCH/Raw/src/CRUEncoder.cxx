@@ -35,12 +35,13 @@ void CRUEncoder::addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t c
   mGBTs[solarId].addChannelChargeSum(elinkId, chId, timestamp, chargeSum);
 }
 
-RAWDataHeader createRDH(uint16_t cruId, uint32_t orbit, uint16_t bunchCrossing,
+RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing,
                         uint16_t memorySize)
 {
   RAWDataHeader rdh;
 
   rdh.cruId = cruId;
+  rdh.linkId = linkId;
   rdh.dpwId = 0; // FIXME: fill this ?
   rdh.feeId = 0; //FIXME: what is this field supposed to contain ? unclear to me.
   rdh.priorityBit = 0;
@@ -76,20 +77,26 @@ void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
 
   for (auto& gbt : mGBTs) {
     std::vector<uint32_t> gbtBuffer;
-    gbtBuffer.emplace_back(0x00000000);
-    gbtBuffer.emplace_back(0x22222222);
-    gbtBuffer.emplace_back(0x44444444);
-    gbtBuffer.emplace_back(0x66666666);
-    // gbt.moveToBuffer(gbtBuffer);
-    auto rdh = createRDH(mId, orbit, bunchCrossing, sizeof(gbtBuffer));
-    dumpRDH(rdh);
-    size_t index = mBuffer.size();
-    std::cout << fmt::format("index={} rdh size {} gbtbuffer elements {}\n",
-                             index, sizeof(rdh), gbtBuffer.size());
-    mBuffer.resize(mBuffer.size() + sizeof(rdh) / 4 + gbtBuffer.size());
-    memcpy(&mBuffer[index], &rdh, sizeof(rdh));
-    memcpy(&mBuffer[index] + sizeof(rdh), &gbtBuffer[0], gbtBuffer.size() * sizeof(gbtBuffer[0]));
-    break;
+    gbt.moveToBuffer(gbtBuffer);
+    if (!gbtBuffer.size()) {
+      continue;
+    }
+    gbt.printStatus(4);
+    // gbtBuffer.clear();                  // FIXME: remove this
+    // gbtBuffer.emplace_back(0x22222222); // FIXME: remove this
+    // gbtBuffer.emplace_back(0x44444444); // FIXME: remove this
+    // gbtBuffer.emplace_back(0x66666666); // FIXME: remove this
+    // gbtBuffer.emplace_back(0x88888888); // FIXME: remove this
+    auto rdh = createRDH(mId, gbt.id(), orbit, bunchCrossing, gbtBuffer.size() * sizeof(gbtBuffer[0]) + sizeof(RAWDataHeader));
+    // dumpRDH(rdh);
+    for (int i = 0; i < sizeof(rdh) / 4; i++) {
+      uint32_t* r = reinterpret_cast<uint32_t*>(&rdh) + i;
+      mBuffer.emplace_back(*r);
+    }
+    for (int i = 0; i < gbtBuffer.size(); i++) {
+      mBuffer.emplace_back(gbtBuffer[i]);
+    }
+    // break;
   }
   std::cout << fmt::format("gbts2buffer : orbit {} bx {} buffer size {} => {}\n",
                            orbit, bunchCrossing, prev, mBuffer.size());
