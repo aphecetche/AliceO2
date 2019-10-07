@@ -48,6 +48,8 @@ class GBTEncoder
   size_t nofWords() const;
   ///@}
 
+  int id() const { return mGbtId; }
+
  private:
   bool areElinksAligned() const;
 
