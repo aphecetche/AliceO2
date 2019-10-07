@@ -16,8 +16,35 @@
 
 #include <boost/test/unit_test.hpp>
 #include "MCHRaw/CRUEncoder.h"
-
+#include "MCHRaw/RAWDataHeader.h"
 using namespace o2::mch::raw;
+
+void dumpBuffer(gsl::span<uint32_t> buffer)
+{
+  // dump a buffer, assuming it starts with a RDH
+
+  int i{0};
+  for (auto& w : buffer) {
+    std::cout << fmt::format("{:08X} ", w);
+    if ((i + 1) % 4 == 0) {
+      std::cout << "\n";
+    }
+    ++i;
+  }
+  RAWDataHeader rdh;
+  int index{0};
+
+  while (index < buffer.size()) {
+    memcpy(&rdh, &buffer[0] + index, sizeof(rdh));
+    std::cout << "----- index " << index << "\n";
+    std::cout << rdh << "\n";
+    if (rdh.memorySize == 0) {
+      std::cout << "OUPS\n";
+      throw;
+    }
+    index += rdh.memorySize / 4;
+  }
+}
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
@@ -52,6 +79,15 @@ BOOST_AUTO_TEST_CASE(MultipleOrbitsWithNoDataIsAnEmptyBuffer)
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
 
+int estimateHBSize(int nofGbts, int maxNofChPerGbt)
+{
+  size_t rdhSize = 16; // 16 32-bits words
+  size_t nbits = (50 + maxNofChPerGbt * 90);
+  size_t n128bitwords = nbits / 2;
+  size_t n32bitwords = n128bitwords * 4;
+  return n32bitwords + rdhSize * nofGbts;
+}
+
 BOOST_AUTO_TEST_CASE(CheckNumberOfRDHs)
 {
   srand(time(nullptr));
@@ -63,49 +99,52 @@ BOOST_AUTO_TEST_CASE(CheckNumberOfRDHs)
   uint8_t elinkId(0);
   uint16_t ts(0);
 
-  cru.startHeartbeatFrame(12345, 123);
+  cru.startHeartbeatFrame(12345, 678);
 
   cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
 
-  std::cout << ">>> After 1 channel\n";
-  cru.printStatus(1);
-  std::cout << "<<< After 1 channel\n";
+  cru.startHeartbeatFrame(12345, 910);
 
-  cru.startHeartbeatFrame(12345, 456);
+  solarId = 1;
+  elinkId = 2;
+  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
+  solarId = 2;
+  elinkId = 3;
+  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
 
-  std::cout << ">>> After 1 channel + startHB\n";
-  cru.printStatus(1);
-  std::cout << "<<< After 1 channel + startHB\n";
+  solarId = 12;
+  elinkId = 3;
 
-  // elinkId = 3;
-  //
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 3, 13);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 13, 133);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 23, 163);
-  //
-  // elinkId = 2;
-  //
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 1, 20);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 2, 30);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 3, 40);
-  //
-  // elinkId = 10;
-  //
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 22, 420);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 23, 430);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 24, 440);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 25, 450);
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 26, 460);
-  //
-  // cru.addChannelChargeSum(solarId, elinkId, ts, 12, 420);
-  //
+  cru.addChannelChargeSum(solarId, elinkId, ts, 3, 13);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 13, 133);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 23, 163);
+
+  elinkId = 2;
+
+  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 1, 20);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 2, 30);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 3, 40);
+
+  elinkId = 10;
+
+  cru.addChannelChargeSum(solarId, elinkId, ts, 22, 420);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 23, 430);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 24, 440);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 25, 450);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 26, 460);
+  cru.addChannelChargeSum(solarId, elinkId, ts, 12, 420);
+
+  std::cout << "\n\nmoveToBuffer\n\n";
   std::vector<uint32_t> buffer;
   size_t initialSize{13};
   buffer.assign(initialSize, 0);
   size_t n = cru.moveToBuffer(buffer);
+  dumpBuffer(gsl::span<uint32_t>(&buffer[initialSize], &buffer[buffer.size() - 1]));
   BOOST_CHECK_EQUAL(buffer.size(), initialSize + n);
-  BOOST_CHECK_EQUAL(n, 0);
+  size_t expectedSize = 3 * estimateHBSize(1, 1) + estimateHBSize(1, 6);
+
+  BOOST_CHECK_EQUAL(n, expectedSize);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
