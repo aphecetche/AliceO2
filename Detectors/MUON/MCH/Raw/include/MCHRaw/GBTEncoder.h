@@ -44,11 +44,11 @@ class GBTEncoder
   ///@{ Methods mainly used for testing
   /// Print the current status of the encoder, for as much as maxelink elinks.
   void printStatus(int maxelink = -1) const;
-  /// get the number of internal 32-bits words we have accumulated so far
-  size_t nofWords() const;
   ///@}
 
   int id() const { return mGbtId; }
+
+  static bool forceNoPhase;
 
  private:
   bool areElinksAligned() const;

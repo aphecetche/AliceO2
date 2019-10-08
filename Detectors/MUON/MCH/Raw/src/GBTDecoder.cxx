@@ -10,27 +10,24 @@
 
 #include "MCHRaw/GBTDecoder.h"
 #include <fmt/printf.h>
+#include <fmt/format.h>
 #include "MakeArray.h"
+#include "Assertions.h"
+#include <iostream>
+
 using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 
 // FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
 // the right range 0..15 itself ? Or have the mapping at this level already ?
-GBTDecoder::GBTDecoder(int linkId, SampaChannelHandler sampaChannelHandler) : mId(linkId), mElinks{::makeArray<40>([sampaChannelHandler](size_t i) { return ElinkDecoder(i % 16, sampaChannelHandler); })}, mNofGBTWordsSeens{0}
+GBTDecoder::GBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler) : mCruId(cruId), mGbtId(gbtId), mElinks{::makeArray<40>([=](size_t i) { return ElinkDecoder(i % 16, sampaChannelHandler); })}, mNofGbtWordsSeens{0}
 {
-  if (linkId < 0 || linkId > 23) {
-    throw std::invalid_argument(fmt::sprintf("linkId %d should be between 0 and 23", linkId));
-  }
-  if (linkId == 0) {
-    // mElinks[0].verbose(true);
-    // mElinks[2].verbose(true);
-    // mElinks[4].verbose(true);
-  }
+  assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
 void GBTDecoder::append(uint128_t w)
 {
-  ++mNofGBTWordsSeens;
+  ++mNofGbtWordsSeens;
   // dispatch the 80 bits to the underlaying elinks (2 bits per elink)
   for (int i = 0; i < 80; i += 2) {
     mElinks[i / 2].append(bit_test(w, i), bit_test(w, i + 1));
@@ -57,7 +54,7 @@ void GBTDecoder::finalize()
 
 void GBTDecoder::printStatus(int maxelink) const
 {
-  std::cout << fmt::format("GBTDecoder({}) # GBT words seen {}\n", mId, mNofGBTWordsSeens);
+  std::cout << fmt::format("GBTDecoder(CRU{}-GBT{}) # GBT words seen {}\n", mCruId, mGbtId, mNofGbtWordsSeens);
   auto n = mElinks.size();
   if (maxelink > 0) {
     n = maxelink;
