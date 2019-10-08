@@ -8,13 +8,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_COMMON_H
-#define O2_MCH_RAW_TEST_COMMON_H
+#ifndef O2_MCH_RAW_CRU_DECODER_H
+#define O2_MCH_RAW_CRU_DECODER_H
 
-#include "MCHRaw/ElinkEncoder.h"
-#include <vector>
-#include <array>
+#include "MCHRaw/SampaChannelHandler.h"
 #include <gsl/span>
+#include "MCHRaw/GBTDecoder.h"
+#include <array>
 
 namespace o2
 {
@@ -22,24 +22,19 @@ namespace mch
 {
 namespace raw
 {
-namespace test
+class CRUDecoder
 {
+ public:
+  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler);
 
-int countRDHs(gsl::span<uint32_t> buffer);
-int showRDHs(gsl::span<uint32_t> buffer);
-void dumpBuffer(gsl::span<uint32_t> buffer);
+  void decode(int gbtid, gsl::span<uint32_t> buffer);
 
-o2::mch::raw::ElinkEncoder createElinkEncoder();
+ private:
+  int mCruId;
+  std::array<GBTDecoder, 24> mGbtDecoders;
+};
 
-std::vector<uint32_t> createCRUBuffer(int cruId = 0);
-
-std::vector<uint32_t> createGBTBuffer();
-
-extern std::array<uint32_t, 640> REF_BUFFER;
-
-} // namespace test
 } // namespace raw
 } // namespace mch
 } // namespace o2
-
 #endif

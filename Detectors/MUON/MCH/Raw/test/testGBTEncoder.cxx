@@ -17,6 +17,7 @@
 #include <array>
 #include "common.h"
 #include <array>
+#include <fmt/format.h>
 
 using namespace o2::mch::raw;
 
@@ -26,9 +27,10 @@ BOOST_AUTO_TEST_SUITE(gbtencoder)
 
 BOOST_AUTO_TEST_CASE(EncodeABuffer)
 {
-  auto buffer = getEncodedBuffer();
-  BOOST_CHECK_GE(buffer.size(), REF_BUFFER.size());
-  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(REF_BUFFER)));
+  auto buffer = o2::mch::raw::test::createGBTBuffer();
+  size_t n = o2::mch::raw::test::REF_BUFFER.size();
+  BOOST_CHECK_GE(buffer.size(), n);
+  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(o2::mch::raw::test::REF_BUFFER)));
 }
 
 BOOST_AUTO_TEST_CASE(GBTEncoderLinkIdMustBeBetween0And23)
@@ -50,7 +52,6 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
   enc.addChannelChargeSum(elinkId, ts, 13, 133);
   enc.addChannelChargeSum(elinkId, ts, 23, 163);
   BOOST_CHECK_THROW(enc.addChannelChargeSum(40, ts, 0, 10), std::invalid_argument);
-  enc.printStatus(4);
   std::vector<uint32_t> buffer;
   enc.moveToBuffer(buffer);
   // we only test >= because the exact size can vary
@@ -63,7 +64,6 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
   std::vector<uint32_t> buffer;
   GBTEncoder enc(0, 0);
   enc.moveToBuffer(buffer);
-  std::cout << buffer.size() << "\n";
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkId = 0;

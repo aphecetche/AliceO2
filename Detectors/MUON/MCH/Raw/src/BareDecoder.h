@@ -8,36 +8,33 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_COMMON_H
-#define O2_MCH_RAW_TEST_COMMON_H
+#ifndef O2_MCH_RAW_BAREDECODER_H
+#define O2_MCH_RAW_BAREDECODER_H
 
-#include "MCHRaw/ElinkEncoder.h"
-#include <vector>
-#include <array>
+#include "CRUDecoder.h"
+#include "MCHRaw/RawDataHeaderHandler.h"
+#include "MCHRaw/SampaChannelHandler.h"
+#include <cstdlib>
 #include <gsl/span>
-
 namespace o2
 {
 namespace mch
 {
 namespace raw
 {
-namespace test
+class BareDecoder
 {
+ public:
+  BareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
 
-int countRDHs(gsl::span<uint32_t> buffer);
-int showRDHs(gsl::span<uint32_t> buffer);
-void dumpBuffer(gsl::span<uint32_t> buffer);
+  int operator()(gsl::span<uint32_t> buffer);
 
-o2::mch::raw::ElinkEncoder createElinkEncoder();
-
-std::vector<uint32_t> createCRUBuffer(int cruId = 0);
-
-std::vector<uint32_t> createGBTBuffer();
-
-extern std::array<uint32_t, 640> REF_BUFFER;
-
-} // namespace test
+ private:
+  // FIXME: how many CRUs really ? 18 gives already 17280 elinks,
+  // which is more than the number of dual sampas ?
+  std::array<CRUDecoder, 18> mCruDecoders;
+  RawDataHeaderHandler mRdhHandler;
+};
 } // namespace raw
 } // namespace mch
 } // namespace o2
