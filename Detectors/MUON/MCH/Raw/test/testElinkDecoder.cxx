@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(ELinkDecoderIdMustBeBetween0And39)
 
 BOOST_AUTO_TEST_CASE(TestELinkDecoding)
 {
-  ElinkEncoder enc = encoderExample1();
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
   int npackets{0};
 
   auto hp = [&npackets](uint8_t chip, uint8_t channel, uint16_t timestamp,
@@ -60,10 +60,19 @@ BOOST_AUTO_TEST_CASE(TestELinkDecoding)
 
   e.finalize();
 
-  std::cout << "nof bits : " << enc.len() << "\n";
-  std::cout << "elink=" << e << "\n";
-  std::cout << "npackets=" << npackets << "\n";
   BOOST_CHECK_EQUAL(npackets, 4);
+
+  // same thing but with a decoder without a channel handler
+  // so we don't "see" any packet in this case
+  npackets = 0;
+  ElinkDecoder e2(enc.id(), nullptr);
+  for (int i = 0; i < enc.len() - 1; i += 2) {
+    e2.append(enc.get(i), enc.get(i + 1));
+  }
+
+  e2.finalize();
+
+  BOOST_CHECK_EQUAL(npackets, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

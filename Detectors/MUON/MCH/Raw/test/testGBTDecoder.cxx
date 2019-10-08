@@ -21,6 +21,7 @@
 #include "common.h"
 
 using namespace o2::mch::raw;
+using namespace o2::mch::raw::test;
 
 SampaChannelHandler handlePacket(std::string_view msg)
 {
@@ -45,8 +46,8 @@ BOOST_AUTO_TEST_SUITE(gbtdecoder)
 
 BOOST_AUTO_TEST_CASE(GBTDecoderLinkIdMustBeBetween0And23)
 {
-  BOOST_CHECK_THROW(GBTDecoder enc(24, handlePacket("dummy")), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(GBTDecoder enc(23, handlePacket("dummy")));
+  BOOST_CHECK_THROW(GBTDecoder enc(0, 24, handlePacket("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(GBTDecoder enc(0, 23, handlePacket("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
@@ -54,8 +55,8 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   // here we only test the decoding part.
   // the encoder is assumed to be correct (see testGBTEncoder.cxx)
   std::vector<std::string> result;
-  GBTDecoder dec(0, handlePacketCompact(result));
-  auto buffer = getEncodedBuffer();
+  GBTDecoder dec(0, 0, handlePacketCompact(result));
+  auto buffer = o2::mch::raw::test::createGBTBuffer();
   for (auto i = 0; i < buffer.size(); i += 4) {
     dec.append(buffer[i], buffer[i + 1],
                buffer[i + 2],
@@ -106,7 +107,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
   bool verboseDecoder(false);
 
   std::vector<std::string> result;
-  GBTDecoder dec(0, handlePacketCompact(result));
+  GBTDecoder dec(0, 0, handlePacketCompact(result));
   for (auto i = 0; i < buffer.size(); i += 4) {
     dec.append(buffer[i], buffer[i + 1],
                buffer[i + 2],
@@ -128,7 +129,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
 BOOST_AUTO_TEST_CASE(GBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
-  GBTDecoder dec(0, handlePacketCompact(result));
+  GBTDecoder dec(0, 0, handlePacketCompact(result));
   for (auto i = 0; i < REF_BUFFER.size(); i += 4) {
     uint32_t w0 = REF_BUFFER[i];
     uint32_t w1 = REF_BUFFER[i + 1];
