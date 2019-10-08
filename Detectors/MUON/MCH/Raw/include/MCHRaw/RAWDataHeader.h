@@ -1,17 +1,19 @@
 #ifndef O2_MCH_RAW_RAWDATAHEADER_H
 #define O2_MCH_RAW_RAWDATAHEADER_H
 
-// FIXME : get this from an authoritative source instead !
-
 #include <cstdint>
 #include <iostream>
-
+#include <vector>
+#include <gsl/span>
 namespace o2
 {
 namespace mch
 {
 namespace raw
 {
+
+// FIXME : get this from an authoritative source instead !
+
 struct RAWDataHeaderV4 {
   // 32-bits words
 
@@ -149,9 +151,18 @@ struct RAWDataHeaderV4 {
 
 using RAWDataHeader = RAWDataHeaderV4;
 
+void assertRDH(const RAWDataHeader& rdh);
+
+void appendRDH(std::vector<uint32_t>& buffer, const RAWDataHeader& rdh);
+
+RAWDataHeader createRDH(gsl::span<uint32_t> buffer);
+
+RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing, uint16_t payloadSize);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2
 
 std::ostream& operator<<(std::ostream& os, const o2::mch::raw::RAWDataHeader& rdh);
+
 #endif
