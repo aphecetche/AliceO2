@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(EncodeOneDSSamples)
 
 BOOST_AUTO_TEST_CASE(EncoderGetShouldThrowIfBitNumberIsBeyondLen)
 {
-  ElinkEncoder enc = encoderExample1();
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
 
   BOOST_CHECK_THROW(enc.get(enc.len()), std::invalid_argument);
   BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(EncoderGetShouldThrowIfBitNumberIsBeyondLen)
 
 BOOST_AUTO_TEST_CASE(EncoderFillWithSync)
 {
-  ElinkEncoder enc = encoderExample1();
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
   auto s = enc.len();
   enc.fillWithSync(s + 154);
   BOOST_CHECK_EQUAL(enc.len(), s + 154);

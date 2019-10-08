@@ -16,7 +16,9 @@
 
 using namespace o2::mch::raw;
 
-constexpr int phase(int i);
+int phase(int i);
+
+bool GBTEncoder::forceNoPhase{false};
 
 // FIXME: instead of i % 16 for dsid , get a "real" mapping in there
 GBTEncoder::GBTEncoder(int cruId, int linkId) : mCruId(cruId), mGbtId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGbtWords{}
@@ -167,7 +169,7 @@ size_t GBTEncoder::size() const
   return mGbtWords.size();
 }
 
-constexpr int phase(int i)
+int phase(int i)
 {
   // generate the phase for the i-th ElinkEncoder
   // the default value of -1 means it will be random and decided
@@ -178,8 +180,8 @@ constexpr int phase(int i)
   //
   // returning zero will simply disable the phase
 
-  return 0;
-  // return i == 4 ? 1 : i + 10;
-  // return i + 10;
-  // return -1;
+  if (GBTEncoder::forceNoPhase) {
+    return 0;
+  }
+  return -1;
 }
