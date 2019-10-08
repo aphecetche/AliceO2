@@ -8,21 +8,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_SAMPA_CHANNEL_HANDLER_H
-#define O2_MCH_RAW_SAMPA_CHANNEL_HANDLER_H
+#ifndef O2_MCH_RAW_TEST_BUFFER_H
+#define O2_MCH_RAW_TEST_BUFFER_H
 
-#include <functional>
-#include <cstdlib>
-
-namespace o2
-{
-namespace mch
-{
-namespace raw
-{
-using SampaChannelHandler = std::function<void(uint8_t chip, uint8_t channel, uint16_t timestamp, uint32_t chargeSum)>;
-}
-} // namespace mch
-} // namespace o2
+#include <gsl/span>
+#include "MCHRaw/RAWDataHeader.h"
+#include <fmt/format.h>
 
 #endif

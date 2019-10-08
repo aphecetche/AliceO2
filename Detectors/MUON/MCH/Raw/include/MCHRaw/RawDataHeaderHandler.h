@@ -8,13 +8,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_COMMON_H
-#define O2_MCH_RAW_TEST_COMMON_H
+#ifndef O2_MCH_RAW_RAWDATAHEADER_HANDLER_H
+#define O2_MCH_RAW_RAWDATAHEADER_HANDLER_H
 
-#include "MCHRaw/ElinkEncoder.h"
-#include <vector>
-#include <array>
-#include <gsl/span>
+#include <functional>
+#include "MCHRaw/RAWDataHeader.h"
 
 namespace o2
 {
@@ -22,23 +20,9 @@ namespace mch
 {
 namespace raw
 {
-namespace test
-{
 
-int countRDHs(gsl::span<uint32_t> buffer);
-int showRDHs(gsl::span<uint32_t> buffer);
-void dumpBuffer(gsl::span<uint32_t> buffer);
-
-o2::mch::raw::ElinkEncoder createElinkEncoder();
-
-std::vector<uint32_t> createCRUBuffer(int cruId = 0);
-
-std::vector<uint32_t> createGBTBuffer();
-
-extern std::array<uint32_t, 640> REF_BUFFER;
-
-} // namespace test
-} // namespace raw
+using RawDataHeaderHandler = std::function<bool(const RAWDataHeader& rdh)>;
+}
 } // namespace mch
 } // namespace o2
 

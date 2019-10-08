@@ -15,6 +15,7 @@
 #include "MCHRaw/ElinkDecoder.h"
 #include "MCHRaw/SampaChannelHandler.h"
 #include "MCHRaw/GBT.h"
+#include <gsl/span>
 
 namespace o2
 {
@@ -26,7 +27,7 @@ namespace raw
 class GBTDecoder
 {
  public:
-  GBTDecoder(int linkId, SampaChannelHandler sampaChannelHandler);
+  GBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler);
 
   void append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3);
 
@@ -38,9 +39,10 @@ class GBTDecoder
   void append(uint128_t w);
 
  private:
-  int mId;
+  int mCruId;
+  int mGbtId;
   std::array<ElinkDecoder, 40> mElinks;
-  int mNofGBTWordsSeens;
+  int mNofGbtWordsSeens;
 };
 } // namespace raw
 } // namespace mch

@@ -35,71 +35,26 @@ void CRUEncoder::addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t c
   mGBTs[solarId].addChannelChargeSum(elinkId, chId, timestamp, chargeSum);
 }
 
-RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing,
-                        uint16_t memorySize)
-{
-  RAWDataHeader rdh;
-
-  rdh.cruId = cruId;
-  rdh.linkId = linkId;
-  rdh.dpwId = 0; // FIXME: fill this ?
-  rdh.feeId = 0; //FIXME: what is this field supposed to contain ? unclear to me.
-  rdh.priorityBit = 0;
-  rdh.blockLength = memorySize; // FIXME: the blockLength disappears in RDHv5 ?
-  rdh.memorySize = memorySize;
-  rdh.packetCounter = 0; // FIXME: fill this ?
-  rdh.triggerType = 0;   // FIXME: fill this ?
-  rdh.detectorField = 0; // FIXME: fill this ?
-  rdh.par = 0;           // FIXME: fill this ?
-  rdh.stopBit = 0;
-  rdh.pagesCounter = 1;
-  rdh.triggerOrbit = orbit;
-  rdh.heartbeatOrbit = orbit; // FIXME: RDHv5 has only triggerOrbit ?
-  rdh.triggerBC = bunchCrossing;
-  rdh.heartbeatBC = bunchCrossing; // FIXME: RDHv5 has only triggerBC ?
-
-  return rdh;
-}
-
-void dumpRDH(const RAWDataHeader& rdh)
-{
-  std::cout << std::string(13, '-') << "RDH" << std::string(46, '-') << "\n";
-  std::cout << rdh;
-  std::cout << std::string(13 + 46 + strlen("RDH"), '-') << "\n";
-}
-
 void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
 {
-  // get the words buffer from all our gbts, and prepend each one with a
-  // RDH
-
-  auto prev = mBuffer.size();
+  // append to our own buffer all the words buffers from all our gbts,
+  // prepending each one with a corresponding Raw Data Header (RDH)
 
   for (auto& gbt : mGBTs) {
     std::vector<uint32_t> gbtBuffer;
     gbt.moveToBuffer(gbtBuffer);
     if (!gbtBuffer.size()) {
+      // unlike in real life we discard gbt content when
+      // it's completely void of data
       continue;
     }
-    gbt.printStatus(4);
-    // gbtBuffer.clear();                  // FIXME: remove this
-    // gbtBuffer.emplace_back(0x22222222); // FIXME: remove this
-    // gbtBuffer.emplace_back(0x44444444); // FIXME: remove this
-    // gbtBuffer.emplace_back(0x66666666); // FIXME: remove this
-    // gbtBuffer.emplace_back(0x88888888); // FIXME: remove this
-    auto rdh = createRDH(mId, gbt.id(), orbit, bunchCrossing, gbtBuffer.size() * sizeof(gbtBuffer[0]) + sizeof(RAWDataHeader));
-    // dumpRDH(rdh);
-    for (int i = 0; i < sizeof(rdh) / 4; i++) {
-      uint32_t* r = reinterpret_cast<uint32_t*>(&rdh) + i;
-      mBuffer.emplace_back(*r);
-    }
-    for (int i = 0; i < gbtBuffer.size(); i++) {
-      mBuffer.emplace_back(gbtBuffer[i]);
-    }
-    // break;
+    auto payloadSize = gbtBuffer.size() * sizeof(gbtBuffer[0]); // in bytes
+    auto rdh = createRDH(mId, gbt.id(), orbit, bunchCrossing, payloadSize);
+    // append RDH first ...
+    appendRDH(mBuffer, rdh);
+    // ... and then the corresponding payload
+    std::copy(begin(gbtBuffer), end(gbtBuffer), std::back_inserter(mBuffer));
   }
-  std::cout << fmt::format("gbts2buffer : orbit {} bx {} buffer size {} => {}\n",
-                           orbit, bunchCrossing, prev, mBuffer.size());
 }
 
 size_t CRUEncoder::moveToBuffer(std::vector<uint32_t>& buffer)

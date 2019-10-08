@@ -4,8 +4,14 @@ o2_add_test(bitset
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost fmt::fmt)
 
+o2_add_test(rawdataheader
+            SOURCES testRAWDataHeader.cxx common.cxx
+            COMPONENT_NAME mch
+            LABELS "mch;raw"
+            PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
+
 o2_add_test(cru-encoder
-            SOURCES testCRUEncoder.cxx
+            SOURCES testCRUEncoder.cxx common.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
@@ -38,11 +44,16 @@ o2_add_test(sampa-header
             SOURCES testSampaHeader.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
-            PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw Boost::boost)
+            PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
+
+o2_add_test(decoder
+            SOURCES testDecoder.cxx common.cxx
+            COMPONENT_NAME mch
+            LABELS "mch;raw"
+            PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
 
 o2_add_test(encoder
             SOURCES testEncoder.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
-            PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw Boost::boost)
-
+            PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
