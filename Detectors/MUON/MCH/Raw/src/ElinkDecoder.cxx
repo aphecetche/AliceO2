@@ -13,30 +13,20 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include "CompactBitSetString.h"
+#include "Assertions.h"
 
-namespace
-{
 constexpr int HEADERSIZE = 50;
-}
-namespace o2::mch::raw
+
+namespace o2
+{
+namespace mch
+{
+namespace raw
 {
 
-std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
+ElinkDecoder::ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mSampaChannelHandler{sampaChannelHandler}
 {
-  os << fmt::format("ELINK ID {} nsync {} checkpoint {} indata {} len {} nbits seen {} headers {}\n",
-                    e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
-
-  if (e.len()) {
-    os << std::string(6, ' ') << "BitSet=" << compactString(e.mBitSet);
-  }
-  return os;
-}
-
-ElinkDecoder::ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler) : mId{id}, mCheckpoint(HEADERSIZE), mIsInData(false), mNofSync(0), mBitSet(), mSampaHeader(0), mNofBitSeen(0), mNofHeaderSeen(0), mSampaChannelHandler(sampaChannelHandler)
-{
-  if (id > 39) {
-    throw std::invalid_argument(fmt::sprintf("id = %d should be between 0 and 39", id));
-  }
+  assertIsInRange("id", id, 0, 39);
 }
 
 bool ElinkDecoder::append(bool bit)
@@ -105,10 +95,12 @@ void ElinkDecoder::getPacket()
   //uint16_t nsamples = mBitSet.uint16(0,9);
   uint16_t timestamp = mBitSet.uint16(10, 19);
   uint32_t chargeSum = mBitSet.uint32(20, 39);
-  mSampaChannelHandler(mSampaHeader.chipAddress(),
-                       mSampaHeader.channelAddress(),
-                       timestamp,
-                       chargeSum);
+  if (mSampaChannelHandler) {
+    mSampaChannelHandler(mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         timestamp,
+                         chargeSum);
+  }
 }
 
 int ElinkDecoder::len() const
@@ -175,4 +167,17 @@ bool ElinkDecoder::process()
   return true;
 }
 
-} // namespace o2::mch::raw
+std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
+{
+  os << fmt::format("ELINK ID {} nsync {} checkpoint {} indata {} len {} nbits seen {} headers {}\n",
+                    e.mId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen);
+
+  if (e.len()) {
+    os << std::string(6, ' ') << "BitSet=" << compactString(e.mBitSet);
+  }
+  return os;
+}
+
+} // namespace raw
+} // namespace mch
+} // namespace o2

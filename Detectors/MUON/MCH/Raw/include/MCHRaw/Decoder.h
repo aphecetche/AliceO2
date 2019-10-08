@@ -10,6 +10,12 @@
 
 #ifndef O2_MCH_RAW_DECODER_H
 #define O2_MCH_RAW_DECODER_H
+
+#include <cstdlib>
+#include <gsl/span>
+#include "MCHRaw/SampaChannelHandler.h"
+#include "MCHRaw/RawDataHeaderHandler.h"
+
 namespace o2
 {
 namespace mch
@@ -17,10 +23,12 @@ namespace mch
 namespace raw
 {
 
-class Decoder
-{
- public:
-};
+using Decoder = std::function<void(gsl::span<uint32_t> buffer)>;
+
+Decoder createBareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
+
+Decoder createUserLogicDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2
