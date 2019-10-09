@@ -159,6 +159,14 @@ RAWDataHeader createRDH(gsl::span<uint32_t> buffer);
 
 RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing, uint16_t payloadSize);
 
+int countRDHs(gsl::span<uint32_t> buffer);
+
+int showRDHs(gsl::span<uint32_t> buffer);
+
+void dumpBuffer(gsl::span<uint32_t> buffer);
+
+bool isValid(const RAWDataHeader& rdh);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2
