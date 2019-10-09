@@ -12,9 +12,11 @@
 #define O2_MCH_RAW_TEST_COMMON_H
 
 #include "MCHRaw/ElinkEncoder.h"
-#include <vector>
+#include "MCHRaw/SampaChannelHandler.h"
 #include <array>
 #include <gsl/span>
+#include <string>
+#include <vector>
 
 namespace o2
 {
@@ -25,9 +27,9 @@ namespace raw
 namespace test
 {
 
-int countRDHs(gsl::span<uint32_t> buffer);
-int showRDHs(gsl::span<uint32_t> buffer);
-void dumpBuffer(gsl::span<uint32_t> buffer);
+SampaChannelHandler handlePacketPrint(std::string_view msg);
+
+SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result);
 
 o2::mch::raw::ElinkEncoder createElinkEncoder();
 

@@ -30,7 +30,7 @@ void GBTDecoder::append(uint128_t w)
   ++mNofGbtWordsSeens;
   // dispatch the 80 bits to the underlaying elinks (2 bits per elink)
   for (int i = 0; i < 80; i += 2) {
-    mElinks[i / 2].append(bit_test(w, i), bit_test(w, i + 1));
+    mElinks[i / 2].append(bit_test(w, i + 1), bit_test(w, i));
   }
 }
 
