@@ -24,32 +24,26 @@
 
 using namespace o2::mch::raw;
 
-void handlePacket(uint8_t chip, uint8_t channel, uint16_t timetamp,
-                  uint32_t chargeSum)
-{
-  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
-            << "\n";
-}
-
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(elinkdecoder)
 
 BOOST_AUTO_TEST_CASE(ELinkDecoderIdMustBeBetween0And39)
 {
-  BOOST_CHECK_THROW(ElinkDecoder dec(40, handlePacket), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(ElinkDecoder dec(39, handlePacket));
+  BOOST_CHECK_THROW(ElinkDecoder dec(40, test::handlePacketPrint("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(ElinkDecoder dec(39, test::handlePacketPrint("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(TestELinkDecoding)
 {
   ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
   int npackets{0};
+  auto helper = test::handlePacketPrint("TestELinkDecoding:");
 
-  auto hp = [&npackets](uint8_t chip, uint8_t channel, uint16_t timestamp,
-                        uint32_t chargeSum) {
+  auto hp = [&npackets, helper](uint8_t chip, uint8_t channel, uint16_t timestamp,
+                                uint32_t chargeSum) {
     npackets++;
-    handlePacket(chip, channel, timestamp, chargeSum);
+    helper(chip, channel, timestamp, chargeSum);
   };
 
   ElinkDecoder e(enc.id(), hp);

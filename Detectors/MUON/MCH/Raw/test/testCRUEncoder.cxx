@@ -79,7 +79,7 @@ int estimateHBSize(int nofGbts, int maxNofChPerGbt)
 BOOST_AUTO_TEST_CASE(CheckNumberOfRDHs)
 {
   auto buffer = o2::mch::raw::test::createCRUBuffer();
-  int nrdh = o2::mch::raw::test::countRDHs(buffer);
+  int nrdh = o2::mch::raw::countRDHs(buffer);
   size_t expectedSize = 3 * estimateHBSize(1, 1) + estimateHBSize(1, 6);
   BOOST_CHECK_EQUAL(buffer.size(), expectedSize);
   BOOST_CHECK_EQUAL(nrdh, 4);
