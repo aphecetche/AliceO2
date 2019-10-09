@@ -22,26 +22,11 @@
 
 using namespace o2::mch::raw;
 
-void handlePacket(uint8_t chip, uint8_t channel, uint16_t timetamp,
-                  uint32_t chargeSum)
-{
-  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
-            << "\n";
-}
-
 bool handleRDH(const RAWDataHeader& rdh)
 {
   // std::cout << std::string(80, '-') << "\n";
   // std::cout << rdh << "\n";
   return true;
-}
-
-SampaChannelHandler handlePacketCompact(std::vector<std::string>& result)
-{
-  return [&result](uint8_t chip, uint8_t channel, uint16_t timestamp,
-                   uint32_t chargeSum) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, timestamp, chargeSum));
-  };
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -56,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Test0)
   auto d = createBareDecoder(rh, ch);
 
   createBareDecoder(handleRDH, ch);
-  createBareDecoder(handleRDH, handlePacket);
+  createBareDecoder(handleRDH, test::handlePacketPrint("Test0:"));
 }
 
 BOOST_AUTO_TEST_CASE(Test1)
@@ -73,18 +58,17 @@ BOOST_AUTO_TEST_CASE(Test1)
     std::copy(begin(buffer), end(buffer), std::back_inserter(testBuffer));
   }
 
-  int n = o2::mch::raw::test::countRDHs(testBuffer);
+  int n = o2::mch::raw::countRDHs(testBuffer);
 
-  // o2::mch::raw::test::dumpBuffer(testBuffer);
   BOOST_CHECK_EQUAL(n, nrdhs);
 
-  o2::mch::raw::test::showRDHs(testBuffer);
+  o2::mch::raw::showRDHs(testBuffer);
 }
 
 BOOST_AUTO_TEST_CASE(TestDecoding)
 {
   auto testBuffer = o2::mch::raw::test::createCRUBuffer();
-  int n = o2::mch::raw::test::countRDHs(testBuffer);
+  int n = o2::mch::raw::countRDHs(testBuffer);
   BOOST_CHECK_EQUAL(n, 4);
   std::vector<std::string> result;
   std::vector<std::string> expected{
@@ -105,7 +89,7 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
     "chip-10-ch-26-ts-0-q-460",
     "chip-10-ch-12-ts-0-q-420"};
 
-  auto decode = o2::mch::raw::createBareDecoder(handleRDH, handlePacketCompact(result));
+  auto decode = o2::mch::raw::createBareDecoder(handleRDH, test::handlePacketStoreAsVec(result));
   decode(testBuffer);
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());
