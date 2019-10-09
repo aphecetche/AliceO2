@@ -31,6 +31,111 @@ namespace mch
 {
 namespace raw
 {
+
+int countRDHs(gsl::span<uint32_t> buffer)
+{
+  //FIXME: function method and showRDHs are almost the same
+  // templatize to merge commonalities ?
+  o2::mch::raw::RAWDataHeader rdh;
+  int index{0};
+  int nrdh{0};
+  while (index < buffer.size()) {
+    memcpy(&rdh, &buffer[0] + index, sizeof(rdh));
+    nrdh++;
+    if (rdh.offsetNextPacket == 0) {
+      return -1;
+    }
+    index += rdh.offsetNextPacket / 4;
+  }
+  return nrdh;
+}
+
+using ::operator<<;
+
+bool isValid(const RAWDataHeader& rdh)
+{
+  return rdh.version == 4 && rdh.headerSize == 64;
+}
+
+void dumpRDHBuffer(gsl::span<uint32_t> buffer)
+{
+  auto rdh = createRDH(buffer);
+  std::cout << fmt::format("{:08X} {:08X} {:08X} {:08X}",
+                           rdh.word3, rdh.word2, rdh.word1, rdh.word0);
+  std::cout << fmt::format(" version {:d} headerSize {:d} blockLength {:d} \n",
+                           rdh.version, rdh.headerSize, rdh.blockLength);
+  std::cout << fmt::format("{:46s} feeId {} priority {}\n", " ", rdh.feeId, rdh.priorityBit);
+  std::cout << fmt::format("{:46s} offsetnext {} memsize {}\n", " ", rdh.offsetNextPacket, rdh.memorySize);
+  std::cout << fmt::format("{:46s} linkId {} packetCount {} cruId {} dpwId {}\n", " ", rdh.linkId, rdh.packetCounter, rdh.cruId, rdh.dpwId);
+
+  std::cout << fmt::format("           {:08X} {:08X} {:08X} {:08X}",
+                           rdh.word7, rdh.word6, rdh.word5, rdh.word4);
+  std::cout << fmt::format(" triggerOrbit {:d} \n", rdh.triggerOrbit);
+  std::cout << fmt::format("{:46s} heartbeatOrbit {}\n", " ", rdh.heartbeatOrbit);
+  std::cout << fmt::format("{:46s} zero\n", " ");
+  std::cout << fmt::format("{:46s} zero\n", " ");
+
+  std::cout << fmt::format("           {:08X} {:08X} {:08X} {:08X}",
+                           rdh.word11, rdh.word10, rdh.word9, rdh.word8);
+  std::cout << fmt::format(" triggerBC {}  heartbeatBC {}\n", rdh.triggerBC,
+                           rdh.heartbeatBC);
+  std::cout << fmt::format("{:46s} triggerType {}\n", " ", rdh.triggerType);
+  std::cout << fmt::format("{:46s} zero\n", " ");
+  std::cout << fmt::format("{:46s} zero\n", " ");
+
+  std::cout << fmt::format("           {:08X} {:08X} {:08X} {:08X}",
+                           rdh.word15, rdh.word14, rdh.word13, rdh.word12);
+  std::cout << fmt::format(" detectorField {}  par {}\n", rdh.detectorField,
+                           rdh.par);
+  std::cout << fmt::format("{:46s} stopBit {} pagesCounter {}\n", " ",
+                           rdh.stopBit, rdh.pagesCounter);
+  std::cout << fmt::format("{:46s} zero\n", " ");
+  std::cout << fmt::format("{:46s} zero", " ");
+}
+
+void dumpBuffer(gsl::span<uint32_t> buffer)
+{
+  // dump a buffer, assuming it starts with a RDH
+  // return the number of RDHs
+
+  std::cout << "buffer.size=" << buffer.size() << "\n";
+  int i{0};
+  while (i < buffer.size() / 4) {
+    if (i % 4 == 0) {
+      std::cout << fmt::format("\n{:8d} : ", i * 4);
+    }
+    if (i + 16 < buffer.size()) {
+      auto rdh = createRDH(buffer.subspan(i));
+      if (isValid(rdh)) {
+        dumpRDHBuffer(buffer.subspan(i, 16));
+        i += 15;
+        continue;
+      }
+    }
+    std::cout << fmt::format("{:08X} ", buffer[i]);
+    i++;
+  }
+  std::cout << "\n";
+}
+
+int showRDHs(gsl::span<uint32_t> buffer)
+{
+  o2::mch::raw::RAWDataHeader rdh;
+  int index{0};
+  int nrdh{0};
+  while (index < buffer.size()) {
+    memcpy(&rdh, &buffer[0] + index, sizeof(rdh));
+    nrdh++;
+    std::cout << "----- index " << index << "\n";
+    std::cout << rdh << "\n";
+    if (rdh.offsetNextPacket == 0) {
+      return -1;
+    }
+    index += rdh.offsetNextPacket / 4;
+  }
+  return nrdh;
+}
+
 void assertRDH(const RAWDataHeader& rdh)
 {
   if (rdh.version != 4) {
@@ -106,6 +211,7 @@ RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t
   rdh.priorityBit = 0;
   rdh.blockLength = memorySize; // FIXME: the blockLength disappears in RDHv5 ?
   rdh.memorySize = memorySize;
+  rdh.offsetNextPacket = memorySize;
   rdh.packetCounter = 0; // FIXME: fill this ?
   rdh.triggerType = 0;   // FIXME: fill this ?
   rdh.detectorField = 0; // FIXME: fill this ?

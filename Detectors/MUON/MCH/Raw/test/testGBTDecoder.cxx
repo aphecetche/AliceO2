@@ -23,31 +23,14 @@
 using namespace o2::mch::raw;
 using namespace o2::mch::raw::test;
 
-SampaChannelHandler handlePacket(std::string_view msg)
-{
-  return [msg](uint8_t chip, uint8_t channel, uint16_t timestamp,
-               uint32_t chargeSum) {
-    std::cout << msg << ": Decoder callback got: chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timestamp << " q=" << (int)chargeSum
-              << "\n";
-  };
-}
-
-SampaChannelHandler handlePacketCompact(std::vector<std::string>& result)
-{
-  return [&result](uint8_t chip, uint8_t channel, uint16_t timestamp,
-                   uint32_t chargeSum) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, timestamp, chargeSum));
-  };
-}
-
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(gbtdecoder)
 
 BOOST_AUTO_TEST_CASE(GBTDecoderLinkIdMustBeBetween0And23)
 {
-  BOOST_CHECK_THROW(GBTDecoder enc(0, 24, handlePacket("dummy")), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(GBTDecoder enc(0, 23, handlePacket("dummy")));
+  BOOST_CHECK_THROW(GBTDecoder enc(0, 24, handlePacketPrint("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(GBTDecoder enc(0, 23, handlePacketPrint("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
@@ -55,7 +38,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
   // here we only test the decoding part.
   // the encoder is assumed to be correct (see testGBTEncoder.cxx)
   std::vector<std::string> result;
-  GBTDecoder dec(0, 0, handlePacketCompact(result));
+  GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   auto buffer = o2::mch::raw::test::createGBTBuffer();
   for (auto i = 0; i < buffer.size(); i += 4) {
     dec.append(buffer[i], buffer[i + 1],
@@ -107,7 +90,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
   bool verboseDecoder(false);
 
   std::vector<std::string> result;
-  GBTDecoder dec(0, 0, handlePacketCompact(result));
+  GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   for (auto i = 0; i < buffer.size(); i += 4) {
     dec.append(buffer[i], buffer[i + 1],
                buffer[i + 2],
@@ -129,7 +112,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
 BOOST_AUTO_TEST_CASE(GBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
-  GBTDecoder dec(0, 0, handlePacketCompact(result));
+  GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   for (auto i = 0; i < REF_BUFFER.size(); i += 4) {
     uint32_t w0 = REF_BUFFER[i];
     uint32_t w1 = REF_BUFFER[i + 1];

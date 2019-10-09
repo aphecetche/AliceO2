@@ -74,7 +74,7 @@ void GBTEncoder::elink2gbt()
     uint128_t w{0};
     for (int j = 0; j < 80; j += 2) {
       for (int k = 0; k <= 1; k++) {
-        bool v = mElinks[j / 2].get(i + k);
+        bool v = mElinks[j / 2].get(i + 1 - k);
         if (v) {
           bit_set(w, j + k);
         } else {

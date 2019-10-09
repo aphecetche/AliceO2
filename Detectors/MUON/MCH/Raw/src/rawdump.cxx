@@ -12,28 +12,59 @@
 /// @author  Laurent Aphecetche
 
 #include "boost/program_options.hpp"
-#include "MCHMappingInterface/Segmentation.h"
 #include <iostream>
-
-using namespace o2::mch::mapping;
+#include <fstream>
+#include <gsl/span>
+#include <fmt/format.h>
+#include "MCHRaw/Decoder.h"
 
 namespace po = boost::program_options;
 
-void rawdump(int detElemId)
+void packetHandler(uint8_t chip, uint8_t channel, uint16_t timetamp,
+                   uint32_t chargeSum)
 {
-  Segmentation seg{detElemId};
-  std::cout << "DE " << detElemId << seg.nofPads() << "\n";
+  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
+            << "\n";
+}
+
+bool rdhHandler(const o2::mch::raw::RAWDataHeader& rdh)
+{
+  std::cout << rdh << "\n";
+  return true;
+}
+
+int rawdump(std::string input)
+{
+  std::ifstream in(input.c_str(), std::ios::binary);
+  if (!in.good()) {
+    std::cout << "could not open file " << input << "\n";
+    return 1;
+  }
+  constexpr int sizeToRead = 8192 * 2;
+
+  std::array<uint32_t, sizeToRead> buffer;
+
+  char* ptr = reinterpret_cast<char*>(&buffer[0]);
+  in.read(ptr, sizeToRead);
+
+  // o2::mch::raw::dumpBuffer(buffer);
+  // o2::mch::raw::showRDHs(buffer);
+
+  auto decode = o2::mch::raw::createBareDecoder(rdhHandler, packetHandler);
+  decode(buffer);
+
+  return 0;
 }
 
 int main(int argc, char* argv[])
 {
   std::string prefix;
   std::vector<int> detElemIds;
+  std::string inputFile;
   po::variables_map vm;
   po::options_description generic("Generic options");
 
-  generic.add_options()("help", "produce help message")("de", po::value<std::vector<int>>(&detElemIds),
-                                                        "which detection element to consider");
+  generic.add_options()("help", "produce help message")("input-file,i", po::value<std::string>(&inputFile), "input file name");
 
   po::options_description cmdline;
   cmdline.add(generic);
@@ -46,15 +77,5 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  if (detElemIds.empty()) {
-    std::cout << "Must give at least one detection element id to work with\n";
-    std::cout << generic << "\n";
-    return 3;
-  }
-
-  for (auto& detElemId : detElemIds) {
-    rawdump(detElemId);
-  }
-
-  return 0;
+  return rawdump(inputFile);
 }
