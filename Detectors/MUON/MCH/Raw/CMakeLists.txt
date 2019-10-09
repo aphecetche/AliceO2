@@ -17,7 +17,7 @@ o2_add_library(MCHRaw
 o2_add_executable(rawdump
                   SOURCES src/rawdump.cxx
                   COMPONENT_NAME mch
-                  PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3
+                  PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw
                                         Boost::program_options)
 
 if(BUILD_TESTING)

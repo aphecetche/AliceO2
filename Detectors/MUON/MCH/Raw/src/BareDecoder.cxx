@@ -12,23 +12,6 @@
 #include "MakeArray.h"
 #include "MCHRaw/RAWDataHeader.h"
 #include <iostream>
-// namespace
-// {
-// void dumpBuffer(gsl::span<uint32_t> buffer)
-// {
-//   int i{0};
-//   for (auto& w : buffer) {
-//     std::cout << fmt::format("{:08X} ", w);
-//     if ((i + 1) % 4 == 0) {
-//       std::cout << "\n";
-//     }
-//     ++i;
-//   }
-// }
-//
-// } // namespace
-
-using ::operator<<;
 namespace o2
 {
 namespace mch
@@ -48,13 +31,11 @@ int BareDecoder::operator()(gsl::span<uint32_t> buffer)
 
   while (index < buffer.size()) {
     rdh = createRDH(buffer.subspan(index, sizeof(rdh) / 4));
-    assertRDH(rdh);
-    ++nofRDHs;
-    auto memorySize = rdh.memorySize;
-    if (memorySize == 0) {
-      throw std::logic_error("memorySize can not be zero here");
+    if (!isValid(rdh)) {
+      break;
     }
-    int payloadSize = memorySize - sizeof(rdh);
+    ++nofRDHs;
+    int payloadSize = rdh.memorySize - sizeof(rdh);
     bool shouldDecode = mRdhHandler(rdh);
     if (shouldDecode) {
       size_t n = static_cast<size_t>(payloadSize) / 4;
@@ -62,7 +43,7 @@ int BareDecoder::operator()(gsl::span<uint32_t> buffer)
       mCruDecoders[rdh.cruId].decode(rdh.linkId,
                                      buffer.subspan(pos, n));
     }
-    index += memorySize / 4;
+    index += rdh.offsetNextPacket / 4;
   }
   return nofRDHs;
 }
