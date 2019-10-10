@@ -17,11 +17,11 @@
 
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include "MCHRaw/SampaHeader.h"
 #include "MCHRaw/RAWDataHeader.h"
 #include <fstream>
 #include <fmt/printf.h>
-#include "MCHRaw/ElinkDecoder.h"
+#include "MCHRaw/Encoder.h"
+#include <boost/test/data/test_case.hpp>
 
 using namespace o2::mch::raw;
 using RDH = o2::mch::raw::RAWDataHeader;
@@ -30,29 +30,80 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
-BOOST_AUTO_TEST_CASE(GenerateRDH)
+std::vector<uint32_t> createTestBuffer(gsl::span<uint32_t> data)
 {
-  std::array<std::byte, 8192> page;
-  std::byte zero{0};
-  std::fill(begin(page), end(page), zero);
+  assert(data.size() % 4 == 0);
+  std::vector<uint32_t> buffer;
+  auto payloadSize = data.size() * sizeof(uint32_t);
+  if (payloadSize > (1 << 16) - sizeof(RAWDataHeader)) {
+    throw std::logic_error(fmt::format("cannot generate a buffer with a payload above {} (tried {})", 0xFFFF - sizeof(RAWDataHeader), payloadSize));
+  }
+  auto rdh = createRDH(0, 0, 1234, 567, payloadSize);
+  appendRDH(buffer, rdh);
+  std::copy(data.begin(), data.end(), std::back_inserter(buffer));
+  return buffer;
+}
 
-  RDH rdh;
-  int bc{12345};
+BOOST_AUTO_TEST_CASE(TestPadding)
+{
+  std::vector<uint32_t> data;
 
-  rdh.feeId = 42;
-  rdh.linkId = 23;
-  std::ofstream out("mch-test-rdh.dat");
-  rdh.heartbeatBC = 1;
-  rdh.offsetNextPacket = 8192;
-  out.write((char*)&rdh, sizeof(rdh));
-  out.write((char*)&page, sizeof(page) - sizeof(rdh));
-  rdh.heartbeatBC = 2;
-  rdh.triggerBC = ++bc;
-  rdh.offsetNextPacket = sizeof(rdh);
-  out.write((char*)&rdh, sizeof(rdh));
-  rdh.triggerBC = ++bc;
-  rdh.heartbeatBC = 3;
-  out.write((char*)&rdh, sizeof(rdh));
+  data.emplace_back(0x22222222);
+  data.emplace_back(0x44444444);
+  data.emplace_back(0x66666666);
+  data.emplace_back(0x88888888);
+
+  auto buffer = createTestBuffer(data);
+
+  std::vector<uint32_t> pages;
+  size_t pageSize = 128;
+  uint32_t paddingWord = 0x12345678;
+  paginateBuffer(buffer, pages, pageSize, paddingWord);
+
+  BOOST_CHECK_EQUAL(pages.size(), pageSize / 4);
+  for (int i = sizeof(RAWDataHeader) / 4 + data.size(); i < pageSize / 4; i++) {
+    BOOST_CHECK_EQUAL(pages[i], paddingWord);
+  }
+}
+
+BOOST_DATA_TEST_CASE(TestSplit,
+                     boost::unit_test::data::make({12, 48, 400, 16320}) *
+                       boost::unit_test::data::make({128, 512, 8192}),
+                     ndata, pageSize)
+{
+  constexpr uint32_t paddingWord = 0x12345678;
+
+  std::vector<uint32_t> data;
+  for (int i = 0; i < ndata; i++) {
+    data.emplace_back(i + 1);
+  }
+
+  auto buffer = createTestBuffer(data);
+
+  std::vector<uint32_t> pages;
+  int expected = std::ceil(1.0 * (data.size() * 4) / (pageSize - sizeof(RAWDataHeader)));
+  paginateBuffer(buffer, pages, pageSize, paddingWord);
+
+  int nrdhs = o2::mch::raw::countRDHs(pages);
+  BOOST_CHECK_EQUAL(nrdhs, expected);
+
+  // ensure all words ended up where we expect them
+  bool ok{true};
+  int n{0};
+  for (int i = 0; i < expected; i++) {
+    int dataPos = sizeof(RAWDataHeader) / 4 + i * pageSize / 4;
+    for (int j = 0; j < pageSize / 4 - sizeof(RAWDataHeader) / 4; j++) {
+      ++n;
+      if (n >= data.size()) {
+        break;
+      }
+      if (pages[dataPos + j] != n) {
+        ok = false;
+      }
+    }
+  }
+  BOOST_CHECK_EQUAL(ok, true);
+  BOOST_CHECK_EQUAL(n, data.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
