@@ -167,6 +167,8 @@ void dumpBuffer(gsl::span<uint32_t> buffer);
 
 bool isValid(const RAWDataHeader& rdh);
 
+size_t rdhPayloadSize(const RAWDataHeader& rdh);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2
