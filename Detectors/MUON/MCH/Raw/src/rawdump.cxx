@@ -40,18 +40,36 @@ int rawdump(std::string input)
     std::cout << "could not open file " << input << "\n";
     return 1;
   }
-  constexpr int sizeToRead = 8192 * 2;
+  constexpr int sizeToRead = 8192;
 
   std::array<uint32_t, sizeToRead> buffer;
-
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
-  in.read(ptr, sizeToRead);
+
+  auto hp = [](uint8_t chip, uint8_t channel, uint16_t timestamp, uint32_t chargeSum) {
+  };
+
+  size_t nrdhs{0};
+  auto rh = [&nrdhs](const o2::mch::raw::RAWDataHeader& rdh) {
+    nrdhs++;
+    std::cout << nrdhs << "--" << rdh << "\n";
+    return true;
+  };
+
+  size_t pos{0};
+  in.seekg(0, in.end);
+  auto len = in.tellg();
+  in.seekg(0, in.beg);
+
+  auto decode = o2::mch::raw::createBareDecoder(rh, hp);
+
+  while (pos + sizeToRead < len) {
+    in.seekg(pos);
+    in.read(ptr, sizeToRead);
+    pos += sizeToRead;
+    decode(buffer);
+  }
 
   // o2::mch::raw::dumpBuffer(buffer);
-  // o2::mch::raw::showRDHs(buffer);
-
-  auto decode = o2::mch::raw::createBareDecoder(rdhHandler, packetHandler);
-  decode(buffer);
 
   return 0;
 }

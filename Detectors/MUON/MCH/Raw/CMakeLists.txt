@@ -6,6 +6,7 @@ o2_add_library(MCHRaw
                        src/Decoder.cxx
                        src/ElinkDecoder.cxx
                        src/ElinkEncoder.cxx
+                       src/Encoder.cxx
                        src/GBTDecoder.cxx
                        src/GBTEncoder.cxx
                        src/NofBits.cxx
