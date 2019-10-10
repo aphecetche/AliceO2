@@ -32,7 +32,13 @@ ElinkDecoder::ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler) 
 bool ElinkDecoder::append(bool bit)
 {
   ++mNofBitSeen;
-  mBitSet.append(bit);
+  try {
+    mBitSet.append(bit);
+  } catch (std::length_error) {
+    std::cout << (*this) << "\n";
+    std::cout << "OUSP !!!\n";
+    throw;
+  }
   if (mBitSet.len() != mCheckpoint) {
     return true;
   }
