@@ -32,16 +32,25 @@ namespace mch
 namespace raw
 {
 
-int countRDHs(gsl::span<uint32_t> buffer)
+bool isValid(const RAWDataHeader& rdh)
 {
-  //FIXME: function method and showRDHs are almost the same
-  // templatize to merge commonalities ?
+  return rdh.version == 4 && rdh.headerSize == 64;
+}
+
+int forEachRDH(gsl::span<uint32_t> buffer, std::function<void(RAWDataHeader&)> f)
+{
   o2::mch::raw::RAWDataHeader rdh;
   int index{0};
   int nrdh{0};
   while (index < buffer.size()) {
     memcpy(&rdh, &buffer[0] + index, sizeof(rdh));
+    if (!isValid(rdh)) {
+      break;
+    }
     nrdh++;
+    if (f) {
+      f(rdh);
+    }
     if (rdh.offsetNextPacket == 0) {
       return -1;
     }
@@ -50,12 +59,12 @@ int countRDHs(gsl::span<uint32_t> buffer)
   return nrdh;
 }
 
-using ::operator<<;
-
-bool isValid(const RAWDataHeader& rdh)
+int countRDHs(gsl::span<uint32_t> buffer)
 {
-  return rdh.version == 4 && rdh.headerSize == 64;
+  return forEachRDH(buffer, nullptr);
 }
+
+using ::operator<<;
 
 void dumpRDHBuffer(gsl::span<uint32_t> buffer)
 {
@@ -98,17 +107,16 @@ void dumpBuffer(gsl::span<uint32_t> buffer)
   // dump a buffer, assuming it starts with a RDH
   // return the number of RDHs
 
-  std::cout << "buffer.size=" << buffer.size() << "\n";
   int i{0};
-  while (i < buffer.size() / 4) {
+  while (i < buffer.size()) {
     if (i % 4 == 0) {
       std::cout << fmt::format("\n{:8d} : ", i * 4);
     }
-    if (i + 16 < buffer.size()) {
+    if (i + 16 <= buffer.size()) {
       auto rdh = createRDH(buffer.subspan(i));
       if (isValid(rdh)) {
         dumpRDHBuffer(buffer.subspan(i, 16));
-        i += 15;
+        i += 16;
         continue;
       }
     }
@@ -120,20 +128,9 @@ void dumpBuffer(gsl::span<uint32_t> buffer)
 
 int showRDHs(gsl::span<uint32_t> buffer)
 {
-  o2::mch::raw::RAWDataHeader rdh;
-  int index{0};
-  int nrdh{0};
-  while (index < buffer.size()) {
-    memcpy(&rdh, &buffer[0] + index, sizeof(rdh));
-    nrdh++;
-    std::cout << "----- index " << index << "\n";
+  return forEachRDH(buffer, [](RAWDataHeader& rdh) {
     std::cout << rdh << "\n";
-    if (rdh.offsetNextPacket == 0) {
-      return -1;
-    }
-    index += rdh.offsetNextPacket / 4;
-  }
-  return nrdh;
+  });
 }
 
 void assertRDH(const RAWDataHeader& rdh)
@@ -209,7 +206,7 @@ RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t
   rdh.dpwId = 0; // FIXME: fill this ?
   rdh.feeId = 0; //FIXME: what is this field supposed to contain ? unclear to me.
   rdh.priorityBit = 0;
-  rdh.blockLength = memorySize; // FIXME: the blockLength disappears in RDHv5 ?
+  rdh.blockLength = memorySize - sizeof(rdh); // FIXME: the blockLength disappears in RDHv5 ?
   rdh.memorySize = memorySize;
   rdh.offsetNextPacket = memorySize;
   rdh.packetCounter = 0; // FIXME: fill this ?
@@ -224,6 +221,18 @@ RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t
   rdh.heartbeatBC = bunchCrossing; // FIXME: RDHv5 has only triggerBC ?
 
   return rdh;
+}
+
+size_t rdhPayloadSize(const RAWDataHeader& rdh)
+{
+  size_t s = rdh.memorySize - sizeof(rdh);
+  if (s != rdh.blockLength) {
+    std::cout << rdh << "\n";
+    std::cout << "memory size - " << sizeof(rdh) << " != " << rdh.blockLength
+              << "\n";
+  }
+  assert(s == rdh.blockLength);
+  return s;
 }
 
 } // namespace raw
