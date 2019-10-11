@@ -20,19 +20,6 @@
 
 namespace po = boost::program_options;
 
-void packetHandler(uint8_t chip, uint8_t channel, uint16_t timetamp,
-                   uint32_t chargeSum)
-{
-  std::cout << " chip= " << (int)chip << " ch= " << (int)channel << " ts=" << (int)timetamp << " q=" << (int)chargeSum
-            << "\n";
-}
-
-bool rdhHandler(const o2::mch::raw::RAWDataHeader& rdh)
-{
-  std::cout << rdh << "\n";
-  return true;
-}
-
 int rawdump(std::string input)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
@@ -45,7 +32,9 @@ int rawdump(std::string input)
   std::array<uint32_t, sizeToRead> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
-  auto hp = [](uint8_t chip, uint8_t channel, uint16_t timestamp, uint32_t chargeSum) {
+  auto hp = [](o2::mch::raw::SampaHit sh) {
+    std::cout << fmt::format("CHIP {:2d} CH {:2d} TS {:5d} Q {:5d}\n",
+                             sh.chip, sh.channel, sh.timestamp, sh.chargeSum);
   };
 
   size_t nrdhs{0};
@@ -60,12 +49,13 @@ int rawdump(std::string input)
   auto len = in.tellg();
   in.seekg(0, in.beg);
 
-  auto decode = o2::mch::raw::createBareDecoder(rh, hp);
+  auto decode = o2::mch::raw::createBareDecoder(rh, hp, false);
 
   while (pos + sizeToRead < len) {
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
+    // o2::mch::raw::dumpBuffer(buffer);
     decode(buffer);
   }
 

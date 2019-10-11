@@ -80,7 +80,8 @@ size_t paginateBuffer(gsl::span<uint32_t> compactBuffer,
   while (inputPos < compactBuffer.size()) {
     auto rdh = createRDH(compactBuffer.subspan(inputPos));
     if (!isValid(rdh)) {
-      throw std::logic_error("got an invalid rhd");
+      std::cout << rdh << "\n";
+      throw std::logic_error("got an invalid rdh");
     }
     auto payloadSize = rdhPayloadSize(rdh);
     inputPos += sizeof(rdh) / 4;

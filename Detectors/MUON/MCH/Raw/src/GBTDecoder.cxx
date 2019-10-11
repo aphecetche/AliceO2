@@ -20,7 +20,14 @@ using namespace boost::multiprecision;
 
 // FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
 // the right range 0..15 itself ? Or have the mapping at this level already ?
-GBTDecoder::GBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler) : mCruId(cruId), mGbtId(gbtId), mElinks{::makeArray<40>([=](size_t i) { return ElinkDecoder(i % 16, sampaChannelHandler); })}, mNofGbtWordsSeens{0}
+GBTDecoder::GBTDecoder(int cruId,
+                       int gbtId,
+                       SampaChannelHandler sampaChannelHandler,
+                       bool chargeSumMode)
+  : mCruId(cruId),
+    mGbtId(gbtId),
+    mElinks{::makeArray<40>([=](size_t i) { return ElinkDecoder(cruId, i % 16, sampaChannelHandler, chargeSumMode); })},
+    mNofGbtWordsSeens{0}
 {
   assertIsInRange("gbtId", gbtId, 0, 23);
 }
@@ -62,5 +69,12 @@ void GBTDecoder::printStatus(int maxelink) const
   for (int i = 0; i < n; i++) {
     const auto& e = mElinks[i];
     std::cout << e << "\n";
+  }
+}
+
+void GBTDecoder::reset()
+{
+  for (auto& e : mElinks) {
+    e.reset();
   }
 }

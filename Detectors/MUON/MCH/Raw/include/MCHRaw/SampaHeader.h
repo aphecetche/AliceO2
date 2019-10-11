@@ -60,6 +60,8 @@ class SampaHeader
   bool operator>(const SampaHeader& rhs) const;
   bool operator>=(const SampaHeader& rhs) const;
 
+  bool hasError() const;
+
   uint8_t hammingCode() const;
   bool headerParity() const;
   SampaPacketType packetType() const;
@@ -90,6 +92,8 @@ class SampaHeader
 SampaHeader sampaSync();
 
 std::string packetTypeName(SampaPacketType pkt);
+
+void hammingDecode(unsigned int buffer[2], bool& error, bool& uncorrectable, bool fix_data);
 
 std::ostream& operator<<(std::ostream& os, const SampaHeader& sh);
 
