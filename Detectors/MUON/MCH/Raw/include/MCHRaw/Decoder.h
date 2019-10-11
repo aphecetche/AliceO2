@@ -25,7 +25,7 @@ namespace raw
 
 using Decoder = std::function<void(gsl::span<uint32_t> buffer)>;
 
-Decoder createBareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
+Decoder createBareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
 
 Decoder createUserLogicDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
 
