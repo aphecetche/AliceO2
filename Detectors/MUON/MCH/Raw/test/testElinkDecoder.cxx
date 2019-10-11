@@ -28,21 +28,45 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(elinkdecoder)
 
-BOOST_AUTO_TEST_CASE(ELinkDecoderIdMustBeBetween0And39)
+BOOST_AUTO_TEST_CASE(ElinkDecoderIdMustBeBetween0And39)
 {
   BOOST_CHECK_THROW(ElinkDecoder dec(0, 40, test::handlePacketPrint("dummy")), std::invalid_argument);
   BOOST_CHECK_NO_THROW(ElinkDecoder dec(0, 39, test::handlePacketPrint("dummy")));
 }
 
-BOOST_AUTO_TEST_CASE(TestELinkDecoding)
+BOOST_AUTO_TEST_CASE(Decoding10)
 {
-  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
-  int npackets{0};
-  auto helper = test::handlePacketPrint("TestELinkDecoding:");
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder10();
 
-  auto hp = [&npackets, helper](SampaHit sh) {
+  int npackets{0};
+  auto helper = test::handlePacketPrint("Decoding10:");
+
+  auto hp = [&npackets, helper](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sh) {
     npackets++;
-    helper(sh);
+    helper(cruId, linkId, chip, channel, sh);
+  };
+
+  ElinkDecoder e(0, enc.id(), hp, false);
+
+  for (int i = 0; i < enc.len() - 1; i += 2) {
+    e.append(enc.get(i), enc.get(i + 1));
+  }
+
+  e.finalize();
+
+  BOOST_CHECK_EQUAL(npackets, 4);
+}
+
+BOOST_AUTO_TEST_CASE(Decoding20)
+{
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder20();
+
+  int npackets{0};
+  auto helper = test::handlePacketPrint("Decoding20:");
+
+  auto hp = [&npackets, helper](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sh) {
+    npackets++;
+    helper(cruId, linkId, chip, channel, sh);
   };
 
   ElinkDecoder e(0, enc.id(), hp);

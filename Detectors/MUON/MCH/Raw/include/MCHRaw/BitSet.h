@@ -99,6 +99,9 @@ class BitSet
   // return the number of bits we are current holding
   int len() const { return mLen; }
 
+  // return the max number of bits we've ever held
+  int maxlen() const { return mMaxLen; }
+
   // pruneFirst removes the first n bits from the bitset
   void pruneFirst(int n);
 
@@ -152,8 +155,9 @@ class BitSet
   uint64_t uint64(int a, int b) const;
 
  private:
-  int mSize; // max number of bits we can hold
-  int mLen;  // actual number of bits we are holding
+  int mSize;   // max number of bits we can hold
+  int mLen;    // actual number of bits we are holding
+  int mMaxLen; // the max number of bits we've ever held
   std::vector<uint8_t> mBytes;
 };
 

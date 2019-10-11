@@ -16,7 +16,7 @@
 #include <vector>
 #include <iostream>
 #include <gsl/span>
-#include "MCHRaw/SampaHit.h"
+#include "MCHRaw/SampaCluster.h"
 
 namespace o2
 {
@@ -28,31 +28,10 @@ namespace raw
 class ElinkEncoder
 {
  public:
-  explicit ElinkEncoder(uint8_t id, uint8_t chip, int phase = 0);
+  explicit ElinkEncoder(uint8_t id, uint8_t chip, int phase = 0,
+                        bool chargeSumMode = true);
 
-  /// @{ add channel information, assuming one single sampa hit (aka sampa cluster).
-  /// either in the form of a single charge sum,
-  /// or as vector of individual adc samples.
-
-  /// vector of adc samples
-  void addChannelSamples(uint8_t chId, uint16_t timestamp, const std::vector<uint16_t>& samples);
-
-  /// single charge sum
-  void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
-                           uint16_t nsamples = 1);
-  ///@}
-
-  /// @{ add channel information, with possibly several sampa hits per packet.
-
-  /// vectors representing sampa hits (n,timestamp,chargesum) (aka sampa clusters)
-  void addChannelChargeSum(uint8_t chId,
-                           gsl::span<uint16_t> nsamples,
-                           gsl::span<uint16_t> timestamp,
-                           gsl::span<uint32_t> chargeSum);
-
-  void addChannelData(uint8_t chId,
-                      gsl::span<SampaHit> data);
-  ///@}
+  void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
 
   void clear();
 
@@ -71,20 +50,16 @@ class ElinkEncoder
   uint64_t range(int a, int b) const;
 
  private:
-  void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
-  void addHeader(uint8_t chId, uint32_t chargeSum);
-  void addHeader(uint8_t chId,
-                 gsl::span<uint16_t> nsamples,
-                 gsl::span<uint16_t> timestamp,
-                 gsl::span<uint32_t> chargeSum);
   void append(bool value);
+  void append(const SampaCluster& sc);
   void append10(uint16_t value);
   void append20(uint32_t value);
   void append50(uint64_t value);
+  void assertNotMixingClusters(const std::vector<SampaCluster>& data) const;
   void assertPhase();
   void assertSync();
-  void setHeader(uint8_t chId, uint16_t n10);
   uint64_t nofSync() const { return mNofSync; }
+  void setHeader(uint8_t chId, uint16_t n10);
 
  private:
   uint8_t mId;
@@ -96,6 +71,7 @@ class ElinkEncoder
   uint64_t mNofBitSeen;
   int mPhase;
   uint32_t mLocalBunchCrossing;
+  bool mChargeSumMode;
 };
 
 } // namespace raw
