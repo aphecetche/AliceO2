@@ -18,15 +18,13 @@
 using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 
-// FIXME: instead of i % 16 for elinkid , use 0..39 and let the elinkencoder compute the dsid within
-// the right range 0..15 itself ? Or have the mapping at this level already ?
 GBTDecoder::GBTDecoder(int cruId,
                        int gbtId,
                        SampaChannelHandler sampaChannelHandler,
                        bool chargeSumMode)
   : mCruId(cruId),
     mGbtId(gbtId),
-    mElinks{::makeArray<40>([=](size_t i) { return ElinkDecoder(cruId, i % 16, sampaChannelHandler, chargeSumMode); })},
+    mElinks{::makeArray<40>([=](size_t i) { return ElinkDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })},
     mNofGbtWordsSeens{0}
 {
   assertIsInRange("gbtId", gbtId, 0, 23);

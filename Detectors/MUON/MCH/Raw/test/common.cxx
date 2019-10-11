@@ -13,16 +13,16 @@ namespace test
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
-  return [msg](SampaHit sh) {
-    std::cout << fmt::format("{}chip={:2d} ch={:2d} ts={:4d} q={:7d}\n",
-                             msg, sh.chip, sh.channel, sh.timestamp, sh.chargeSum);
+  return [msg](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
+    std::cout << fmt::format("{}chip={:2d} ch={:2d} ", msg, chip, channel);
+    std::cout << sc << "\n";
   };
 }
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
-  return [&result](SampaHit sh) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", sh.chip, sh.channel, sh.timestamp, sh.chargeSum));
+  return [&result](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
+    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, sc.timestamp, sc.chargeSum));
   };
 }
 
@@ -77,14 +77,36 @@ std::vector<uint32_t> createCRUBuffer(int cruId)
   return buffer;
 }
 
-ElinkEncoder createElinkEncoder()
+ElinkEncoder createElinkEncoder10()
 {
-  ElinkEncoder enc(0, 9);
+  uint8_t cruId{0};
+  uint8_t linkId{0};
+  int phase{0};
+  bool clusterSumMode{false};
 
-  enc.addChannelChargeSum(1, 20, 101);
-  enc.addChannelChargeSum(5, 100, 505);
-  enc.addChannelChargeSum(13, 260, 1313);
-  enc.addChannelChargeSum(31, 620, 3131);
+  ElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
+
+  enc.addChannelData(1, {SampaCluster{20, std::vector<uint16_t>{20}}});
+  enc.addChannelData(5, {SampaCluster{100, std::vector<uint16_t>{100, 101}}});
+  enc.addChannelData(13, {SampaCluster{260, std::vector<uint16_t>{260, 261, 262}}});
+  enc.addChannelData(31, {SampaCluster{620, std::vector<uint16_t>{620, 621, 622, 623}}});
+
+  return enc;
+}
+
+ElinkEncoder createElinkEncoder20()
+{
+  uint8_t cruId{0};
+  uint8_t linkId{0};
+  int phase{0};
+  bool clusterSumMode{true};
+
+  ElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
+
+  enc.addChannelData(1, {SampaCluster{20, 101}});
+  enc.addChannelData(5, {SampaCluster{100, 505}});
+  enc.addChannelData(13, {SampaCluster{260, 1313}});
+  enc.addChannelData(31, {SampaCluster{620, 3131}});
 
   return enc;
 }

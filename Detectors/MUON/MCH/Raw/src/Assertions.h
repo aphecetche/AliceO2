@@ -13,11 +13,12 @@
 
 #include <fmt/format.h>
 
-inline void assertIsInRange(std::string what, int value, int min, int max)
+inline int assertIsInRange(std::string what, int value, int min, int max)
 {
   if (value < min || value > max) {
     throw std::invalid_argument(fmt::format("{} should be between {} and {} but is {}", what, min, max, value));
   }
+  return value;
 }
 
 #endif
