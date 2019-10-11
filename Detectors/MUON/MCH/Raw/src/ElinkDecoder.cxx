@@ -37,7 +37,6 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
                                                  mNofBitSeen(0),
                                                  mNofHeaderSeen(0),
                                                  mSampaChannelHandler{sampaChannelHandler},
-                                                 mMaxLen{0},
                                                  mChargeSumMode{chargeSumMode}
 {
   assertIsInRange("linkId", linkId, 0, 39);
@@ -53,7 +52,6 @@ bool ElinkDecoder::append(bool bit)
     std::cout << "OUSP !!!\n";
     throw;
   }
-  mMaxLen = std::max(mMaxLen, mBitSet.len());
   if (mBitSet.len() != mCheckpoint) {
     return true;
   }
@@ -125,13 +123,11 @@ void ElinkDecoder::handlePacket20()
     uint16_t timestamp = mBitSet.uint16(index + 10, index + 19);
     uint32_t chargeSum = mBitSet.uint32(index + 20, index + 39);
     if (mSampaChannelHandler) {
-      mSampaChannelHandler(SampaHit{
-        mCruId,
-        mLinkId,
-        mSampaHeader.chipAddress(),
-        mSampaHeader.channelAddress(),
-        timestamp,
-        chargeSum});
+      mSampaChannelHandler(mCruId,
+                           mLinkId,
+                           mSampaHeader.chipAddress(),
+                           mSampaHeader.channelAddress(),
+                           SampaCluster(timestamp, chargeSum));
     }
     index += 40;
   }
@@ -153,14 +149,12 @@ void ElinkDecoder::handlePacket10()
       index += 10;
     }
     if (mSampaChannelHandler) {
-      mSampaChannelHandler(SampaHit{
-        mCruId,
-        mLinkId,
-        mSampaHeader.chipAddress(),
-        mSampaHeader.channelAddress(),
-        timestamp,
-        0,
-        samples});
+      SampaCluster sc(timestamp, samples);
+      mSampaChannelHandler(mCruId,
+                           mLinkId,
+                           mSampaHeader.chipAddress(),
+                           mSampaHeader.channelAddress(),
+                           sc);
     }
   }
 }
@@ -238,12 +232,16 @@ void ElinkDecoder::reset()
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
-  os << fmt::format("ELINK ID {} cruId {} nsync {} checkpoint {} indata {} len {} nbits seen {} headers {} maxlen {} {}\n",
-                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mIsInData, e.mBitSet.len(), e.mNofBitSeen, e.mNofHeaderSeen, e.mMaxLen, (e.len() == BitSet::maxSize() ? "FULL!!!" : ""));
+  os << fmt::format("ELINK ID {:2d} cruId {:2d} nsync {:6d} checkpoint {:3d} indata {:1d} len {:5d} nbits seen {:6d} headers {:5d} maxlen {:4d} mode {} {}\n",
+                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint,
+                    e.mIsInData, e.mBitSet.len(), e.mNofBitSeen,
+                    e.mNofHeaderSeen, e.mBitSet.maxlen(),
+                    (e.mChargeSumMode ? "CLUSUM" : "SAMPLE"),
+                    (e.len() == BitSet::maxSize() ? "FULL!!!" : ""));
 
-  // if (e.len()) {
-  //   os << std::string(6, ' ') << "BitSet=" << compactString(e.mBitSet);
-  // }
+  if (e.len()) {
+    os << std::string(6, ' ') << "BitSet=" << compactString(e.mBitSet);
+  }
   return os;
 }
 
