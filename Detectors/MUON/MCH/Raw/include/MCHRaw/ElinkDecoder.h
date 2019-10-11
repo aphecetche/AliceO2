@@ -58,7 +58,6 @@ class ElinkDecoder
   uint64_t mNofHeaderSeen;
   SampaChannelHandler mSampaChannelHandler;
   bool mVerbose;
-  int mMaxLen;
   bool mChargeSumMode;
 };
 

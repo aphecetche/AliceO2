@@ -22,12 +22,20 @@ namespace o2::mch::raw
 {
 const BitSet sync(sampaSync().uint64(), 50);
 
-void computeHamming(SampaHeader& sampaHeader)
-{
-  // FIXME: compute hamming and parities
-}
-
-ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t chip, int phase) : mId(id), mChipAddress(chip), mSampaHeader{}, mBitSet{}, mNofSync{0}, mSyncIndex{0}, mNofBitSeen{0}, mLocalBunchCrossing{0}, mPhase{phase}
+ElinkEncoder::ElinkEncoder(uint8_t id,
+                           uint8_t chip,
+                           int phase,
+                           bool chargeSumMode)
+  : mId(id),
+    mChipAddress(chip),
+    mSampaHeader{},
+    mBitSet{},
+    mNofSync{0},
+    mSyncIndex{0},
+    mNofBitSeen{0},
+    mLocalBunchCrossing{0},
+    mPhase{phase},
+    mChargeSumMode{chargeSumMode}
 {
   assertIsInRange("id", id, 0, 39);
 
@@ -45,103 +53,49 @@ ElinkEncoder::ElinkEncoder(uint8_t id, uint8_t chip, int phase) : mId(id), mChip
   mSampaHeader.chipAddress(mChipAddress);
 }
 
-void ElinkEncoder::addChannelSamples(uint8_t chId,
-                                     uint16_t timestamp,
-                                     const std::vector<uint16_t>& samples)
+void ElinkEncoder::assertNotMixingClusters(const std::vector<SampaCluster>& data) const
 {
+  // ensure all clusters are either in sample mode or in
+  // chargesum mode, no mixing allowed
+  assert(data.size() > 0);
+  for (auto i = 0; i < data.size(); i++) {
+    if (data[i].isClusterSum() != mChargeSumMode) {
+      throw std::invalid_argument(fmt::format("all cluster of this encoder should be of the same type ({}) but {}-th does not match ", (mChargeSumMode ? "clusterSum" : "samples"), i));
+    }
+  }
+}
+
+void ElinkEncoder::addChannelData(uint8_t chId, const std::vector<SampaCluster>& data)
+{
+  if (data.empty()) {
+    throw std::invalid_argument("cannot add empty data");
+  }
   assertSync();
+  assertNotMixingClusters(data);
 
-  addHeader(chId, samples);
-
-  assertNofBits("timestamp", timestamp, 10);
-
-  // append samples to bitset
-  append10(static_cast<uint16_t>(samples.size()));
-  append10(timestamp);
-
-  for (auto s : samples) {
-    append10(s);
+  uint16_t n10{0};
+  for (const auto& s : data) {
+    n10 += s.nof10BitWords();
   }
-}
 
-void ElinkEncoder::addChannelChargeSum(uint8_t chId,
-                                       uint16_t timestamp,
-                                       uint32_t chargeSum,
-                                       uint16_t nsamples)
-{
-  assertSync();
-
-  addHeader(chId, chargeSum);
-
-  // append samples to bitset
-  assertNofBits("nsamples", nsamples, 10);
-  assertNofBits("timestamp", timestamp, 10);
-
-  append10(nsamples);
-  append10(timestamp);
-  append20(chargeSum);
-}
-
-void ElinkEncoder::addChannelChargeSum(uint8_t chId,
-                                       gsl::span<uint16_t> nsamples,
-                                       gsl::span<uint16_t> timestamp,
-                                       gsl::span<uint32_t> chargeSum)
-{
-  assertSync();
-
-  addHeader(chId, nsamples, timestamp, chargeSum);
-
-  // at this point we are sure the arrays are of the same size
-  // and their content is legit
-  for (int i = 0; i < nsamples.size(); i++) {
-    append10(nsamples[i]);
-    append10(timestamp[i]);
-    append20(chargeSum[i]);
-  }
-}
-
-void ElinkEncoder::addHeader(uint8_t chId,
-                             gsl::span<uint16_t> nsamples,
-                             gsl::span<uint16_t> timestamp,
-                             gsl::span<uint32_t> chargeSum)
-{
-  if (nsamples.size() != timestamp.size() ||
-      nsamples.size() != chargeSum.size() ||
-      timestamp.size() != chargeSum.size()) {
-    throw std::invalid_argument("nsamples,timestamp and chargeSum arrays must be of the same size");
-  }
-  int n10{0};
-  for (int i = 0; i < nsamples.size(); i++) {
-    assertNofBits("sample", nsamples[i], 10);
-    assertNofBits("timestamp", timestamp[i], 10);
-    assertNofBits("chargeSum", chargeSum[i], 20);
-    n10 += 40;
-  }
   setHeader(chId, n10);
-  // append header to bitset
   append50(mSampaHeader.uint64());
-}
-
-void ElinkEncoder::addHeader(uint8_t chId, const std::vector<uint16_t>& samples)
-{
-  int n10 = 2; // nofsamples + timestamp
-  // check all samples are 10 bits
-  for (auto s : samples) {
-    assertNofBits("sample", s, 10);
-    n10++;
+  for (const auto& s : data) {
+    append(s);
   }
-  setHeader(chId, n10);
-  // append header to bitset
-  append50(mSampaHeader.uint64());
 }
 
-void ElinkEncoder::addHeader(uint8_t chId, uint32_t chargeSum)
+void ElinkEncoder::append(const SampaCluster& sc)
 {
-  int n10 = 4; // nofsamples + timestamp + 20 bits of chargeSum
-  assertNofBits("chargeSum", chargeSum, 20);
-  setHeader(chId, n10);
-  // append header to bitset
-  append50(mSampaHeader.uint64());
+  append10(sc.nofSamples());
+  append10(sc.timestamp);
+  if (mChargeSumMode) {
+    append20(sc.chargeSum);
+  } else {
+    for (auto& s : sc.samples) {
+      append10(s);
+    }
+  }
 }
 
 void ElinkEncoder::append(bool value)
@@ -235,14 +189,14 @@ void ElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
   mSampaHeader.channelAddress(chId);
-  computeHamming(mSampaHeader);
 }
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %2d chip %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d | %s",
+  os << fmt::sprintf("ELINK ID %2d chip %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d %10s | %s",
                      enc.mId, enc.mChipAddress, enc.mNofSync, enc.mBitSet.len(),
                      enc.mSyncIndex, enc.mNofBitSeen,
+                     (enc.mChargeSumMode ? "CLUSUM" : "SAMPLE"),
                      compactString(enc.mBitSet));
   return os;
 }

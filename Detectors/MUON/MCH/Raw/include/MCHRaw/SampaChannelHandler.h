@@ -13,7 +13,7 @@
 
 #include <functional>
 
-#include "MCHRaw/SampaHit.h"
+#include "MCHRaw/SampaCluster.h"
 
 namespace o2
 {
@@ -21,7 +21,7 @@ namespace mch
 {
 namespace raw
 {
-using SampaChannelHandler = std::function<void(SampaHit)>;
+using SampaChannelHandler = std::function<void(uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster)>;
 }
 } // namespace mch
 } // namespace o2
