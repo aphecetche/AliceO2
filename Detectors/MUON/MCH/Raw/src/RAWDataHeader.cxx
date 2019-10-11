@@ -223,16 +223,15 @@ RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t
   return rdh;
 }
 
+uint32_t rdhOrbit(const RAWDataHeader& rdh)
+{
+  return rdh.triggerOrbit; // or is it heartbeatOrbit ?
+}
+
 size_t rdhPayloadSize(const RAWDataHeader& rdh)
 {
-  size_t s = rdh.memorySize - sizeof(rdh);
-  if (s != rdh.blockLength) {
-    std::cout << rdh << "\n";
-    std::cout << "memory size - " << sizeof(rdh) << " != " << rdh.blockLength
-              << "\n";
-  }
-  assert(s == rdh.blockLength);
-  return s;
+  return rdh.memorySize - sizeof(rdh);
+  // return rdh.blockLength;
 }
 
 } // namespace raw

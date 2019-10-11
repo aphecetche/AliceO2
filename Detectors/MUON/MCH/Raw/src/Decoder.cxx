@@ -19,9 +19,11 @@ namespace raw
 {
 
 Decoder createBareDecoder(RawDataHeaderHandler rdhHandler,
-                          SampaChannelHandler channelHandler)
+                          SampaChannelHandler channelHandler,
+                          bool chargeSumMode)
+
 {
-  return BareDecoder(rdhHandler, channelHandler);
+  return BareDecoder(rdhHandler, channelHandler, chargeSumMode);
 }
 
 } // namespace raw

@@ -30,8 +30,8 @@ BOOST_AUTO_TEST_SUITE(elinkdecoder)
 
 BOOST_AUTO_TEST_CASE(ELinkDecoderIdMustBeBetween0And39)
 {
-  BOOST_CHECK_THROW(ElinkDecoder dec(40, test::handlePacketPrint("dummy")), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(ElinkDecoder dec(39, test::handlePacketPrint("dummy")));
+  BOOST_CHECK_THROW(ElinkDecoder dec(0, 40, test::handlePacketPrint("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(ElinkDecoder dec(0, 39, test::handlePacketPrint("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(TestELinkDecoding)
@@ -40,13 +40,12 @@ BOOST_AUTO_TEST_CASE(TestELinkDecoding)
   int npackets{0};
   auto helper = test::handlePacketPrint("TestELinkDecoding:");
 
-  auto hp = [&npackets, helper](uint8_t chip, uint8_t channel, uint16_t timestamp,
-                                uint32_t chargeSum) {
+  auto hp = [&npackets, helper](SampaHit sh) {
     npackets++;
-    helper(chip, channel, timestamp, chargeSum);
+    helper(sh);
   };
 
-  ElinkDecoder e(enc.id(), hp);
+  ElinkDecoder e(0, enc.id(), hp);
 
   for (int i = 0; i < enc.len() - 1; i += 2) {
     e.append(enc.get(i), enc.get(i + 1));
@@ -59,7 +58,7 @@ BOOST_AUTO_TEST_CASE(TestELinkDecoding)
   // same thing but with a decoder without a channel handler
   // so we don't "see" any packet in this case
   npackets = 0;
-  ElinkDecoder e2(enc.id(), nullptr);
+  ElinkDecoder e2(0, enc.id(), nullptr);
   for (int i = 0; i < enc.len() - 1; i += 2) {
     e2.append(enc.get(i), enc.get(i + 1));
   }
