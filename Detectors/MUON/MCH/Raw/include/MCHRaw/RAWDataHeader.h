@@ -169,6 +169,8 @@ bool isValid(const RAWDataHeader& rdh);
 
 size_t rdhPayloadSize(const RAWDataHeader& rdh);
 
+uint32_t rdhOrbit(const RAWDataHeader& rdh);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2

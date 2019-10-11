@@ -8,13 +8,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_CRU_DECODER_H
-#define O2_MCH_RAW_CRU_DECODER_H
+#ifndef O2_MCH_RAW_SAMPA_HIT_H
+#define O2_MCH_RAW_SAMPA_HIT_H
 
-#include "MCHRaw/SampaChannelHandler.h"
-#include <gsl/span>
-#include "MCHRaw/GBTDecoder.h"
-#include <array>
+#include <cstdlib>
+#include <vector>
 
 namespace o2
 {
@@ -22,19 +20,18 @@ namespace mch
 {
 namespace raw
 {
-class CRUDecoder
-{
- public:
-  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler,
-                      bool chargeSumMode = true);
 
-  void decode(int gbtid, gsl::span<uint32_t> buffer);
+struct SampaHit { // aka Sampa Cluster in the Sampa documentation
+  uint8_t cruId;
+  uint8_t linkId;
+  uint8_t chip;
+  uint8_t channel;
+  uint16_t timestamp;
+  uint32_t chargeSum;
+  std::vector<uint16_t> samples;
 
-  void reset();
-
- private:
-  int mCruId;
-  std::array<GBTDecoder, 24> mGbtDecoders;
+  uint16_t nofSamples() const;
+  bool isClusterSum() const;
 };
 
 } // namespace raw

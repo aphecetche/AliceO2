@@ -21,6 +21,7 @@
 #include <fstream>
 #include <fmt/printf.h>
 #include "MCHRaw/Encoder.h"
+#include "MCHRaw/CRUEncoder.h"
 #include <boost/test/data/test_case.hpp>
 
 using namespace o2::mch::raw;
@@ -41,6 +42,28 @@ std::vector<uint32_t> createTestBuffer(gsl::span<uint32_t> data)
   auto rdh = createRDH(0, 0, 1234, 567, payloadSize);
   appendRDH(buffer, rdh);
   std::copy(data.begin(), data.end(), std::back_inserter(buffer));
+  return buffer;
+}
+
+std::vector<uint32_t> createPedestalBuffer(int elinkId)
+{
+  uint32_t bx(0);
+  uint8_t solarId(0);
+  uint16_t ts(0);
+  uint8_t cruId(0);
+
+  GBTEncoder::forceNoPhase = true;
+  CRUEncoder cru(cruId);
+
+  uint32_t orbit{42};
+  const int N{1};
+
+  for (int i = 0; i < N; i++) {
+    cru.startHeartbeatFrame(orbit, bx + i);
+    cru.addChannelChargeSum(solarId, elinkId, ts, i, i);
+  }
+  std::vector<uint32_t> buffer;
+  cru.moveToBuffer(buffer);
   return buffer;
 }
 
@@ -104,6 +127,23 @@ BOOST_DATA_TEST_CASE(TestSplit,
   }
   BOOST_CHECK_EQUAL(ok, true);
   BOOST_CHECK_EQUAL(n, data.size());
+}
+
+BOOST_AUTO_TEST_CASE(GenerateFile)
+{
+  std::ofstream out("test.raw", std::ios::binary);
+  auto buffer = createPedestalBuffer(0);
+  std::cout << "buffer.size=" << buffer.size() << "\n";
+
+  dumpBuffer(buffer);
+
+  // for (int i = 0; i < 3; i++) {
+  //   std::vector<uint32_t> pages;
+  //   paginateBuffer(buffer, pages, 8192, 0x0);
+  //   dumpBuffer(pages);
+  //   out.write(reinterpret_cast<char*>(&buffer[0]), buffer.size() * sizeof(uint32_t));
+  // }
+  out.close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
