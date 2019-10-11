@@ -45,45 +45,31 @@ BOOST_AUTO_TEST_CASE(CtorBuildsAnEmptyBitSet)
   BOOST_CHECK_EQUAL(enc.len(), 0);
 }
 
-BOOST_AUTO_TEST_CASE(AddSingleHitWithInvalidTimeStampShouldThrow)
+BOOST_AUTO_TEST_CASE(AddEmptyDataShouldThrow)
 {
   ElinkEncoder enc(0, 0);
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 1 << 10, 0), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(31, 0x3FF, 0));
+  std::vector<SampaCluster> data;
+  BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
 }
 
-BOOST_AUTO_TEST_CASE(AddSingleHitWithInvalidChargeSumShouldThrow)
+BOOST_AUTO_TEST_CASE(AddMixedDataShouldThrow)
 {
   ElinkEncoder enc(0, 0);
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 0, 1 << 20), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(31, 0, 0xFFFFF));
+  std::vector<SampaCluster> data;
+  std::vector<uint16_t> samples{123, 456, 789};
+  data.emplace_back(0, 1000);
+  data.emplace_back(0, samples);
+  BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
 {
   ElinkEncoder enc(0, 0);
   auto initialSize = enc.len();
-  enc.addChannelChargeSum(31, 20, 10);
+  std::vector<SampaCluster> data = {SampaCluster(20, 10)};
+  enc.addChannelData(31, data);
   int expectedSize = initialSize + 100 + 40;
   BOOST_CHECK_EQUAL(enc.len(), expectedSize);
-}
-
-BOOST_AUTO_TEST_CASE(AddMultipleHitsWithInvalidDataShouldThrow)
-{
-  ElinkEncoder enc(0, 0);
-  auto initialSize = enc.len();
-  uint8_t chId{31};
-  std::vector<uint16_t> nsamples = {3, 1, 1};
-  std::vector<uint16_t> timestamp = {10, 20, 30};
-  std::vector<uint32_t> chargeSum = {1000, 2000, 3000};
-  std::vector<uint16_t> invalidNsamples = {3, 1 << 10, 1};
-  std::vector<uint16_t> invalidTimestamp = {1 << 10, 20, 30};
-  std::vector<uint32_t> invalidChargeSum = {1000, 2000, 1 << 20};
-
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(chId, nsamples, timestamp, chargeSum));
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(chId, invalidNsamples, timestamp, chargeSum), std::invalid_argument);
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(chId, nsamples, invalidTimestamp, chargeSum), std::invalid_argument);
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(chId, nsamples, timestamp, invalidChargeSum), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
@@ -91,80 +77,59 @@ BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
   ElinkEncoder enc(0, 0);
   auto initialSize = enc.len();
   uint8_t chId{31};
-  std::vector<uint16_t> nsamples = {3, 1, 1};
-  std::vector<uint16_t> timestamp = {10, 20, 30};
-  std::vector<uint32_t> chargeSum = {1000, 2000, 3000};
 
-  enc.addChannelChargeSum(chId, nsamples, timestamp, chargeSum);
+  std::vector<SampaCluster> data = {
+    SampaCluster(10, 1000),
+    SampaCluster(20, 2000),
+    SampaCluster(30, 3000),
+  };
 
-  int expectedSize = initialSize + 100 + 40 * nsamples.size();
+  enc.addChannelData(chId, data);
+
+  int expectedSize = initialSize + 100 + 40 * data.size();
   BOOST_CHECK_EQUAL(enc.len(), expectedSize);
 }
 
 BOOST_AUTO_TEST_CASE(ChannelIdIs5Bits)
 {
   ElinkEncoder enc(0, 0);
+  std::vector<SampaCluster> data = {SampaCluster(20, 10)};
 
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(32, 20, 10),
+  BOOST_CHECK_THROW(enc.addChannelData(32, data),
                     std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(31, 20, 10));
-  BOOST_CHECK_THROW(enc.addChannelSamples(32, 20, {10}),
-                    std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelSamples(31, 20, {10}));
-}
-
-BOOST_AUTO_TEST_CASE(TimeStampIs10Bits)
-{
-  ElinkEncoder enc(0, 0);
-
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 0x7FF, 10),
-                    std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(31, 0x3FF, 10));
-}
-
-BOOST_AUTO_TEST_CASE(SamplesAre10Bits)
-{
-  ElinkEncoder enc(0, 0);
-
-  BOOST_CHECK_THROW(enc.addChannelSamples(31, 0, {0x7FF, 0x1FF}),
-                    std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelSamples(31, 0, {0x1FF, 0x1FF}));
-}
-
-BOOST_AUTO_TEST_CASE(SamplesAre20BitsIfOnlyOneSample)
-{
-  ElinkEncoder enc(0, 0);
-
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(31, 0, 0x1FFFFF),
-                    std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelChargeSum(31, 0, 0xFFFFF));
+  BOOST_CHECK_NO_THROW(enc.addChannelData(31, data));
 }
 
 BOOST_AUTO_TEST_CASE(OneChipChargeSumOneCluster)
 {
   ElinkEncoder enc(0, 9, 20);
   auto initialSize = enc.len();
-  enc.addChannelChargeSum(1, 20, 101);
-  enc.addChannelChargeSum(5, 100, 505);
-  enc.addChannelChargeSum(13, 260, 1313);
-  enc.addChannelChargeSum(31, 620, 3131);
+  enc.addChannelData(1, {SampaCluster(20, 101)});
+  enc.addChannelData(5, {SampaCluster(100, 505)});
+  enc.addChannelData(13, {SampaCluster(260, 1313)});
+  enc.addChannelData(31, {SampaCluster(620, 3131)});
   BOOST_CHECK_EQUAL(enc.len(), initialSize + 50 + 4 * 90);
 }
 
 BOOST_AUTO_TEST_CASE(OneChipSamplesOneCluster)
 {
-  ElinkEncoder enc(0, 9);
+  uint8_t cruId{0};
+  uint8_t linkId{0};
+  int phase{0};
+  bool clusterSumMode{false};
+  ElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
   auto initialSize = enc.len();
-  enc.addChannelSamples(1, 20, {1, 10, 100, 10, 1});
-  enc.addChannelSamples(5, 100, {5, 50, 5});
-  enc.addChannelSamples(13, 260, {13, 14, 15, 15, 13});
-  enc.addChannelSamples(31, 620, {31});
+  enc.addChannelData(1, {SampaCluster(20, std::vector<uint16_t>{1, 10, 100, 10, 1})});
+  enc.addChannelData(5, {SampaCluster(100, std::vector<uint16_t>{5, 50, 5})});
+  enc.addChannelData(13, {SampaCluster(260, std::vector<uint16_t>{
+                                              13, 14, 15, 15, 13})});
+  enc.addChannelData(31, {SampaCluster(620, std::vector<uint16_t>{31})});
   BOOST_CHECK_EQUAL(enc.len(), initialSize + 50 + 4 * (50 + 20) + 14 * 10);
 }
 
 BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen)
 {
-  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder20();
 
   BOOST_CHECK_THROW(enc.get(enc.len()), std::invalid_argument);
   BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
@@ -172,7 +137,7 @@ BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen)
 
 BOOST_AUTO_TEST_CASE(FillWithSync)
 {
-  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder();
+  ElinkEncoder enc = o2::mch::raw::test::createElinkEncoder20();
   auto s = enc.len();
   enc.fillWithSync(s + 154);
   BOOST_CHECK_EQUAL(enc.len(), s + 154);
