@@ -27,23 +27,27 @@ namespace raw
 class ElinkDecoder
 {
  public:
-  ElinkDecoder(uint8_t id, SampaChannelHandler sampaChannelHandler);
+  ElinkDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler, bool chargeSumMode = true);
   bool append(bool bit0, bool bit1);
   bool finalize();
 
   int len() const;
+
+  void reset();
 
  private:
   bool process();
   void clear(int checkpoint);
   void findSync();
   bool getData();
-  void getPacket();
+  void handlePacket10();
+  void handlePacket20();
   bool append(bool bit);
   friend std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e);
 
  private:
-  uint8_t mId;
+  uint8_t mCruId;
+  uint8_t mLinkId;
   int mCheckpoint;
   bool mIsInData;
   int mNofSync;
@@ -54,6 +58,8 @@ class ElinkDecoder
   uint64_t mNofHeaderSeen;
   SampaChannelHandler mSampaChannelHandler;
   bool mVerbose;
+  int mMaxLen;
+  bool mChargeSumMode;
 };
 
 } // namespace raw

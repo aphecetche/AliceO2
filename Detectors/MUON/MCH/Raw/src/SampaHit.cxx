@@ -8,13 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_CRU_DECODER_H
-#define O2_MCH_RAW_CRU_DECODER_H
-
-#include "MCHRaw/SampaChannelHandler.h"
-#include <gsl/span>
-#include "MCHRaw/GBTDecoder.h"
-#include <array>
+#include "MCHRaw/SampaHit.h"
 
 namespace o2
 {
@@ -22,22 +16,19 @@ namespace mch
 {
 namespace raw
 {
-class CRUDecoder
+
+uint16_t SampaHit::nofSamples() const
 {
- public:
-  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler,
-                      bool chargeSumMode = true);
+  if (!samples.empty()) {
+    return samples.size();
+  }
+  return 1;
+}
 
-  void decode(int gbtid, gsl::span<uint32_t> buffer);
-
-  void reset();
-
- private:
-  int mCruId;
-  std::array<GBTDecoder, 24> mGbtDecoders;
-};
-
+bool SampaHit::isClusterSum() const
+{
+  return nofSamples() == 1;
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2
-#endif

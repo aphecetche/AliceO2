@@ -15,6 +15,8 @@
 #include "SampaHeader.h"
 #include <vector>
 #include <iostream>
+#include <gsl/span>
+#include "MCHRaw/SampaHit.h"
 
 namespace o2
 {
@@ -26,9 +28,9 @@ namespace raw
 class ElinkEncoder
 {
  public:
-  explicit ElinkEncoder(uint8_t id, uint8_t dsid, int phase = 0);
+  explicit ElinkEncoder(uint8_t id, uint8_t chip, int phase = 0);
 
-  /// @{ add channel information.
+  /// @{ add channel information, assuming one single sampa hit (aka sampa cluster).
   /// either in the form of a single charge sum,
   /// or as vector of individual adc samples.
 
@@ -38,6 +40,18 @@ class ElinkEncoder
   /// single charge sum
   void addChannelChargeSum(uint8_t chId, uint16_t timestamp, uint32_t chargeSum,
                            uint16_t nsamples = 1);
+  ///@}
+
+  /// @{ add channel information, with possibly several sampa hits per packet.
+
+  /// vectors representing sampa hits (n,timestamp,chargesum) (aka sampa clusters)
+  void addChannelChargeSum(uint8_t chId,
+                           gsl::span<uint16_t> nsamples,
+                           gsl::span<uint16_t> timestamp,
+                           gsl::span<uint32_t> chargeSum);
+
+  void addChannelData(uint8_t chId,
+                      gsl::span<SampaHit> data);
   ///@}
 
   void clear();
@@ -59,6 +73,10 @@ class ElinkEncoder
  private:
   void addHeader(uint8_t chId, const std::vector<uint16_t>& samples);
   void addHeader(uint8_t chId, uint32_t chargeSum);
+  void addHeader(uint8_t chId,
+                 gsl::span<uint16_t> nsamples,
+                 gsl::span<uint16_t> timestamp,
+                 gsl::span<uint32_t> chargeSum);
   void append(bool value);
   void append10(uint16_t value);
   void append20(uint32_t value);
@@ -70,7 +88,7 @@ class ElinkEncoder
 
  private:
   uint8_t mId;
-  uint8_t mDsId;
+  uint8_t mChipAddress;
   SampaHeader mSampaHeader;
   BitSet mBitSet;
   uint64_t mNofSync;
