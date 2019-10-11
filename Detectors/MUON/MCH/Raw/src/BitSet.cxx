@@ -104,7 +104,7 @@ void assertString(std::string_view s)
 
 } // namespace
 
-BitSet::BitSet() : mSize(8), mLen(0), mBytes(1)
+BitSet::BitSet() : mSize(8), mLen(0), mMaxLen(0), mBytes(1)
 {
 }
 
@@ -301,6 +301,7 @@ void BitSet::setFast(int pos, bool val)
 
   if ((pos + 1) > mLen) {
     mLen = pos + 1;
+    mMaxLen = std::max(mMaxLen, mLen);
   }
 }
 
@@ -313,6 +314,7 @@ void BitSet::setFromBytes(gsl::span<uint8_t> bytes)
   std::copy(bytes.begin(), bytes.end(), std::back_inserter(mBytes));
   mBytes.resize(bytes.size());
   mLen = mBytes.size() * 8;
+  mMaxLen = std::max(mMaxLen, mLen);
   mSize = mLen;
 }
 
