@@ -12,6 +12,7 @@ o2_add_library(MCHRaw
                        src/NofBits.cxx
                        src/RAWDataHeader.cxx
                        src/SampaHeader.cxx
+                       src/SampaHit.cxx
                        src/BitSet.cxx
                PUBLIC_LINK_LIBRARIES fmt::fmt ms_gsl::ms_gsl Boost::boost)
 

@@ -21,13 +21,19 @@ namespace mch
 namespace raw
 {
 
-CRUDecoder::CRUDecoder(int cruId, SampaChannelHandler sampaChannelHandler) : mCruId{cruId}, mGbtDecoders{::makeArray<24>([=](size_t i) { return GBTDecoder(cruId, i, sampaChannelHandler); })}
+CRUDecoder::CRUDecoder(int cruId,
+                       SampaChannelHandler sampaChannelHandler,
+                       bool chargeSumMode)
+  : mCruId{cruId},
+    mGbtDecoders{::makeArray<24>([=](size_t i) { return GBTDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })}
 {
 }
 
 void CRUDecoder::decode(int gbtId, gsl::span<uint32_t> buffer)
 {
   assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
+  std::cout << fmt::format("CRUDecoder({})-GBT{} buffer.size {}\n",
+                           mCruId, gbtId, buffer.size());
   if (buffer.size() % 4) {
     throw std::invalid_argument("buffer size should be a multiple of 4");
   }
@@ -35,8 +41,15 @@ void CRUDecoder::decode(int gbtId, gsl::span<uint32_t> buffer)
   for (auto i = 0; i < buffer.size(); i += 4) {
     gbt.append(buffer[i], buffer[i + 1], buffer[i + 2], buffer[i + 3]);
   }
+  gbt.printStatus(4);
 }
 
+void CRUDecoder::reset()
+{
+  for (auto& g : mGbtDecoders) {
+    g.reset();
+  }
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2

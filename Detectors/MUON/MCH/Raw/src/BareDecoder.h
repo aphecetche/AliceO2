@@ -25,15 +25,23 @@ namespace raw
 class BareDecoder
 {
  public:
-  BareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler);
+  BareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
+
+  ~BareDecoder();
 
   int operator()(gsl::span<uint32_t> buffer);
+
+ private:
+  void reset();
 
  private:
   // FIXME: how many CRUs really ? 18 gives already 17280 elinks,
   // which is more than the number of dual sampas ?
   std::array<CRUDecoder, 18> mCruDecoders;
   RawDataHeaderHandler mRdhHandler;
+  uint32_t mOrbit;
+  size_t mNofOrbitSeen;
+  size_t mNofOrbitJumps;
 };
 } // namespace raw
 } // namespace mch
