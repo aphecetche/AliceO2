@@ -41,7 +41,7 @@ void CRUDecoder::decode(int gbtId, gsl::span<uint32_t> buffer)
   for (auto i = 0; i < buffer.size(); i += 4) {
     gbt.append(buffer[i], buffer[i + 1], buffer[i + 2], buffer[i + 3]);
   }
-  gbt.printStatus(4);
+  gbt.printStatus();
 }
 
 void CRUDecoder::reset()

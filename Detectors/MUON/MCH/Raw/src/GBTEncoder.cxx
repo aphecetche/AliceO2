@@ -29,7 +29,7 @@ GBTEncoder::GBTEncoder(int cruId, int linkId) : mCruId(cruId), mGbtId(linkId), m
 void GBTEncoder::addChannelChargeSum(uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum)
 {
   assertIsInRange("elinkId", elinkId, 0, 39);
-  mElinks[elinkId].addChannelChargeSum(chId, timestamp, chargeSum);
+  mElinks[elinkId].addChannelData(chId, {SampaCluster{timestamp, chargeSum}});
 }
 
 void GBTEncoder::align(int upto)

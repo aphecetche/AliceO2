@@ -32,9 +32,10 @@ int rawdump(std::string input)
   std::array<uint32_t, sizeToRead> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
-  auto hp = [](o2::mch::raw::SampaHit sh) {
-    std::cout << fmt::format("CHIP {:2d} CH {:2d} TS {:5d} Q {:5d}\n",
-                             sh.chip, sh.channel, sh.timestamp, sh.chargeSum);
+  auto hp = [](uint8_t cruId, uint8_t linkId, uint8_t chip,
+               uint8_t channel, o2::mch::raw::SampaCluster sc) {
+    std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
+    std::cout << sc << "\n";
   };
 
   size_t nrdhs{0};
