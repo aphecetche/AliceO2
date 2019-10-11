@@ -31,7 +31,8 @@ SampaChannelHandler handlePacketPrint(std::string_view msg);
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result);
 
-o2::mch::raw::ElinkEncoder createElinkEncoder();
+o2::mch::raw::ElinkEncoder createElinkEncoder10();
+o2::mch::raw::ElinkEncoder createElinkEncoder20();
 
 std::vector<uint32_t> createCRUBuffer(int cruId = 0);
 
