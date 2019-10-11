@@ -12,7 +12,8 @@
 #define O2_MCH_RAW_SAMPA_CHANNEL_HANDLER_H
 
 #include <functional>
-#include <cstdlib>
+
+#include "MCHRaw/SampaHit.h"
 
 namespace o2
 {
@@ -20,7 +21,7 @@ namespace mch
 {
 namespace raw
 {
-using SampaChannelHandler = std::function<void(uint8_t chip, uint8_t channel, uint16_t timestamp, uint32_t chargeSum)>;
+using SampaChannelHandler = std::function<void(SampaHit)>;
 }
 } // namespace mch
 } // namespace o2
