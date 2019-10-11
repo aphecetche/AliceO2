@@ -27,13 +27,16 @@ namespace raw
 class GBTDecoder
 {
  public:
-  GBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler);
+  GBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler,
+             bool chargeSumMode = true);
 
   void append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3);
 
   void printStatus(int maxelink = -1) const;
 
   void finalize();
+
+  void reset();
 
  private:
   void append(uint128_t w);

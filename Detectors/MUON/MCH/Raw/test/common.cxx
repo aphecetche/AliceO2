@@ -13,18 +13,16 @@ namespace test
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
-  return [msg](uint8_t chip, uint8_t channel, uint16_t timestamp,
-               uint32_t chargeSum) {
+  return [msg](SampaHit sh) {
     std::cout << fmt::format("{}chip={:2d} ch={:2d} ts={:4d} q={:7d}\n",
-                             msg, chip, channel, timestamp, chargeSum);
+                             msg, sh.chip, sh.channel, sh.timestamp, sh.chargeSum);
   };
 }
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
-  return [&result](uint8_t chip, uint8_t channel, uint16_t timestamp,
-                   uint32_t chargeSum) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, timestamp, chargeSum));
+  return [&result](SampaHit sh) {
+    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", sh.chip, sh.channel, sh.timestamp, sh.chargeSum));
   };
 }
 
