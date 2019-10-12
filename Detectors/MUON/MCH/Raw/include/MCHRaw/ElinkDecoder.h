@@ -35,6 +35,8 @@ class ElinkDecoder
 
   void reset();
 
+  uint8_t linkId() const;
+
  private:
   bool process();
   void clear(int checkpoint);
