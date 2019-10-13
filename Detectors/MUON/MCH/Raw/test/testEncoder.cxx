@@ -60,7 +60,7 @@ std::vector<uint32_t> createPedestalBuffer(int elinkId)
 
   for (int i = 0; i < N; i++) {
     cru.startHeartbeatFrame(orbit, bx + i);
-    cru.addChannelChargeSum(solarId, elinkId, ts, i, i);
+    cru.addChannelData(solarId, elinkId, i, {SampaCluster(ts, i)});
   }
   std::vector<uint32_t> buffer;
   cru.moveToBuffer(buffer);

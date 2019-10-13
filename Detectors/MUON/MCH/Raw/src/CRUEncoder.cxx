@@ -24,15 +24,20 @@ namespace raw
 
 using ::operator<<;
 
-CRUEncoder::CRUEncoder(uint16_t cruId) : mId(cruId), mOrbit{}, mBunchCrossing{}, mBuffer{}, mGBTs{::makeArray<24>([cruId](size_t i) { return GBTEncoder(cruId, i); })}
+CRUEncoder::CRUEncoder(uint16_t cruId, bool chargeSumMode)
+  : mCruId(cruId),
+    mOrbit{},
+    mBunchCrossing{},
+    mBuffer{},
+    mGBTs{::makeArray<24>([cruId, chargeSumMode](size_t i) { return GBTEncoder(cruId, i, chargeSumMode); })}
 {
   assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
   mBuffer.reserve(1 << 10);
 }
 
-void CRUEncoder::addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum)
+void CRUEncoder::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
 {
-  mGBTs[solarId].addChannelChargeSum(elinkId, chId, timestamp, chargeSum);
+  mGBTs[solarId].addChannelData(elinkId, chId, data);
 }
 
 void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
@@ -49,7 +54,7 @@ void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
       continue;
     }
     auto payloadSize = gbtBuffer.size() * sizeof(gbtBuffer[0]); // in bytes
-    auto rdh = createRDH(mId, gbt.id(), orbit, bunchCrossing, payloadSize);
+    auto rdh = createRDH(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload
@@ -70,7 +75,7 @@ size_t CRUEncoder::moveToBuffer(std::vector<uint32_t>& buffer)
 
 void CRUEncoder::printStatus(int maxgbt) const
 {
-  std::cout << fmt::format("CRUEncoder({}) buffer size {}\n", mId, mBuffer.size());
+  std::cout << fmt::format("CRUEncoder({}) buffer size {}\n", mCruId, mBuffer.size());
 
   int n = mGBTs.size();
   if (maxgbt > 0 && maxgbt <= n) {

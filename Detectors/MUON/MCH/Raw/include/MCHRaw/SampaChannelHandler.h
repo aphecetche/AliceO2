@@ -21,8 +21,15 @@ namespace mch
 {
 namespace raw
 {
-using SampaChannelHandler = std::function<void(uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster)>;
-}
+/// A SampaChannelHandler is a function that take a few integers
+/// which identify a sampa channel and
+/// a SampaCluster containing the channel data.
+using SampaChannelHandler = std::function<void(uint8_t cruId,
+                                               uint8_t linkId,
+                                               uint8_t chip,
+                                               uint8_t channel,
+                                               SampaCluster)>;
+} // namespace raw
 } // namespace mch
 } // namespace o2
 

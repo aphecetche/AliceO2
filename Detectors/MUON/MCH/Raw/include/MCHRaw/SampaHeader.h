@@ -32,18 +32,36 @@ enum class SampaPacketType : uint8_t {
   DataTriggerTooEarlyNumWords = 7
 };
 
+/// @brief SampaHeader is the 50-bits header word used in Sampa data transmission protocol.
+///
+/// - hamming[0..5] (6 bits) is the Hamming code of the header itself
+/// - p[6] (1 bit) is the parity (odd) of the header including hamming
+/// - pkt[7..9] (3 bits) is the packet type
+/// - numWords[10..19] (10 bits) is the number of 10 bit words in the data payload
+/// - h[20..23] (4 bits) is the hardware address of the chip
+/// - ch[24..28] (5 bits) is the channel address
+/// - bx[29..48] (20 bits) is the bunch-crossing counter (40 MHz counter)
+/// - dp[49] (1 bit) is the parity (odd) of data payload
+///
+/// \nosubgrouping
+
 class SampaHeader
 {
  public:
   explicit SampaHeader(uint64_t value = 0);
 
-  // hamming is 6 bits max
-  // pkt is 3 bits max
-  // numWords is 10 bits max
-  // h is 4 bits max
-  // ch is 5 bits max
-  // bx is 20 bits max
-  // if any of those limits are not respected, the ctor throws an exception
+  /// Constructor.
+  /// \param hamming 6 bits
+  /// \param p 1 bit
+  /// \param pkt 3 bits
+  /// \param numWords 10 bits
+  /// \param h 4 bits
+  /// \param ch 5 bits
+  /// \param bx 20 bits
+  /// \param dp 1 bit
+  ///
+  /// if any of the parameter is not in its expected range,
+  /// the ctor throws an exception
   explicit SampaHeader(uint8_t hamming,
                        bool p,
                        SampaPacketType pkt,
@@ -60,8 +78,12 @@ class SampaHeader
   bool operator>(const SampaHeader& rhs) const;
   bool operator>=(const SampaHeader& rhs) const;
 
+  /// whether the header has error (according to hamming)
   bool hasError() const;
 
+  /** @name Getters
+    */
+  ///@{
   uint8_t hammingCode() const;
   bool headerParity() const;
   SampaPacketType packetType() const;
@@ -70,7 +92,12 @@ class SampaHeader
   uint8_t channelAddress() const;
   uint32_t bunchCrossingCounter() const;
   bool payloadParity() const;
+  ///@}
 
+  /** @name Setters
+    Each setter throws if the value does not fit in the expected number of bits.
+    */
+  ///@{
   void hammingCode(uint8_t hamming);
   void headerParity(bool p);
   void packetType(SampaPacketType pkt);
@@ -79,18 +106,25 @@ class SampaHeader
   void channelAddress(uint8_t ch);
   void bunchCrossingCounter(uint32_t bx);
   void payloadParity(bool dp);
+  ///@}
 
+  /// return the header as a 64-bits integer
   uint64_t uint64() const { return mValue; }
+
+  /// sets the value from a 64-bits integer.
+  /// if the value does not fit within 50 bits an exception is thrown.
   void uint64(uint64_t value);
 
   bool isHeartbeat() const;
 
- public:
+ private:
   uint64_t mValue;
 };
 
+/// The 50-bits Sampa SYNC word.
 SampaHeader sampaSync();
 
+/// packetTypeName returns a string representation of the given packet type.
 std::string packetTypeName(SampaPacketType pkt);
 
 void hammingDecode(unsigned int buffer[2], bool& error, bool& uncorrectable, bool fix_data);

@@ -20,6 +20,7 @@ namespace o2
 {
 namespace mch
 {
+/// Classes and functions to deal with MCH Raw Data Formats.
 namespace raw
 {
 
