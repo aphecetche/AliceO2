@@ -22,11 +22,11 @@ namespace o2::mch::raw
 {
 const BitSet sync(sampaSync().uint64(), 50);
 
-ElinkEncoder::ElinkEncoder(uint8_t id,
+ElinkEncoder::ElinkEncoder(uint8_t elinkId,
                            uint8_t chip,
                            int phase,
                            bool chargeSumMode)
-  : mId(id),
+  : mElinkId(elinkId),
     mChipAddress(chip),
     mSampaHeader{},
     mBitSet{},
@@ -37,7 +37,7 @@ ElinkEncoder::ElinkEncoder(uint8_t id,
     mPhase{phase},
     mChargeSumMode{chargeSumMode}
 {
-  assertIsInRange("id", id, 0, 39);
+  assertIsInRange("elinkId", elinkId, 0, 39);
 
   // the phase is used to "simulate" a possible different timing alignment between elinks.
 
@@ -53,10 +53,10 @@ ElinkEncoder::ElinkEncoder(uint8_t id,
   mSampaHeader.chipAddress(mChipAddress);
 }
 
+// ensure all clusters are either in sample mode or in
+// chargesum mode, no mixing allowed
 void ElinkEncoder::assertNotMixingClusters(const std::vector<SampaCluster>& data) const
 {
-  // ensure all clusters are either in sample mode or in
-  // chargesum mode, no mixing allowed
   assert(data.size() > 0);
   for (auto i = 0; i < data.size(); i++) {
     if (data[i].isClusterSum() != mChargeSumMode) {
@@ -85,6 +85,7 @@ void ElinkEncoder::addChannelData(uint8_t chId, const std::vector<SampaCluster>&
   }
 }
 
+/// append the data of a SampaCluster
 void ElinkEncoder::append(const SampaCluster& sc)
 {
   append10(sc.nofSamples());
@@ -98,24 +99,28 @@ void ElinkEncoder::append(const SampaCluster& sc)
   }
 }
 
+/// append one bit (either set or unset)
 void ElinkEncoder::append(bool value)
 {
   mBitSet.append(value);
   mNofBitSeen++;
 }
 
+/// append 10 bits (if value is more than 10 bits an exception is thrown)
 void ElinkEncoder::append10(uint16_t value)
 {
   mBitSet.append(value, 10);
   mNofBitSeen += 10;
 }
 
+/// append 20 bits (if value is more than 20 bits an exception is thrown)
 void ElinkEncoder::append20(uint32_t value)
 {
   mBitSet.append(value, 20);
   mNofBitSeen += 20;
 }
 
+/// append 50 bits (if value is more than 50 bits an exception is thrown)
 void ElinkEncoder::append50(uint64_t value)
 {
   mBitSet.append(value, 50);
@@ -144,6 +149,8 @@ void ElinkEncoder::assertSync()
 
 void ElinkEncoder::clear()
 {
+  // we are not resetting the global counters mNofSync, mNofBitSeen,
+  // just the bit stream
   mBitSet.clear();
 }
 
@@ -193,11 +200,13 @@ void ElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)
 {
-  os << fmt::sprintf("ELINK ID %2d chip %2d nsync %3llu len %6llu syncindex %2d nbitseen %10d %10s | %s",
-                     enc.mId, enc.mChipAddress, enc.mNofSync, enc.mBitSet.len(),
-                     enc.mSyncIndex, enc.mNofBitSeen,
-                     (enc.mChargeSumMode ? "CLUSUM" : "SAMPLE"),
-                     compactString(enc.mBitSet));
+  os << fmt::sprintf(
+    "ELINK ID %2d chip %2d nsync %3llu "
+    "len %6llu syncindex %2d nbitseen %10d %10s | %s",
+    enc.mElinkId, enc.mChipAddress, enc.mNofSync, enc.mBitSet.len(),
+    enc.mSyncIndex, enc.mNofBitSeen,
+    (enc.mChargeSumMode ? "CLUSUM" : "SAMPLE"),
+    compactString(enc.mBitSet));
   return os;
 }
 

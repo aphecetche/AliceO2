@@ -22,33 +22,60 @@ namespace mch
 namespace raw
 {
 
+/// @brief A GBTEncoder manages 40 ElinkEncoder to encode the data of one GBT.
+///
+/// Channel data is added using the addChannelData() method.
+/// The encoded data (in the form of 80-bits GBT words)
+/// is exported to 32-bits words buffer using the moveToBuffer() method.
+///
+/// \nosubgrouping
+
 class GBTEncoder
 {
  public:
-  GBTEncoder(int cruId, int gbtId);
+  /// Constructor.
+  /// \param cruId the CRU this GBT is part of
+  /// \param gbtId the id of this GBT. _Must_ be between 0 and 23
+  /// or an exception is thrown
+  /// \param chargeSumMode must be true if the data to be generated is
+  /// in clusterMode
+  GBTEncoder(int cruId, int gbtId, bool chargeSumMode = true);
 
-  ///@{ Main interface
-  /// add the integrated charge for one channel
-  void addChannelChargeSum(uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum);
+  /** @name Main interface.
+    */
+  ///@{
+  /// add data for one channel.
+  ///
+  /// \param elinkId 0..39
+  /// \param chId 0..31
+  /// \param data vector of SampaCluster objects
+  void addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
 
-  /// reset local bunch-crossing counter
+  /// reset local bunch-crossing counter.
+  ///
   /// (the one that is used in the sampa headers)
   void resetLocalBunchCrossing();
 
+  /// Export our encoded data.
+  ///
   /// The internal GBT words that have been accumulated so far are
   /// _moved_ (i.e. deleted from this object) to the external buffer.
   /// Returns the number of words added to buffer.
   size_t moveToBuffer(std::vector<uint32_t>& buffer);
   ///@}
 
-  ///@{ Methods mainly used for testing
+  /** @name Methods for testing.
+    */
+  ///@{
   /// Print the current status of the encoder, for as much as maxelink elinks.
   void printStatus(int maxelink = -1) const;
+
+  /// Sets to true to bypass simulation of time misalignment of elinks.
+  static bool forceNoPhase;
   ///@}
 
+  /// returns the GBT id
   int id() const { return mGbtId; }
-
-  static bool forceNoPhase;
 
  private:
   bool areElinksAligned() const;
@@ -68,10 +95,10 @@ class GBTEncoder
   void finalize(int alignToSize = 0);
 
  private:
-  int mCruId;
-  int mGbtId;
-  std::array<ElinkEncoder, 40> mElinks;
-  std::vector<uint128_t> mGbtWords;
+  int mCruId;                           //< CRU this GBT belongs to
+  int mGbtId;                           //< id of this GBT (0..23)
+  std::array<ElinkEncoder, 40> mElinks; //< the 40 Elinks we manage
+  std::vector<uint128_t> mGbtWords;     //< the (80 bits) GBT words we've accumulated so far
 };
 } // namespace raw
 } // namespace mch
