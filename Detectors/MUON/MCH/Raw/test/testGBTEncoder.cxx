@@ -45,13 +45,13 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkId = 0;
-  enc.addChannelChargeSum(elinkId, ts, 0, 10);
-  enc.addChannelChargeSum(elinkId, ts, 31, 160);
+  enc.addChannelData(elinkId, 0, {SampaCluster(ts, 10)});
+  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 160)});
   elinkId = 3;
-  enc.addChannelChargeSum(elinkId, ts, 3, 13);
-  enc.addChannelChargeSum(elinkId, ts, 13, 133);
-  enc.addChannelChargeSum(elinkId, ts, 23, 163);
-  BOOST_CHECK_THROW(enc.addChannelChargeSum(40, ts, 0, 10), std::invalid_argument);
+  enc.addChannelData(elinkId, 3, {SampaCluster(ts, 13)});
+  enc.addChannelData(elinkId, 13, {SampaCluster(ts, 133)});
+  enc.addChannelData(elinkId, 23, {SampaCluster(ts, 163)});
+  BOOST_CHECK_THROW(enc.addChannelData(40, 0, {SampaCluster(ts, 10)}), std::invalid_argument);
   std::vector<uint32_t> buffer;
   enc.moveToBuffer(buffer);
   // we only test >= because the exact size can vary
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
   uint16_t ts(0);
   int elinkId = 0;
   for (int i = 0; i < 64; i++) {
-    enc.addChannelChargeSum(elinkId, ts, i % 32, i * 10);
+    enc.addChannelData(elinkId, i % 32, {SampaCluster(ts, i * 10)});
   }
   enc.moveToBuffer(buffer);
   BOOST_CHECK_GE(buffer.size(), 11620); // nof gbt words
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
 BOOST_AUTO_TEST_CASE(GBTEncoderMoveToBufferClearsTheInternalBuffer)
 {
   GBTEncoder enc(0, 0);
-  enc.addChannelChargeSum(0, 0, 0, 10);
+  enc.addChannelData(0, 0, {SampaCluster(0, 10)});
   std::vector<uint32_t> buffer;
   size_t n = enc.moveToBuffer(buffer);
   BOOST_CHECK_GE(n, 280);

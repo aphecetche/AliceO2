@@ -138,8 +138,10 @@ void ElinkDecoder::handlePacket20()
   int index{0};
   while (index < len()) {
     uint16_t nsamples = mBitSet.uint16(index, index + 9);
-    uint16_t timestamp = mBitSet.uint16(index + 10, index + 19);
-    uint32_t chargeSum = mBitSet.uint32(index + 20, index + 39);
+    index += 10;
+    uint16_t timestamp = mBitSet.uint16(index, index + 9);
+    index += 10;
+    uint32_t chargeSum = mBitSet.uint32(index, index + 19);
     if (mSampaChannelHandler) {
       mSampaChannelHandler(mCruId,
                            mLinkId,
@@ -147,7 +149,7 @@ void ElinkDecoder::handlePacket20()
                            mSampaHeader.channelAddress(),
                            SampaCluster(timestamp, chargeSum));
     }
-    index += 40;
+    index += 20;
   }
 }
 
