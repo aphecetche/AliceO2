@@ -22,29 +22,58 @@
 namespace o2::mch::raw
 {
 
+/// @brief A CRUEncoder manages 24 GBTEncoder to encode the data of one CRU.
+///
+/// Data is added using the addChanngelData() method.
+/// Then it can be exported using the moveToBuffer() method.
+/// \nosubgrouping
+
 class CRUEncoder
 {
 
  public:
-  CRUEncoder(uint16_t cruId);
+  /// Constructor.
+  /// \param cruId the CRU we're encoding data for.
+  /// \param chargeSumMode must be true if the data to be generated is
+  /// in clusterMode
+  CRUEncoder(uint16_t cruId, bool chargeSumMode = true);
 
-  void addChannelChargeSum(uint8_t solarId, uint8_t elinkId, uint8_t chId, uint16_t timestamp, uint32_t chargeSum);
+  /** @name Main interface.
+    */
+  ///@{
+  /// add data for one channel, identified by {solarId,elinkId,chId}
+  /// \param solarId aka GBTId 0..23
+  /// \param elinkId the linkId within the GBT
+  /// \param chId channel id
+  /// \param data the actual data to be added
+  void addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
 
-  void printStatus(int maxgbt = -1) const;
-
-  // sets the trigger (orbit,bunchCrossing) to be used
+  // startHeartbeatFrame sets the trigger (orbit,bunchCrossing) to be used
   // for all generated RDHs (until next call to this method).
-  // causes the alignment of the underlying gbts.
+  // Causes the alignment of the underlying gbts.
   void startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
 
+  /// Export our encoded data.
+  ///
+  /// The internal words that have been accumulated so far are
+  /// _moved_ (i.e. deleted from this object) to the external buffer.
+  /// Returns the number of words added to buffer.
   size_t moveToBuffer(std::vector<uint32_t>& buffer);
+  ///@}
+
+  /** @name Methods for testing.
+    */
+  ///@{
+  /// Print the current status of the encoder, for as much as maxelink elinks.
+  void printStatus(int maxgbt = -1) const;
+  ///@}
 
  private:
   void closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
   void gbts2buffer(uint32_t orbit, uint16_t bunchCrossing);
 
  private:
-  uint16_t mId;
+  uint16_t mCruId;
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
   std::vector<uint32_t> mBuffer;
