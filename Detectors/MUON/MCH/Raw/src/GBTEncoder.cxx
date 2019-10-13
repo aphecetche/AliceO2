@@ -20,16 +20,21 @@ int phase(int i);
 
 bool GBTEncoder::forceNoPhase{false};
 
-// FIXME: instead of i % 16 for dsid , get a "real" mapping in there
-GBTEncoder::GBTEncoder(int cruId, int linkId) : mCruId(cruId), mGbtId(linkId), mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder(i, i % 16, phase(i)); })}, mGbtWords{}
+// FIXME: instead of i % 16, get a "real" mapping in there
+GBTEncoder::GBTEncoder(int cruId, int linkId, bool chargeSumMode)
+  : mCruId(cruId),
+    mGbtId(linkId),
+    mElinks{::makeArray<40>([chargeSumMode](size_t i) { return ElinkEncoder(i, i % 16, phase(i), chargeSumMode); })},
+    mGbtWords{}
 {
   assertIsInRange("linkId", linkId, 0, 23);
 }
 
-void GBTEncoder::addChannelChargeSum(uint8_t elinkId, uint16_t timestamp, uint8_t chId, uint32_t chargeSum)
+void GBTEncoder::addChannelData(uint8_t elinkId, uint8_t chId,
+                                const std::vector<SampaCluster>& data)
 {
   assertIsInRange("elinkId", elinkId, 0, 39);
-  mElinks[elinkId].addChannelData(chId, {SampaCluster{timestamp, chargeSum}});
+  mElinks[elinkId].addChannelData(chId, data);
 }
 
 void GBTEncoder::align(int upto)

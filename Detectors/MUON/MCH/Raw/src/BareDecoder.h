@@ -22,13 +22,29 @@ namespace mch
 {
 namespace raw
 {
+/// @brief Decoder for MCH Bare Raw Data Format.
+///
+/// The Bare Data Format is used when no user logic
+/// is present or activated in the CRU.
+
 class BareDecoder
 {
  public:
+  /// Constructs a decoder
+  /// \param rdhHandler the handler that will be called for each RDH
+  /// (Raw Data Header) that is found in the data stream
+  /// \param channelHandler the handler that will be called for each
+  /// piece of sampa data (a SampaCluster, i.e. a part of a time window)
+  /// \param chargeSumMode is true if the sampa generating the data
+  /// is in clusterSum mode. This parameter _must_ be specified and _must_
+  /// match the data used, as there is no way to deduce this value from
+  /// the data itself.
   BareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
 
   ~BareDecoder();
 
+  /// decode the buffer
+  /// \return the number of RDH encountered
   int operator()(gsl::span<uint32_t> buffer);
 
  private:
@@ -37,11 +53,11 @@ class BareDecoder
  private:
   // FIXME: how many CRUs really ? 18 gives already 17280 elinks,
   // which is more than the number of dual sampas ?
-  std::array<CRUDecoder, 18> mCruDecoders;
-  RawDataHeaderHandler mRdhHandler;
-  uint32_t mOrbit;
-  size_t mNofOrbitSeen;
-  size_t mNofOrbitJumps;
+  std::array<CRUDecoder, 18> mCruDecoders; //< helper decoders
+  RawDataHeaderHandler mRdhHandler;        //< RDH handler that is called at each RDH
+  uint32_t mOrbit;                         //< the current orbit the decoder is currently at
+  size_t mNofOrbitSeen;                    //< the total number of orbits the decoder has seen so far
+  size_t mNofOrbitJumps;                   //< the total number of orbit jumps the decoder has seen so far
 };
 } // namespace raw
 } // namespace mch

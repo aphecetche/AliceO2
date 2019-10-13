@@ -38,39 +38,39 @@ std::vector<uint32_t> createCRUBuffer(int cruId)
 
   cru.startHeartbeatFrame(12345, 678);
 
-  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
 
   cru.startHeartbeatFrame(12345, 910);
 
   solarId = 1;
   elinkId = 2;
-  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
   solarId = 2;
   elinkId = 3;
-  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
 
   solarId = 12;
   elinkId = 3;
 
-  cru.addChannelChargeSum(solarId, elinkId, ts, 3, 13);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 13, 133);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 23, 163);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(3, 13)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(13, 133)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(23, 163)});
 
   elinkId = 2;
 
-  cru.addChannelChargeSum(solarId, elinkId, ts, 0, 10);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 1, 20);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 2, 30);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 3, 40);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(1, 20)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(2, 30)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(3, 40)});
 
   elinkId = 10;
 
-  cru.addChannelChargeSum(solarId, elinkId, ts, 22, 420);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 23, 430);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 24, 440);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 25, 450);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 26, 460);
-  cru.addChannelChargeSum(solarId, elinkId, ts, 12, 420);
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(22, 420)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(23, 430)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(24, 440)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(25, 450)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(26, 460)});
+  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(12, 420)});
 
   std::vector<uint32_t> buffer;
   cru.moveToBuffer(buffer);
@@ -118,12 +118,12 @@ std::vector<uint32_t> createGBTBuffer()
   uint32_t bx(0);
   uint16_t ts(12);
   int elinkId = 0;
-  enc.addChannelChargeSum(elinkId, ts, 0, 10);
-  enc.addChannelChargeSum(elinkId, ts, 31, 160);
+  enc.addChannelData(elinkId, 0, {SampaCluster(ts, 10)});
+  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 160)});
   elinkId = 3;
-  enc.addChannelChargeSum(elinkId, ts, 3, 13);
-  enc.addChannelChargeSum(elinkId, ts, 31, 133);
-  enc.addChannelChargeSum(elinkId, ts, 13, 163);
+  enc.addChannelData(elinkId, 3, {SampaCluster(ts, 13)});
+  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 133)});
+  enc.addChannelData(elinkId, 13, {SampaCluster(ts, 163)});
   std::vector<uint32_t> words;
   enc.moveToBuffer(words);
   return words;
