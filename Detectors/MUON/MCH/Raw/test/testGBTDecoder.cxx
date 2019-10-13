@@ -37,7 +37,9 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
 {
   // here we only test the decoding part.
   // the encoder is assumed to be correct (see testGBTEncoder.cxx)
+
   std::vector<std::string> result;
+
   GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   auto buffer = o2::mch::raw::test::createGBTBuffer();
   for (auto i = 0; i < buffer.size(); i += 4) {
@@ -64,7 +66,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
   uint16_t ts(0);
   std::vector<uint32_t> buffer;
   int elinkId = 2;
-  enc.addChannelChargeSum(elinkId, ts, 1, 10);
+  enc.addChannelData(elinkId, 1, {SampaCluster(ts, 10)});
   if (verboseEncoder) {
     std::cout << "before 1st finalize\n";
     enc.printStatus(5);
@@ -74,10 +76,10 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
     std::cout << "after 1st finalize\n";
     enc.printStatus(5);
   }
-  enc.addChannelChargeSum(elinkId, ts, 2, 20);
+  enc.addChannelData(elinkId, 2, {SampaCluster(ts, 20)});
   elinkId = 4;
-  enc.addChannelChargeSum(elinkId, ts, 4, 40);
-  enc.addChannelChargeSum(elinkId, ts, 5, 50);
+  enc.addChannelData(elinkId, 4, {SampaCluster(ts, 40)});
+  enc.addChannelData(elinkId, 5, {SampaCluster(ts, 50)});
   if (verboseEncoder) {
     std::cout << "before 2nd finalize\n";
     enc.printStatus(5);
