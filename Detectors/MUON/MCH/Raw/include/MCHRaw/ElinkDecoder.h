@@ -65,8 +65,13 @@ class ElinkDecoder
   /// Current number of bits we're holding
   int len() const;
 
-  /// Clear our internal bit stream
-  void reset();
+  /// Clear our internal bit stream, but keep the sync status
+  /// i.e. assume the sync is not lost
+  void softReset();
+
+  /// Reset our internal bit stream, and the sync status
+  /// i.e. assume the sync has to be found again
+  void hardReset();
   ///@}
 
  private:
@@ -92,6 +97,7 @@ class ElinkDecoder
   uint64_t mNofHeaderSeen;                  //< Total number of headers seen
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
   bool mChargeSumMode;                      //< Whether we should expect 20-bits data words
+  bool mIsSynchronized;                     //< whether we've a current sync
 };
 
 } // namespace raw

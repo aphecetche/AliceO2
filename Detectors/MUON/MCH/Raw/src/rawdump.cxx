@@ -34,15 +34,15 @@ int rawdump(std::string input)
 
   auto hp = [](uint8_t cruId, uint8_t linkId, uint8_t chip,
                uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
-    std::cout << sc << "\n";
+    // std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
+    // std::cout << sc << "\n";
   };
 
   size_t nrdhs{0};
   auto rh = [&nrdhs](const o2::mch::raw::RAWDataHeader& rdh) {
     nrdhs++;
     std::cout << nrdhs << "--" << rdh << "\n";
-    return true;
+    return false;
   };
 
   size_t pos{0};
@@ -56,11 +56,8 @@ int rawdump(std::string input)
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
-    // o2::mch::raw::dumpBuffer(buffer);
     decode(buffer);
   }
-
-  // o2::mch::raw::dumpBuffer(buffer);
 
   return 0;
 }
