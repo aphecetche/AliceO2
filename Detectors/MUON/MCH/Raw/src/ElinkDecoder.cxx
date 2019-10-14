@@ -38,7 +38,8 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
                                                  mNofBitSeen(0),
                                                  mNofHeaderSeen(0),
                                                  mSampaChannelHandler{sampaChannelHandler},
-                                                 mChargeSumMode{chargeSumMode}
+                                                 mChargeSumMode{chargeSumMode},
+                                                 mIsSynchronized{false}
 {
   assertIsInRange("linkId", linkId, 0, 39);
 }
@@ -85,7 +86,7 @@ bool ElinkDecoder::finalize()
 /// - if they are not then pop the first bit out
 void ElinkDecoder::findSync()
 {
-  if (mNofSync != 0) {
+  if (mIsSynchronized) {
     throw std::logic_error("wrong logic 2");
   }
   if (mIsInData) {
@@ -98,16 +99,19 @@ void ElinkDecoder::findSync()
   }
   clear(HEADERSIZE);
   mNofSync++;
+  mIsSynchronized = true;
 }
 
 bool ElinkDecoder::getData()
 {
-  if (mChargeSumMode) {
-    handlePacket20();
-  } else {
-    handlePacket10();
+  if (mSampaChannelHandler) {
+    if (mChargeSumMode) {
+      handlePacket20();
+    } else {
+      handlePacket10();
+    }
   }
-  reset();
+  softReset();
   return true;
 }
 
@@ -122,18 +126,16 @@ void ElinkDecoder::handlePacket10()
     uint16_t timestamp = mBitSet.uint16(index, index + 9);
     index += 10;
     std::vector<uint16_t> samples;
+    samples.reserve(nsamples);
     for (int i = 0; i < nsamples; i++) {
-      samples.push_back(mBitSet.uint16(index, index + 9));
+      samples.emplace_back(mBitSet.uint16(index, index + 9));
       index += 10;
     }
-    if (mSampaChannelHandler) {
-      SampaCluster sc(timestamp, samples);
-      mSampaChannelHandler(mCruId,
-                           mLinkId,
-                           mSampaHeader.chipAddress(),
-                           mSampaHeader.channelAddress(),
-                           sc);
-    }
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(timestamp, samples));
   }
 }
 
@@ -148,16 +150,14 @@ void ElinkDecoder::handlePacket20()
     uint16_t timestamp = mBitSet.uint16(index, index + 9);
     index += 10;
     uint32_t chargeSum = mBitSet.uint32(index, index + 19);
-    if (mSampaChannelHandler) {
-      mSampaChannelHandler(mCruId,
-                           mLinkId,
-                           mSampaHeader.chipAddress(),
-                           mSampaHeader.channelAddress(),
-                           SampaCluster(timestamp, chargeSum));
-    }
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(timestamp, chargeSum));
     index += 20;
   }
-}
+} // namespace raw
 
 int ElinkDecoder::len() const
 {
@@ -173,7 +173,7 @@ uint8_t ElinkDecoder::linkId() const
 ///
 /// can be in basically 3 states when entering this method :
 ///
-/// - mNofSync=0 : we still have to find our first SYNC word
+/// - mIsSynchronized=false : we still have to find our first SYNC word
 /// - mIsInData=true : we have reached a data "zone", so we read the data
 /// - none of the above : we are looking for a header (50 bits). Depending
 /// on the value of the header type, we change state.
@@ -186,7 +186,7 @@ bool ElinkDecoder::process()
 
   // first things first : we must find the sync pattern, otherwise
   // just continue
-  if (mNofSync == 0) {
+  if (!mIsSynchronized) {
     findSync();
     return true;
   }
@@ -212,7 +212,6 @@ bool ElinkDecoder::process()
     case SampaPacketType::DataNumWords:
       // data with a problem is still data, i.e. there will
       // probably be some data words to read in, unless there's none
-      std::cout << "ARG " << mSampaHeader << "\n";
     case SampaPacketType::Data:
       clear(10 * mSampaHeader.nof10BitWords());
       mIsInData = true;
@@ -220,12 +219,12 @@ bool ElinkDecoder::process()
       break;
     case SampaPacketType::Sync:
       mNofSync++;
-      reset();
+      softReset();
       return true;
       break;
     case SampaPacketType::HeartBeat:
       fmt::printf("ElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mLinkId);
-      reset();
+      softReset();
       return true;
       break;
     default:
@@ -235,10 +234,16 @@ bool ElinkDecoder::process()
   return true;
 }
 
-void ElinkDecoder::reset()
+void ElinkDecoder::softReset()
 {
   clear(HEADERSIZE);
   mIsInData = false;
+}
+
+void ElinkDecoder::hardReset()
+{
+  softReset();
+  mIsSynchronized = false;
 }
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
