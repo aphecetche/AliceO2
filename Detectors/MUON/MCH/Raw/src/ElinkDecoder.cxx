@@ -24,6 +24,7 @@ namespace mch
 namespace raw
 {
 
+//FIXME: probably needs the GBT id as well here...
 ElinkDecoder::ElinkDecoder(uint8_t cruId,
                            uint8_t linkId,
                            SampaChannelHandler sampaChannelHandler,
@@ -77,6 +78,11 @@ bool ElinkDecoder::finalize()
   return false;
 }
 
+/// findSync checks if the last 50 bits of the bit stream
+/// match the Sampa SYNC word.
+///
+/// - if they are then reset the bit stream and sets the checkpoint to 50 bits
+/// - if they are not then pop the first bit out
 void ElinkDecoder::findSync()
 {
   if (mNofSync != 0) {
@@ -163,10 +169,15 @@ uint8_t ElinkDecoder::linkId() const
   return mLinkId;
 }
 
-// process attempts to interpret the current bitset
-// as either a Sampa Header or Sampa data block.
-// If it's neither, then set the checkpoint at the current length
-// plus two bits.
+/// process the bit stream content.
+///
+/// can be in basically 3 states when entering this method :
+///
+/// - mNofSync=0 : we still have to find our first SYNC word
+/// - mIsInData=true : we have reached a data "zone", so we read the data
+/// - none of the above : we are looking for a header (50 bits). Depending
+/// on the value of the header type, we change state.
+///
 bool ElinkDecoder::process()
 {
   if (mBitSet.len() != mCheckpoint) {
