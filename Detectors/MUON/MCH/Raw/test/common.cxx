@@ -38,39 +38,39 @@ std::vector<uint32_t> createCRUBuffer(int cruId)
 
   cru.startHeartbeatFrame(12345, 678);
 
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
+  cru.addChannelData(solarId, elinkId, 0, {SampaCluster(ts, 10)});
 
   cru.startHeartbeatFrame(12345, 910);
 
   solarId = 1;
   elinkId = 2;
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
+  cru.addChannelData(solarId, elinkId, 0, {SampaCluster(ts, 10)});
   solarId = 2;
   elinkId = 3;
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
+  cru.addChannelData(solarId, elinkId, 0, {SampaCluster(ts, 10)});
 
   solarId = 12;
   elinkId = 3;
 
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(3, 13)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(13, 133)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(23, 163)});
+  cru.addChannelData(solarId, elinkId, 3, {SampaCluster(ts, 13)});
+  cru.addChannelData(solarId, elinkId, 13, {SampaCluster(ts, 133)});
+  cru.addChannelData(solarId, elinkId, 23, {SampaCluster(ts, 163)});
 
   elinkId = 2;
 
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(0, 10)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(1, 20)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(2, 30)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(3, 40)});
+  cru.addChannelData(solarId, elinkId, 0, {SampaCluster(ts, 10)});
+  cru.addChannelData(solarId, elinkId, 1, {SampaCluster(ts, 20)});
+  cru.addChannelData(solarId, elinkId, 2, {SampaCluster(ts, 30)});
+  cru.addChannelData(solarId, elinkId, 3, {SampaCluster(ts, 40)});
 
   elinkId = 10;
 
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(22, 420)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(23, 430)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(24, 440)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(25, 450)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(26, 460)});
-  cru.addChannelData(solarId, elinkId, ts, {SampaCluster(12, 420)});
+  cru.addChannelData(solarId, elinkId, 22, {SampaCluster(ts, 420)});
+  cru.addChannelData(solarId, elinkId, 23, {SampaCluster(ts, 430)});
+  cru.addChannelData(solarId, elinkId, 24, {SampaCluster(ts, 440)});
+  cru.addChannelData(solarId, elinkId, 25, {SampaCluster(ts, 450)});
+  cru.addChannelData(solarId, elinkId, 26, {SampaCluster(ts, 460)});
+  cru.addChannelData(solarId, elinkId, 12, {SampaCluster(ts, 420)});
 
   std::vector<uint32_t> buffer;
   cru.moveToBuffer(buffer);
