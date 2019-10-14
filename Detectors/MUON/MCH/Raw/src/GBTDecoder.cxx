@@ -33,7 +33,7 @@ GBTDecoder::GBTDecoder(int cruId,
 void GBTDecoder::append(uint128_t w)
 {
   ++mNofGbtWordsSeens;
-  // dispatch the 80 bits to the underlaying elinks (2 bits per elink)
+  // dispatch the 80 bits (out of the 128) to the underlaying elinks (2 bits per elink)
   for (int i = 0; i < 80; i += 2) {
     auto& e = mElinks[i / 2];
     e.append(bit_test(w, i + 1), bit_test(w, i));
@@ -46,7 +46,6 @@ void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3)
   uint128_t b31_65 = w1;
   uint128_t b66_95 = w2;
   uint128_t b96_127 = w3;
-
   uint128_t gbtWord = b0_31 | (b31_65 << 32) | (b66_95 << 64) | (b96_127 << 96);
   append(gbtWord);
 }
