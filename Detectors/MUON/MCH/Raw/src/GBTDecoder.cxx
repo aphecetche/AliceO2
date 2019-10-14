@@ -73,6 +73,6 @@ void GBTDecoder::printStatus(int maxelink) const
 void GBTDecoder::reset()
 {
   for (auto& e : mElinks) {
-    e.reset();
+    e.hardReset();
   }
 }
