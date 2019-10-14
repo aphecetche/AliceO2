@@ -15,7 +15,7 @@
 #include <boost/test/unit_test.hpp>
 #include <fmt/format.h>
 #include "MCHRaw/SampaHeader.h"
-
+#include "MCHRaw/BitSet.h"
 using namespace o2::mch::raw;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -163,79 +163,123 @@ void HammingDecode(unsigned int buffer[2], bool& error, bool& uncorrectable, boo
   }
 }
 
-int parity(uint64_t v)
+int parityEven(uint64_t v)
 {
   // return the even parity of v
   std::bitset<64> bs(v);
   return (bs.count() + 1) % 2 == 0;
 }
 
+int parityOdd(uint64_t v)
+{
+  // return the odd parity of v
+  std::bitset<64> bs(v);
+  return (bs.count()) % 2 == 0;
+}
+
+template <size_t N>
+std::string asString(std::bitset<N> bs)
+{
+  std::string s(bs.to_string());
+  std::reverse(s.begin(), s.end());
+  return s;
+}
+
 std::bitset<43> data43(uint64_t header)
 {
   // extract the 43 data bits from a 50-bits header
-  uint64_t x = (header >> 7) & 0x7FFFFFFFFFF;
-  return std::bitset<43>(x);
+  std::bitset<50> x50{header};
+  std::bitset<43> x43;
+  for (int i = 6; i < 50; i++) {
+    x43[i - 6] = x50[i];
+  }
+  return x43;
 }
 
-int originalPos(int pos)
+/// compute parity of v, assuming it is 50 bits and
+/// represents a Sampa header
+/// (not using the existing header parity)
+int headerParity(uint64_t v)
 {
-  // original pos in a word of 50 bits with hamming redundant
-  // bits added, but in a word of 43 bits where they were not added
-
-  // position of redundant bits are "not allowed"
-  if (pos == 0 || pos == 1 || pos == 3 || pos == 7 || pos == 15 || pos == 31) {
-    return -1;
-  }
-  if (pos > 31) {
-    return pos - 6;
-  }
-  if (pos > 15) {
-    return pos - 5;
-  }
-  if (pos > 7) {
-    return pos - 4;
-  }
-  if (pos > 3) {
-    return pos - 3;
-  }
-  if (pos == 2) {
-    return 0;
-  }
-  return -1;
+  std::bitset<50> h(v);
+  h.reset(6); // reset existing parity bit
+  return parityEven(h.to_ulong());
 }
 
-int partialParity(const std::bitset<43>& bs, int pos)
+std::bitset<49> dr49(uint64_t value)
 {
-  // compute the parity of all the bits at position x
+  std::bitset<50> data(value); // assume here value is indeed a 50 bit words
+  std::bitset<49> dr;
+
+  dr[2] = data[6];
+
+  for (int i = 4; i < 7; i++) {
+    dr[i] = data[i + 3];
+  }
+
+  for (int i = 8; i < 15; i++) {
+    dr[i] = data[i + 2];
+  }
+
+  for (int i = 16; i < 31; i++) {
+    dr[i] = data[i + 1];
+  }
+
+  for (int i = 32; i < 49; i++) {
+    dr[i] = data[i];
+  }
+
+  std::cout << "In  " << asString(data) << "\n";
+  std::cout << "Out " << asString(dr) << "\n";
+
+  return dr;
+}
+
+int partialOddParity(uint64_t value, int pos)
+{
+  // compute the odd parity of all the bits at position x
   // (where x & (2^pos)) are set
   int n{0};
   uint64_t one{1};
-  std::vector<int> ipos;
+
+  // BitSet b1(value);
+  // BitSet b2(value >> 6);
+  //
+  // std::cout << b1.stringLSBLeft() << "\n";
+  // std::cout << b2.stringLSBLeft() << "\n";
+
+  auto bs = data43(value);
   std::vector<int> tpos;
-  for (uint64_t i = 0; i < 49; i++) {
+  for (uint64_t i = 1; i <= 43; i++) {
     if (i & (one << pos)) {
-      int opos = originalPos(i);
-      ipos.push_back(i);
-      tpos.push_back(opos);
-      if (opos < 0) {
-        continue;
-      }
-      if (bs.test(opos)) {
+      tpos.push_back(i);
+      if (bs.test(i - 1)) {
         ++n;
       }
     }
   }
-  std::cout << "bs=" << bs << " pos=" << pos << "\n";
-  std::cout << "tested: " << ipos.size() << " " << tpos.size() << "\n";
-  for (auto v : ipos) {
-    std::cout << fmt::format("{:3d}", v) << " ";
-  }
-  std::cout << "\n";
+  std::cout << "bs=" << asString(bs) << " pos=" << pos << " tested:(" << tpos.size() << ") ";
   for (auto v : tpos) {
     std::cout << fmt::format("{:3d}", v) << " ";
   }
-  std::cout << "\n";
+  std::cout << " n=" << n << "\n";
   return (n + 1) % 2 == 0;
+}
+
+int hammingCode(uint64_t value)
+{
+  // value is assumed to be 50 bits, where the 43 data bits
+  // are 7-49
+  SampaHeader h(value);
+  int p = headerParity(value);
+  std::cout << h << " P=" << p << "\n";
+  std::bitset<6> ham;
+
+  for (int i = 0; i < 6; i++) {
+    ham[i] = partialOddParity(value, i);
+  }
+  std::cout << h << " P=" << p << " p=" << h.headerParity() << " ham=" << asString(ham) << "\n";
+  return p;
 }
 
 int CheckDataParity(uint64_t data)
@@ -249,64 +293,35 @@ int CheckDataParity(uint64_t data)
   return parity;
 }
 
-BOOST_AUTO_TEST_CASE(Parity)
+BOOST_AUTO_TEST_CASE(ParityEven)
 {
   uint64_t one{1};
   std::vector<uint64_t> numbers = {1, 2, 3, 42, 1245, one << 49 | one << 32};
 
   for (auto n : numbers) {
     std::cout << fmt::format("P{}={} {}\n",
-                             n, parity(n), CheckDataParity(n));
-    BOOST_CHECK_EQUAL(parity(n), CheckDataParity(n) == 1);
+                             n, parityEven(n), CheckDataParity(n));
+    BOOST_CHECK_EQUAL(parityEven(n), CheckDataParity(n) == 1);
   }
+
+  BOOST_CHECK_EQUAL(headerParity(0x3722e80103208), 1); // 000100 P0
+  BOOST_CHECK_EQUAL(headerParity(0x1722e8090322f), 1); // 111101 P0
+  BOOST_CHECK_EQUAL(headerParity(0x1722e9f00327d), 0); // 101101 P1
 }
 
-BOOST_AUTO_TEST_CASE(PartialParity)
+BOOST_AUTO_TEST_CASE(PartialOddParity)
 {
-  BOOST_CHECK_EQUAL(partialParity(15, 0), 0);
-  BOOST_CHECK_EQUAL(partialParity(15, 1), 0);
-  BOOST_CHECK_EQUAL(partialParity(15, 3), 0);
-}
-
-// return the header parity (not using the parity bit itself)
-int headerParity(uint64_t value)
-{
-  std::bitset<50> header(value);
-  header.reset(6);
-  return parity(header.to_ulong());
-}
-
-int hammingCode(uint64_t value)
-{
-  // value is assumed to be 50 bits, where the 43 data bits
-  // are 7-49
-  SampaHeader h(value);
-  int p = headerParity(value);
-  std::cout << h << " P=" << p << "\n";
-  auto bs = data43(value);
-  std::string s = bs.to_string();
-  std::reverse(s.begin(), s.end());
-  std::cout << "bs=" << s << "\n";
-  for (int i = 0; i < 6; i++) {
-    std::cout << "i=" << i << " -> " << partialParity(bs, i) << "\n";
-  }
-  return p;
+  BOOST_CHECK_EQUAL(partialOddParity(15, 0), 0);
+  BOOST_CHECK_EQUAL(partialOddParity(15, 1), 0);
+  BOOST_CHECK_EQUAL(partialOddParity(15, 3), 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestHamming)
 {
-  BOOST_CHECK_EQUAL(hammingCode(0x3722e80103208), 0x8); // 000100 P0
-  // BOOST_CHECK_EQUAL(hammingCode(0x1722e8090322f), 0x2F); // 111101 P0
-  // BOOST_CHECK_EQUAL(hammingCode(0x1722e9f00327d), 0x2D); // 101101 P1
-
-  for (int i = 0; i < 50; i++) {
-    std::cout << fmt::format("{:3d}", i);
-  }
-  std::cout << "\n";
-  for (int i = 0; i < 50; i++) {
-    std::cout << fmt::format("{:3d}", originalPos(i));
-  }
-  std::cout << "\n";
+  BOOST_CHECK_EQUAL(hammingCode(0x1FFFFFFFFFFC0), 0x8);
+  BOOST_CHECK_EQUAL(hammingCode(0x3722e80103208), 0x8);  // 000100 P0
+  BOOST_CHECK_EQUAL(hammingCode(0x1722e9f00327d), 0x2D); // 101101 P1
+  // // BOOST_CHECK_EQUAL(hammingCode(0x1722e8090322f), 0x2F); // 111101 P0
 }
 
 BOOST_AUTO_TEST_SUITE_END()
