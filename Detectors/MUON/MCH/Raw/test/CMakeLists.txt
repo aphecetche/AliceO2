@@ -63,3 +63,18 @@ o2_add_test(encoder
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
+
+o2_add_test(hamming
+            SOURCES testHamming.cxx
+            COMPONENT_NAME mch
+            LABELS "mch;raw"
+            PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost fmt::fmt)
+
+if(benchmark_FOUND)
+  o2_add_executable(
+    parity
+    COMPONENT_NAME mch
+    SOURCES benchParity.cxx
+    PUBLIC_LINK_LIBRARIES  benchmark::benchmark)
+
+endif()
