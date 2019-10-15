@@ -16,6 +16,8 @@
 #include <fmt/format.h>
 #include "MCHRaw/SampaHeader.h"
 #include "MCHRaw/BitSet.h"
+#include <bitset>
+
 using namespace o2::mch::raw;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
