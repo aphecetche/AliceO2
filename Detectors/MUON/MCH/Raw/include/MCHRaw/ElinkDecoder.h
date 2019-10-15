@@ -79,7 +79,6 @@ class ElinkDecoder
   };
 
   std::string name(State state) const;
-  void append(bool bit);
   void changeState(State newState, int newCheckpoint);
   void clear(int checkpoint);
   void findSync();
