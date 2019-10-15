@@ -67,12 +67,14 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
 
 void ElinkDecoder::append(bool bit)
 {
+  constexpr uint64_t one{1};
+
   ++mNofBitSeen;
 
   if (bit) {
-    mBitBuffer.set(mBitBufferIndex);
+    mBitBuffer |= one << mBitBufferIndex;
   } else {
-    mBitBuffer.reset(mBitBufferIndex);
+    mBitBuffer &= ~(one << mBitBufferIndex);
   }
 
   ++mBitBufferIndex;
@@ -110,7 +112,7 @@ void ElinkDecoder::findSync()
 {
   assert(mState == State::LookingForSync);
   const uint64_t sync = sampaSync().uint64();
-  if (mBitBuffer.to_ulong() != sync) {
+  if (mBitBuffer != sync) {
     mBitBuffer >>= 1;
     mBitBufferIndex--;
     return;
@@ -123,7 +125,7 @@ void ElinkDecoder::handleHeader()
 {
   assert(mState == State::LookingForHeader);
 
-  mSampaHeader.uint64(mBitBuffer.to_ulong());
+  mSampaHeader.uint64(mBitBuffer);
   ++mNofHeaderSeen;
 
   switch (mSampaHeader.packetType()) {
@@ -155,7 +157,7 @@ void ElinkDecoder::handleHeader()
 
 void ElinkDecoder::handleReadClusterSum()
 {
-  mClusterSum = mBitBuffer.to_ulong();
+  mClusterSum = mBitBuffer;
   oneLess10BitWord();
   oneLess10BitWord();
   sendCluster();
@@ -170,7 +172,7 @@ void ElinkDecoder::handleReadData()
 {
   assert(mState == State::ReadingTimestamp || mState == State::ReadingSample);
   if (mState == State::ReadingTimestamp) {
-    mTimestamp = mBitBuffer.to_ulong();
+    mTimestamp = mBitBuffer;
   }
   oneLess10BitWord();
   if (mClusterSumMode) {
@@ -182,7 +184,7 @@ void ElinkDecoder::handleReadData()
 
 void ElinkDecoder::handleReadSample()
 {
-  mSamples.push_back(mBitBuffer.to_ulong());
+  mSamples.push_back(mBitBuffer);
   if (mNofSamples > 0) {
     --mNofSamples;
   }
@@ -203,7 +205,7 @@ void ElinkDecoder::handleReadTimestamp()
 {
   assert(mState == State::ReadingNofSamples);
   oneLess10BitWord();
-  mNofSamples = mBitBuffer.to_ulong();
+  mNofSamples = mBitBuffer;
   changeState(State::ReadingTimestamp, 10);
 }
 
