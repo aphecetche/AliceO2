@@ -72,9 +72,14 @@ o2_add_test(hamming
 
 if(benchmark_FOUND)
   o2_add_executable(
-    parity
+    bench-parity
     COMPONENT_NAME mch
     SOURCES benchParity.cxx
     PUBLIC_LINK_LIBRARIES  benchmark::benchmark)
+  o2_add_executable(
+    bench-bitset
+    COMPONENT_NAME mch
+    SOURCES benchBitSet.cxx
+    PUBLIC_LINK_LIBRARIES O2::MCHRaw benchmark::benchmark)
 
 endif()
