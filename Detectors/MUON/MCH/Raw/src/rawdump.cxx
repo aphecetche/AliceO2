@@ -17,11 +17,15 @@
 #include <gsl/span>
 #include <fmt/format.h>
 #include "MCHRaw/Decoder.h"
+#include <chrono>
 
 namespace po = boost::program_options;
 
-int rawdump(std::string input)
+int rawdump(std::string input, unsigned int maxNofRDHs)
 {
+  if (maxNofRDHs == 0) {
+    maxNofRDHs = std::numeric_limits<unsigned int>::max();
+  }
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
     std::cout << "could not open file " << input << "\n";
@@ -41,8 +45,8 @@ int rawdump(std::string input)
   size_t nrdhs{0};
   auto rh = [&nrdhs](const o2::mch::raw::RAWDataHeader& rdh) {
     nrdhs++;
-    std::cout << nrdhs << "--" << rdh << "\n";
-    return false;
+    // std::cout << nrdhs << "--" << rdh << "\n";
+    return true;
   };
 
   size_t pos{0};
@@ -52,13 +56,25 @@ int rawdump(std::string input)
 
   auto decode = o2::mch::raw::createBareDecoder(rh, hp, false);
 
-  while (pos + sizeToRead < len) {
+  std::vector<std::chrono::microseconds> timers;
+
+  while (pos + sizeToRead < len && nrdhs < maxNofRDHs) {
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
+    auto start = std::chrono::high_resolution_clock::now();
     decode(buffer);
+    auto duration = (std::chrono::high_resolution_clock::now() - start);
+    timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
 
+  std::ofstream out("rawdump.timing.txt");
+  int p{0};
+  for (auto d : timers) {
+    p++;
+    out << p << " " << d.count() << "\n";
+  }
+  out.close();
   return 0;
 }
 
@@ -69,8 +85,9 @@ int main(int argc, char* argv[])
   std::string inputFile;
   po::variables_map vm;
   po::options_description generic("Generic options");
+  unsigned int nrdhs{0};
 
-  generic.add_options()("help", "produce help message")("input-file,i", po::value<std::string>(&inputFile), "input file name");
+  generic.add_options()("help", "produce help message")("input-file,i", po::value<std::string>(&inputFile), "input file name")("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through");
 
   po::options_description cmdline;
   cmdline.add(generic);
@@ -83,5 +100,5 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  return rawdump(inputFile);
+  return rawdump(inputFile, nrdhs);
 }
