@@ -29,7 +29,8 @@ CRUEncoder::CRUEncoder(uint16_t cruId, bool chargeSumMode)
     mOrbit{},
     mBunchCrossing{},
     mBuffer{},
-    mGBTs{::makeArray<24>([cruId, chargeSumMode](size_t i) { return GBTEncoder(cruId, i, chargeSumMode); })}
+    mGBTs{::makeArray<24>([cruId, chargeSumMode](size_t i) { return GBTEncoder(cruId, i, chargeSumMode); })},
+    mFirstHBFrame{true}
 {
   assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
   mBuffer.reserve(1 << 10);
@@ -96,16 +97,17 @@ void CRUEncoder::printStatus(int maxgbt) const
 
 void CRUEncoder::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
 {
-  if (orbit && bunchCrossing) {
-    gbts2buffer(orbit, bunchCrossing);
-  }
+  gbts2buffer(orbit, bunchCrossing);
 }
 
 void CRUEncoder::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
 {
   assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
   // build a buffer with the _previous_ (orbit,bx)
-  closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  if (!mFirstHBFrame) {
+    closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  }
+  mFirstHBFrame = false;
   // then save the (orbit,bx) for next time
   mOrbit = orbit;
   mBunchCrossing = bunchCrossing;
