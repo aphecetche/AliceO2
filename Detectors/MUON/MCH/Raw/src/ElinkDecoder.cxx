@@ -14,6 +14,7 @@
 #include <fmt/printf.h>
 #include "CompactBitSetString.h"
 #include "Assertions.h"
+#include <bitset>
 
 constexpr int HEADERSIZE = 50;
 
