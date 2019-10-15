@@ -5,7 +5,7 @@ o2_add_test(bitset
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost fmt::fmt)
 
 o2_add_test(rawdataheader
-            SOURCES testRAWDataHeader.cxx common.cxx
+            SOURCES testRawDataHeader.cxx common.cxx
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRaw Boost::boost)
