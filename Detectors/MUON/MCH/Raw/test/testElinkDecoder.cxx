@@ -52,8 +52,6 @@ BOOST_AUTO_TEST_CASE(Decoding10)
     e.append(enc.get(i), enc.get(i + 1));
   }
 
-  e.finalize();
-
   BOOST_CHECK_EQUAL(npackets, 4);
 }
 
@@ -75,8 +73,6 @@ BOOST_AUTO_TEST_CASE(Decoding20)
     e.append(enc.get(i), enc.get(i + 1));
   }
 
-  e.finalize();
-
   BOOST_CHECK_EQUAL(npackets, 4);
 
   // same thing but with a decoder without a channel handler
@@ -86,8 +82,6 @@ BOOST_AUTO_TEST_CASE(Decoding20)
   for (int i = 0; i < enc.len() - 1; i += 2) {
     e2.append(enc.get(i), enc.get(i + 1));
   }
-
-  e2.finalize();
 
   BOOST_CHECK_EQUAL(npackets, 0);
 }
