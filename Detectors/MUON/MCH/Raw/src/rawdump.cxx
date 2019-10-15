@@ -45,8 +45,8 @@ int rawdump(std::string input, unsigned int maxNofRDHs)
   size_t nrdhs{0};
   auto rh = [&nrdhs](const o2::mch::raw::RAWDataHeader& rdh) {
     nrdhs++;
-    std::cout << nrdhs << "--" << rdh << "\n";
-    return false;
+    // std::cout << nrdhs << "--" << rdh << "\n";
+    return true;
   };
 
   size_t pos{0};
@@ -62,18 +62,17 @@ int rawdump(std::string input, unsigned int maxNofRDHs)
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     decode(buffer);
-    auto duration = (std::chrono::high_resolution_clock::now() - start);
-    timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
+    // auto duration = (std::chrono::high_resolution_clock::now() - start);
+    // timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
 
-  int p{0};
-  for (auto d : timers) {
-    p++;
-    std::cout << p << " " << d.count() << "\n";
-  }
-  //std::chrono::duration_cast<milliseconds>
+  // int p{0};
+  // for (auto d : timers) {
+  //   p++;
+  //   std::cout << p << " " << d.count() << "\n";
+  // }
   return 0;
 }
 
