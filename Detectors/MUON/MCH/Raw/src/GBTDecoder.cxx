@@ -50,13 +50,6 @@ void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3)
   append(gbtWord);
 }
 
-void GBTDecoder::finalize()
-{
-  for (auto& e : mElinks) {
-    e.finalize();
-  }
-}
-
 void GBTDecoder::printStatus(int maxelink) const
 {
   std::cout << fmt::format("GBTDecoder(CRU{}-GBT{}) # GBT words seen {}\n", mCruId, mGbtId, mNofGbtWordsSeens);
@@ -73,6 +66,6 @@ void GBTDecoder::printStatus(int maxelink) const
 void GBTDecoder::reset()
 {
   for (auto& e : mElinks) {
-    e.hardReset();
+    e.reset();
   }
 }
