@@ -15,7 +15,6 @@
 #include <iostream>
 #include <functional>
 #include "MCHRaw/SampaChannelHandler.h"
-#include <bitset>
 #include <vector>
 
 namespace o2
@@ -103,7 +102,7 @@ class ElinkDecoder
   bool mClusterSumMode;                     //< Whether we should expect 20-bits data words
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
   SampaHeader mSampaHeader;                 //< Current SampaHeader
-  std::bitset<50> mBitBuffer;               //< Our internal bit stream buffer
+  uint64_t mBitBuffer;                      //< Our internal bit stream buffer
   uint8_t mBitBufferIndex;                  //< Current index in bit buffer
   /** @name internal global counters
     */
