@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 #include "Assertions.h"
+#include <functional>
 
 std::ostream& operator<<(std::ostream& os, const o2::mch::raw::RAWDataHeader& rdh)
 {

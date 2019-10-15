@@ -20,6 +20,7 @@
 #include "MCHRaw/BitSet.h"
 #include <vector>
 #include <fmt/format.h>
+#include <ctime>
 
 using namespace o2::mch::raw;
 
