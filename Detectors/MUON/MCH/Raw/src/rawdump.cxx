@@ -21,7 +21,7 @@
 
 namespace po = boost::program_options;
 
-int rawdump(std::string input, unsigned int maxNofRDHs)
+int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
 {
   if (maxNofRDHs == 0) {
     maxNofRDHs = std::numeric_limits<unsigned int>::max();
@@ -33,19 +33,22 @@ int rawdump(std::string input, unsigned int maxNofRDHs)
   }
   constexpr int sizeToRead = 8192;
 
-  std::array<uint32_t, sizeToRead> buffer;
+  std::array<uint32_t, sizeToRead / 4> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
+  memset(&buffer[0], 0, buffer.size());
   auto hp = [](uint8_t cruId, uint8_t linkId, uint8_t chip,
                uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    // std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
-    // std::cout << sc << "\n";
+    std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
+    std::cout << sc << "\n";
   };
 
   size_t nrdhs{0};
-  auto rh = [&nrdhs](const o2::mch::raw::RAWDataHeader& rdh) {
+  auto rh = [&](const o2::mch::raw::RAWDataHeader& rdh) {
     nrdhs++;
-    // std::cout << nrdhs << "--" << rdh << "\n";
+    if (showRDHs) {
+      std::cout << nrdhs << "--" << rdh << "\n";
+    }
     return true;
   };
 
@@ -58,12 +61,14 @@ int rawdump(std::string input, unsigned int maxNofRDHs)
 
   std::vector<std::chrono::microseconds> timers;
 
-  while (pos + sizeToRead < len && nrdhs < maxNofRDHs) {
+  while (pos + sizeToRead <= len && nrdhs < maxNofRDHs) {
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
     auto start = std::chrono::high_resolution_clock::now();
     decode(buffer);
+    // std::cout << "bufer.size()=" << buffer.size() << "\n";
+    // o2::mch::raw::dumpBuffer(buffer);
     auto duration = (std::chrono::high_resolution_clock::now() - start);
     timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
@@ -86,8 +91,16 @@ int main(int argc, char* argv[])
   po::variables_map vm;
   po::options_description generic("Generic options");
   unsigned int nrdhs{0};
+  bool showRDHs;
 
-  generic.add_options()("help", "produce help message")("input-file,i", po::value<std::string>(&inputFile), "input file name")("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through");
+  // clang-format off
+  generic.add_options()
+      ("help", "produce help message")
+      ("input-file,i", po::value<std::string>(&inputFile), "input file name")
+      ("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through")
+      ("showRDHs,s",po::bool_switch(&showRDHs),"show RDHs")
+      ;
+  // clang-format on
 
   po::options_description cmdline;
   cmdline.add(generic);
@@ -100,5 +113,5 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  return rawdump(inputFile, nrdhs);
+  return rawdump(inputFile, nrdhs, showRDHs);
 }

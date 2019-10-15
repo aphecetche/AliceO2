@@ -78,6 +78,7 @@ class CRUEncoder
   uint16_t mBunchCrossing;
   std::vector<uint32_t> mBuffer;
   std::array<GBTEncoder, 24> mGBTs;
+  bool mFirstHBFrame;
 };
 
 } // namespace o2::mch::raw
