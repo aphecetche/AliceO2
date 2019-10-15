@@ -17,6 +17,22 @@
 
 constexpr int HEADERSIZE = 50;
 
+namespace
+{
+std::string bitBufferString(const std::bitset<50>& bs, int imax)
+{
+  std::string s;
+  for (int i = 0; i < imax; i++) {
+    if (bs.test(i)) {
+      s += "1";
+    } else {
+      s += "0";
+    }
+  }
+  return s;
+}
+} // namespace
+
 namespace o2
 {
 namespace mch
@@ -92,12 +108,11 @@ void ElinkDecoder::clear(int checkpoint)
 /// - if they are not then pop the first bit out
 void ElinkDecoder::findSync()
 {
+  assert(mState == State::LookingForSync);
   const uint64_t sync = sampaSync().uint64();
-  if (mState != State::LookingForSync) {
-    throw std::logic_error("wrong logic 2");
-  }
   if (mBitBuffer.to_ulong() != sync) {
-    mBitBuffer <<= 1;
+    mBitBuffer >>= 1;
+    mBitBufferIndex--;
     return;
   }
   changeState(State::LookingForHeader, HEADERSIZE);
@@ -293,19 +308,6 @@ void ElinkDecoder::reset()
 {
   softReset();
   mState = State::LookingForSync;
-}
-
-std::string bitBufferString(const std::bitset<50>& bs, int imax)
-{
-  std::string s;
-  for (int i = 0; i < imax; i++) {
-    if (bs.test(i)) {
-      s += "1";
-    } else {
-      s += "0";
-    }
-  }
-  return s;
 }
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
