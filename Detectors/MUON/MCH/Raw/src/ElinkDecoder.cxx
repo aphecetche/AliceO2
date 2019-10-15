@@ -65,29 +65,29 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
   assertIsInRange("linkId", linkId, 0, 39);
 }
 
-void ElinkDecoder::append(bool bit)
+void ElinkDecoder::append(bool bit0, bool bit1)
 {
   constexpr uint64_t one{1};
 
   ++mNofBitSeen;
 
-  if (bit) {
+  if (bit0) {
     mBitBuffer |= one << mBitBufferIndex;
   } else {
     mBitBuffer &= ~(one << mBitBufferIndex);
   }
+  ++mBitBufferIndex;
 
+  if (bit1) {
+    mBitBuffer |= one << mBitBufferIndex;
+  } else {
+    mBitBuffer &= ~(one << mBitBufferIndex);
+  }
   ++mBitBufferIndex;
 
   if (mBitBufferIndex == mCheckpoint) {
     process();
   }
-}
-
-void ElinkDecoder::append(bool bit0, bool bit1)
-{
-  append(bit0);
-  append(bit1);
 }
 
 void ElinkDecoder::changeState(State newState, int newCheckpoint)
