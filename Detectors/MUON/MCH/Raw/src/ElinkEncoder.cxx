@@ -38,6 +38,7 @@ ElinkEncoder::ElinkEncoder(uint8_t elinkId,
     mChargeSumMode{chargeSumMode}
 {
   assertIsInRange("elinkId", elinkId, 0, 39);
+  assertIsInRange("chip", chip, 0, 15);
 
   // the phase is used to "simulate" a possible different timing alignment between elinks.
 
