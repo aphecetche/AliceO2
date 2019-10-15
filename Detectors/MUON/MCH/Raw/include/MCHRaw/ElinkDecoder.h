@@ -11,11 +11,12 @@
 #ifndef O2_MCH_RAW_ELINK_DECODER_H
 #define O2_MCH_RAW_ELINK_DECODER_H
 
-#include "BitSet.h"
 #include "SampaHeader.h"
 #include <iostream>
 #include <functional>
 #include "MCHRaw/SampaChannelHandler.h"
+#include <bitset>
+#include <vector>
 
 namespace o2
 {
@@ -49,7 +50,7 @@ class ElinkDecoder
   ///@{
 
   /// Append two bits (from the same dual sampa, one per sampa) to the Elink.
-  bool append(bool bit0, bool bit1);
+  void append(bool bit0, bool bit1);
   ///@}
 
   /// linkId is the GBT id this Elink is part of
@@ -59,45 +60,69 @@ class ElinkDecoder
     */
   ///@{
 
-  /// Ensure any leftover data in the bit stream is actually processed now
-  bool finalize();
-
   /// Current number of bits we're holding
   int len() const;
 
-  /// Clear our internal bit stream, but keep the sync status
-  /// i.e. assume the sync is not lost
-  void softReset();
-
   /// Reset our internal bit stream, and the sync status
   /// i.e. assume the sync has to be found again
-  void hardReset();
+  void reset();
   ///@}
 
  private:
-  bool process();
+  /// The possible states we can be in
+  enum class State : int {
+    LookingForSync,    //< we've not found a sync yet
+    LookingForHeader,  //< we've looking for a 50-bits header
+    ReadingNofSamples, //< we're (about to) read nof of samples
+    ReadingTimestamp,  //< we're (about to) read a timestamp (for the current cluster)
+    ReadingSample,     //< we're (about to) read a sample (for the current cluster)
+    ReadingClusterSum  //< we're (about to) read a chargesum (for the current cluster)
+  };
+
+  std::string name(State state) const;
+  void append(bool bit);
+  void changeState(State newState, int newCheckpoint);
   void clear(int checkpoint);
   void findSync();
-  bool getData();
-  void handlePacket10();
-  void handlePacket20();
-  bool append(bool bit);
+  void handlReadClusterSum();
+  void handleHeader();
+  void handleReadClusterSum();
+  void handleReadData();
+  void handleReadSample();
+  void handleReadTimestamp();
+  void oneLess10BitWord();
+  void process();
+  void sendCluster();
+  void softReset();
+
   friend std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e);
 
  private:
-  uint8_t mCruId;  //< Identifier of the CRU this Elink is part of
-  uint8_t mLinkId; //< Identifier of this Elink (0..39)
-  int mCheckpoint; //< Index (in the bitset) of the next state transition check to be done in process()
-  bool mIsInData;  //< Whether or not we are in the middle of data bits
-  int mNofSync;    //< Number of SYNC words we've seen so far
-  BitSet mBitSet;  //< Our internal bit stream buffer (is not growing indefinitely but cleared as soon as possible)
-  BitSet mTotal;
-  SampaHeader mSampaHeader;                 //< Current SampaHeader
-  uint64_t mNofBitSeen;                     //< Total number of bits seen
-  uint64_t mNofHeaderSeen;                  //< Total number of headers seen
+  uint8_t mCruId;                           //< Identifier of the CRU this Elink is part of
+  uint8_t mLinkId;                          //< Identifier of this Elink (0..39)
+  bool mClusterSumMode;                     //< Whether we should expect 20-bits data words
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
-  bool mChargeSumMode;                      //< Whether we should expect 20-bits data words
-  bool mIsSynchronized;                     //< whether we've a current sync
+  SampaHeader mSampaHeader;                 //< Current SampaHeader
+  std::bitset<50> mBitBuffer;               //< Our internal bit stream buffer
+  uint8_t mBitBufferIndex;                  //< Current index in bit buffer
+  /** @name internal global counters
+    */
+
+  ///@{
+  uint64_t mNofSync;       //< Number of SYNC words we've seen so far
+  uint64_t mNofBitSeen;    //< Total number of bits seen
+  uint64_t mNofHeaderSeen; //< Total number of headers seen
+  ///@}
+
+  uint8_t mCheckpoint;            //< Index (in BitBuffer) of the next state transition check to be done in process()
+  uint16_t mNof10BitsWordsToRead; //< number of 10 bits words to be read
+
+  uint16_t mNofSamples;
+  uint16_t mTimestamp;
+  std::vector<uint16_t> mSamples;
+  uint32_t mClusterSum;
+
+  State mState; //< the state we are in
 };
 
 } // namespace raw
