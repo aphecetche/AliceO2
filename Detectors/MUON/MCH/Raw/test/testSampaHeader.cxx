@@ -71,7 +71,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetHamming)
 {
   SampaHeader sh;
 
-  BOOST_CHECK_THROW(sh.hammingCode(1 << 6), std::invalid_argument);
   sh.hammingCode(0x3F);
   BOOST_CHECK_EQUAL(sh.hammingCode(), 0X3F);
 }
@@ -96,7 +95,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetNumberOf10BitsWords)
 {
   SampaHeader sh;
 
-  // BOOST_CHECK_THROW(sh.nof10BitWords(1 << 10), std::invalid_argument);
   sh.nof10BitWords(0x3FF);
   BOOST_CHECK_EQUAL(sh.nof10BitWords(), 0x3FF);
   sh.nof10BitWords(0);
@@ -107,7 +105,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetChipAddress)
 {
   SampaHeader sh;
 
-  BOOST_CHECK_THROW(sh.chipAddress(1 << 4), std::invalid_argument);
   sh.chipAddress(0xF);
   BOOST_CHECK_EQUAL(sh.chipAddress(), 0xF);
   sh.chipAddress(0);
@@ -120,7 +117,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetChannelAddress)
 {
   SampaHeader sh;
 
-  BOOST_CHECK_THROW(sh.channelAddress(1 << 5), std::invalid_argument);
   sh.channelAddress(0x1F);
   BOOST_CHECK_EQUAL(sh.channelAddress(), 0x1F);
 }
@@ -129,7 +125,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderSetBunchCrossingCounter)
 {
   SampaHeader sh;
 
-  // BOOST_CHECK_THROW(sh.bunchCrossingCounter(1 << 20), std::invalid_argument);
   sh.bunchCrossingCounter(0xFFFFF);
   BOOST_CHECK_EQUAL(sh.bunchCrossingCounter(), 0xFFFFF);
 }
@@ -188,26 +183,6 @@ BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithInvalidBitsIsNotAHeartbeat)
     h |= (one << ix);
   }
   BOOST_CHECK_EQUAL(SampaHeader(h).isHeartbeat(), true);
-}
-
-BOOST_AUTO_TEST_CASE(SampaHeaderCtorWithIncorrectNumberOfPartialBitsShouldThrow)
-{
-  // hamming is 6 bits max
-  // pkt is 3 bits max
-  // numWords is 10 bits max
-  // h is 4 bits max
-  // ch is 5 bits max
-  // bx is 20 bits max
-  BOOST_CHECK_THROW(SampaHeader(1 << 6, true, SampaPacketType::HeartBeat, 0, 0, 0, 0, true),
-                    std::invalid_argument);
-  // BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 1 << 10, 0, 0, 0, true),
-  //                   std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 1 << 4, 0, 0, true),
-                    std::invalid_argument);
-  BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 0, 1 << 5, 0, true),
-                    std::invalid_argument);
-  // BOOST_CHECK_THROW(SampaHeader(0, true, SampaPacketType::HeartBeat, 0, 0, 0, 1 << 20, true),
-  //                   std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(CheckSampaSyncIsExpectedValue)
