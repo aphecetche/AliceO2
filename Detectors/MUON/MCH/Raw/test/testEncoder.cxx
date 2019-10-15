@@ -53,14 +53,20 @@ std::vector<uint32_t> createPedestalBuffer(int elinkId)
   uint8_t cruId(0);
 
   GBTEncoder::forceNoPhase = true;
-  CRUEncoder cru(cruId);
+  CRUEncoder cru(cruId, false);
 
   uint32_t orbit{42};
   const int N{1};
 
   for (int i = 0; i < N; i++) {
     cru.startHeartbeatFrame(orbit, bx + i);
-    cru.addChannelData(solarId, elinkId, i, {SampaCluster(ts, i)});
+    for (uint16_t j = 0; j < 31; j++) {
+      std::vector<uint16_t> samples;
+      for (auto k = 0; k < j + 1; k++) {
+        samples.push_back(10 + j);
+      }
+      cru.addChannelData(solarId, elinkId, j, {SampaCluster(ts, samples)});
+    }
   }
   std::vector<uint32_t> buffer;
   cru.moveToBuffer(buffer);
@@ -134,15 +140,13 @@ BOOST_AUTO_TEST_CASE(GenerateFile)
   std::ofstream out("test.raw", std::ios::binary);
   auto buffer = createPedestalBuffer(0);
   std::cout << "buffer.size=" << buffer.size() << "\n";
+  // dumpBuffer(buffer);
 
-  dumpBuffer(buffer);
-
-  // for (int i = 0; i < 3; i++) {
-  //   std::vector<uint32_t> pages;
-  //   paginateBuffer(buffer, pages, 8192, 0x0);
-  //   dumpBuffer(pages);
-  //   out.write(reinterpret_cast<char*>(&buffer[0]), buffer.size() * sizeof(uint32_t));
-  // }
+  std::vector<uint32_t> pages;
+  paginateBuffer(buffer, pages, 8192, 0x44444444);
+  std::cout << "pages.size=" << pages.size() << "\n";
+  dumpBuffer(pages);
+  out.write(reinterpret_cast<char*>(&pages[0]), pages.size() * sizeof(uint32_t));
   out.close();
 }
 
