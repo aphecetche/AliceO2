@@ -116,13 +116,6 @@ bool checkBit(uint64_t value, int i, bool bitStatus)
   return (value >> i & 1) == bitStatus;
 }
 
-void resetBits(uint64_t& value, int a, int n)
-{
-  for (int i = a; i < a + n; i++) {
-    value &= ~(static_cast<uint64_t>(1) << i);
-  }
-}
-
 bool isHeartbeat(uint64_t header)
 {
   // - bits 7-9 must be zero
@@ -228,57 +221,50 @@ SampaHeader::SampaHeader(uint8_t hamming,
 
 void SampaHeader::headerParity(bool p)
 {
-  resetBits(mValue, HEADER_PARITY_OFFSET, HEADER_PARITY_NOFBITS);
-  mValue += (static_cast<uint64_t>(p) << HEADER_PARITY_OFFSET);
+  mValue &= ~HEADER_PARITY_MASK;
+  mValue += (static_cast<uint64_t>(p) << HEADER_PARITY_OFFSET) & HEADER_PARITY_MASK;
 }
 
 void SampaHeader::payloadParity(bool dp)
 {
-  resetBits(mValue, PARITY_OFFSET, PARITY_NOFBITS);
-  mValue += (static_cast<uint64_t>(dp) << PARITY_OFFSET);
+  mValue &= ~PARITY_MASK;
+  mValue += (static_cast<uint64_t>(dp) << PARITY_OFFSET) & PARITY_MASK;
 }
 
 void SampaHeader::chipAddress(uint8_t h)
 {
-  assertNofBits("chip", h, CHIP_ADDRESS_NOFBITS);
-  resetBits(mValue, CHIP_ADDRESS_OFFSET, CHIP_ADDRESS_NOFBITS);
-  mValue += (static_cast<uint64_t>(h) << CHIP_ADDRESS_OFFSET);
+  mValue &= ~CHIP_ADDRESS_MASK;
+  mValue += (static_cast<uint64_t>(h) << CHIP_ADDRESS_OFFSET) & CHIP_ADDRESS_MASK;
 }
 
 void SampaHeader::channelAddress(uint8_t ch)
 {
-  assertNofBits("ch", ch, CHANNEL_ADDRESS_NOFBITS);
-  resetBits(mValue, CHANNEL_ADDRESS_OFFSET, CHANNEL_ADDRESS_NOFBITS);
-  mValue += (static_cast<uint64_t>(ch) << CHANNEL_ADDRESS_OFFSET);
+  mValue &= ~CHANNEL_ADDRESS_MASK;
+  mValue += (static_cast<uint64_t>(ch) << CHANNEL_ADDRESS_OFFSET) & CHANNEL_ADDRESS_MASK;
 }
 
 void SampaHeader::bunchCrossingCounter(uint32_t bx)
 {
-  // assertNofBits("bx", bx, BUNCH_CROSSING_NOFBITS);
-  // resetBits(mValue, BUNCH_CROSSING_OFFSET, BUNCH_CROSSING_NOFBITS);
   mValue &= ~BUNCH_CROSSING_MASK;
   mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET) & BUNCH_CROSSING_MASK;
 }
 
 void SampaHeader::hammingCode(uint8_t hamming)
 {
-  assertNofBits("hamming", hamming, HAMMING_CODE_NOFBITS);
-  resetBits(mValue, HAMMING_CODE_OFFSET, HAMMING_CODE_NOFBITS);
-  mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET);
+  mValue &= ~HAMMING_CODE_MASK;
+  mValue += (static_cast<uint64_t>(hamming) << HAMMING_CODE_OFFSET) & HAMMING_CODE_MASK;
 }
 
 void SampaHeader::nof10BitWords(uint16_t nofwords)
 {
-  // assertNofBits("nof10BitWords", nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
-  // resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
   mValue &= ~NUMBER_OF_1OBITS_WORDS_MASK;
   mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET) & NUMBER_OF_1OBITS_WORDS_MASK;
 }
 
 void SampaHeader::packetType(SampaPacketType pkt)
 {
-  resetBits(mValue, PACKET_TYPE_OFFSET, PACKET_TYPE_NOFBITS);
-  mValue += (static_cast<uint64_t>(pkt) << PACKET_TYPE_OFFSET);
+  mValue &= ~PACKET_TYPE_MASK;
+  mValue += (static_cast<uint64_t>(pkt) << PACKET_TYPE_OFFSET) & PACKET_TYPE_MASK;
 }
 
 bool SampaHeader::operator<(const SampaHeader& rhs) const
