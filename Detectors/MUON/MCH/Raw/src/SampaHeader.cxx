@@ -254,9 +254,10 @@ void SampaHeader::channelAddress(uint8_t ch)
 
 void SampaHeader::bunchCrossingCounter(uint32_t bx)
 {
-  assertNofBits("bx", bx, BUNCH_CROSSING_NOFBITS);
-  resetBits(mValue, BUNCH_CROSSING_OFFSET, BUNCH_CROSSING_NOFBITS);
-  mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET);
+  // assertNofBits("bx", bx, BUNCH_CROSSING_NOFBITS);
+  // resetBits(mValue, BUNCH_CROSSING_OFFSET, BUNCH_CROSSING_NOFBITS);
+  mValue &= ~BUNCH_CROSSING_MASK;
+  mValue += (static_cast<uint64_t>(bx) << BUNCH_CROSSING_OFFSET) & BUNCH_CROSSING_MASK;
 }
 
 void SampaHeader::hammingCode(uint8_t hamming)
@@ -268,9 +269,10 @@ void SampaHeader::hammingCode(uint8_t hamming)
 
 void SampaHeader::nof10BitWords(uint16_t nofwords)
 {
-  assertNofBits("nof10BitWords", nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
-  resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
-  mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET);
+  // assertNofBits("nof10BitWords", nofwords, NUMBER_OF_1OBITS_WORDS_NOFBITS);
+  // resetBits(mValue, NUMBER_OF_1OBITS_WORDS_OFFSET, NUMBER_OF_1OBITS_WORDS_NOFBITS);
+  mValue &= ~NUMBER_OF_1OBITS_WORDS_MASK;
+  mValue += (static_cast<uint64_t>(nofwords) << NUMBER_OF_1OBITS_WORDS_OFFSET) & NUMBER_OF_1OBITS_WORDS_MASK;
 }
 
 void SampaHeader::packetType(SampaPacketType pkt)
