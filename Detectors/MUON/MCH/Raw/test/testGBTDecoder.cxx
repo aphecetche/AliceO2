@@ -47,7 +47,6 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
                buffer[i + 2],
                buffer[i + 3]);
   }
-  dec.finalize();
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
     "chip-3-ch-31-ts-12-q-133",
@@ -98,7 +97,6 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
                buffer[i + 2],
                buffer[i + 3]);
   }
-  dec.finalize();
   if (verboseDecoder) {
     dec.printStatus(5);
   }
@@ -122,7 +120,6 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromBuffer)
     uint32_t w3 = REF_BUFFER[i + 3];
     dec.append(w0, w1, w2, w3);
   }
-  dec.finalize();
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
     "chip-3-ch-31-ts-12-q-133",
