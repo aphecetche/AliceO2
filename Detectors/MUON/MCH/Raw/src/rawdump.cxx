@@ -62,17 +62,19 @@ int rawdump(std::string input, unsigned int maxNofRDHs)
     in.seekg(pos);
     in.read(ptr, sizeToRead);
     pos += sizeToRead;
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
     decode(buffer);
-    // auto duration = (std::chrono::high_resolution_clock::now() - start);
-    // timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
+    auto duration = (std::chrono::high_resolution_clock::now() - start);
+    timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
 
-  // int p{0};
-  // for (auto d : timers) {
-  //   p++;
-  //   std::cout << p << " " << d.count() << "\n";
-  // }
+  std::ofstream out("rawdump.timing.txt");
+  int p{0};
+  for (auto d : timers) {
+    p++;
+    out << p << " " << d.count() << "\n";
+  }
+  out.close();
   return 0;
 }
 
