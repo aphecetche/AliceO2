@@ -53,6 +53,8 @@ size_t addPages(std::vector<uint32_t>& outBuffer,
     auto ri = rdh;
     ri.offsetNextPacket = pageSize;
     ri.pagesCounter = i + 1;
+    ri.blockLength = pageSize - sizeof(rdh);
+    ri.memorySize = pageSize;
     size_t len = 0;
     if (i == npages - 1) {
       ri.stopBit = 1;
