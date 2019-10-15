@@ -24,59 +24,65 @@ namespace mch
 namespace raw
 {
 
-//FIXME: probably needs the GBT id as well here...
+//FIXME: probably needs the GBT id as well here ?
 ElinkDecoder::ElinkDecoder(uint8_t cruId,
                            uint8_t linkId,
                            SampaChannelHandler sampaChannelHandler,
                            bool chargeSumMode) : mCruId{cruId},
                                                  mLinkId{linkId},
-                                                 mCheckpoint(HEADERSIZE),
-                                                 mIsInData(false),
-                                                 mNofSync(0),
-                                                 mBitSet(),
-                                                 mSampaHeader(0),
-                                                 mNofBitSeen(0),
-                                                 mNofHeaderSeen(0),
                                                  mSampaChannelHandler{sampaChannelHandler},
-                                                 mChargeSumMode{chargeSumMode},
-                                                 mIsSynchronized{false}
+                                                 mSampaHeader{},
+                                                 mClusterSumMode{chargeSumMode},
+                                                 mBitBuffer{},
+                                                 mBitBufferIndex{},
+                                                 mNofSync{},
+                                                 mNofBitSeen{},
+                                                 mNofHeaderSeen{},
+                                                 mCheckpoint{HEADERSIZE},
+                                                 mNof10BitsWordsToRead{},
+                                                 mNofSamples{},
+                                                 mTimestamp{},
+                                                 mSamples{},
+                                                 mClusterSum{},
+                                                 mState{State::LookingForSync}
 {
   assertIsInRange("linkId", linkId, 0, 39);
 }
 
-bool ElinkDecoder::append(bool bit)
+void ElinkDecoder::append(bool bit)
 {
   ++mNofBitSeen;
-  try {
-    mBitSet.append(bit);
-  } catch (std::length_error) {
-    std::cout << (*this) << "\n";
-    std::cout << "OUSP !!!\n";
-    throw;
+
+  if (bit) {
+    mBitBuffer.set(mBitBufferIndex);
+  } else {
+    mBitBuffer.reset(mBitBufferIndex);
   }
-  if (mBitSet.len() != mCheckpoint) {
-    return true;
+
+  ++mBitBufferIndex;
+
+  if (mBitBufferIndex == mCheckpoint) {
+    process();
   }
-  return process();
 }
 
-bool ElinkDecoder::append(bool bit0, bool bit1)
+void ElinkDecoder::append(bool bit0, bool bit1)
 {
-  return append(bit0) && append(bit1);
+  append(bit0);
+  append(bit1);
+}
+
+void ElinkDecoder::changeState(State newState, int newCheckpoint)
+{
+  mState = newState;
+  clear(newCheckpoint);
 }
 
 void ElinkDecoder::clear(int checkpoint)
 {
-  mBitSet.clear();
+  mBitBufferIndex = 0;
+  mBitBuffer = 0;
   mCheckpoint = checkpoint;
-}
-
-bool ElinkDecoder::finalize()
-{
-  if (mIsInData) {
-    return getData();
-  }
-  return false;
 }
 
 /// findSync checks if the last 50 bits of the bit stream
@@ -86,122 +92,23 @@ bool ElinkDecoder::finalize()
 /// - if they are not then pop the first bit out
 void ElinkDecoder::findSync()
 {
-  if (mIsSynchronized) {
+  const uint64_t sync = sampaSync().uint64();
+  if (mState != State::LookingForSync) {
     throw std::logic_error("wrong logic 2");
   }
-  if (mIsInData) {
-    throw std::logic_error("wrong logic 3");
-  }
-  mSampaHeader.uint64(mBitSet.last(HEADERSIZE).uint64(0, 49));
-  if (mSampaHeader != sampaSync()) {
-    mBitSet.pruneFirst(1);
+  if (mBitBuffer.to_ulong() != sync) {
+    mBitBuffer <<= 1;
     return;
   }
-  clear(HEADERSIZE);
+  changeState(State::LookingForHeader, HEADERSIZE);
   mNofSync++;
-  mIsSynchronized = true;
 }
 
-bool ElinkDecoder::getData()
+void ElinkDecoder::handleHeader()
 {
-  if (mSampaChannelHandler) {
-    if (mChargeSumMode) {
-      handlePacket20();
-    } else {
-      handlePacket10();
-    }
-  }
-  softReset();
-  return true;
-}
+  assert(mState == State::LookingForHeader);
 
-void ElinkDecoder::handlePacket10()
-{
-  // handling sampa packet
-  // for 10-bits samples case.
-  int index{0};
-  while (index < len()) {
-    uint16_t nsamples = mBitSet.uint16(index, index + 9);
-    index += 10;
-    uint16_t timestamp = mBitSet.uint16(index, index + 9);
-    index += 10;
-    std::vector<uint16_t> samples;
-    samples.reserve(nsamples);
-    for (int i = 0; i < nsamples; i++) {
-      samples.emplace_back(mBitSet.uint16(index, index + 9));
-      index += 10;
-    }
-    mSampaChannelHandler(mCruId,
-                         mLinkId,
-                         mSampaHeader.chipAddress(),
-                         mSampaHeader.channelAddress(),
-                         SampaCluster(timestamp, samples));
-  }
-}
-
-void ElinkDecoder::handlePacket20()
-{
-  // handling sampa packet
-  // for 20-bits chargeSum case.
-  int index{0};
-  while (index < len()) {
-    uint16_t nsamples = mBitSet.uint16(index, index + 9);
-    index += 10;
-    uint16_t timestamp = mBitSet.uint16(index, index + 9);
-    index += 10;
-    uint32_t chargeSum = mBitSet.uint32(index, index + 19);
-    mSampaChannelHandler(mCruId,
-                         mLinkId,
-                         mSampaHeader.chipAddress(),
-                         mSampaHeader.channelAddress(),
-                         SampaCluster(timestamp, chargeSum));
-    index += 20;
-  }
-} // namespace raw
-
-int ElinkDecoder::len() const
-{
-  return mBitSet.len();
-}
-
-uint8_t ElinkDecoder::linkId() const
-{
-  return mLinkId;
-}
-
-/// process the bit stream content.
-///
-/// can be in basically 3 states when entering this method :
-///
-/// - mIsSynchronized=false : we still have to find our first SYNC word
-/// - mIsInData=true : we have reached a data "zone", so we read the data
-/// - none of the above : we are looking for a header (50 bits). Depending
-/// on the value of the header type, we change state.
-///
-bool ElinkDecoder::process()
-{
-  if (mBitSet.len() != mCheckpoint) {
-    throw std::logic_error("wrong logic somewhere");
-  }
-
-  // first things first : we must find the sync pattern, otherwise
-  // just continue
-  if (!mIsSynchronized) {
-    findSync();
-    return true;
-  }
-
-  // we have reached a point where we do have data, let's decode it
-  if (mIsInData) {
-    return getData();
-  }
-
-  // looking for a header
-  if (mCheckpoint != HEADERSIZE) {
-    throw std::logic_error(fmt::sprintf("wrong logic 5 checkpoint %d HeaderSize %d", mCheckpoint, HEADERSIZE));
-  }
-
-  mSampaHeader.uint64(mBitSet.last(HEADERSIZE).uint64(0, 49));
+  mSampaHeader.uint64(mBitBuffer.to_ulong());
   ++mNofHeaderSeen;
 
   switch (mSampaHeader.packetType()) {
@@ -211,53 +118,207 @@ bool ElinkDecoder::process()
     case SampaPacketType::DataTriggerTooEarlyNumWords:
     case SampaPacketType::DataNumWords:
       // data with a problem is still data, i.e. there will
-      // probably be some data words to read in, unless there's none
+      // probably be some data words to read in...
+      // so we fallthrough the simple Data case
     case SampaPacketType::Data:
-      clear(10 * mSampaHeader.nof10BitWords());
-      mIsInData = true;
-      return true;
+      mNof10BitsWordsToRead = mSampaHeader.nof10BitWords();
+      changeState(State::ReadingNofSamples, 10);
       break;
     case SampaPacketType::Sync:
       mNofSync++;
       softReset();
-      return true;
       break;
     case SampaPacketType::HeartBeat:
       fmt::printf("ElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mLinkId);
       softReset();
-      return true;
       break;
     default:
       throw std::logic_error("that should not be possible");
       break;
   }
-  return true;
+}
+
+void ElinkDecoder::handleReadClusterSum()
+{
+  mClusterSum = mBitBuffer.to_ulong();
+  oneLess10BitWord();
+  oneLess10BitWord();
+  sendCluster();
+  if (mNof10BitsWordsToRead) {
+    changeState(State::ReadingNofSamples, 10);
+  } else {
+    changeState(State::LookingForHeader, HEADERSIZE);
+  }
+}
+
+void ElinkDecoder::handleReadData()
+{
+  assert(mState == State::ReadingTimestamp || mState == State::ReadingSample);
+  if (mState == State::ReadingTimestamp) {
+    mTimestamp = mBitBuffer.to_ulong();
+  }
+  oneLess10BitWord();
+  if (mClusterSumMode) {
+    changeState(State::ReadingClusterSum, 20);
+  } else {
+    changeState(State::ReadingSample, 10);
+  }
+}
+
+void ElinkDecoder::handleReadSample()
+{
+  mSamples.push_back(mBitBuffer.to_ulong());
+  if (mNofSamples > 0) {
+    --mNofSamples;
+  }
+  oneLess10BitWord();
+  if (mNofSamples) {
+    handleReadData();
+  } else {
+    sendCluster();
+    if (mNof10BitsWordsToRead) {
+      changeState(State::ReadingNofSamples, 10);
+    } else {
+      changeState(State::LookingForHeader, HEADERSIZE);
+    }
+  }
+}
+
+void ElinkDecoder::handleReadTimestamp()
+{
+  assert(mState == State::ReadingNofSamples);
+  oneLess10BitWord();
+  mNofSamples = mBitBuffer.to_ulong();
+  changeState(State::ReadingTimestamp, 10);
+}
+
+int ElinkDecoder::len() const
+{
+  return mBitBufferIndex;
+}
+
+uint8_t ElinkDecoder::linkId() const
+{
+  return mLinkId;
+}
+
+std::string ElinkDecoder::name(State s) const
+{
+  switch (s) {
+    case State::LookingForSync:
+      return "LookingForSync";
+      break;
+    case State::LookingForHeader:
+      return "LookingForHeader";
+      break;
+    case State::ReadingNofSamples:
+      return "ReadingNofSamples";
+      break;
+    case State::ReadingTimestamp:
+      return "ReadingTimestamp";
+      break;
+    case State::ReadingSample:
+      return "ReadingSample";
+      break;
+    case State::ReadingClusterSum:
+      return "ReadingClusterSum";
+      break;
+  };
+}
+
+void ElinkDecoder::oneLess10BitWord()
+{
+  if (mNof10BitsWordsToRead > 0) {
+    --mNof10BitsWordsToRead;
+  }
+}
+
+/// process the bit stream content.
+void ElinkDecoder::process()
+{
+  if (len() != mCheckpoint) {
+    throw std::logic_error("wrong logic somewhere");
+  }
+
+  switch (mState) {
+    case State::LookingForSync:
+      findSync();
+      break;
+    case State::LookingForHeader:
+      handleHeader();
+      break;
+    case State::ReadingNofSamples:
+      handleReadTimestamp();
+      break;
+    case State::ReadingTimestamp:
+      handleReadData();
+      break;
+    case State::ReadingSample:
+      handleReadSample();
+      break;
+    case State::ReadingClusterSum:
+      handleReadClusterSum();
+      break;
+  }
+};
+
+void ElinkDecoder::sendCluster()
+{
+  if (!mSampaChannelHandler) {
+    // to nothing if we don't have a channel handler
+    return;
+  }
+  if (mClusterSumMode) {
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(mTimestamp, mClusterSum));
+  } else {
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(mTimestamp, mSamples));
+  }
+  mSamples.clear();
 }
 
 void ElinkDecoder::softReset()
 {
   clear(HEADERSIZE);
-  mIsInData = false;
 }
 
-void ElinkDecoder::hardReset()
+void ElinkDecoder::reset()
 {
   softReset();
-  mIsSynchronized = false;
+  mState = State::LookingForSync;
+}
+
+std::string bitBufferString(const std::bitset<50>& bs, int imax)
+{
+  std::string s;
+  for (int i = 0; i < imax; i++) {
+    if (bs.test(i)) {
+      s += "1";
+    } else {
+      s += "0";
+    }
+  }
+  return s;
 }
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
-  os << fmt::format("ELINK ID {:2d} cruId {:2d} nsync {:6d} checkpoint {:6d} indata {:1d} len {:6d} nbits seen {:6d} headers {:6d} maxlen {:6d} mode {} {}",
-                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint,
-                    e.mIsInData, e.mBitSet.len(), e.mNofBitSeen,
-                    e.mNofHeaderSeen, e.mBitSet.maxlen(),
-                    (e.mChargeSumMode ? "CLUSUM" : "SAMPLE"),
-                    (e.len() == BitSet::maxSize() ? "FULL!!!" : ""));
-
-  // if (e.len()) {
-  //   os << std::string(6, ' ') << "BitSet=" << compactString(e.mBitSet);
-  // }
+  os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp {:6d} bi {:2d} state {:17s} len {:6d} nseen {:6d} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
+                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mBitBufferIndex,
+                    e.name(e.mState),
+                    e.len(), e.mNofBitSeen,
+                    e.mNofHeaderSeen,
+                    e.mNof10BitsWordsToRead,
+                    e.mNofSamples,
+                    (e.mClusterSumMode ? "CLUSUM" : "SAMPLE"),
+                    bitBufferString(e.mBitBuffer, e.mBitBufferIndex));
   return os;
 }
 
