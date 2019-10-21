@@ -60,7 +60,7 @@ class GBTDecoder
   ///@}
 
  private:
-  void append(uint128_t w);
+  void append(uint32_t, int, int);
 
  private:
   int mCruId;

@@ -23,7 +23,10 @@ namespace
 std::string bitBufferString(const std::bitset<50>& bs, int imax)
 {
   std::string s;
-  for (int i = 0; i < imax; i++) {
+  for (int i = 0; i < 64; i++) {
+    if ((static_cast<uint64_t>(1) << i) > imax) {
+      break;
+    }
     if (bs.test(i)) {
       s += "1";
     } else {
@@ -51,42 +54,29 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
                                                  mSampaHeader{},
                                                  mClusterSumMode{chargeSumMode},
                                                  mBitBuffer{},
-                                                 mBitBufferIndex{},
                                                  mNofSync{},
                                                  mNofBitSeen{},
                                                  mNofHeaderSeen{},
-                                                 mCheckpoint{HEADERSIZE},
+                                                 mCheckpoint{(static_cast<uint64_t>(1) << HEADERSIZE)},
                                                  mNof10BitsWordsToRead{},
                                                  mNofSamples{},
                                                  mTimestamp{},
                                                  mSamples{},
                                                  mClusterSum{},
-                                                 mState{State::LookingForSync}
+                                                 mState{State::LookingForSync},
+                                                 mMask{1}
 {
   assertIsInRange("linkId", linkId, 0, 39);
 }
 
 void ElinkDecoder::append(bool bit0, bool bit1)
 {
-  constexpr uint64_t one{1};
+  mNofBitSeen += 2;
 
-  ++mNofBitSeen;
+  mBitBuffer += bit0 * mMask + bit1 * mMask * 2;
+  mMask *= 4;
 
-  if (bit0) {
-    mBitBuffer |= one << mBitBufferIndex;
-  } else {
-    mBitBuffer &= ~(one << mBitBufferIndex);
-  }
-  ++mBitBufferIndex;
-
-  if (bit1) {
-    mBitBuffer |= one << mBitBufferIndex;
-  } else {
-    mBitBuffer &= ~(one << mBitBufferIndex);
-  }
-  ++mBitBufferIndex;
-
-  if (mBitBufferIndex == mCheckpoint) {
+  if (mMask == mCheckpoint) {
     process();
   }
 }
@@ -99,9 +89,9 @@ void ElinkDecoder::changeState(State newState, int newCheckpoint)
 
 void ElinkDecoder::clear(int checkpoint)
 {
-  mBitBufferIndex = 0;
   mBitBuffer = 0;
-  mCheckpoint = checkpoint;
+  mCheckpoint = static_cast<uint64_t>(1) << checkpoint;
+  mMask = 1;
 }
 
 /// findSync checks if the last 50 bits of the bit stream
@@ -115,7 +105,7 @@ void ElinkDecoder::findSync()
   const uint64_t sync = sampaSync().uint64();
   if (mBitBuffer != sync) {
     mBitBuffer >>= 1;
-    mBitBufferIndex--;
+    mMask /= 2;
     return;
   }
   changeState(State::LookingForHeader, HEADERSIZE);
@@ -212,7 +202,7 @@ void ElinkDecoder::handleReadTimestamp()
 
 int ElinkDecoder::len() const
 {
-  return mBitBufferIndex;
+  return static_cast<int>(std::floor(log2(1.0 * mMask)) + 1);
 }
 
 uint8_t ElinkDecoder::linkId() const
@@ -254,10 +244,6 @@ void ElinkDecoder::oneLess10BitWord()
 /// process the bit stream content.
 void ElinkDecoder::process()
 {
-  if (len() != mCheckpoint) {
-    throw std::logic_error("wrong logic somewhere");
-  }
-
   switch (mState) {
     case State::LookingForSync:
       findSync();
@@ -315,15 +301,15 @@ void ElinkDecoder::reset()
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
-  os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp {:6d} bi {:2d} state {:17s} len {:6d} nseen {:6d} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
-                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mBitBufferIndex,
+  os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp {:6d} mask {:6x} state {:17s} len {:6d} nseen {:6d} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
+                    e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mMask,
                     e.name(e.mState),
                     e.len(), e.mNofBitSeen,
                     e.mNofHeaderSeen,
                     e.mNof10BitsWordsToRead,
                     e.mNofSamples,
                     (e.mClusterSumMode ? "CLUSUM" : "SAMPLE"),
-                    bitBufferString(e.mBitBuffer, e.mBitBufferIndex));
+                    bitBufferString(e.mBitBuffer, e.mMask));
   return os;
 }
 
