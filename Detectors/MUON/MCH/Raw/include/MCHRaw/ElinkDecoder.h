@@ -102,7 +102,6 @@ class ElinkDecoder
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
   SampaHeader mSampaHeader;                 //< Current SampaHeader
   uint64_t mBitBuffer;                      //< Our internal bit stream buffer
-  uint8_t mBitBufferIndex;                  //< Current index in bit buffer
   /** @name internal global counters
     */
 
@@ -112,13 +111,14 @@ class ElinkDecoder
   uint64_t mNofHeaderSeen; //< Total number of headers seen
   ///@}
 
-  uint8_t mCheckpoint;            //< Index (in BitBuffer) of the next state transition check to be done in process()
+  uint64_t mCheckpoint;           //< mask of the next state transition check to be done in process()
   uint16_t mNof10BitsWordsToRead; //< number of 10 bits words to be read
 
   uint16_t mNofSamples;
   uint16_t mTimestamp;
   std::vector<uint16_t> mSamples;
   uint32_t mClusterSum;
+  uint64_t mMask;
 
   State mState; //< the state we are in
 };
