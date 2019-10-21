@@ -30,24 +30,25 @@ GBTDecoder::GBTDecoder(int cruId,
   assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
-void GBTDecoder::append(uint128_t w)
+void GBTDecoder::append(uint32_t w, int offset, int n)
 {
-  ++mNofGbtWordsSeens;
-  // dispatch the 80 bits (out of the 128) to the underlaying elinks (2 bits per elink)
-  for (int i = 0; i < 80; i += 2) {
-    auto& e = mElinks[i / 2];
-    e.append(bit_test(w, i + 1), bit_test(w, i));
+  uint32_t m{1};
+  int elinkIndex = offset / 2;
+
+  for (int i = 0; i < n; i += 2) {
+    mElinks[elinkIndex].append(w & (m * 2), w & m);
+    m *= 4;
+    ++elinkIndex;
   }
 }
 
-void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3)
+void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t /* w3 */)
 {
-  uint128_t b0_31 = w0;
-  uint128_t b31_65 = w1;
-  uint128_t b66_95 = w2;
-  uint128_t b96_127 = w3;
-  uint128_t gbtWord = b0_31 | (b31_65 << 32) | (b66_95 << 64) | (b96_127 << 96);
-  append(gbtWord);
+  ++mNofGbtWordsSeens;
+  append(w0, 0, 32);
+  append(w1, 32, 32);
+  append(w2, 64, 16);
+  // w3 is not used as only the first 80 bits are of interest to us
 }
 
 void GBTDecoder::printStatus(int maxelink) const
