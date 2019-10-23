@@ -222,7 +222,7 @@ int BitSet::count() const
 
 bool BitSet::get(int pos) const
 {
-  if (pos < 0 || pos > size()) {
+  if (pos < 0 || pos >= size()) {
     throw std::out_of_range(fmt::format("pos {0} is out of bounds", pos));
   }
   auto b = mBytes[pos / 8];
@@ -267,9 +267,6 @@ void BitSet::pruneFirst(int n)
     throw std::invalid_argument(fmt::format("cannot prune {0} bits", n));
   }
   for (int i = 0; i < len() - n; i++) {
-    set(i, get(i + n));
-  }
-  for (int i = len() - n; i < len(); i++) {
     set(i, get(i + n));
   }
   mLen -= n;
