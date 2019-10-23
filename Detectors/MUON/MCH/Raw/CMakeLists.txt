@@ -21,6 +21,11 @@ o2_add_executable(rawdump
                   COMPONENT_NAME mch
                   PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw
                                         Boost::program_options)
+o2_add_executable(readout-debug
+                  SOURCES src/readoutDebug.cxx
+                  COMPONENT_NAME mch
+                  PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 O2::MCHRaw O2::Framework
+                                        Boost::program_options)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
