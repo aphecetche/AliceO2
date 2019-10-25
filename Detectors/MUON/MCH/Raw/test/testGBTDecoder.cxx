@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 #include "MCHRaw/GBT.h"
 #include "common.h"
+#include "MCHRaw/RAWDataHeader.h"
 
 using namespace o2::mch::raw;
 using namespace o2::mch::raw::test;
@@ -42,11 +43,9 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
 
   GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   auto buffer = o2::mch::raw::test::createGBTBuffer();
-  for (auto i = 0; i < buffer.size(); i += 4) {
-    dec.append(buffer[i], buffer[i + 1],
-               buffer[i + 2],
-               buffer[i + 3]);
-  }
+  BOOST_CHECK_EQUAL(buffer.size(), REF_BUFFER.size());
+  o2::mch::raw::dumpBuffer(buffer);
+  dec.append(buffer);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
     "chip-3-ch-31-ts-12-q-133",
@@ -54,6 +53,11 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
     "chip-0-ch-31-ts-12-q-160",
     "chip-0-ch-0-ts-12-q-10"};
   BOOST_CHECK_EQUAL(result.size(), expected.size());
+  if (result.size()) {
+    for (auto r : result) {
+      std::cout << "r=" << r << "\n";
+    }
+  }
   BOOST_CHECK(std::is_permutation(begin(result), end(result), begin(expected)));
 }
 
@@ -63,7 +67,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
   GBTEncoder enc(0, 0);
   uint32_t bx(0);
   uint16_t ts(0);
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   int elinkId = 2;
   enc.addChannelData(elinkId, 1, {SampaCluster(ts, 10)});
   if (verboseEncoder) {
@@ -92,11 +96,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderWithSeveralMoveToBuffer)
 
   std::vector<std::string> result;
   GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  for (auto i = 0; i < buffer.size(); i += 4) {
-    dec.append(buffer[i], buffer[i + 1],
-               buffer[i + 2],
-               buffer[i + 3]);
-  }
+  dec.append(buffer);
   if (verboseDecoder) {
     dec.printStatus(5);
   }
@@ -113,13 +113,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
   GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  for (auto i = 0; i < REF_BUFFER.size(); i += 4) {
-    uint32_t w0 = REF_BUFFER[i];
-    uint32_t w1 = REF_BUFFER[i + 1];
-    uint32_t w2 = REF_BUFFER[i + 2];
-    uint32_t w3 = REF_BUFFER[i + 3];
-    dec.append(w0, w1, w2, w3);
-  }
+  dec.append(REF_BUFFER);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
     "chip-3-ch-31-ts-12-q-133",

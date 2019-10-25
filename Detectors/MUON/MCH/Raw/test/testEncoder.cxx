@@ -31,11 +31,11 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
-std::vector<uint32_t> createTestBuffer(gsl::span<uint32_t> data)
+std::vector<uint8_t> createTestBuffer(gsl::span<uint8_t> data)
 {
-  assert(data.size() % 4 == 0);
-  std::vector<uint32_t> buffer;
-  auto payloadSize = data.size() * sizeof(uint32_t);
+  assert(data.size() % 16 == 0);
+  std::vector<uint8_t> buffer;
+  auto payloadSize = data.size();
   if (payloadSize > (1 << 16) - sizeof(RAWDataHeader)) {
     throw std::logic_error(fmt::format("cannot generate a buffer with a payload above {} (tried {})", 0xFFFF - sizeof(RAWDataHeader), payloadSize));
   }
@@ -45,7 +45,7 @@ std::vector<uint32_t> createTestBuffer(gsl::span<uint32_t> data)
   return buffer;
 }
 
-std::vector<uint32_t> createPedestalBuffer(int elinkId)
+std::vector<uint8_t> createPedestalBuffer(int elinkId)
 {
   uint32_t bx(0);
   uint8_t solarId(0);
@@ -68,30 +68,42 @@ std::vector<uint32_t> createPedestalBuffer(int elinkId)
       cru.addChannelData(solarId, elinkId, j, {SampaCluster(ts, samples)});
     }
   }
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   cru.moveToBuffer(buffer);
   return buffer;
 }
 
 BOOST_AUTO_TEST_CASE(TestPadding)
 {
-  std::vector<uint32_t> data;
+  std::vector<uint8_t> data;
 
-  data.emplace_back(0x22222222);
-  data.emplace_back(0x44444444);
-  data.emplace_back(0x66666666);
-  data.emplace_back(0x88888888);
+  data.emplace_back(0x22);
+  data.emplace_back(0x22);
+  data.emplace_back(0x22);
+  data.emplace_back(0x22);
+  data.emplace_back(0x44);
+  data.emplace_back(0x44);
+  data.emplace_back(0x44);
+  data.emplace_back(0x44);
+  data.emplace_back(0x66);
+  data.emplace_back(0x66);
+  data.emplace_back(0x66);
+  data.emplace_back(0x66);
+  data.emplace_back(0x88);
+  data.emplace_back(0x88);
+  data.emplace_back(0x88);
+  data.emplace_back(0x88);
 
   auto buffer = createTestBuffer(data);
 
-  std::vector<uint32_t> pages;
+  std::vector<uint8_t> pages;
   size_t pageSize = 128;
-  uint32_t paddingWord = 0x12345678;
-  paginateBuffer(buffer, pages, pageSize, paddingWord);
+  uint8_t paddingByte = 0x78;
+  paginateBuffer(buffer, pages, pageSize, paddingByte);
 
-  BOOST_CHECK_EQUAL(pages.size(), pageSize / 4);
-  for (int i = sizeof(RAWDataHeader) / 4 + data.size(); i < pageSize / 4; i++) {
-    BOOST_CHECK_EQUAL(pages[i], paddingWord);
+  BOOST_CHECK_EQUAL(pages.size(), pageSize);
+  for (int i = sizeof(RAWDataHeader) + data.size(); i < pageSize; i++) {
+    BOOST_CHECK_EQUAL(pages[i], paddingByte);
   }
 }
 
@@ -100,19 +112,18 @@ BOOST_DATA_TEST_CASE(TestSplit,
                        boost::unit_test::data::make({128, 512, 8192}),
                      ndata, pageSize)
 {
-  constexpr uint32_t paddingWord = 0x12345678;
+  constexpr uint8_t paddingWord = 0x55;
 
-  std::vector<uint32_t> data;
-  for (int i = 0; i < ndata; i++) {
-    data.emplace_back(i + 1);
+  std::vector<uint8_t> data;
+  for (int i = 0; i < ndata * 4; i++) {
+    data.emplace_back((i + 1) % 256);
   }
 
   auto buffer = createTestBuffer(data);
 
-  std::vector<uint32_t> pages;
-  int expected = std::ceil(1.0 * (data.size() * 4) / (pageSize - sizeof(RAWDataHeader)));
+  std::vector<uint8_t> pages;
+  int expected = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
   paginateBuffer(buffer, pages, pageSize, paddingWord);
-
   int nrdhs = o2::mch::raw::countRDHs(pages);
   BOOST_CHECK_EQUAL(nrdhs, expected);
 
@@ -120,13 +131,13 @@ BOOST_DATA_TEST_CASE(TestSplit,
   bool ok{true};
   int n{0};
   for (int i = 0; i < expected; i++) {
-    int dataPos = sizeof(RAWDataHeader) / 4 + i * pageSize / 4;
-    for (int j = 0; j < pageSize / 4 - sizeof(RAWDataHeader) / 4; j++) {
+    int dataPos = sizeof(RAWDataHeader) + i * pageSize;
+    for (int j = 0; j < pageSize - sizeof(RAWDataHeader); j++) {
       ++n;
       if (n >= data.size()) {
         break;
       }
-      if (pages[dataPos + j] != n) {
+      if (pages[dataPos + j] != (n % 256)) {
         ok = false;
       }
     }
@@ -139,14 +150,11 @@ BOOST_AUTO_TEST_CASE(GenerateFile)
 {
   std::ofstream out("test.raw", std::ios::binary);
   auto buffer = createPedestalBuffer(0);
-  std::cout << "buffer.size=" << buffer.size() << "\n";
-  // dumpBuffer(buffer);
-
-  std::vector<uint32_t> pages;
-  paginateBuffer(buffer, pages, 8192, 0x44444444);
-  std::cout << "pages.size=" << pages.size() << "\n";
-  dumpBuffer(pages);
-  out.write(reinterpret_cast<char*>(&pages[0]), pages.size() * sizeof(uint32_t));
+  std::vector<uint8_t> pages;
+  paginateBuffer(buffer, pages, 8192, 0x44);
+  // std::cout << "pages.size=" << pages.size() << "\n";
+  // dumpBuffer(pages);
+  out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
   out.close();
 }
 

@@ -48,8 +48,8 @@ BOOST_AUTO_TEST_CASE(Test1)
 {
   auto buffer = o2::mch::raw::test::createGBTBuffer();
 
-  auto rdh = o2::mch::raw::createRDH(0, 0, 12, 34, buffer.size() * 4);
-  std::vector<uint32_t> testBuffer;
+  auto rdh = o2::mch::raw::createRDH(0, 0, 12, 34, buffer.size());
+  std::vector<uint8_t> testBuffer;
 
   // duplicate the (rdh+payload) to fake a 3 rdhs buffer
   int nrdhs{3};
