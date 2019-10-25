@@ -106,9 +106,11 @@ class ElinkDecoder
     */
 
   ///@{
-  uint64_t mNofSync;       //< Number of SYNC words we've seen so far
-  uint64_t mNofBitSeen;    //< Total number of bits seen
-  uint64_t mNofHeaderSeen; //< Total number of headers seen
+  uint64_t mNofSync;               //< Number of SYNC words we've seen so far
+  uint64_t mNofBitSeen;            //< Total number of bits seen
+  uint64_t mNofHeaderSeen;         //< Total number of headers seen
+  uint64_t mNofHammingErrors;      //< Total number of hamming errors seen
+  uint64_t mNofHeaderParityErrors; //< Total number of header parity errors seen
   ///@}
 
   uint64_t mCheckpoint;           //< mask of the next state transition check to be done in process()
