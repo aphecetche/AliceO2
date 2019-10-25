@@ -127,9 +127,19 @@ SampaHeader sampaSync();
 /// packetTypeName returns a string representation of the given packet type.
 std::string packetTypeName(SampaPacketType pkt);
 
-void hammingDecode(unsigned int buffer[2], bool& error, bool& uncorrectable, bool fix_data);
+/// compute the hamming code of value
+/// assuming it is 50 bits
+/// and represents a Sampa header
+int computeHammingCode(uint64_t value);
 
-std::ostream& operator<<(std::ostream& os, const SampaHeader& sh);
+/// compute parity of value
+/// assuming it is 50 bits
+/// and represents a Sampa header
+/// (not using the existing header parity at bit pos 6)
+int computeHeaderParity(uint64_t value);
+
+std::ostream&
+  operator<<(std::ostream& os, const SampaHeader& sh);
 
 } // namespace raw
 } // namespace mch
