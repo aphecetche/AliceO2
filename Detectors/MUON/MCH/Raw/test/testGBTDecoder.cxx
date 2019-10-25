@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 #include "MCHRaw/GBT.h"
 #include "common.h"
+#include "MCHRaw/RAWDataHeader.h"
 
 using namespace o2::mch::raw;
 using namespace o2::mch::raw::test;
@@ -42,6 +43,7 @@ BOOST_AUTO_TEST_CASE(GBTDecoderFromKnownEncoder)
 
   GBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   auto buffer = o2::mch::raw::test::createGBTBuffer();
+  o2::mch::raw::dumpBuffer(buffer);
   for (auto i = 0; i < buffer.size(); i += 4) {
     dec.append(buffer[i], buffer[i + 1],
                buffer[i + 2],
