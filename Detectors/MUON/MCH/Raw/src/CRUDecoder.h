@@ -35,7 +35,7 @@ class CRUDecoder
                       bool chargeSumMode = true);
 
   /// decode the data in buffer, assuming it's coming from the given GBT.
-  void decode(int gbtid, gsl::span<uint32_t> buffer);
+  void decode(int gbtid, gsl::span<uint8_t> buffer);
 
   /// reset our internal GBTDecoders
   void reset();
