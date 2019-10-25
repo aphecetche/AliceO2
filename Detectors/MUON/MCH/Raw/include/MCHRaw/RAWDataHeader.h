@@ -153,17 +153,25 @@ using RAWDataHeader = RAWDataHeaderV4;
 
 void assertRDH(const RAWDataHeader& rdh);
 
+void appendRDH(std::vector<uint8_t>& buffer, const RAWDataHeader& rdh);
+
 void appendRDH(std::vector<uint32_t>& buffer, const RAWDataHeader& rdh);
+
+RAWDataHeader createRDH(gsl::span<uint8_t> buffer);
 
 RAWDataHeader createRDH(gsl::span<uint32_t> buffer);
 
 RAWDataHeader createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing, uint16_t payloadSize);
 
-int countRDHs(gsl::span<uint32_t> buffer);
+int countRDHs(gsl::span<uint8_t> buffer);
 
 int showRDHs(gsl::span<uint32_t> buffer);
 
+int showRDHs(gsl::span<uint8_t> buffer);
+
 void dumpBuffer(gsl::span<uint32_t> buffer);
+
+void dumpBuffer(gsl::span<uint8_t> buffer);
 
 bool isValid(const RAWDataHeader& rdh);
 

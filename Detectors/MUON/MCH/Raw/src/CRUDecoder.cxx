@@ -29,16 +29,13 @@ CRUDecoder::CRUDecoder(int cruId,
 {
 }
 
-void CRUDecoder::decode(int gbtId, gsl::span<uint32_t> buffer)
+void CRUDecoder::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
   assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
-  if (buffer.size() % 4) {
-    throw std::invalid_argument("buffer size should be a multiple of 4");
+  if (buffer.size() % 16) {
+    throw std::invalid_argument("buffer size should be a multiple of 16");
   }
-  auto& gbt = mGbtDecoders[gbtId];
-  for (auto i = 0; i < buffer.size(); i += 4) {
-    gbt.append(buffer[i], buffer[i + 1], buffer[i + 2], buffer[i + 3]);
-  }
+  mGbtDecoders[gbtId].append(buffer);
 }
 
 void CRUDecoder::reset()
