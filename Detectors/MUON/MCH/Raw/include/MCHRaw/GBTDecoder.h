@@ -40,11 +40,13 @@ class GBTDecoder
     */
   ///@{
 
-  /** @brief Append one GBT word (128 bits, split in 4 32 bits words).
-    *
-    * Note that for mch data only 80 out of the 128 are of real interest.
+  /** @brief Append the equivalent n GBT words 
+    * (n x 128 bits, split in 16 bytes).
+    * bytes size (=n) must be a multiple of 16
+    * Given that the MCH data only uses 80 out of the 128 bits
+    * only the 10 first bytes of each group of 16 are used
     */
-  void append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3);
+  void append(gsl::span<uint8_t> bytes);
   ///@}
 
   /** @name Methods for testing

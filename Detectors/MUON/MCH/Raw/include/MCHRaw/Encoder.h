@@ -21,6 +21,7 @@ namespace mch
 {
 namespace raw
 {
+
 /// paginateBuffer converts an input buffer composed of (RDH,payload) blocks
 /// (where payload size can be anything <= 16320 bytes)  without any gap,
 /// to a buffer where a RDH is present at the beginning of each page
@@ -28,13 +29,14 @@ namespace raw
 ///
 /// return the number of pages in the paginatedBuffer.
 ///
-/// If a payload is too small to fill the page, then the relevant number of padding words
-/// is inserted so that (RDH,payload,paddingWords) is exactly pageSize.
+/// If a payload is too small to fill the page, then the relevant number of
+/// padding byte is inserted so that (RDH,payload,paddingByte)
+/// is exactly pageSize.
 ///
-size_t paginateBuffer(gsl::span<uint32_t> compactBuffer,
-                      std::vector<uint32_t>& paginatedBuffer,
+size_t paginateBuffer(gsl::span<uint8_t> compactBuffer,
+                      std::vector<uint8_t>& paginatedBuffer,
                       size_t pageSize = 8192,
-                      uint32_t paddingWord = 0xFFFFFFFF);
+                      uint8_t paddingByte = 0xFF);
 } // namespace raw
 } // namespace mch
 } // namespace o2

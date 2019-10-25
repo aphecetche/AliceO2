@@ -59,9 +59,9 @@ class GBTEncoder
   /// Export our encoded data.
   ///
   /// The internal GBT words that have been accumulated so far are
-  /// _moved_ (i.e. deleted from this object) to the external buffer.
-  /// Returns the number of words added to buffer.
-  size_t moveToBuffer(std::vector<uint32_t>& buffer);
+  /// _moved_ (i.e. deleted from this object) to the external buffer of bytes.
+  /// Returns the number of bytes added to buffer
+  size_t moveToBuffer(std::vector<uint8_t>& buffer);
   ///@}
 
   /** @name Methods for testing.

@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(EmptyEncoderHasEmptyBufferIfPhaseIsZero)
   GBTEncoder::forceNoPhase = true;
   CRUEncoder cru(0);
   cru.startHeartbeatFrame(12345, 123);
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   cru.moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase)
   GBTEncoder::forceNoPhase = false;
   CRUEncoder cru(0);
   cru.startHeartbeatFrame(12345, 123);
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   cru.moveToBuffer(buffer);
   BOOST_CHECK_GE(buffer.size(), 0);
 }
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZero)
   cru.startHeartbeatFrame(12345, 123);
   cru.startHeartbeatFrame(12345, 125);
   cru.startHeartbeatFrame(12345, 312);
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   cru.moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
@@ -73,7 +73,7 @@ int estimateHBSize(int nofGbts, int maxNofChPerGbt)
   size_t nbits = (50 + maxNofChPerGbt * 90);
   size_t n128bitwords = nbits / 2;
   size_t n32bitwords = n128bitwords * 4;
-  return n32bitwords + rdhSize * nofGbts;
+  return 4 * (n32bitwords + rdhSize * nofGbts); // size in bytes
 }
 
 BOOST_AUTO_TEST_CASE(CheckNumberOfRDHs)
