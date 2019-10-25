@@ -78,8 +78,10 @@ class SampaHeader
   bool operator>(const SampaHeader& rhs) const;
   bool operator>=(const SampaHeader& rhs) const;
 
-  /// whether the header has error (according to hamming)
+  /// whether the header has error (according to hamming and/or parity)
   bool hasError() const;
+  bool hasHammingError() const;
+  bool hasParityError() const;
 
   /** @name Getters
     */
