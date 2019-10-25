@@ -183,9 +183,19 @@ SampaHeader::SampaHeader(uint64_t value) : mValue(0)
   uint64(value);
 }
 
-bool SampaHeader::hasError() const
+bool SampaHeader::hasHammingError() const
 {
   return computeHammingCode(mValue) != hammingCode();
+}
+
+bool SampaHeader::hasError() const
+{
+  return hasHammingError() || hasParityError();
+}
+
+bool SampaHeader::hasParityError() const
+{
+  return computeHeaderParity(mValue) != headerParity();
 }
 
 void SampaHeader::uint64(uint64_t value)

@@ -57,6 +57,8 @@ ElinkDecoder::ElinkDecoder(uint8_t cruId,
                                                  mNofSync{},
                                                  mNofBitSeen{},
                                                  mNofHeaderSeen{},
+                                                 mNofHammingErrors{},
+                                                 mNofHeaderParityErrors{},
                                                  mCheckpoint{(static_cast<uint64_t>(1) << HEADERSIZE)},
                                                  mNof10BitsWordsToRead{},
                                                  mNofSamples{},
@@ -118,6 +120,10 @@ void ElinkDecoder::handleHeader()
 
   mSampaHeader.uint64(mBitBuffer);
   ++mNofHeaderSeen;
+
+  if (mSampaHeader.hasError()) {
+    ++mNofHammingErrors;
+  }
 
   switch (mSampaHeader.packetType()) {
     case SampaPacketType::DataTruncated:
@@ -301,11 +307,13 @@ void ElinkDecoder::reset()
 
 std::ostream& operator<<(std::ostream& os, const ElinkDecoder& e)
 {
-  os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp {:6d} mask {:6x} state {:17s} len {:6d} nseen {:6d} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
+  os << fmt::format("ID{:2d} cruId {:2d} sync {:6d} cp 0x{:6x} mask 0x{:6x} state {:17s} len {:6d} nseen {:6d} errH {:6} errP {:6} head {:6d} n10w {:6d} nsamples {:6d} mode {} bbuf {:s}",
                     e.mLinkId, e.mCruId, e.mNofSync, e.mCheckpoint, e.mMask,
                     e.name(e.mState),
                     e.len(), e.mNofBitSeen,
                     e.mNofHeaderSeen,
+                    e.mNofHammingErrors,
+                    e.mNofHeaderParityErrors,
                     e.mNof10BitsWordsToRead,
                     e.mNofSamples,
                     (e.mClusterSumMode ? "CLUSUM" : "SAMPLE"),
