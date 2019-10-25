@@ -42,11 +42,10 @@ BareDecoder::~BareDecoder()
   std::cout << "Nof orbits jumps: " << mNofOrbitJumps << "\n";
 }
 
-int BareDecoder::operator()(gsl::span<uint32_t> buffer)
+int BareDecoder::operator()(gsl::span<uint8_t> buffer)
 {
   RAWDataHeader rdh;
-  const size_t byteTo32BitWords{4};
-  const size_t nofRDHWords = sizeof(rdh) / byteTo32BitWords;
+  const size_t nofRDHWords = sizeof(rdh);
   int index{0};
   int nofRDHs{0};
 
@@ -66,14 +65,14 @@ int BareDecoder::operator()(gsl::span<uint32_t> buffer)
     int payloadSize = rdhPayloadSize(rdh);
     bool shouldDecode = mRdhHandler(rdh);
     if (shouldDecode) {
-      size_t n = static_cast<size_t>(payloadSize) / byteTo32BitWords;
+      size_t n = static_cast<size_t>(payloadSize);
       size_t pos = static_cast<size_t>(index + nofRDHWords);
       mCruDecoders[rdh.cruId].decode(rdh.linkId, buffer.subspan(pos, n));
     }
-    index += rdh.offsetNextPacket / byteTo32BitWords;
+    index += rdh.offsetNextPacket;
   }
   return nofRDHs;
-} // namespace raw
+}
 
 void BareDecoder::reset()
 {

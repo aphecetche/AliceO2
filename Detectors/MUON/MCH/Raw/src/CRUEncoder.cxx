@@ -47,27 +47,33 @@ void CRUEncoder::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
   // prepending each one with a corresponding Raw Data Header (RDH)
 
   for (auto& gbt : mGBTs) {
-    std::vector<uint32_t> gbtBuffer;
+    std::vector<uint8_t> gbtBuffer;
     gbt.moveToBuffer(gbtBuffer);
     if (!gbtBuffer.size()) {
       // unlike in real life we discard gbt content when
       // it's completely void of data
       continue;
     }
-    auto payloadSize = gbtBuffer.size() * sizeof(gbtBuffer[0]); // in bytes
+    assert(gbtBuffer.size() % 4 == 0);
+    auto payloadSize = gbtBuffer.size(); // in bytes
     auto rdh = createRDH(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload
-    std::copy(begin(gbtBuffer), end(gbtBuffer), std::back_inserter(mBuffer));
+    for (auto i = 0; i < gbtBuffer.size(); i += 4) {
+      mBuffer.emplace_back(gbtBuffer[i] | (gbtBuffer[i + 1] << 8) | (gbtBuffer[i + 2] << 16) | (gbtBuffer[i + 3] << 24));
+    }
   }
 }
 
-size_t CRUEncoder::moveToBuffer(std::vector<uint32_t>& buffer)
+size_t CRUEncoder::moveToBuffer(std::vector<uint8_t>& buffer)
 {
   closeHeartbeatFrame(mOrbit, mBunchCrossing);
   for (auto& w : mBuffer) {
-    buffer.emplace_back(w);
+    buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
   }
   auto s = mBuffer.size();
   mBuffer.clear();

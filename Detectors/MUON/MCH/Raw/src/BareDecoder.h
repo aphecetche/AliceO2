@@ -45,7 +45,7 @@ class BareDecoder
 
   /// decode the buffer
   /// \return the number of RDH encountered
-  int operator()(gsl::span<uint32_t> buffer);
+  int operator()(gsl::span<uint8_t> buffer);
 
  private:
   void reset();
