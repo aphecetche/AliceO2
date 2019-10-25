@@ -24,7 +24,7 @@ namespace mch
 namespace raw
 {
 
-using Decoder = std::function<void(gsl::span<uint32_t> buffer)>;
+using Decoder = std::function<void(gsl::span<uint8_t> buffer)>;
 
 Decoder createBareDecoder(RawDataHeaderHandler rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
 

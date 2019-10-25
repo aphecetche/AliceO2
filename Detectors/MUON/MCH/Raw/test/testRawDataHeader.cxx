@@ -29,6 +29,15 @@ std::vector<uint32_t> testBuffer()
   return buffer;
 }
 
+std::vector<uint8_t> testBuffer8()
+{
+  std::vector<uint8_t> buffer(64);
+  for (int i = 0; i < 64; i++) {
+    buffer[i] = i;
+  }
+  return buffer;
+}
+
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(rawdataheader)
@@ -55,6 +64,32 @@ BOOST_AUTO_TEST_CASE(AppendRDH)
   std::vector<uint32_t> buffer;
   appendRDH(buffer, rdh);
   auto tb = testBuffer();
+  BOOST_CHECK_EQUAL(buffer.size(), tb.size());
+  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(tb)));
+}
+
+BOOST_AUTO_TEST_CASE(AppendRDH8)
+{
+  RAWDataHeader rdh;
+  rdh.word3 = 0x03020100;
+  rdh.word2 = 0x07060504;
+  rdh.word1 = 0x0B0A0908;
+  rdh.word0 = 0x0F0E0D0C;
+  rdh.word7 = 0x13121110;
+  rdh.word6 = 0x17161514;
+  rdh.word5 = 0x1B1A1918;
+  rdh.word4 = 0x1F1E1D1C;
+  rdh.word11 = 0x23222120;
+  rdh.word10 = 0x27262524;
+  rdh.word9 = 0x2B2A2928;
+  rdh.word8 = 0x2F2E2D2C;
+  rdh.word15 = 0x33323130;
+  rdh.word14 = 0x37363534;
+  rdh.word13 = 0x3B3A3938;
+  rdh.word12 = 0x3F3E3D3C;
+  std::vector<uint8_t> buffer;
+  appendRDH(buffer, rdh);
+  auto tb = testBuffer8();
   BOOST_CHECK_EQUAL(buffer.size(), tb.size());
   BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(tb)));
 }

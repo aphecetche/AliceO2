@@ -30,25 +30,25 @@ GBTDecoder::GBTDecoder(int cruId,
   assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
-void GBTDecoder::append(uint32_t w, int offset, int n)
+void GBTDecoder::append(gsl::span<uint8_t> bytes)
 {
-  uint32_t m{1};
-  int elinkIndex = offset / 2;
-
-  for (int i = 0; i < n; i += 2) {
-    mElinks[elinkIndex].append(w & (m * 2), w & m);
-    m *= 4;
-    ++elinkIndex;
+  if (bytes.size() % 16 != 0) {
+    throw std::invalid_argument("can only bytes by group of 16 (i.e. 128 bits)");
   }
-}
-
-void GBTDecoder::append(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t /* w3 */)
-{
-  ++mNofGbtWordsSeens;
-  append(w0, 0, 32);
-  append(w1, 32, 32);
-  append(w2, 64, 16);
-  // w3 is not used as only the first 80 bits are of interest to us
+  for (int j = 0; j < bytes.size(); j += 16) {
+    if (j % 16 > 10) {
+      // only consider 80 bits of each 128 bits group
+      continue;
+    }
+    ++mNofGbtWordsSeens;
+    int elinkIndex = 0;
+    for (auto b : bytes.subspan(j, 10)) {
+      mElinks[elinkIndex++].append(b & 2, b & 1);
+      mElinks[elinkIndex++].append(b & 8, b & 4);
+      mElinks[elinkIndex++].append(b & 32, b & 16);
+      mElinks[elinkIndex++].append(b & 128, b & 64);
+    }
+  }
 }
 
 void GBTDecoder::printStatus(int maxelink) const

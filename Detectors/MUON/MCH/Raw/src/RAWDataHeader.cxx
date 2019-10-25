@@ -65,6 +65,14 @@ int countRDHs(gsl::span<uint32_t> buffer)
   return forEachRDH(buffer, nullptr);
 }
 
+int countRDHs(gsl::span<uint8_t> buffer)
+{
+  assert(buffer.size() % 4 == 0);
+  gsl::span<uint32_t> buf32{reinterpret_cast<uint32_t*>(&buffer[0]),
+                            buffer.size() / 4};
+  return countRDHs(buf32);
+}
+
 using ::operator<<;
 
 void dumpRDHBuffer(gsl::span<uint32_t> buffer)
@@ -103,6 +111,13 @@ void dumpRDHBuffer(gsl::span<uint32_t> buffer)
   std::cout << fmt::format("{:46s} zero", " ");
 }
 
+void dumpBuffer(gsl::span<uint8_t> buffer)
+{
+  gsl::span<uint32_t> buf32{reinterpret_cast<uint32_t*>(&buffer[0]),
+                            buffer.size() / 4};
+  return dumpBuffer(buf32);
+}
+
 void dumpBuffer(gsl::span<uint32_t> buffer)
 {
   // dump a buffer, assuming it starts with a RDH
@@ -132,6 +147,14 @@ int showRDHs(gsl::span<uint32_t> buffer)
   return forEachRDH(buffer, [](RAWDataHeader& rdh) {
     std::cout << rdh << "\n";
   });
+}
+
+int showRDHs(gsl::span<uint8_t> buffer)
+{
+  assert(buffer.size() % 4 == 0);
+  gsl::span<uint32_t> buf32{reinterpret_cast<uint32_t*>(&buffer[0]),
+                            buffer.size() / 4};
+  return showRDHs(buf32);
 }
 
 void assertRDH(const RAWDataHeader& rdh)
@@ -164,6 +187,64 @@ void appendRDH(std::vector<uint32_t>& buffer, const RAWDataHeader& rdh)
   buffer.emplace_back(rdh.word14);
   buffer.emplace_back(rdh.word13);
   buffer.emplace_back(rdh.word12);
+}
+
+void append(std::vector<uint8_t>& buffer, uint32_t w)
+{
+  buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
+  buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
+  buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
+  buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
+}
+
+void appendRDH(std::vector<uint8_t>& buffer, const RAWDataHeader& rdh)
+{
+  append(buffer, rdh.word3);
+  append(buffer, rdh.word2);
+  append(buffer, rdh.word1);
+  append(buffer, rdh.word0);
+  append(buffer, rdh.word7);
+  append(buffer, rdh.word6);
+  append(buffer, rdh.word5);
+  append(buffer, rdh.word4);
+  append(buffer, rdh.word11);
+  append(buffer, rdh.word10);
+  append(buffer, rdh.word9);
+  append(buffer, rdh.word8);
+  append(buffer, rdh.word15);
+  append(buffer, rdh.word14);
+  append(buffer, rdh.word13);
+  append(buffer, rdh.word12);
+}
+
+uint32_t fourBytes(gsl::span<uint8_t> buffer)
+{
+  return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+}
+
+RAWDataHeader createRDH(gsl::span<uint8_t> buffer)
+{
+  if (buffer.size() < 64) {
+    throw std::invalid_argument("buffer should be at least 16 words");
+  }
+  RAWDataHeader rdh;
+  rdh.word3 = fourBytes(buffer.subspan(0));
+  rdh.word2 = fourBytes(buffer.subspan(4));
+  rdh.word1 = fourBytes(buffer.subspan(8));
+  rdh.word0 = fourBytes(buffer.subspan(12));
+  rdh.word7 = fourBytes(buffer.subspan(16));
+  rdh.word6 = fourBytes(buffer.subspan(20));
+  rdh.word5 = fourBytes(buffer.subspan(24));
+  rdh.word4 = fourBytes(buffer.subspan(28));
+  rdh.word11 = fourBytes(buffer.subspan(32));
+  rdh.word10 = fourBytes(buffer.subspan(36));
+  rdh.word9 = fourBytes(buffer.subspan(40));
+  rdh.word8 = fourBytes(buffer.subspan(44));
+  rdh.word15 = fourBytes(buffer.subspan(48));
+  rdh.word14 = fourBytes(buffer.subspan(52));
+  rdh.word13 = fourBytes(buffer.subspan(56));
+  rdh.word12 = fourBytes(buffer.subspan(60));
+  return rdh;
 }
 
 RAWDataHeader createRDH(gsl::span<uint32_t> buffer)
