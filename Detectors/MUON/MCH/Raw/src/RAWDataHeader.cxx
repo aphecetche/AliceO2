@@ -232,7 +232,6 @@ uint32_t rdhOrbit(const RAWDataHeader& rdh)
 size_t rdhPayloadSize(const RAWDataHeader& rdh)
 {
   return rdh.memorySize - sizeof(rdh);
-  // return rdh.blockLength;
 }
 
 } // namespace raw
