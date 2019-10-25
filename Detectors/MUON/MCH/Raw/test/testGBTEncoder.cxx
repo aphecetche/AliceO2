@@ -52,16 +52,16 @@ BOOST_AUTO_TEST_CASE(GBTEncoderAddFewChannels)
   enc.addChannelData(elinkId, 13, {SampaCluster(ts, 133)});
   enc.addChannelData(elinkId, 23, {SampaCluster(ts, 163)});
   BOOST_CHECK_THROW(enc.addChannelData(40, 0, {SampaCluster(ts, 10)}), std::invalid_argument);
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   enc.moveToBuffer(buffer);
   // we only test >= because the exact size can vary
   // due to the initial phase used in the elinks
-  BOOST_CHECK_GE(buffer.size(), 640);
+  BOOST_CHECK_GE(buffer.size(), 4 * 640);
 }
 
 BOOST_AUTO_TEST_CASE(GBTEncoderAdd64Channels)
 {
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   GBTEncoder enc(0, 0);
   enc.moveToBuffer(buffer);
   uint32_t bx(0);
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(GBTEncoderMoveToBufferClearsTheInternalBuffer)
 {
   GBTEncoder enc(0, 0);
   enc.addChannelData(0, 0, {SampaCluster(0, 10)});
-  std::vector<uint32_t> buffer;
+  std::vector<uint8_t> buffer;
   size_t n = enc.moveToBuffer(buffer);
   BOOST_CHECK_GE(n, 280);
   n = enc.moveToBuffer(buffer);

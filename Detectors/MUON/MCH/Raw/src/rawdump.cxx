@@ -33,7 +33,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   }
   constexpr int sizeToRead = 8192;
 
-  std::array<uint32_t, sizeToRead / 4> buffer;
+  std::array<uint8_t, sizeToRead> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
   memset(&buffer[0], 0, buffer.size());

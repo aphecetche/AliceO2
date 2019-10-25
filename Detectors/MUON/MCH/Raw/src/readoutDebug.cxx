@@ -35,7 +35,7 @@ class Decoder
       auto header = o2::header::get<header::DataHeader*>(input.header);
       header->print();
       auto payload = input.payload;
-      gsl::span<uint32_t> buffer{reinterpret_cast<uint32_t*>(const_cast<char*>(payload)), static_cast<long>(header->payloadSize)};
+      gsl::span<uint8_t> buffer{reinterpret_cast<uint8_t*>(const_cast<char*>(payload)), static_cast<long>(header->payloadSize)};
       mDecoder(buffer);
     }
   }

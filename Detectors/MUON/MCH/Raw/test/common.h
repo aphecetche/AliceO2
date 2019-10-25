@@ -34,11 +34,11 @@ SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result);
 o2::mch::raw::ElinkEncoder createElinkEncoder10();
 o2::mch::raw::ElinkEncoder createElinkEncoder20();
 
-std::vector<uint32_t> createCRUBuffer(int cruId = 0);
+std::vector<uint8_t> createCRUBuffer(int cruId = 0);
 
-std::vector<uint32_t> createGBTBuffer();
+std::vector<uint8_t> createGBTBuffer();
 
-extern std::array<uint32_t, 640> REF_BUFFER;
+extern std::array<uint8_t, 2560> REF_BUFFER;
 
 } // namespace test
 } // namespace raw
