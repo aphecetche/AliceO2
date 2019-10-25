@@ -197,6 +197,8 @@ void ElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
   mSampaHeader.channelAddress(chId);
+  mSampaHeader.hammingCode(computeHammingCode(mSampaHeader.uint64()));
+  mSampaHeader.headerParity(computeHeaderParity(mSampaHeader.uint64()));
 }
 
 std::ostream& operator<<(std::ostream& os, const ElinkEncoder& enc)

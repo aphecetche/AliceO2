@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include "NofBits.h"
+#include <array>
 
 namespace
 {
@@ -184,14 +185,7 @@ SampaHeader::SampaHeader(uint64_t value) : mValue(0)
 
 bool SampaHeader::hasError() const
 {
-  unsigned int buf[2] = {
-    static_cast<unsigned int>(mValue & 0x3FFFFFFF),
-    static_cast<unsigned int>(mValue >> 30)};
-  bool hamming_error = false;  // Is there an hamming error?
-  bool hamming_uncorr = false; // Is the data correctable?
-  bool hamming_enable = false; // Correct the data?
-  hammingDecode(buf, hamming_error, hamming_uncorr, hamming_enable);
-  return hamming_error;
+  return computeHammingCode(mValue) != hammingCode();
 }
 
 void SampaHeader::uint64(uint64_t value)
@@ -387,145 +381,67 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
   return os;
 }
 
-void hammingDecode(unsigned int buffer[2], bool& error, bool& uncorrectable, bool fix_data)
-//
-// From Arild Velure code
-//
+int partialOddParity(uint64_t value, int pos)
 {
+  // compute the odd parity of all the bits at position x
+  // (where x & (2^pos)) are set
+  //
 
-  // header split
-  bool parityreceived[6];
-  bool data_in[43];
-  bool overallparity;
+  int n{0};
+  uint64_t one{1};
+  const uint64_t test{one << pos};
 
-  for (int i = 0; i < 6; i++)
-    parityreceived[i] = (buffer[0] >> i) & 0x1;
-  overallparity = (buffer[0] >> 6) & 0x1;
-  //for (int i = 0; i < 43; i++)
-  //  data_in[i] = (header_in >> (i + 7)) & 0x1;
-  for (int i = 7; i < 30; i++)
-    data_in[i - 7] = (buffer[0] >> i) & 0x1;
-  for (int i = 30; i < 50; i++)
-    data_in[i - 7] = (buffer[1] >> (i - 30)) & 0x1;
+  // conv array convert a bit position in the hamming sense
+  // (i.e. where parity bits are interleaved between data bits)
+  // and the data bit positions in the original value (where the 6 hamming
+  // bits are "grouped" in the front of the value).
+  constexpr std::array<int, 49> conv = {-1, -1, 7, -1, 8, 9, 10, -1, 11, 12, 13, 14, 15, 16, 17,
+                                        -1, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                                        29, 30, 31, 32, -1, 33, 34, 35, 36, 37, 38, 39,
+                                        40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
 
-  //calculated values
-  bool corrected_out[43];
-  bool overallparitycalc = 0;
-  bool overallparity_out = 0;
-  bool paritycalc[6];
-  bool paritycorreced_out[6];
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  // calculate parity
-  paritycalc[0] = data_in[0] ^ data_in[1] ^ data_in[3] ^ data_in[4] ^ data_in[6] ^
-                  data_in[8] ^ data_in[10] ^ data_in[11] ^ data_in[13] ^ data_in[15] ^
-                  data_in[17] ^ data_in[19] ^ data_in[21] ^ data_in[23] ^ data_in[25] ^
-                  data_in[26] ^ data_in[28] ^ data_in[30] ^ data_in[32] ^ data_in[34] ^
-                  data_in[36] ^ data_in[38] ^ data_in[40] ^ data_in[42];
-
-  paritycalc[1] = data_in[0] ^ data_in[2] ^ data_in[3] ^ data_in[5] ^ data_in[6] ^
-                  data_in[9] ^ data_in[10] ^ data_in[12] ^ data_in[13] ^ data_in[16] ^
-                  data_in[17] ^ data_in[20] ^ data_in[21] ^ data_in[24] ^ data_in[25] ^
-                  data_in[27] ^ data_in[28] ^ data_in[31] ^ data_in[32] ^ data_in[35] ^
-                  data_in[36] ^ data_in[39] ^ data_in[40];
-
-  paritycalc[2] = data_in[1] ^ data_in[2] ^ data_in[3] ^ data_in[7] ^ data_in[8] ^
-                  data_in[9] ^ data_in[10] ^ data_in[14] ^ data_in[15] ^ data_in[16] ^
-                  data_in[17] ^ data_in[22] ^ data_in[23] ^ data_in[24] ^ data_in[25] ^
-                  data_in[29] ^ data_in[30] ^ data_in[31] ^ data_in[32] ^ data_in[37] ^
-                  data_in[38] ^ data_in[39] ^ data_in[40];
-
-  paritycalc[3] = data_in[4] ^ data_in[5] ^ data_in[6] ^ data_in[7] ^ data_in[8] ^
-                  data_in[9] ^ data_in[10] ^ data_in[18] ^ data_in[19] ^ data_in[20] ^
-                  data_in[21] ^ data_in[22] ^ data_in[23] ^ data_in[24] ^ data_in[25] ^
-                  data_in[33] ^ data_in[34] ^ data_in[35] ^ data_in[36] ^ data_in[37] ^
-                  data_in[38] ^ data_in[39] ^ data_in[40];
-
-  paritycalc[4] = data_in[11] ^ data_in[12] ^ data_in[13] ^ data_in[14] ^ data_in[15] ^
-                  data_in[16] ^ data_in[17] ^ data_in[18] ^ data_in[19] ^ data_in[20] ^
-                  data_in[21] ^ data_in[22] ^ data_in[23] ^ data_in[24] ^ data_in[25] ^
-                  data_in[41] ^ data_in[42];
-
-  paritycalc[5] = data_in[26] ^ data_in[27] ^ data_in[28] ^ data_in[29] ^ data_in[30] ^
-                  data_in[31] ^ data_in[32] ^ data_in[33] ^ data_in[34] ^ data_in[35] ^
-                  data_in[36] ^ data_in[37] ^ data_in[38] ^ data_in[39] ^ data_in[40] ^
-                  data_in[41] ^ data_in[42];
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-
-  //    uint8_t syndrome = 0;
-  unsigned char syndrome = 0;
-
-  for (int i = 0; i < 6; i++)
-    syndrome |= (paritycalc[i] ^ parityreceived[i]) << i;
-
-  bool data_parity_interleaved[64];
-  bool syndromeerror;
-
-  //data_parity_interleaved[0]          =  0;
-  data_parity_interleaved[1] = parityreceived[0];
-  data_parity_interleaved[2] = parityreceived[1];
-  data_parity_interleaved[3] = data_in[0];
-  data_parity_interleaved[4] = parityreceived[2];
-  for (int i = 1; i <= 3; i++)
-    data_parity_interleaved[i + 5 - 1] = data_in[i];
-  data_parity_interleaved[8] = parityreceived[3];
-  for (int i = 4; i <= 10; i++)
-    data_parity_interleaved[i + 9 - 4] = data_in[i];
-  data_parity_interleaved[16] = parityreceived[4];
-  for (int i = 11; i <= 25; i++)
-    data_parity_interleaved[i + 17 - 11] = data_in[i];
-  data_parity_interleaved[32] = parityreceived[5];
-  for (int i = 26; i <= 42; i++)
-    data_parity_interleaved[i + 33 - 26] = data_in[i];
-  //for (int i = 50; i <= 63; i++)
-  //  data_parity_interleaved[i]        =  0;
-
-  data_parity_interleaved[syndrome] = !data_parity_interleaved[syndrome]; // correct the interleaved
-
-  paritycorreced_out[0] = data_parity_interleaved[1];
-  paritycorreced_out[1] = data_parity_interleaved[2];
-  corrected_out[0] = data_parity_interleaved[3];
-  paritycorreced_out[2] = data_parity_interleaved[4];
-  for (int i = 1; i <= 3; i++)
-    corrected_out[i] = data_parity_interleaved[i + 5 - 1];
-  paritycorreced_out[3] = data_parity_interleaved[8];
-  for (int i = 4; i <= 10; i++)
-    corrected_out[i] = data_parity_interleaved[i + 9 - 4];
-  paritycorreced_out[4] = data_parity_interleaved[16];
-  for (int i = 11; i <= 25; i++)
-    corrected_out[i] = data_parity_interleaved[i + 17 - 11];
-  paritycorreced_out[5] = data_parity_interleaved[32];
-  for (int i = 26; i <= 42; i++)
-    corrected_out[i] = data_parity_interleaved[i + 33 - 26];
-
-  // now we have the "corrected" data -> update the flags
-
-  bool wrongparity;
-  for (int i = 0; i < 43; i++)
-    overallparitycalc ^= data_in[i];
-  for (int i = 0; i < 6; i++)
-    overallparitycalc ^= parityreceived[i];
-  syndromeerror = (syndrome > 0) ? 1 : 0; // error if syndrome larger than 0
-  wrongparity = (overallparitycalc != overallparity);
-  overallparity_out = !syndromeerror && wrongparity ? overallparitycalc : overallparity; // If error was in parity fix parity
-  error = syndromeerror | wrongparity;
-  uncorrectable = (syndromeerror && (!wrongparity));
-
-  //header_out = 0;
-  //for (int i = 0; i < 43; i++)
-  //  header_out |= corrected_out[i] << (i + 7);
-  //header_out |= overallparity_out << 6;
-  //for (int i = 0; i < 6; i++)
-  //  header_out |= paritycorreced_out[i] << i;
-  if (fix_data) {
-    for (int i = 0; i < 6; i++)
-      buffer[0] = (buffer[0] & ~(1 << i)) | (paritycorreced_out[i] << i);
-    buffer[0] = (buffer[0] & ~(1 << 6)) | (overallparity_out << 6);
-    for (int i = 7; i < 30; i++)
-      buffer[0] = (buffer[0] & ~(1 << i)) | (corrected_out[i - 7] << i);
-    for (int i = 30; i < 50; i++)
-      buffer[1] = (buffer[1] & ~(1 << (i - 30))) | (corrected_out[i - 7] << (i - 30));
+  for (uint64_t i = 0; i < 49; i++) {
+    int t = conv[i];
+    if (t < 0)
+      continue;
+    int hammingPos = i + 1;
+    if (hammingPos & test) {
+      if (value & (one << t)) {
+        ++n;
+      }
+    }
   }
+  return (n + 1) % 2 == 0;
+}
+
+int computeHammingCode(uint64_t value)
+{
+  // value is assumed to be 50 bits, where the 43 data bits
+  // are 7-49
+  int hamming{0};
+
+  for (int i = 0; i < 6; i++) {
+    hamming += partialOddParity(value, i) * (1 << i);
+  }
+  return hamming;
+}
+
+/// compute parity of v, assuming it is 50 bits and
+/// represents a Sampa header
+/// (not using the existing header parity at bit position 6)
+int computeHeaderParity(uint64_t v)
+{
+  int n{0};
+  constexpr uint64_t one{1};
+  for (int i = 0; i < 50; i++) {
+    if (i == 6) {
+      continue;
+    }
+    if (v & (one << i)) {
+      n++;
+    }
+  }
+  return (n + 1) % 2 == 0;
 }
 
 } // namespace raw
