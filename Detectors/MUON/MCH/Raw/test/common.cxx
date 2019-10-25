@@ -2,6 +2,8 @@
 #include "MCHRaw/GBTEncoder.h"
 #include "MCHRaw/CRUEncoder.h"
 #include "MCHRaw/RAWDataHeader.h"
+#include <fmt/printf.h>
+
 namespace o2
 {
 namespace mch
@@ -126,10 +128,14 @@ std::vector<uint32_t> createGBTBuffer()
   enc.addChannelData(elinkId, 13, {SampaCluster(ts, 163)});
   std::vector<uint32_t> words;
   enc.moveToBuffer(words);
+  // for (auto v : words) {
+  //   fmt::printf("0x%08X,\n", v);
+  // }
   return words;
 }
 
 // REF_BUFFER was generated using phase=0 for elinks
+
 std::array<uint32_t, 640> REF_BUFFER = {
   0xFFFFFFFF,
   0xFFFFFFFF,
@@ -235,7 +241,7 @@ std::array<uint32_t, 640> REF_BUFFER = {
   0xFFFFFFFF,
   0x0000FFFF,
   0x00000000,
-  0x00000000,
+  0x00000083,
   0x00000000,
   0x00000000,
   0x00000000,
@@ -243,7 +249,7 @@ std::array<uint32_t, 640> REF_BUFFER = {
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0x00000000,
+  0x00000080,
   0x00000000,
   0x00000000,
   0x00000000,
@@ -411,19 +417,19 @@ std::array<uint32_t, 640> REF_BUFFER = {
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA28,
+  0xAAAAAA2B,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA28,
+  0xAAAAAAE9,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA28,
+  0xAAAAAAAA,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA28,
+  0xAAAAAA2A,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
@@ -591,15 +597,15 @@ std::array<uint32_t, 640> REF_BUFFER = {
   0x00000000,
   0x00000000,
   0x00000000,
-  0xAAAAAA2B,
+  0xAAAAAAEB,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA28,
+  0xAAAAAAE8,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
-  0xAAAAAA2A,
+  0xAAAAAAAA,
   0xAAAAAAAA,
   0x0000AAAA,
   0x00000000,
@@ -771,7 +777,6 @@ std::array<uint32_t, 640> REF_BUFFER = {
   0x00000000,
   0x00000000,
   0x00000000};
-
 } // namespace test
 } // namespace raw
 } // namespace mch

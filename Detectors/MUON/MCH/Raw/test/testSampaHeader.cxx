@@ -204,5 +204,34 @@ BOOST_AUTO_TEST_CASE(SetChannelAddressTwice)
   BOOST_CHECK_EQUAL(h.channelAddress(), 5);
 }
 
+BOOST_AUTO_TEST_CASE(ComputeHammingCode)
+{
+  BOOST_CHECK_EQUAL(computeHammingCode(0x3722e80103208), 0x8);  // 000100 P0
+  BOOST_CHECK_EQUAL(computeHammingCode(0x1722e9f00327d), 0x3D); // 101101 P1
+  BOOST_CHECK_EQUAL(computeHammingCode(0x1722e8090322f), 0x2F); // 111101 P0
+}
+
+BOOST_AUTO_TEST_CASE(CheckHammingCodeError)
+{
+  uint64_t v = 0x1722e9f00327d;
+  int expected = 0x3D;
+
+  auto ref = computeHammingCode(v);
+  BOOST_CHECK_EQUAL(ref, expected);
+
+  const uint64_t one{1};
+  // flip a data bit
+  v ^= (one << 34);
+  auto h = computeHammingCode(v);
+  BOOST_CHECK_NE(ref, h);
+}
+
+BOOST_AUTO_TEST_CASE(CheckHeaderParity)
+{
+  BOOST_CHECK_EQUAL(computeHeaderParity(0x3722e80103208), 0); // 000100 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity(0x1722e8090322f), 0); // 111101 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity(0x1722e9f00327d), 1); // 101101 P1
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()
