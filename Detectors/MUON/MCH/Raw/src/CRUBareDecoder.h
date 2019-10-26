@@ -22,17 +22,17 @@ namespace mch
 {
 namespace raw
 {
-/// @brief A CRUDecoder manages 24 GBTDecoder objects.
+/// @brief A CRUBareDecoder manages 24 GBTDecoder objects.
 
-class CRUDecoder
+class CRUBareDecoder
 {
  public:
   /// Constructor.
   /// \param cruId the identifier of the CRU
   /// \param sampaChannelHandler the callable that will handle the SampaCluster
   /// that gets decoded.
-  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler,
-                      bool chargeSumMode = true);
+  explicit CRUBareDecoder(int cruId, SampaChannelHandler channelHandler,
+                          bool chargeSumMode = true);
 
   /// decode the data in buffer, assuming it's coming from the given GBT.
   void decode(int gbtid, gsl::span<uint8_t> buffer);

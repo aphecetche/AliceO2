@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CRUDecoder.h"
+#include "CRUBareDecoder.h"
 #include "MakeArray.h"
 #include "Assertions.h"
 #include <iostream>
@@ -21,15 +21,15 @@ namespace mch
 namespace raw
 {
 
-CRUDecoder::CRUDecoder(int cruId,
-                       SampaChannelHandler sampaChannelHandler,
-                       bool chargeSumMode)
+CRUBareDecoder::CRUBareDecoder(int cruId,
+                               SampaChannelHandler sampaChannelHandler,
+                               bool chargeSumMode)
   : mCruId{cruId},
     mGbtDecoders{::makeArray<24>([=](size_t i) { return GBTDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })}
 {
 }
 
-void CRUDecoder::decode(int gbtId, gsl::span<uint8_t> buffer)
+void CRUBareDecoder::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
   assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
   if (buffer.size() % 16) {
@@ -38,7 +38,7 @@ void CRUDecoder::decode(int gbtId, gsl::span<uint8_t> buffer)
   mGbtDecoders[gbtId].append(buffer);
 }
 
-void CRUDecoder::reset()
+void CRUBareDecoder::reset()
 {
   for (auto& g : mGbtDecoders) {
     g.reset();
