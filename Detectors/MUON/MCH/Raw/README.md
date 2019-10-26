@@ -53,7 +53,7 @@ Then to build 80-bits GBT words the bitstreams of 40 ElinkEncoders are aligned (
 
 ### Decoding
 
-A data buffer (basically corresponding to one RDH) of 32-bits words is given to a o2::mch::raw::CRUDecoder which dispatch it to one of its 24 o2::mch::raw::GBTDecoder. The buffer is dispatched 4 words at a time to reach 128 bits GBT words (out of which 80 are usefull data bits). The GBTDecoder then dispatches the 2 x 40 bits to its 40 o2::mch::raw::ElinkDecoder. Each ElinkDecoder then processes its own bitstream, based on the expected Sampa protocol, i.e. search first for a 50-bits SYNC word, then a sequence of header+payload pairs, where header is 50-bits and the payload size (in multiple of 10 bits) is given in the header.
+A data buffer (basically corresponding to one RDH) of 32-bits words is given to a o2::mch::raw::CRUBareDecoder which dispatch it to one of its 24 o2::mch::raw::GBTDecoder. The buffer is dispatched 4 words at a time to reach 128 bits GBT words (out of which 80 are usefull data bits). The GBTDecoder then dispatches the 2 x 40 bits to its 40 o2::mch::raw::ElinkDecoder. Each ElinkDecoder then processes its own bitstream, based on the expected Sampa protocol, i.e. search first for a 50-bits SYNC word, then a sequence of header+payload pairs, where header is 50-bits and the payload size (in multiple of 10 bits) is given in the header.
 
 ## UL data format
 

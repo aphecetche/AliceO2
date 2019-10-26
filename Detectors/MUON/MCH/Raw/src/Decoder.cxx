@@ -10,6 +10,7 @@
 
 #include "MCHRaw/Decoder.h"
 #include "BareDecoder.h"
+#include "UserLogicDecoder.h"
 
 namespace o2
 {
@@ -24,6 +25,13 @@ Decoder createBareDecoder(RawDataHeaderHandler rdhHandler,
 
 {
   return BareDecoder(rdhHandler, channelHandler, chargeSumMode);
+}
+
+Decoder createUserLogicDecoder(RawDataHeaderHandler rdhHandler,
+                               SampaChannelHandler channelHandler)
+
+{
+  return UserLogicDecoder(rdhHandler, channelHandler);
 }
 
 } // namespace raw
