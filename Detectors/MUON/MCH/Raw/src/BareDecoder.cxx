@@ -24,7 +24,7 @@ namespace raw
 BareDecoder::BareDecoder(RawDataHeaderHandler rdhHandler,
                          SampaChannelHandler channelHandler,
                          bool chargeSumMode) : mRdhHandler(rdhHandler),
-                                               mCruDecoders{::makeArray<18>([=](size_t i) { return CRUDecoder(i, channelHandler, chargeSumMode); })},
+                                               mCruDecoders{::makeArray<18>([=](size_t i) { return CRUBareDecoder(i, channelHandler, chargeSumMode); })},
                                                mOrbit{0},
                                                mNofOrbitSeen{0},
                                                mNofOrbitJumps{0}
