@@ -1,0 +1,1 @@
+o2_add_header_only_library(MCHRawImplHelpers INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIRECTORY})
