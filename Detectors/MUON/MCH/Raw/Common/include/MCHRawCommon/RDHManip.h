@@ -6,6 +6,7 @@
 #include <vector>
 #include <gsl/span>
 #include <string_view>
+#include <functional>
 
 namespace o2
 {
