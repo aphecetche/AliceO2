@@ -17,30 +17,33 @@
 
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include "MCHRaw/RAWDataHeader.h"
+#include "MCHRawCommon/RDHManip.h"
 #include <fstream>
 #include <fmt/printf.h>
-#include "MCHRaw/Encoder.h"
-#include "MCHRaw/CRUEncoder.h"
+#include "MCHRawEncoder/Encoder.h"
+#include "MCHRawEncoder/Paginator.h"
+#include "MCHRawEncoder/CRUEncoder.h"
 #include <boost/test/data/test_case.hpp>
+#include "Headers/RAWDataHeader.h"
 
 using namespace o2::mch::raw;
-using RDH = o2::mch::raw::RAWDataHeader;
+using namespace o2::header;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
+template <typename RDH>
 std::vector<uint8_t> createTestBuffer(gsl::span<uint8_t> data)
 {
   assert(data.size() % 16 == 0);
   std::vector<uint8_t> buffer;
   auto payloadSize = data.size();
-  if (payloadSize > (1 << 16) - sizeof(RAWDataHeader)) {
+  if (payloadSize > (1 << 16) - sizeof(RDH)) {
     throw std::logic_error(fmt::format("cannot generate a buffer with a payload above {} (tried {})", 0xFFFF - sizeof(RAWDataHeader), payloadSize));
   }
-  auto rdh = createRDH(0, 0, 1234, 567, payloadSize);
-  appendRDH(buffer, rdh);
+  auto rdh = createRDH<RDH>(0, 0, 1234, 567, payloadSize);
+  appendRDH<RDH>(buffer, rdh);
   std::copy(data.begin(), data.end(), std::back_inserter(buffer));
   return buffer;
 }
@@ -52,24 +55,23 @@ std::vector<uint8_t> createPedestalBuffer(int elinkId)
   uint16_t ts(0);
   uint8_t cruId(0);
 
-  GBTEncoder::forceNoPhase = true;
-  CRUEncoder cru(cruId, false);
+  auto cru = createBareCRUEncoderNoPhase(cruId, false);
 
   uint32_t orbit{42};
   const int N{1};
 
   for (int i = 0; i < N; i++) {
-    cru.startHeartbeatFrame(orbit, bx + i);
+    cru->startHeartbeatFrame(orbit, bx + i);
     for (uint16_t j = 0; j < 31; j++) {
       std::vector<uint16_t> samples;
       for (auto k = 0; k < j + 1; k++) {
         samples.push_back(10 + j);
       }
-      cru.addChannelData(solarId, elinkId, j, {SampaCluster(ts, samples)});
+      cru->addChannelData(solarId, elinkId, j, {SampaCluster(ts, samples)});
     }
   }
   std::vector<uint8_t> buffer;
-  cru.moveToBuffer(buffer);
+  cru->moveToBuffer(buffer);
   return buffer;
 }
 
@@ -94,15 +96,15 @@ BOOST_AUTO_TEST_CASE(TestPadding)
   data.emplace_back(0x88);
   data.emplace_back(0x88);
 
-  auto buffer = createTestBuffer(data);
+  auto buffer = createTestBuffer<RAWDataHeaderV4>(data);
 
   std::vector<uint8_t> pages;
   size_t pageSize = 128;
   uint8_t paddingByte = 0x78;
-  paginateBuffer(buffer, pages, pageSize, paddingByte);
+  paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);
 
   BOOST_CHECK_EQUAL(pages.size(), pageSize);
-  for (int i = sizeof(RAWDataHeader) + data.size(); i < pageSize; i++) {
+  for (int i = sizeof(RAWDataHeaderV4) + data.size(); i < pageSize; i++) {
     BOOST_CHECK_EQUAL(pages[i], paddingByte);
   }
 }
@@ -119,12 +121,12 @@ BOOST_DATA_TEST_CASE(TestSplit,
     data.emplace_back((i + 1) % 256);
   }
 
-  auto buffer = createTestBuffer(data);
+  auto buffer = createTestBuffer<RAWDataHeaderV4>(data);
 
   std::vector<uint8_t> pages;
   int expected = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
-  paginateBuffer(buffer, pages, pageSize, paddingWord);
-  int nrdhs = o2::mch::raw::countRDHs(pages);
+  paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingWord);
+  int nrdhs = countRDHs<RAWDataHeaderV4>(pages);
   BOOST_CHECK_EQUAL(nrdhs, expected);
 
   // ensure all words ended up where we expect them
@@ -132,7 +134,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
   int n{0};
   for (int i = 0; i < expected; i++) {
     int dataPos = sizeof(RAWDataHeader) + i * pageSize;
-    for (int j = 0; j < pageSize - sizeof(RAWDataHeader); j++) {
+    for (int j = 0; j < pageSize - sizeof(RAWDataHeaderV4); j++) {
       ++n;
       if (n >= data.size()) {
         break;
@@ -151,7 +153,7 @@ BOOST_AUTO_TEST_CASE(GenerateFile)
   std::ofstream out("test.raw", std::ios::binary);
   auto buffer = createPedestalBuffer(0);
   std::vector<uint8_t> pages;
-  paginateBuffer(buffer, pages, 8192, 0x44);
+  paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);
   // std::cout << "pages.size=" << pages.size() << "\n";
   // dumpBuffer(pages);
   out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
