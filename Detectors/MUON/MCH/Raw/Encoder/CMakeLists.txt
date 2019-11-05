@@ -12,12 +12,22 @@ add_subdirectory(Bare)
 add_subdirectory(UserLogic)
 
 o2_add_library(MCHRawEncoder
-               SOURCES src/Encoder.cxx
+               SOURCES src/Encoder.cxx src/Paginator.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawBareEncoder
                                       O2::MCHRawUserLogicEncoder
                                       O2::MCHRawImplHelpers)
 
 if(BUILD_TESTING)
-  add_subdirectory(test)
+  o2_add_test(cru-encoder
+              SOURCES src/testCRUEncoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+
+  o2_add_test(encoder
+              SOURCES src/testEncoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 endif()
