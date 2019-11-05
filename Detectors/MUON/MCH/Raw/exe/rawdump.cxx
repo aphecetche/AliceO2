@@ -17,9 +17,12 @@
 #include <gsl/span>
 #include <fmt/format.h>
 #include "MCHRawDecoder/Decoder.h"
+#include "Headers/RAWDataHeader.h"
 #include <chrono>
 
 namespace po = boost::program_options;
+
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
 int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
 {
@@ -44,7 +47,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   };
 
   size_t nrdhs{0};
-  auto rh = [&](const o2::mch::raw::RAWDataHeader& rdh) {
+  auto rh = [&](const o2::header::RAWDataHeaderV4& rdh) {
     nrdhs++;
     if (showRDHs) {
       std::cout << nrdhs << "--" << rdh << "\n";
@@ -57,7 +60,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   auto len = in.tellg();
   in.seekg(0, in.beg);
 
-  auto decode = o2::mch::raw::createBareDecoder(rh, hp, false);
+  auto decode = o2::mch::raw::createBareDecoder<o2::header::RAWDataHeaderV4>(rh, hp, false);
 
   std::vector<std::chrono::microseconds> timers;
 
