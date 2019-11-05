@@ -33,6 +33,7 @@ namespace raw
 /// padding byte is inserted so that (RDH,payload,paddingByte)
 /// is exactly pageSize.
 ///
+template <typename RDH>
 size_t paginateBuffer(gsl::span<uint8_t> compactBuffer,
                       std::vector<uint8_t>& paginatedBuffer,
                       size_t pageSize = 8192,
