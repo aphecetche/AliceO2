@@ -3,6 +3,8 @@
 #include "Framework/Task.h"
 #include <iostream>
 #include "MCHRawDecoder/Decoder.h"
+#include "Headers/RAWDataHeader.h"
+
 #include <fmt/format.h>
 
 using namespace o2;
@@ -14,7 +16,7 @@ auto hp = [](uint8_t cruId, uint8_t linkId, uint8_t chip,
   // std::cout << sc << "\n";
 };
 
-auto rh = [](const o2::mch::raw::RAWDataHeader& rdh) {
+auto rh = [](const o2::header::RAWDataHeaderV4& rdh) {
   // std::cout << rdh << "\n";
   return true;
 };
@@ -24,7 +26,7 @@ class Decoder
  public:
   void init(InitContext& ic)
   {
-    mDecoder = o2::mch::raw::createBareDecoder(rh, hp, true);
+    mDecoder = o2::mch::raw::createBareDecoder<o2::header::RAWDataHeaderV4>(rh, hp, true);
     std::cout << "Create BareDecoder\n";
   }
   void run(ProcessingContext& pc)
