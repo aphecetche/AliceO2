@@ -8,10 +8,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_BAREDECODER_H
-#define O2_MCH_RAW_BAREDECODER_H
+#ifndef O2_MCH_RAW_DECODER_IMPL_H
+#define O2_MCH_RAW_DECODER_IMPL_H
 
-#include "BareCRUDecoder.h"
 #include "MCHRawDecoder/Decoder.h"
 #include "MakeArray.h"
 #include <cstdlib>
@@ -25,13 +24,10 @@ namespace mch
 {
 namespace raw
 {
-/// @brief Decoder for MCH Bare Raw Data Format.
-///
-/// The Bare Data Format is used when no user logic
-/// is present or activated in the CRU.
+/// @brief Decoder for MCH  Raw Data Format.
 
-template <typename RDH>
-class BareDecoder
+template <typename RDH, typename CRUDECODER>
+class DecoderImpl
 {
  public:
   /// Constructs a decoder
@@ -43,9 +39,9 @@ class BareDecoder
   /// is in clusterSum mode. This parameter _must_ be specified and _must_
   /// match the data used, as there is no way to deduce this value from
   /// the data itself.
-  BareDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
+  DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
 
-  ~BareDecoder();
+  ~DecoderImpl();
 
   /// decode the buffer
   /// \return the number of RDH encountered
@@ -57,11 +53,11 @@ class BareDecoder
  private:
   // FIXME: how many CRUs really ? 18 gives already 17280 elinks,
   // which is more than the number of dual sampas ?
-  std::array<BareCRUDecoder, 18> mCruDecoders; //< helper decoders
-  RawDataHeaderHandler<RDH> mRdhHandler;       //< RDH handler that is called at each RDH
-  uint32_t mOrbit;                             //< the current orbit the decoder is currently at
-  size_t mNofOrbitSeen;                        //< the total number of orbits the decoder has seen so far
-  size_t mNofOrbitJumps;                       //< the total number of orbit jumps the decoder has seen so far
+  std::array<CRUDECODER, 18> mCruDecoders; //< helper decoders
+  RawDataHeaderHandler<RDH> mRdhHandler;   //< RDH handler that is called at each RDH
+  uint32_t mOrbit;                         //< the current orbit the decoder is currently at
+  size_t mNofOrbitSeen;                    //< the total number of orbits the decoder has seen so far
+  size_t mNofOrbitJumps;                   //< the total number of orbit jumps the decoder has seen so far
 };
 
 } // namespace raw

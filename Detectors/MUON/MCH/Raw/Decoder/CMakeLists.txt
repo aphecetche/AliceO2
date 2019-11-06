@@ -10,17 +10,37 @@
 
 o2_add_library(MCHRawDecoder
                SOURCES src/Decoder.cxx
-               PUBLIC_LINK_LIBRARIES O2::MCHRawCommon)
-
-add_subdirectory(Bare)
-# add_subdirectory(UserLogic)
+                       src/DecoderImpl.cxx
+                       src/BareElinkDecoder.cxx
+                       src/BareGBTDecoder.cxx
+                       src/UserLogicGBTDecoder.cxx
+                       src/UserLogicDSDecoder.cxx
+               PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
+               PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
 if(BUILD_TESTING)
   o2_add_test(decoder
               SOURCES src/testDecoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawBareDecoder
-                                    O2::MCHTestRawRefBuffers)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHTestRawRefBuffers)
+
+  o2_add_test(bare-elink-decoder
+              SOURCES src/testBareElinkDecoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
+
+  o2_add_test(bare-gbt-decoder
+              SOURCES src/testBareGBTDecoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHTestRawRefBuffers O2::MCHRawImplHelpers)
+
+  o2_add_test(userlogic-elink-decoder
+              SOURCES src/testUserLogicDSDecoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
 
 endif()

@@ -28,7 +28,7 @@ std::unique_ptr<CRUEncoder> createBareCRUEncoderNoPhase(uint8_t cruId, bool char
   return std::make_unique<CRUEncoderImpl<BareGBTEncoder, o2::header::RAWDataHeaderV4>>(cruId, chargeSum);
 }
 
-std::unique_ptr<CRUEncoder> createUserLogicEncoder(uint8_t cruId, bool chargeSum)
+std::unique_ptr<CRUEncoder> createUserLogicCRUEncoder(uint8_t cruId, bool chargeSum)
 {
   return std::make_unique<CRUEncoderImpl<UserLogicGBTEncoder, o2::header::RAWDataHeaderV4>>(cruId, chargeSum);
 }

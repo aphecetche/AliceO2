@@ -19,6 +19,7 @@
 #include <array>
 #include "MCHRawCommon/RDHManip.h"
 #include "RefBuffers.h"
+#include "DumpBuffer.h"
 
 using namespace o2::mch::raw;
 
@@ -56,7 +57,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
   gsl::span<uint8_t> buffer(REF_BUFFER_GBT);
-  o2::mch::raw::dumpBuffer(buffer);
+  dumpBuffer(buffer);
   dec.append(buffer);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
