@@ -51,10 +51,6 @@ int showRDHs(gsl::span<uint32_t> buffer);
 template <typename RDH>
 int showRDHs(gsl::span<uint8_t> buffer);
 
-void dumpBuffer(gsl::span<uint32_t> buffer);
-
-void dumpBuffer(gsl::span<uint8_t> buffer);
-
 void dumpRDHBuffer(gsl::span<uint32_t> buffer, std::string_view indent);
 
 template <typename RDH>

@@ -26,7 +26,13 @@ if(BUILD_TESTING)
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
   o2_add_test(encoder
-              SOURCES src/testEncoder.cxx
+              SOURCES src/testEncoder.cxx src/RefBuffers.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+
+  o2_add_test(paginator
+              SOURCES src/testPaginator.cxx src/RefBuffers.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)

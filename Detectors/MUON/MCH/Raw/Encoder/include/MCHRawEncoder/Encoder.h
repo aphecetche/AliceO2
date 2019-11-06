@@ -21,7 +21,7 @@ std::unique_ptr<CRUEncoder> createBareCRUEncoder(uint8_t cruId, bool chargeSum =
 
 std::unique_ptr<CRUEncoder> createBareCRUEncoderNoPhase(uint8_t cruId, bool chargeSum = true);
 
-std::unique_ptr<CRUEncoder> createUserLogicEncoder(uint8_t cruId, bool chargeSum = true);
+std::unique_ptr<CRUEncoder> createUserLogicCRUEncoder(uint8_t cruId, bool chargeSum = true);
 
 }; // namespace o2::mch::raw
 
