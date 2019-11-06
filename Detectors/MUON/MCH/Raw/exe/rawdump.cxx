@@ -24,7 +24,7 @@ namespace po = boost::program_options;
 
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
-int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
+int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool userLogic, bool chargeSum)
 {
   if (maxNofRDHs == 0) {
     maxNofRDHs = std::numeric_limits<unsigned int>::max();
@@ -60,7 +60,13 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   auto len = in.tellg();
   in.seekg(0, in.beg);
 
-  auto decode = o2::mch::raw::createBareDecoder<o2::header::RAWDataHeaderV4>(rh, hp, false);
+  o2::mch::raw::Decoder decode;
+
+  if (userLogic) {
+    decode = o2::mch::raw::createUserLogicDecoder<o2::header::RAWDataHeaderV4>(rh, hp, chargeSum);
+  } else {
+    decode = o2::mch::raw::createBareDecoder<o2::header::RAWDataHeaderV4>(rh, hp, chargeSum);
+  }
 
   std::vector<std::chrono::microseconds> timers;
 
@@ -94,14 +100,18 @@ int main(int argc, char* argv[])
   po::variables_map vm;
   po::options_description generic("Generic options");
   unsigned int nrdhs{0};
-  bool showRDHs;
+  bool showRDHs{false};
+  bool userLogic{false};
+  bool chargeSum{false};
 
   // clang-format off
   generic.add_options()
-      ("help", "produce help message")
+      ("help:h", "produce help message")
       ("input-file,i", po::value<std::string>(&inputFile), "input file name")
       ("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through")
       ("showRDHs,s",po::bool_switch(&showRDHs),"show RDHs")
+      ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
+      ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
       ;
   // clang-format on
 
@@ -116,5 +126,5 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  return rawdump(inputFile, nrdhs, showRDHs);
+  return rawdump(inputFile, nrdhs, showRDHs, userLogic, chargeSum);
 }
