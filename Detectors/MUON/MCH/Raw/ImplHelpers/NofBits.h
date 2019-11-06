@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_NOFBITS_H
-#define O2_MCH_RAW_NOFBITS_H
+#ifndef O2_MCH_RAW_IMPL_HELPERS_NOFBITS_H
+#define O2_MCH_RAW_IMPL_HELPERS_NOFBITS_H
 
 #include <cstdlib>
 #include <string_view>

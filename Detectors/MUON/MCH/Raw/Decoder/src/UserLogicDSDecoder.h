@@ -8,17 +8,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_IMPL_HELPERS_ASSERTIONS_H
-#define O2_MCH_RAW_IMPL_HELPERS_ASSERTIONS_H
+#ifndef O2_MCH_RAW_USER_LOGIC_DS_DECODER_H
+#define O2_MCH_RAW_USER_LOGIC_DS_DECODER_H
 
-#include <fmt/format.h>
+#include "MCHRawDecoder/Decoder.h"
+#include <memory>
 
-inline int assertIsInRange(std::string what, int value, int min, int max)
+namespace o2::mch::raw
 {
-  if (value < min || value > max) {
-    throw std::invalid_argument(fmt::format("{} should be between {} and {} but is {}", what, min, max, value));
-  }
-  return value;
-}
+class UserLogicDSDecoder
+{
+ public:
+  UserLogicDSDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler, bool chargeSumMode = true);
 
+  void append(uint64_t data);
+
+ private:
+  struct Impl;
+  std::shared_ptr<Impl> mFSM; // FIXME: try to turn this into a unique_ptr
+};
+
+} // namespace o2::mch::raw
 #endif
