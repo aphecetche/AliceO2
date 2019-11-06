@@ -240,37 +240,6 @@ void dumpRDHBuffer(gsl::span<uint32_t> buffer, std::string_view indent)
   std::cout << fmt::format("{:44s} zero\n", " ");
 }
 
-void dumpBuffer(gsl::span<uint8_t> buffer)
-{
-  gsl::span<uint32_t> buf32{reinterpret_cast<uint32_t*>(&buffer[0]),
-                            buffer.size() / 4};
-  return dumpBuffer(buf32);
-}
-
-void dumpBuffer(gsl::span<uint32_t> buffer)
-{
-  // dump a buffer, assuming it starts with a RDH
-  // return the number of RDHs
-
-  int i{0};
-  while (i < buffer.size()) {
-    if (i % 4 == 0) {
-      std::cout << fmt::format("\n{:8d} : ", i * 4);
-    }
-    if (i + 16 <= buffer.size()) {
-      auto rdh = createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i));
-      if (isValid(rdh)) {
-        dumpRDHBuffer(buffer.subspan(i, 16), std::string(11, ' '));
-        i += 16;
-        continue;
-      }
-    }
-    std::cout << fmt::format("{:08X} ", buffer[i]);
-    i++;
-  }
-  std::cout << "\n";
-}
-
 template <typename RDH>
 int forEachRDH(gsl::span<uint32_t> buffer, std::function<void(RDH&)> f)
 {

@@ -13,8 +13,8 @@
 
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include <gsl/span>
-#include "BareGBTDecoder.h"
 #include <array>
+#include "BareGBTDecoder.h"
 
 namespace o2
 {
@@ -23,6 +23,9 @@ namespace mch
 namespace raw
 {
 /// @brief A BareCRUDecoder manages 24 GBTDecoder objects.
+///
+/// It is used when there is no User Logic in the CRU.
+///
 
 class BareCRUDecoder
 {
@@ -32,7 +35,7 @@ class BareCRUDecoder
   /// \param sampaChannelHandler the callable that will handle the SampaCluster
   /// that gets decoded.
   explicit BareCRUDecoder(int cruId, SampaChannelHandler channelHandler,
-                          bool chargeSumMode = true);
+                          bool chargeSumMode);
 
   /// decode the data in buffer, assuming it's coming from the given GBT.
   void decode(int gbtid, gsl::span<uint8_t> buffer);
