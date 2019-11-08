@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Test1)
 
 BOOST_AUTO_TEST_CASE(TestDecoding)
 {
-  gsl::span<uint8_t> testBuffer(REF_BUFFER_CRU);
+  gsl::span<uint8_t> testBuffer(REF_BUFFER_CRU_BARE);
   int n = countRDHs<RAWDataHeaderV4>(testBuffer);
   BOOST_CHECK_EQUAL(n, 4);
   std::vector<std::string> result;

@@ -86,7 +86,6 @@ class BareElinkEncoder
   void append10(uint16_t value);
   void append20(uint32_t value);
   void append50(uint64_t value);
-  void assertNotMixingClusters(const std::vector<SampaCluster>& data) const;
   void assertPhase();
   void assertSync();
   uint64_t nofSync() const { return mNofSync; }

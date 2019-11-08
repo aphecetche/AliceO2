@@ -14,7 +14,7 @@
 #include <array>
 #include <cstdlib>
 
-extern std::array<uint8_t, 2560> REF_BUFFER_GBT;
-extern std::array<uint8_t, 8336> REF_BUFFER_CRU;
+extern std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE;
+extern std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE;
 
 #endif

@@ -67,7 +67,12 @@ struct SampaCluster {
   std::vector<uint16_t> samples; //< 10 bits for each sample
 };
 
-std::ostream& operator<<(std::ostream& os, const SampaCluster& sc);
+// ensure all clusters are either in sample mode or in
+// chargesum mode, no mixing allowed
+void assertNotMixingClusters(const std::vector<SampaCluster>& data, bool chargeSum);
+
+std::ostream&
+  operator<<(std::ostream& os, const SampaCluster& sc);
 } // namespace raw
 } // namespace mch
 } // namespace o2
