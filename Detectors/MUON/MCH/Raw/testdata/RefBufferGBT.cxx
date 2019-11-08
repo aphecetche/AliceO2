@@ -10,7 +10,7 @@
 
 #include "RefBuffers.h"
 
-std::array<uint8_t, 2560> REF_BUFFER_GBT = {
+std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE = {
 
   // clang-format off
 

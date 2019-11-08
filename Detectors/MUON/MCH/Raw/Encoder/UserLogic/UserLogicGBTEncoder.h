@@ -13,7 +13,9 @@
 
 #include <cstdlib>
 #include "MCHRawCommon/SampaCluster.h"
+#include "UserLogicElinkEncoder.h"
 #include <vector>
+#include <array>
 
 namespace o2::mch::raw
 {
@@ -23,13 +25,21 @@ class UserLogicGBTEncoder
  public:
   UserLogicGBTEncoder(int cruId, int gbtId, bool chargeSumMode = true);
 
-  int id() const;
+  int id() const { return mGbtId; }
 
   void addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
 
   size_t moveToBuffer(std::vector<uint8_t>& buffer);
 
   void printStatus(int maxelink = -1) const;
+
+  static bool forceNoPhase;
+
+ private:
+  int mCruId;
+  int mGbtId;
+  uint64_t mGbtIdMask;
+  std::array<UserLogicElinkEncoder, 40> mElinks;
 };
 
 } // namespace o2::mch::raw

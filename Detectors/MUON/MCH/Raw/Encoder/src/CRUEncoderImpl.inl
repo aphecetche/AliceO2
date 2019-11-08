@@ -58,7 +58,7 @@ void CRUEncoderImpl<GBTENCODER, RDH>::gbts2buffer(uint32_t orbit, uint16_t bunch
     }
     assert(gbtBuffer.size() % 4 == 0);
     auto payloadSize = gbtBuffer.size(); // in bytes
-    auto rdh = createRDH<o2::header::RAWDataHeaderV4>(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
+    auto rdh = createRDH<RDH>(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload

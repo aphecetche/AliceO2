@@ -53,25 +53,13 @@ BareElinkEncoder::BareElinkEncoder(uint8_t elinkId,
   mSampaHeader.chipAddress(mChipAddress);
 }
 
-// ensure all clusters are either in sample mode or in
-// chargesum mode, no mixing allowed
-void BareElinkEncoder::assertNotMixingClusters(const std::vector<SampaCluster>& data) const
-{
-  assert(data.size() > 0);
-  for (auto i = 0; i < data.size(); i++) {
-    if (data[i].isClusterSum() != mChargeSumMode) {
-      throw std::invalid_argument(fmt::format("all cluster of this encoder should be of the same type ({}) but {}-th does not match ", (mChargeSumMode ? "clusterSum" : "samples"), i));
-    }
-  }
-}
-
 void BareElinkEncoder::addChannelData(uint8_t chId, const std::vector<SampaCluster>& data)
 {
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
   }
   assertSync();
-  assertNotMixingClusters(data);
+  assertNotMixingClusters(data, mChargeSumMode);
 
   uint16_t n10{0};
   for (const auto& s : data) {
@@ -192,7 +180,7 @@ void BareElinkEncoder::setHeader(uint8_t chId, uint16_t n10)
 {
   assertNofBits("chId", chId, 5);
   assertNofBits("nof10BitWords", n10, 10);
-  mSampaHeader.bunchCrossingCounter(mLocalBunchCrossing);
+  mSampaHeader.bunchCrossingCounter(mLocalBunchCrossing); //FIXME: how is this one evolving ?
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
   mSampaHeader.channelAddress(chId);
