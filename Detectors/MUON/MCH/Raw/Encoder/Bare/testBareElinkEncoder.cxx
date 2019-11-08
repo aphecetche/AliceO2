@@ -59,40 +59,10 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(elinkencoder)
 
-BOOST_AUTO_TEST_CASE(CtorMustUse4BitsOnlyForChipAddress)
-{
-  BOOST_CHECK_THROW(BareElinkEncoder enc(0, 32), std::invalid_argument);
-  BOOST_CHECK_THROW(BareElinkEncoder enc(0, 16), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(BareElinkEncoder enc(0, 15));
-}
-
-BOOST_AUTO_TEST_CASE(CtorMustHaveIdBetween0And39)
-{
-  BOOST_CHECK_THROW(BareElinkEncoder enc(40, 0), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(BareElinkEncoder enc(39, 0));
-}
-
 BOOST_AUTO_TEST_CASE(CtorBuildsAnEmptyBitSet)
 {
   BareElinkEncoder enc(0, 0);
   BOOST_CHECK_EQUAL(enc.len(), 0);
-}
-
-BOOST_AUTO_TEST_CASE(AddEmptyDataShouldThrow)
-{
-  BareElinkEncoder enc(0, 0);
-  std::vector<SampaCluster> data;
-  BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
-}
-
-BOOST_AUTO_TEST_CASE(AddMixedDataShouldThrow)
-{
-  BareElinkEncoder enc(0, 0);
-  std::vector<SampaCluster> data;
-  std::vector<uint16_t> samples{123, 456, 789};
-  data.emplace_back(0, 1000);
-  data.emplace_back(0, samples);
-  BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
@@ -121,16 +91,6 @@ BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
 
   int expectedSize = initialSize + 100 + 40 * data.size();
   BOOST_CHECK_EQUAL(enc.len(), expectedSize);
-}
-
-BOOST_AUTO_TEST_CASE(ChannelIdIs5Bits)
-{
-  BareElinkEncoder enc(0, 0);
-  std::vector<SampaCluster> data = {SampaCluster(20, 10)};
-
-  BOOST_CHECK_THROW(enc.addChannelData(32, data),
-                    std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelData(31, data));
 }
 
 BOOST_AUTO_TEST_CASE(OneChipChargeSumOneCluster)

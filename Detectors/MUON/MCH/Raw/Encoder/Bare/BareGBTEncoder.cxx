@@ -154,25 +154,6 @@ size_t BareGBTEncoder::moveToBuffer(std::vector<uint8_t>& buffer)
       buffer.emplace_back(static_cast<uint8_t>((g & w) >> i));
     }
     n += 16;
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 0)) >> 0));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 8)) >> 8));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 16)) >> 16));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 24)) >> 24));
-    //
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 32)) >> 32));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 40)) >> 40));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 48)) >> 48));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 56)) >> 56));
-    //
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 64)) >> 64));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 72)) >> 72));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 80)) >> 80));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 88)) >> 88));
-    //
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 96)) >> 96));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 104)) >> 104));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 112)) >> 112));
-    // buffer.emplace_back(static_cast<uint8_t>((g & (m << 120)) >> 120));
   }
   mGbtWords.clear();
   return n;
