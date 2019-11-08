@@ -36,4 +36,7 @@ if(BUILD_TESTING)
               COMPONENT_NAME mch
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+
+  add_subdirectory(test)
+
 endif()

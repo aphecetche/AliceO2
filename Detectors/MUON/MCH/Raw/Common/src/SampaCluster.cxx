@@ -81,6 +81,18 @@ std::ostream& operator<<(std::ostream& os, const SampaCluster& sc)
   return os;
 }
 
+// ensure all clusters are either in sample mode or in
+// chargesum mode, no mixing allowed
+void assertNotMixingClusters(const std::vector<SampaCluster>& data, bool chargeSum)
+{
+  assert(data.size() > 0);
+  for (auto i = 0; i < data.size(); i++) {
+    if (data[i].isClusterSum() != chargeSum) {
+      throw std::invalid_argument(fmt::format("all cluster of this encoder should be of the same type ({}) but {}-th does not match ", (chargeSum ? "clusterSum" : "samples"), i));
+    }
+  }
+}
+
 } // namespace raw
 } // namespace mch
 } // namespace o2

@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
   std::vector<std::string> result;
 
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  gsl::span<uint8_t> buffer(REF_BUFFER_GBT);
+  gsl::span<uint8_t> buffer(REF_BUFFER_GBT_BARE);
   dumpBuffer(buffer);
   dec.append(buffer);
   std::vector<std::string> expected{
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  dec.append(REF_BUFFER_GBT);
+  dec.append(REF_BUFFER_GBT_BARE);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
     "chip-3-ch-31-ts-12-q-133",

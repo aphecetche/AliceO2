@@ -53,9 +53,9 @@ BOOST_AUTO_TEST_SUITE(gbtencoder)
 BOOST_AUTO_TEST_CASE(EncodeABuffer)
 {
   auto buffer = createGBTBuffer();
-  size_t n = REF_BUFFER_GBT.size();
+  size_t n = REF_BUFFER_GBT_BARE.size();
   BOOST_CHECK_GE(buffer.size(), n);
-  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(REF_BUFFER_GBT)));
+  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(REF_BUFFER_GBT_BARE)));
 }
 
 BOOST_AUTO_TEST_CASE(BareGBTEncoderLinkIdMustBeBetween0And23)
