@@ -8,11 +8,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "RefBuffers.h"
+#include "TestBuffers.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawCommon/DataFormats.h"
 
 using namespace o2::mch::raw;
+using namespace o2::mch::raw::dataformat;
 
 std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
 {
@@ -41,7 +43,7 @@ std::vector<uint8_t> createBarePedestalBuffer(int elinkId)
 {
   uint8_t cruId(0);
 
-  auto cru = createBareCRUEncoderNoPhase(cruId, false);
+  auto cru = createCRUEncoderNoPhase<Bare, SampleMode>(cruId);
 
   return encodePedestalBuffer(*cru, elinkId);
 }
@@ -50,7 +52,7 @@ std::vector<uint8_t> createUserLogicPedestalBuffer(int elinkId)
 {
   uint8_t cruId(0);
 
-  auto cru = createUserLogicCRUEncoder(cruId, false);
+  auto cru = createCRUEncoder<UserLogic, SampleMode>(cruId);
 
   return encodePedestalBuffer(*cru, elinkId);
 }

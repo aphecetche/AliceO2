@@ -23,27 +23,27 @@ namespace mch
 namespace raw
 {
 
-template <typename GBTENCODER, typename RDH>
-CRUEncoderImpl<GBTENCODER, RDH>::CRUEncoderImpl(uint16_t cruId, bool chargeSumMode)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
   : mCruId(cruId),
     mOrbit{},
     mBunchCrossing{},
     mBuffer{},
-    mGBTs{::makeArray<24>([cruId, chargeSumMode](size_t i) { return GBTENCODER(cruId, i, chargeSumMode); })},
+    mGBTs{::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(cruId, i); })},
     mFirstHBFrame{true}
 {
   assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
   mBuffer.reserve(1 << 10);
 }
 
-template <typename GBTENCODER, typename RDH>
-void CRUEncoderImpl<GBTENCODER, RDH>::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
 {
   mGBTs[solarId].addChannelData(elinkId, chId, data);
 }
 
-template <typename GBTENCODER, typename RDH>
-void CRUEncoderImpl<GBTENCODER, RDH>::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
 {
   // append to our own buffer all the words buffers from all our gbts,
   // prepending each one with a corresponding Raw Data Header (RDH)
@@ -68,8 +68,8 @@ void CRUEncoderImpl<GBTENCODER, RDH>::gbts2buffer(uint32_t orbit, uint16_t bunch
   }
 }
 
-template <typename GBTENCODER, typename RDH>
-size_t CRUEncoderImpl<GBTENCODER, RDH>::moveToBuffer(std::vector<uint8_t>& buffer)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+size_t CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::moveToBuffer(std::vector<uint8_t>& buffer)
 {
   closeHeartbeatFrame(mOrbit, mBunchCrossing);
   for (auto& w : mBuffer) {
@@ -83,8 +83,8 @@ size_t CRUEncoderImpl<GBTENCODER, RDH>::moveToBuffer(std::vector<uint8_t>& buffe
   return s;
 }
 
-template <typename GBTENCODER, typename RDH>
-void CRUEncoderImpl<GBTENCODER, RDH>::printStatus(int maxgbt) const
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::printStatus(int maxgbt) const
 {
   std::cout << fmt::format("CRUEncoderImpl({}) buffer size {}\n", mCruId, mBuffer.size());
 
@@ -105,14 +105,14 @@ void CRUEncoderImpl<GBTENCODER, RDH>::printStatus(int maxgbt) const
   }
 }
 
-template <typename GBTENCODER, typename RDH>
-void CRUEncoderImpl<GBTENCODER, RDH>::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
 {
   gbts2buffer(orbit, bunchCrossing);
 }
 
-template <typename GBTENCODER, typename RDH>
-void CRUEncoderImpl<GBTENCODER, RDH>::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
 {
   assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
   // build a buffer with the _previous_ (orbit,bx)

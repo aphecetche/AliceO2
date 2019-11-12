@@ -69,7 +69,8 @@ struct SampaCluster {
 
 // ensure all clusters are either in sample mode or in
 // chargesum mode, no mixing allowed
-void assertNotMixingClusters(const std::vector<SampaCluster>& data, bool chargeSum);
+template <typename CHARGESUM>
+void assertNotMixingClusters(const std::vector<SampaCluster>& data);
 
 std::ostream&
   operator<<(std::ostream& os, const SampaCluster& sc);
