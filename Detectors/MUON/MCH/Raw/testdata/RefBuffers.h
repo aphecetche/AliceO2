@@ -14,7 +14,12 @@
 #include <array>
 #include <cstdlib>
 
-extern std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE;
+template <bool CHARGESUM>
+extern std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE();
+
+template <bool CHARGESUM>
+extern std::array<uint8_t, 96> REF_BUFFER_GBT_USER_LOGIC();
+
 extern std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE;
 
 #endif
