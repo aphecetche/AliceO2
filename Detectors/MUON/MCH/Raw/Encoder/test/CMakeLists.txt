@@ -11,4 +11,5 @@ o2_add_test(gbt-encoder
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRawBareEncoder
                                   O2::MCHRawUserLogicEncoder
-                                  O2::MCHTestRawRefBuffers)
+                                  O2::MCHTestRawRefBuffers
+                                  O2::MCHRawImplHelpers)
