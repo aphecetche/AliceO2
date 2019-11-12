@@ -13,7 +13,6 @@
 
 #include <array>
 #include "BareElinkEncoder.h"
-#include <boost/multiprecision/cpp_int.hpp>
 
 namespace o2
 {
@@ -21,8 +20,6 @@ namespace mch
 {
 namespace raw
 {
-
-typedef boost::multiprecision::uint128_t uint128_t;
 
 /// @brief A BareGBTEncoder manages 40 ElinkEncoder to encode the data of one GBT.
 ///
@@ -86,7 +83,7 @@ class BareGBTEncoder
 
   size_t size() const;
 
-  uint128_t getWord(int i) const;
+  uint64_t aggregate(int jstart, int i) const;
 
   void align(int upto);
 
@@ -100,7 +97,7 @@ class BareGBTEncoder
   int mCruId;                               //< CRU this GBT belongs to
   int mGbtId;                               //< id of this GBT (0..23)
   std::array<BareElinkEncoder, 40> mElinks; //< the 40 Elinks we manage
-  std::vector<uint128_t> mGbtWords;         //< the (80 bits) GBT words we've accumulated so far
+  std::vector<uint64_t> mGbtWords;          //< the GBT words (each GBT word of 80 bits is represented by 2 64 bits words) we've accumulated so far
 };
 } // namespace raw
 } // namespace mch
