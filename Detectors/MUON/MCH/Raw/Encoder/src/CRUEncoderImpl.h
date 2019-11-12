@@ -15,6 +15,7 @@
 #include <vector>
 #include <map>
 #include "MCHRawEncoder/CRUEncoder.h"
+#include "GBTEncoder.h"
 
 #include <iostream>
 #include <fmt/format.h>
@@ -29,16 +30,14 @@ namespace o2::mch::raw
 ///
 /// \nosubgrouping
 
-template <typename GBTENCODER, typename RDHTYPE>
+template <typename FORMAT, typename CHARGESUM, typename RDHTYPE>
 class CRUEncoderImpl : public CRUEncoder
 {
 
  public:
   /// Constructor.
   /// \param cruId the CRU we're encoding data for.
-  /// \param chargeSumMode must be true if the data to be generated is
-  /// in clusterMode
-  CRUEncoderImpl(uint16_t cruId, bool chargeSumMode = true);
+  CRUEncoderImpl(uint16_t cruId);
 
   /** @name Main interface.
     */
@@ -79,7 +78,7 @@ class CRUEncoderImpl : public CRUEncoder
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
   std::vector<uint32_t> mBuffer;
-  std::array<GBTENCODER, 24> mGBTs;
+  std::array<GBTEncoder<FORMAT, CHARGESUM>, 24> mGBTs;
   bool mFirstHBFrame;
 };
 

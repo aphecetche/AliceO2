@@ -18,10 +18,12 @@
 #include <fmt/format.h>
 #include <array>
 #include "MCHRawCommon/RDHManip.h"
+#include "MCHRawCommon/DatFormats.h"
 #include "RefBuffers.h"
 #include "DumpBuffer.h"
 
 using namespace o2::mch::raw;
+using namespace o2::mch::raw::dataformat;
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
@@ -56,7 +58,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
   std::vector<std::string> result;
 
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  auto buf = REF_BUFFER_GBT_BARE<true>();
+  auto buf = REF_BUFFER_GBT<Bare, ChargeSumMode>();
   gsl::span<uint8_t> buffer(buf);
   dumpBuffer(buffer);
   dec.append(buffer);

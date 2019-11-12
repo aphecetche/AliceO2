@@ -17,11 +17,13 @@
 #include <fstream>
 #include <fmt/printf.h>
 #include "MCHRawCommon/RDHManip.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/Decoder.h"
 #include "Headers/RAWDataHeader.h"
 #include "RefBuffers.h"
 
 using namespace o2::mch::raw;
+using namespace o2::mch::raw::dataformat;
 using o2::header::RAWDataHeaderV4;
 
 std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
@@ -83,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Test1)
 
 BOOST_AUTO_TEST_CASE(TestDecoding)
 {
-  gsl::span<uint8_t> testBuffer(REF_BUFFER_CRU_BARE);
+  auto testBuffer = REF_BUFFER_CRU<Bare, ChargeSumMode>();
   int n = countRDHs<RAWDataHeaderV4>(testBuffer);
   BOOST_CHECK_EQUAL(n, 4);
   std::vector<std::string> result;

@@ -8,16 +8,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_REF_BUFFERS_H
-#define O2_MCH_RAW_TEST_REF_BUFFERS_H
+#ifndef O2_MCH_RAW_ELINK_ENCODER_H
+#define O2_MCH_RAW_ELINK_ENCODER_H
 
-#include <vector>
-#include <cstdlib>
+#include "MCHRawCommon/DataFormats.h"
 
-template <typename DataFormat, typename Mode>
-extern std::vector<uint8_t> REF_BUFFER_GBT();
+namespace o2::mch::raw
+{
+using namespace o2::mch::raw::dataformat;
+template <typename Format, typename ChargeSumMode>
+struct ElinkEncoder {
+};
 
-template <typename DataFormat, typename Mode>
-extern std::vector<uint8_t> REF_BUFFER_CRU();
-
+} // namespace o2::mch::raw
 #endif

@@ -8,16 +8,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_REF_BUFFERS_H
-#define O2_MCH_RAW_TEST_REF_BUFFERS_H
+#ifndef O2_MCH_RAW_DATA_FORMATS_H
+#define O2_MCH_RAW_DATA_FORMATS_H
 
-#include <vector>
-#include <cstdlib>
+namespace o2::mch::raw::dataformat
+{
 
-template <typename DataFormat, typename Mode>
-extern std::vector<uint8_t> REF_BUFFER_GBT();
+struct Bare {
+};
+struct UserLogic {
+};
+struct ChargeSumMode {
+  bool operator()() const { return true; }
+};
+struct SampleMode {
+  bool operator()() const { return false; }
+};
 
-template <typename DataFormat, typename Mode>
-extern std::vector<uint8_t> REF_BUFFER_CRU();
+}; // namespace o2::mch::raw::dataformat
 
 #endif

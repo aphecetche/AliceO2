@@ -9,28 +9,39 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHRawEncoder/Encoder.h"
+#include "BareElinkEncoder.h"
+#include "UserLogicElinkEncoder.h"
 #include "CRUEncoderImpl.h"
-#include "BareGBTEncoder.h"
-#include "UserLogicGBTEncoder.h"
 #include "Headers/RAWDataHeader.h"
+#include "MCHRawCommon/DataFormats.h"
 
 namespace o2::mch::raw
 {
+using namespace o2::mch::raw::dataformat;
 
-std::unique_ptr<CRUEncoder> createBareCRUEncoder(uint8_t cruId, bool chargeSum)
+template <>
+std::unique_ptr<CRUEncoder> createCRUEncoder<Bare, ChargeSumMode>(uint8_t cruId)
 {
-  return std::make_unique<CRUEncoderImpl<BareGBTEncoder, o2::header::RAWDataHeaderV4>>(cruId, chargeSum);
+  return std::make_unique<CRUEncoderImpl<Bare, ChargeSumMode, o2::header::RAWDataHeaderV4>>(cruId);
 }
 
-std::unique_ptr<CRUEncoder> createBareCRUEncoderNoPhase(uint8_t cruId, bool chargeSum)
+template <>
+std::unique_ptr<CRUEncoder> createCRUEncoder<Bare, SampleMode>(uint8_t cruId)
 {
-  BareGBTEncoder::forceNoPhase = true;
-  return std::make_unique<CRUEncoderImpl<BareGBTEncoder, o2::header::RAWDataHeaderV4>>(cruId, chargeSum);
+  return std::make_unique<CRUEncoderImpl<Bare, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
 }
 
-std::unique_ptr<CRUEncoder> createUserLogicCRUEncoder(uint8_t cruId, bool chargeSum)
-{
-  return std::make_unique<CRUEncoderImpl<UserLogicGBTEncoder, o2::header::RAWDataHeaderV4>>(cruId, chargeSum);
-}
-
+// template <typename CHARGESUM>
+// std::unique_ptr<CRUEncoder> createCRUEncodeNoPhase<Bare, CHARGESUM>(uint8_t cruId)
+// {
+//   GBTEncoder<ElinkEncoder<Bare, CHARGESUM>>::forceNoPhase = true;
+//   return std::make_unique<CRUEncoderImpl<ElinkEncoder<Bare, CHARGESUM>, o2::header::RAWDataHeaderV4>>(cruId);
+// }
+//
+// template <typename CHARGESUM>
+// std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogic, CHARGESUM>(uint8_t cruId)
+// {
+//   return std::make_unique<CRUEncoderImpl<ElinkEncoder<UserLogic, CHARGESUM>, o2::header::RAWDataHeaderV4>>(cruId);
+// }
+//
 } // namespace o2::mch::raw
