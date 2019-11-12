@@ -24,6 +24,7 @@ UserLogicGBTEncoder::UserLogicGBTEncoder(int cruId, int gbtId, bool chargeSumMod
     mGbtIdMask((static_cast<uint64_t>(gbtId & 0x1F) << 59)),
     mElinks{::makeArray<40>([chargeSumMode](size_t i) { return UserLogicElinkEncoder(i, i % 16, 0, chargeSumMode); })}
 {
+  assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
 void UserLogicGBTEncoder::addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
@@ -34,14 +35,14 @@ void UserLogicGBTEncoder::addChannelData(uint8_t elinkId, uint8_t chId, const st
 
 size_t UserLogicGBTEncoder::moveToBuffer(std::vector<uint8_t>& buffer)
 {
-  std::cout << "UserLogicGBTEncoder::moveToBuffer : buffer=\n";
+  // std::cout << "UserLogicGBTEncoder::moveToBuffer : buffer=\n";
   // FIXME: here must add the GbtMask part to each word of the elinks buffers
 
   for (auto& elink : mElinks) {
     elink.moveToBuffer(buffer, mGbtIdMask);
   }
 
-  dumpBuffer(gsl::span<uint64_t>(reinterpret_cast<uint64_t*>(&buffer[0]), buffer.size() / 8));
+  // dumpBuffer(gsl::span<uint64_t>(reinterpret_cast<uint64_t*>(&buffer[0]), buffer.size() / 8));
   return 0;
 }
 
