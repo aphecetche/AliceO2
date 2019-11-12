@@ -71,7 +71,7 @@ uint64_t headerWord(int elinkId, int chId, const std::vector<SampaCluster>& data
 
 void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t& word, int data)
 {
-  word |= data << (index * 10);
+  word |= static_cast<uint64_t>(data) << (index * 10);
   --index;
   if (index < 0) {
     buffer.emplace_back(prefix | word);
@@ -104,11 +104,19 @@ void UserLogicElinkEncoder::addChannelData(uint8_t chId,
   int index{4};
   uint64_t word{0};
   for (auto& cluster : data) {
-    append(b9, mBuffer, index, word, cluster.samples.size());
+    append(b9, mBuffer, index, word, cluster.nofSamples());
     append(b9, mBuffer, index, word, cluster.timestamp);
-    for (auto& s : cluster.samples) {
-      append(b9, mBuffer, index, word, s);
+    if (mChargeSumMode == true) {
+      append(b9, mBuffer, index, word, cluster.chargeSum & 0x3FF);
+      append(b9, mBuffer, index, word, (cluster.chargeSum & 0xFFC00) >> 10);
+    } else {
+      for (auto& s : cluster.samples) {
+        append(b9, mBuffer, index, word, s);
+      }
     }
+  }
+  while (index != 4) {
+    append(b9, mBuffer, index, word, 0);
   }
 }
 

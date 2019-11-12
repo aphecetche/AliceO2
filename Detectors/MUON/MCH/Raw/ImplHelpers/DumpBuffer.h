@@ -21,7 +21,6 @@ void dumpBuffer(gsl::span<T> buffer)
   // dump a buffer of T
 
   int i{0};
-  std::cout << "sizeof(T)=" << sizeof(T) << "\n";
   while (i < buffer.size()) {
     if (i % (16 / sizeof(T)) == 0) {
       std::cout << fmt::format("\n{:8d} : ", i * sizeof(T));
