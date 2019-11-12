@@ -66,10 +66,10 @@ void BareGBTEncoder::clear()
   }
 }
 
-uint64_t BareGBTEncoder::aggregate(int jstart, int i) const
+uint64_t BareGBTEncoder::aggregate(int jstart, int jend, int i) const
 {
   uint64_t w{0};
-  for (int j = jstart; j < jstart + 40; j += 2) {
+  for (int j = jstart; j < jend; j += 2) {
     for (int k = 0; k <= 1; k++) {
       bool v = mElinks[j / 2].get(i + 1 - k);
       uint64_t mask = static_cast<uint64_t>(1) << (j + k);
@@ -95,8 +95,8 @@ void BareGBTEncoder::elink2gbt()
   int n = mElinks[0].len();
 
   for (int i = 0; i < n - 1; i += 2) {
-    uint64_t w0 = aggregate(0, i);
-    uint64_t w1 = aggregate(40, i);
+    uint64_t w0 = aggregate(0, 64, i);
+    uint64_t w1 = aggregate(64, 80, i);
     mGbtWords.push_back(w0);
     mGbtWords.push_back(w1);
   }

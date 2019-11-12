@@ -83,7 +83,7 @@ class BareGBTEncoder
 
   size_t size() const;
 
-  uint64_t aggregate(int jstart, int i) const;
+  uint64_t aggregate(int jstart, int jend, int i) const;
 
   void align(int upto);
 
