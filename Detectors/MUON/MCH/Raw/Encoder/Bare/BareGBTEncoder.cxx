@@ -14,6 +14,7 @@
 #include "MakeArray.h"
 #include "Assertions.h"
 #include "BareElinkEncoder.h"
+#include "MoveBuffer.h"
 
 using namespace o2::mch::raw;
 
@@ -65,6 +66,23 @@ void BareGBTEncoder::clear()
   }
 }
 
+uint64_t BareGBTEncoder::aggregate(int jstart, int i) const
+{
+  uint64_t w{0};
+  for (int j = jstart; j < jstart + 40; j += 2) {
+    for (int k = 0; k <= 1; k++) {
+      bool v = mElinks[j / 2].get(i + 1 - k);
+      uint64_t mask = static_cast<uint64_t>(1) << (j + k);
+      if (v) {
+        w |= mask;
+      } else {
+        w &= ~mask;
+      }
+    }
+  }
+  return w;
+}
+
 void BareGBTEncoder::elink2gbt()
 {
   // convert elinks content to actual GBT words
@@ -77,18 +95,10 @@ void BareGBTEncoder::elink2gbt()
   int n = mElinks[0].len();
 
   for (int i = 0; i < n - 1; i += 2) {
-    uint128_t w{0};
-    for (int j = 0; j < 80; j += 2) {
-      for (int k = 0; k <= 1; k++) {
-        bool v = mElinks[j / 2].get(i + 1 - k);
-        if (v) {
-          bit_set(w, j + k);
-        } else {
-          bit_unset(w, j + k);
-        }
-      }
-    }
-    mGbtWords.push_back(w);
+    uint64_t w0 = aggregate(0, i);
+    uint64_t w1 = aggregate(40, i);
+    mGbtWords.push_back(w0);
+    mGbtWords.push_back(w1);
   }
 }
 
@@ -111,11 +121,6 @@ void BareGBTEncoder::finalize(int alignToSize)
 
   // reset all the links
   clear();
-}
-
-uint128_t BareGBTEncoder::getWord(int i) const
-{
-  return mGbtWords[i];
 }
 
 /// len returns the maximum number of bits currently stored
@@ -146,17 +151,7 @@ void BareGBTEncoder::printStatus(int maxelink) const
 size_t BareGBTEncoder::moveToBuffer(std::vector<uint8_t>& buffer)
 {
   finalize();
-  constexpr uint128_t m = 0xFFFFFFFFuLL;
-  size_t n{0};
-  for (auto& g : mGbtWords) {
-    for (int i = 0; i < 128; i += 8) {
-      uint128_t w = m << i;
-      buffer.emplace_back(static_cast<uint8_t>((g & w) >> i));
-    }
-    n += 16;
-  }
-  mGbtWords.clear();
-  return n;
+  return moveBuffer(mGbtWords, buffer);
 }
 
 void BareGBTEncoder::resetLocalBunchCrossing()

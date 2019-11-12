@@ -19,6 +19,9 @@
 #include <array>
 #include <fmt/printf.h>
 #include "RefBuffers.h"
+#include <boost/mpl/list.hpp>
+#include "DumpBuffer.h"
+#include "MoveBuffer.h"
 
 using namespace o2::mch::raw;
 
@@ -74,12 +77,29 @@ BOOST_AUTO_TEST_SUITE(gbtencoder)
 
 typedef boost::mpl::list<BareGBTEncoder, UserLogicGBTEncoder> testTypes;
 
+// BOOST_AUTO_TEST_CASE(TestMoveBuffer)
+// {
+//   std::vector<uint64_t> b64{0x0102030405060708,
+//                             0x090A0B0C0D0E0F10};
+//   std::vector<uint8_t> b8;
+//   dumpBuffer(gsl::span<uint64_t>{b64});
+//   dumpBuffer(gsl::span<uint8_t>{reinterpret_cast<uint8_t*>(&b64[0]), static_cast<long>(b64.size() * 8)});
+//   dumpBuffer(gsl::span<uint16_t>{reinterpret_cast<uint16_t*>(&b64[0]), static_cast<long>(b64.size() * 4)});
+//   moveBuffer(b64, b8);
+//   BOOST_CHECK_EQUAL(b64.size(), 0);
+//   dumpBuffer(gsl::span<uint8_t>{b8});
+// }
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
 {
   auto buffer = createGBTBuffer<T, true>();
   auto ref = refBufferGBT<T, true>();
   size_t n = ref.size();
   BOOST_CHECK_GE(buffer.size(), n);
+  gsl::span<uint8_t> b(buffer);
+  dumpBuffer(b);
+  gsl::span<uint64_t> b64(reinterpret_cast<uint64_t*>(&buffer[0]), buffer.size() / 8);
+  dumpBuffer(b64);
   BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(ref)));
 }
 

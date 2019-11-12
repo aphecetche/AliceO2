@@ -12,6 +12,7 @@
 #include "MCHRawCommon/SampaHeader.h"
 #include "Assertions.h"
 #include "NofBits.h"
+#include "MoveBuffer.h"
 
 namespace
 {
@@ -122,17 +123,7 @@ void UserLogicElinkEncoder::addChannelData(uint8_t chId,
 
 size_t UserLogicElinkEncoder::moveToBuffer(std::vector<uint8_t>& buffer, uint64_t prefix)
 {
-  constexpr uint64_t m = 0xFFFFFFFF;
-  size_t n{0};
-  for (auto& b : mBuffer) {
-    uint64_t g = b | prefix;
-    for (int i = 0; i < 64; i += 8) {
-      uint64_t w = m << i;
-      buffer.emplace_back(static_cast<uint8_t>((g & w) >> i));
-    }
-    n += 8;
-  }
   mHasSync = false;
-  return n;
+  return moveBuffer(mBuffer, buffer, prefix);
 }
 } // namespace o2::mch::raw
