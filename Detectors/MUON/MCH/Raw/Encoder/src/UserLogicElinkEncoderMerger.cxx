@@ -8,20 +8,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ENCODER_H
-#define O2_MCH_RAW_ENCODER_H
-
-#include "MCHRawEncoder/CRUEncoder.h"
-#include <memory>
+#include "ElinkEncoderMerger.h"
+#include "UserLogicElinkEncoder.h"
 
 namespace o2::mch::raw
 {
 
-template <typename FORMAT, typename CHARGESUM>
-std::unique_ptr<CRUEncoder> createCRUEncoder(uint8_t cruId);
-
-template <typename FORMAT, typename CHARGESUM>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase(uint8_t cruId);
+template <>
+void ElinkEncoderMerger<UserLogic, ChargeSum>(int gbtId,
+                                              gsl::span<ElinkEncoder<UserLogic, ChargeSum>>& elinks,
+                                              gsl::span<uint64_t>& b64)
+{
+  const uint64_t gbtIdMask((static_cast<uint64_t>(gbtId & 0x1F) << 59));
+  for (auto& elink : elinks) {
+    elink.moveToBuffer(b64, gbtIdMask);
+  }
+}
 
 } // namespace o2::mch::raw
-#endif

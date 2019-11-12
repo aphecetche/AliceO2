@@ -13,41 +13,26 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
-#include "BareGBTEncoder.h"
-#include "UserLogicGBTEncoder.h"
+#include "BareElinkEncoder.h"
+#include "UserLogicElinkEncoder.h"
 #include <array>
 #include <array>
 #include <fmt/printf.h>
 #include "RefBuffers.h"
 #include <boost/mpl/list.hpp>
 #include "MoveBuffer.h"
+#include "GBTEncoder.h"
 
 using namespace o2::mch::raw;
+using namespace o2::mch::raw::dataformat;
 
-template <typename T, bool CHARGESUM = true>
-std::vector<uint8_t> refBufferGBT();
-
-template <>
-std::vector<uint8_t> refBufferGBT<BareGBTEncoder, true>()
-{
-  auto buf = REF_BUFFER_GBT_BARE<true>();
-  return std::vector<uint8_t>(buf.begin(), buf.end());
-}
-
-template <>
-std::vector<uint8_t> refBufferGBT<UserLogicGBTEncoder, true>()
-{
-  auto buf = REF_BUFFER_GBT_USER_LOGIC<true>();
-  return std::vector<uint8_t>(buf.begin(), buf.end());
-}
-
-template <typename T, bool CHARGESUM>
+template <typename FORMAT, typename MODE>
 std::vector<uint8_t> createGBTBuffer()
 {
-  T::forceNoPhase = true;
+  GBTEncoder<FORMAT, MODE>::forceNoPhase = true;
   uint8_t cruId{0};
   uint8_t gbtId{23};
-  T enc(cruId, gbtId, CHARGESUM);
+  GBTEncoder<FORMAT, MODE> enc(cruId, gbtId);
   uint32_t bx(0);
   uint16_t ts(12);
   int elinkId = 0;
@@ -74,12 +59,12 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(gbtencoder)
 
-typedef boost::mpl::list<BareGBTEncoder, UserLogicGBTEncoder> testTypes;
+typedef boost::mpl::list<Bare, UserLogic> testTypes;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
 {
-  auto buffer = createGBTBuffer<T, true>();
-  auto ref = refBufferGBT<T, true>();
+  auto buffer = createGBTBuffer<T, ChargeSumMode>();
+  auto ref = REF_BUFFER_GBT<T, ChargeSumMode>();
   size_t n = ref.size();
   BOOST_CHECK_GE(buffer.size(), n);
   BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(ref)));
@@ -87,21 +72,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderCtorLinkIdMustBeBetween0And23, T, testTypes)
 {
-  BOOST_CHECK_THROW(T enc(0, 24), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(T enc(0, 23));
+  BOOST_CHECK_THROW(GBTEncoder<T> enc(0, 24), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(GBTEncoder<T> enc(0, 23));
 }
 
 template <typename T, bool CHARGESUM>
 float expectedSize();
 
 template <>
-float expectedSize<BareGBTEncoder, true>()
+float expectedSize<BareElinkEncoder, true>()
 {
   return 4 * 640;
 }
 
 template <>
-float expectedSize<UserLogicGBTEncoder, true>()
+float expectedSize<UserLogicElinkEncoder, true>()
 {
   return 96;
 }
@@ -130,13 +115,13 @@ template <typename T, bool CHARGESUM>
 float expectedMaxSize();
 
 template <>
-float expectedMaxSize<BareGBTEncoder, true>()
+float expectedMaxSize<BareElinkEncoder, true>()
 {
   return 4 * 11620;
 }
 
 template <>
-float expectedMaxSize<UserLogicGBTEncoder, true>()
+float expectedMaxSize<UserLogicElinkEncoder, true>()
 {
   return 1032;
 }
