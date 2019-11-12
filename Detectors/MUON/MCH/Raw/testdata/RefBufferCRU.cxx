@@ -9,8 +9,20 @@
 // or submit itself to any jurisdiction.
 
 #include "RefBuffers.h"
+#include <array>
+#include "MCHRawCommon/DataFormats.h"
 
-std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE = {
+using namespace o2::mch::raw::dataformat;
+
+extern std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE_CHARGESUM;
+
+template <>
+std::vector<uint8_t> REF_BUFFER_CRU<Bare, ChargeSumMode>()
+{
+  return std::vector<uint8_t>(REF_BUFFER_CRU_BARE_CHARGESUM.begin(), REF_BUFFER_CRU_BARE_CHARGESUM.end());
+}
+
+std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE_CHARGESUM = {
   // clang-format off
 0x04, 0x40, 0x60, 0x04, 0x00, 0x00, 0x00, 0x00, 0xA0, 0x04, 0xA0, 0x04, 
 0x00, 0x00, 0x00, 0x00, 0x39, 0x30, 0x00, 0x00, 0x39, 0x30, 0x00, 0x00, 

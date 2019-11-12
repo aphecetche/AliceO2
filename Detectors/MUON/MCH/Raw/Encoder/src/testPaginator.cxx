@@ -25,7 +25,7 @@
 #include "MCHRawEncoder/CRUEncoder.h"
 #include <boost/test/data/test_case.hpp>
 #include "Headers/RAWDataHeader.h"
-#include "RefBuffers.h"
+#include "TestBuffers.h"
 
 using namespace o2::mch::raw;
 using namespace o2::header;

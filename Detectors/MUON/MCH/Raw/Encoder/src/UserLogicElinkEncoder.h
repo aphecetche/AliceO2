@@ -8,11 +8,37 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "UserLogicElinkEncoder.h"
-#include "MCHRawCommon/SampaHeader.h"
+#ifndef O2_MCH_RAW_USER_LOGIC_ELINK_ENCODER_H
+#define O2_MCH_RAW_USER_LOGIC_ELINK_ENCODER_H
+
+#include "ElinkEncoder.h"
 #include "Assertions.h"
-#include "NofBits.h"
+#include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawCommon/SampaHeader.h"
 #include "MoveBuffer.h"
+#include "NofBits.h"
+#include <cstdlib>
+#include <vector>
+
+namespace o2::mch::raw
+{
+
+template <typename CHARGESUM>
+class ElinkEncoder<UserLogic, CHARGESUM>
+{
+ public:
+  explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
+
+  void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
+
+  size_t moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix);
+
+ private:
+  uint8_t mElinkId;     //< Elink id 0..39
+  uint8_t mChipAddress; //< chip address 0..15
+  bool mHasSync;        //< whether or not we've already added a sync word
+  std::vector<uint64_t> mBuffer;
+};
 
 namespace
 {
@@ -27,16 +53,12 @@ uint64_t error64(int error)
 }
 } // namespace
 
-namespace o2::mch::raw
-{
-
-UserLogicElinkEncoder::UserLogicElinkEncoder(uint8_t elinkId,
-                                             uint8_t chip,
-                                             int phase,
-                                             bool chargeSumMode)
+template <typename CHARGESUM>
+ElinkEncoder<UserLogic, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
+                                                 uint8_t chip,
+                                                 int phase)
   : mElinkId{elinkId},
     mChipAddress{chip},
-    mChargeSumMode{chargeSumMode},
     mHasSync{false},
     mBuffer{}
 {
@@ -80,14 +102,15 @@ void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t
   }
 }
 
-void UserLogicElinkEncoder::addChannelData(uint8_t chId,
-                                           const std::vector<SampaCluster>& data)
+template <typename CHARGESUM>
+void ElinkEncoder<UserLogic, CHARGESUM>::addChannelData(uint8_t chId,
+                                                        const std::vector<SampaCluster>& data)
 {
   assertNofBits("chId", chId, 5);
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
   }
-  assertNotMixingClusters(data, mChargeSumMode);
+  assertNotMixingClusters(data, CHARGESUM());
 
   int error{0}; // FIXME: what to do with error ?
 
@@ -107,7 +130,7 @@ void UserLogicElinkEncoder::addChannelData(uint8_t chId,
   for (auto& cluster : data) {
     append(b9, mBuffer, index, word, cluster.nofSamples());
     append(b9, mBuffer, index, word, cluster.timestamp);
-    if (mChargeSumMode == true) {
+    if (CHARGESUM() == true) {
       append(b9, mBuffer, index, word, cluster.chargeSum & 0x3FF);
       append(b9, mBuffer, index, word, (cluster.chargeSum & 0xFFC00) >> 10);
     } else {
@@ -121,9 +144,16 @@ void UserLogicElinkEncoder::addChannelData(uint8_t chId,
   }
 }
 
-size_t UserLogicElinkEncoder::moveToBuffer(std::vector<uint8_t>& buffer, uint64_t prefix)
+template <typename CHARGESUM>
+size_t ElinkEncoder<UserLogic, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix)
 {
   mHasSync = false;
-  return moveBuffer(mBuffer, buffer, prefix);
+  auto n = buffer.size();
+  for (auto& b : mBuffer) {
+    buffer.emplace_back(b | prefix);
+  }
+  return buffer.size() - n;
 }
 } // namespace o2::mch::raw
+
+#endif

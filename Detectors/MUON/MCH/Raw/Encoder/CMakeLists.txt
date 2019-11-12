@@ -8,17 +8,28 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-add_subdirectory(Bare)
-add_subdirectory(UserLogic)
-
 o2_add_library(MCHRawEncoder
-               SOURCES src/Encoder.cxx src/Paginator.cxx
+               SOURCES src/Encoder.cxx
+                       src/Paginator.cxx
+                       src/UserLogicElinkEncoderMerger.cxx
+                       src/BitSet.cxx
+                       src/BareElinkEncoderMerger.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
-               PRIVATE_LINK_LIBRARIES O2::MCHRawBareEncoder
-                                      O2::MCHRawUserLogicEncoder
-                                      O2::MCHRawImplHelpers)
-
+               PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 if(BUILD_TESTING)
+
+  o2_add_test(elink-encoder
+              SOURCES src/testElinkEncoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+
+  o2_add_test(gbt-encoder
+              SOURCES src/testGBTEncoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHTestRawRefBuffers
+                                    O2::MCHRawImplHelpers)
   o2_add_test(cru-encoder
               SOURCES src/testCRUEncoder.cxx
               COMPONENT_NAME mch
@@ -26,17 +37,35 @@ if(BUILD_TESTING)
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
   o2_add_test(encoder
-              SOURCES src/testEncoder.cxx src/RefBuffers.cxx
+              SOURCES src/testEncoder.cxx src/TestBuffers.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
   o2_add_test(paginator
-              SOURCES src/testPaginator.cxx src/RefBuffers.cxx
+              SOURCES src/testPaginator.cxx src/TestBuffers.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
-  add_subdirectory(test)
+  o2_add_test(bitset
+              SOURCES src/testBitSet.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder Boost::boost fmt::fmt)
 
+  o2_add_test(bare-elink-encoder
+              SOURCES src/testBareElinkEncoder.cxx
+              COMPONENT_NAME mch
+              LABELS "mch;raw"
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder Boost::boost)
+
+endif()
+
+if(benchmark_FOUND)
+  o2_add_executable(bitset
+                    COMPONENT_NAME mch
+                    SOURCES src/benchBitSet.cxx
+                    PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder benchmark::benchmark
+                    IS_BENCHMARK)
 endif()
