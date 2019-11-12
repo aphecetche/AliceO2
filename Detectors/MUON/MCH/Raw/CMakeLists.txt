@@ -10,7 +10,7 @@
 
 add_subdirectory(ImplHelpers)
 add_subdirectory(Common)
+add_subdirectory(testdata)
 add_subdirectory(Encoder)
 add_subdirectory(Decoder)
-add_subdirectory(testdata)
 add_subdirectory(exe)
