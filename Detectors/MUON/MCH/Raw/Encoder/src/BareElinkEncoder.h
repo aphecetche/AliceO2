@@ -85,7 +85,7 @@ class ElinkEncoder<BareFormat, CHARGESUM>
 
  private:
   uint8_t mElinkId;             //< Elink id 0..39
-  BitSet mBitSet;               //< bitstream
+  BitSet<> mBitSet;             //< bitstream
   uint64_t mNofSync;            //< number of sync words seen so far
   int mSyncIndex;               //< at which sync bit position should the next fillWithSync start
   uint64_t mNofBitSeen;         //< total number of bits seen so far

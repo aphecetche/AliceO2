@@ -41,9 +41,32 @@ static void BM_BitSetSet(benchmark::State& state)
   }
 }
 
+static void BM_BitSetSet64(benchmark::State& state)
+{
+  BitSet<uint64_t> bs;
+  bs.grow(10024);
+  int a{0};
+  for (auto _ : state) {
+    for (int i = 0; i < 100; i++) {
+      bs.set(i, false);
+    }
+  }
+}
+
 static void BM_BitSetSetFast(benchmark::State& state)
 {
   BitSet bs;
+  bs.grow(10024);
+  for (auto _ : state) {
+    for (int i = 0; i < 100; i++) {
+      bs.setFast(i, false);
+    }
+  }
+}
+
+static void BM_BitSetSetFast64(benchmark::State& state)
+{
+  BitSet<uint64_t> bs;
   bs.grow(10024);
   for (auto _ : state) {
     for (int i = 0; i < 100; i++) {
@@ -79,10 +102,12 @@ static void BM_Get(benchmark::State& state)
 
 // Register the function as a benchmark
 BENCHMARK(BM_BitSetSet);
-BENCHMARK(BM_BitSetGet);
+BENCHMARK(BM_BitSetSet64);
 BENCHMARK(BM_BitSetSetFast);
+BENCHMARK(BM_BitSetSetFast64);
 BENCHMARK(BM_Set);
-BENCHMARK(BM_Get);
+// BENCHMARK(BM_BitSetGet);
+// BENCHMARK(BM_Get);
 
 // Run the benchmark
 BENCHMARK_MAIN();

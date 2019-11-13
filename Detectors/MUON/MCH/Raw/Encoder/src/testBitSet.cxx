@@ -21,6 +21,7 @@
 #include <vector>
 #include <fmt/format.h>
 #include <ctime>
+#include <boost/mpl/list.hpp>
 
 using namespace o2::mch::raw;
 
@@ -29,11 +30,13 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(bitset)
 
+typedef boost::mpl::list<uint8_t, uint64_t> testTypes;
+
 // Most of the tests (and their names) are adapted from github.com/mrrtf/sampa/pkg/bitset/bitset_test.go
 
-BOOST_AUTO_TEST_CASE(TestCount)
+BOOST_AUTO_TEST_CASE_TEMPLATE(TestCount, T, testTypes)
 {
-  BitSet bs;
+  BitSet<T> bs;
   BOOST_CHECK_NO_THROW(bs.set(1, true));
   BOOST_CHECK_NO_THROW(bs.set(2, true));
   BOOST_CHECK_NO_THROW(bs.set(3, false));
@@ -41,16 +44,16 @@ BOOST_AUTO_TEST_CASE(TestCount)
   BOOST_CHECK_EQUAL(bs.count(), 3);
 }
 
-BOOST_AUTO_TEST_CASE(TestAppend)
+BOOST_AUTO_TEST_CASE_TEMPLATE(TestAppend, T, testTypes)
 {
-  BitSet bs;
+  BitSet<T> bs;
   bs.append(true);
   bs.append(true);
   bs.append(false);
   bs.append(false);
   bs.append(true);
   BOOST_CHECK_EQUAL(bs.uint8(0, 5), 0x13);
-  BitSet bs2;
+  BitSet<T> bs2;
   BOOST_CHECK_EQUAL(bs2.len(), 0);
   bs2.append(static_cast<uint64_t>(0x1555540F00113), 50);
   BOOST_CHECK_EQUAL(bs2.len(), 50);
@@ -249,7 +252,7 @@ BOOST_AUTO_TEST_CASE(TestGrow)
 {
   BitSet bs(static_cast<uint16_t>(0xFFFF));
   BOOST_CHECK_EQUAL(bs.grow(15), false);
-  BOOST_CHECK_THROW(bs.grow((BitSet::maxSize() + 1)), std::length_error);
+  BOOST_CHECK_THROW(bs.grow((BitSet<>::maxSize() + 1)), std::length_error);
   BOOST_CHECK_EQUAL(bs.grow(34), true);
 }
 
@@ -434,7 +437,7 @@ BOOST_AUTO_TEST_CASE(TestLoopAppend)
   BitSet bs;
 
   std::srand(std::time(nullptr));
-  for (int i = 0; i < BitSet::maxSize(); i++) {
+  for (int i = 0; i < BitSet<>::maxSize(); i++) {
     bool bit = static_cast<bool>(rand() % 2);
     if (bit) {
       expected += "1";
