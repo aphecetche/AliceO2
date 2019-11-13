@@ -24,6 +24,7 @@
 #include <boost/mpl/list.hpp>
 #include "MoveBuffer.h"
 #include "GBTEncoder.h"
+#include "DumpBuffer.h"
 
 using namespace o2::mch::raw;
 
@@ -45,7 +46,8 @@ std::vector<uint8_t> createGBTBuffer()
   enc.addChannelData(elinkId, 13, {SampaCluster(ts, 163)});
   std::vector<uint8_t> words;
   enc.moveToBuffer(words);
-  // std::cout << "createGBTBuffer<" << typeid(T).name() << "," << std::boolalpha << CHARGESUM << ">\n";
+  // std::cout << "createGBTBuffer<" << typeid(FORMAT).name() << "," << std::boolalpha << typeid(MODE).name() << ">\n";
+  // impl::dumpBuffer(gsl::span<uint8_t>(words));
   // int i{0};
   // for (auto v : words) {
   //   fmt::printf("0x%02X, ", v);

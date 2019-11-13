@@ -39,14 +39,11 @@ class ElinkEncoder<BareFormat, CHARGESUM>
   /// Constructs an Encoder for one Elink.
   ///
   /// \param id is the elink identifier and _must_ be between 0 and 39
-  /// \param chip is the sampa chip number this encoder is dealing withn and
-  /// _must_ be between 0 and 15.
   /// \param phase can be used to simulate a different time alignment
   /// between elinks
   ///
-  /// if elinkId or chip are not within allowed range an exception
-  /// is thrown.
-  explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
+  /// if elinkId is not within allowed range an exception is thrown.
+  explicit ElinkEncoder(uint8_t elinkId, int phase = 0);
 
   /// addChannelData converts the SampaCluster data into a bit sequence.
   ///
@@ -54,9 +51,6 @@ class ElinkEncoder<BareFormat, CHARGESUM>
   /// \param data is a vector of SampaCluster representing the SampaCluster(s)
   /// of this channel within one Sampa time window.
   void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
-
-  /// id is the elink id (0..39)
-  uint8_t id() const;
 
   /// Empty the bit stream.
   void clear();
@@ -90,12 +84,9 @@ class ElinkEncoder<BareFormat, CHARGESUM>
   void assertPhase();
   void assertSync();
   uint64_t nofSync() const { return mNofSync; }
-  void setHeader(uint8_t chId, uint16_t n10);
 
  private:
   uint8_t mElinkId;             //< Elink id 0..39
-  uint8_t mChipAddress;         //< chip address 0..15
-  SampaHeader mSampaHeader;     //< current sampa header
   BitSet mBitSet;               //< bitstream
   uint64_t mNofSync;            //< number of sync words seen so far
   int mSyncIndex;               //< at which sync bit position should the next fillWithSync start
@@ -111,11 +102,8 @@ const BitSet sync(sampaSync().uint64(), 50);
 
 template <typename CHARGESUM>
 ElinkEncoder<BareFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
-                                                  uint8_t chip,
                                                   int phase)
   : mElinkId(elinkId),
-    mChipAddress(chip),
-    mSampaHeader{},
     mBitSet{},
     mNofSync{0},
     mSyncIndex{0},
@@ -124,7 +112,6 @@ ElinkEncoder<BareFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
     mPhase{phase}
 {
   impl::assertIsInRange("elinkId", elinkId, 0, 39);
-  impl::assertIsInRange("chip", chip, 0, 15);
 
   // the phase is used to "simulate" a possible different timing alignment between elinks.
 
@@ -136,8 +123,6 @@ ElinkEncoder<BareFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
     // filling the phase with random bits
     append(static_cast<bool>(rand() % 2));
   }
-
-  mSampaHeader.chipAddress(mChipAddress);
 }
 
 template <typename CHARGESUM>
@@ -149,13 +134,10 @@ void ElinkEncoder<BareFormat, CHARGESUM>::addChannelData(uint8_t chId, const std
   assertSync();
   assertNotMixingClusters<CHARGESUM>(data);
 
-  uint16_t n10{0};
-  for (const auto& s : data) {
-    n10 += s.nof10BitWords();
-  }
+  auto header = buildHeader(mElinkId, chId, data);
 
-  setHeader(chId, n10);
-  append50(mSampaHeader.uint64());
+  append50(header.uint64());
+
   for (const auto& s : data) {
     append(s);
   }
@@ -262,12 +244,6 @@ bool ElinkEncoder<BareFormat, CHARGESUM>::get(int i) const
 }
 
 template <typename CHARGESUM>
-uint8_t ElinkEncoder<BareFormat, CHARGESUM>::id() const
-{
-  return mChipAddress;
-}
-
-template <typename CHARGESUM>
 int ElinkEncoder<BareFormat, CHARGESUM>::len() const
 {
   return mBitSet.len();
@@ -283,19 +259,6 @@ template <typename CHARGESUM>
 void ElinkEncoder<BareFormat, CHARGESUM>::resetLocalBunchCrossing()
 {
   mLocalBunchCrossing = mPhase;
-}
-
-template <typename CHARGESUM>
-void ElinkEncoder<BareFormat, CHARGESUM>::setHeader(uint8_t chId, uint16_t n10)
-{
-  impl::assertNofBits("chId", chId, 5);
-  impl::assertNofBits("nof10BitWords", n10, 10);
-  mSampaHeader.bunchCrossingCounter(mLocalBunchCrossing); //FIXME: how is this one evolving ?
-  mSampaHeader.packetType(SampaPacketType::Data);
-  mSampaHeader.nof10BitWords(n10);
-  mSampaHeader.channelAddress(chId);
-  mSampaHeader.hammingCode(computeHammingCode(mSampaHeader.uint64()));
-  mSampaHeader.headerParity(computeHeaderParity(mSampaHeader.uint64()));
 }
 
 } // namespace o2::mch::raw
