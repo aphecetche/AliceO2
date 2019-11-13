@@ -23,7 +23,6 @@
 #include "RefBuffers.h"
 
 using namespace o2::mch::raw;
-using namespace o2::mch::raw::dataformat;
 using o2::header::RAWDataHeaderV4;
 
 std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
@@ -85,7 +84,7 @@ BOOST_AUTO_TEST_CASE(Test1)
 
 BOOST_AUTO_TEST_CASE(TestDecoding)
 {
-  auto testBuffer = REF_BUFFER_CRU<Bare, ChargeSumMode>();
+  auto testBuffer = REF_BUFFER_CRU<BareFormat, ChargeSumMode>();
   int n = countRDHs<RAWDataHeaderV4>(testBuffer);
   BOOST_CHECK_EQUAL(n, 4);
   std::vector<std::string> result;

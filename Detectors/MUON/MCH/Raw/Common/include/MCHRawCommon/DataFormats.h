@@ -11,12 +11,12 @@
 #ifndef O2_MCH_RAW_DATA_FORMATS_H
 #define O2_MCH_RAW_DATA_FORMATS_H
 
-namespace o2::mch::raw::dataformat
+namespace o2::mch::raw
 {
 
-struct Bare {
+struct BareFormat {
 };
-struct UserLogic {
+struct UserLogicFormat {
 };
 struct ChargeSumMode {
   bool operator()() const { return true; }
@@ -25,6 +25,6 @@ struct SampleMode {
   bool operator()() const { return false; }
 };
 
-}; // namespace o2::mch::raw::dataformat
+}; // namespace o2::mch::raw
 
 #endif

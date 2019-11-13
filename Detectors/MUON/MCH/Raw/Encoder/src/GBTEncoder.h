@@ -72,9 +72,6 @@ class GBTEncoder
   /** @name Methods for testing.
     */
   ///@{
-  /// Print the current status of the encoder, for as much as maxelink elinks.
-  void printStatus(int maxelink = -1) const;
-
   /// Sets to true to bypass simulation of time misalignment of elinks.
   static bool forceNoPhase;
   ///@}
@@ -87,7 +84,7 @@ class GBTEncoder
   int mGbtId;                                              //< id of this GBT (0..23)
   std::array<ElinkEncoder<FORMAT, CHARGESUM>, 40> mElinks; //< the 40 Elinks we manage
   std::vector<uint64_t> mGbtWords;                         //< the GBT words (each GBT word of 80 bits is represented by 2 64 bits words) we've accumulated so far
-  ElinkEncoderMerger<ElinkEncoder<FORMAT, CHARGESUM>> mElinkMerger;
+  ElinkEncoderMerger<FORMAT, CHARGESUM> mElinkMerger;
 };
 
 inline int phase(int i, bool forceNoPhase)
@@ -108,29 +105,35 @@ inline int phase(int i, bool forceNoPhase)
 }
 
 template <typename FORMAT, typename CHARGESUM>
+bool GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = false;
+
+template <typename FORMAT, typename CHARGESUM>
 GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(int cruId, int linkId)
   : mCruId(cruId),
     mGbtId(linkId),
-    mElinks{::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, i % 16, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
+    mElinks{impl::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, i % 16, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
     mGbtWords{},
     mElinkMerger{}
 {
-  assertIsInRange("linkId", linkId, 0, 23);
+  impl::assertIsInRange("linkId", linkId, 0, 23);
 }
 
 template <typename FORMAT, typename CHARGESUM>
 void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkId, uint8_t chId,
                                                    const std::vector<SampaCluster>& data)
 {
-  assertIsInRange("elinkId", elinkId, 0, 39);
+  impl::assertIsInRange("elinkId", elinkId, 0, 39);
   mElinks[elinkId].addChannelData(chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM>
 size_t GBTEncoder<FORMAT, CHARGESUM>::moveToBuffer(std::vector<uint8_t>& buffer)
 {
-  mElinkMerger(mGbtId, mElinks, mGbtWords);
-  return moveBuffer(mGbtWords, buffer);
+  mElinkMerger(mGbtId, gsl::span<ElinkEncoder<FORMAT, CHARGESUM>>(begin(mElinks), end(mElinks)), mGbtWords);
+  for (auto& elink : mElinks) {
+    elink.clear();
+  }
+  return impl::moveBuffer(mGbtWords, buffer);
 }
 
 } // namespace o2::mch::raw

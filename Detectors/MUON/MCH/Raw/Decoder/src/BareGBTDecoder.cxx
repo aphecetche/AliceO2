@@ -25,10 +25,10 @@ BareGBTDecoder::BareGBTDecoder(int cruId,
                                bool chargeSumMode)
   : mCruId(cruId),
     mGbtId(gbtId),
-    mElinks{::makeArray<40>([=](size_t i) { return BareElinkDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })},
+    mElinks{impl::makeArray<40>([=](size_t i) { return BareElinkDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })},
     mNofGbtWordsSeens{0}
 {
-  assertIsInRange("gbtId", gbtId, 0, 23);
+  impl::assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
 void BareGBTDecoder::append(gsl::span<uint8_t> bytes)
@@ -49,19 +49,6 @@ void BareGBTDecoder::append(gsl::span<uint8_t> bytes)
       mElinks[elinkIndex++].append(b & 32, b & 16);
       mElinks[elinkIndex++].append(b & 128, b & 64);
     }
-  }
-}
-
-void BareGBTDecoder::printStatus(int maxelink) const
-{
-  std::cout << fmt::format("BareGBTDecoder(CRU{}-GBT{}) # GBT words seen {}\n", mCruId, mGbtId, mNofGbtWordsSeens);
-  auto n = mElinks.size();
-  if (maxelink > 0) {
-    n = maxelink;
-  }
-  for (int i = 0; i < n; i++) {
-    const auto& e = mElinks[i];
-    std::cout << e << "\n";
   }
 }
 

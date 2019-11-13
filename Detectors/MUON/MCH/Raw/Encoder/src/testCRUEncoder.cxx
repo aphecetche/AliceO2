@@ -22,7 +22,6 @@
 #include <fmt/printf.h>
 
 using namespace o2::mch::raw;
-using namespace o2::mch::raw::dataformat;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
@@ -30,7 +29,7 @@ BOOST_AUTO_TEST_SUITE(cruencoder)
 
 BOOST_AUTO_TEST_CASE(StartHBFrameBunchCrossingMustBe12Bits)
 {
-  auto cru = createCRUEncoder<Bare, SampleMode>(0);
+  auto cru = createCRUEncoder<BareFormat, SampleMode>(0);
   BOOST_CHECK_THROW(cru->startHeartbeatFrame(0, 1 << 12), std::invalid_argument);
   BOOST_CHECK_NO_THROW(cru->startHeartbeatFrame(0, 0xFFF));
 }
@@ -38,7 +37,7 @@ BOOST_AUTO_TEST_CASE(StartHBFrameBunchCrossingMustBe12Bits)
 BOOST_AUTO_TEST_CASE(EmptyEncoderHasEmptyBufferIfPhaseIsZero)
 {
   srand(time(nullptr));
-  auto cru = createCRUEncoderNoPhase<Bare, SampleMode>(0);
+  auto cru = createCRUEncoderNoPhase<BareFormat, SampleMode>(0);
   cru->startHeartbeatFrame(12345, 123);
   std::vector<uint8_t> buffer;
   cru->moveToBuffer(buffer);
@@ -48,7 +47,7 @@ BOOST_AUTO_TEST_CASE(EmptyEncoderHasEmptyBufferIfPhaseIsZero)
 BOOST_AUTO_TEST_CASE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase)
 {
   srand(time(nullptr));
-  auto cru = createCRUEncoder<Bare, SampleMode>(0);
+  auto cru = createCRUEncoder<BareFormat, SampleMode>(0);
   cru->startHeartbeatFrame(12345, 123);
   std::vector<uint8_t> buffer;
   cru->moveToBuffer(buffer);
@@ -58,7 +57,7 @@ BOOST_AUTO_TEST_CASE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase)
 BOOST_AUTO_TEST_CASE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZero)
 {
   srand(time(nullptr));
-  auto cru = createCRUEncoderNoPhase<Bare, SampleMode>(0);
+  auto cru = createCRUEncoderNoPhase<BareFormat, SampleMode>(0);
   cru->startHeartbeatFrame(12345, 123);
   cru->startHeartbeatFrame(12345, 125);
   cru->startHeartbeatFrame(12345, 312);
@@ -69,7 +68,7 @@ BOOST_AUTO_TEST_CASE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZero)
 
 std::vector<uint8_t> createCRUBuffer(int cruId)
 {
-  auto cru = createCRUEncoderNoPhase<Bare, ChargeSumMode>(cruId);
+  auto cru = createCRUEncoderNoPhase<BareFormat, ChargeSumMode>(cruId);
 
   uint32_t bx(0);
   uint8_t solarId(0);

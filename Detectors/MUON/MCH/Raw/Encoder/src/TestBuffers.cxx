@@ -14,7 +14,6 @@
 #include "MCHRawCommon/DataFormats.h"
 
 using namespace o2::mch::raw;
-using namespace o2::mch::raw::dataformat;
 
 std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
 {
@@ -43,7 +42,7 @@ std::vector<uint8_t> createBarePedestalBuffer(int elinkId)
 {
   uint8_t cruId(0);
 
-  auto cru = createCRUEncoderNoPhase<Bare, SampleMode>(cruId);
+  auto cru = createCRUEncoderNoPhase<BareFormat, SampleMode>(cruId);
 
   return encodePedestalBuffer(*cru, elinkId);
 }
@@ -52,7 +51,7 @@ std::vector<uint8_t> createUserLogicPedestalBuffer(int elinkId)
 {
   uint8_t cruId(0);
 
-  auto cru = createCRUEncoder<UserLogic, SampleMode>(cruId);
+  auto cru = createCRUEncoder<UserLogicFormat, SampleMode>(cruId);
 
   return encodePedestalBuffer(*cru, elinkId);
 }

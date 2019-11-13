@@ -9,11 +9,7 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawEncoder
-               SOURCES src/Encoder.cxx
-                       src/Paginator.cxx
-                       src/UserLogicElinkEncoderMerger.cxx
-                       src/BitSet.cxx
-                       src/BareElinkEncoderMerger.cxx
+               SOURCES src/Encoder.cxx src/Paginator.cxx src/BitSet.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 if(BUILD_TESTING)
@@ -22,7 +18,7 @@ if(BUILD_TESTING)
               SOURCES src/testElinkEncoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
   o2_add_test(gbt-encoder
               SOURCES src/testGBTEncoder.cxx
@@ -34,13 +30,13 @@ if(BUILD_TESTING)
               SOURCES src/testCRUEncoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
   o2_add_test(encoder
               SOURCES src/testEncoder.cxx src/TestBuffers.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
   o2_add_test(paginator
               SOURCES src/testPaginator.cxx src/TestBuffers.cxx
@@ -52,13 +48,13 @@ if(BUILD_TESTING)
               SOURCES src/testBitSet.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder Boost::boost fmt::fmt)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
   o2_add_test(bare-elink-encoder
               SOURCES src/testBareElinkEncoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder Boost::boost)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
 endif()
 
