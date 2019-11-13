@@ -33,7 +33,7 @@ namespace o2::mch::raw
 /// that mimics the way Elinks see data.
 
 template <typename CHARGESUM>
-class ElinkEncoder<Bare, CHARGESUM>
+class ElinkEncoder<BareFormat, CHARGESUM>
 {
  public:
   /// Constructs an Encoder for one Elink.
@@ -74,7 +74,7 @@ class ElinkEncoder<Bare, CHARGESUM>
   /// reset our local bunch crossing counter
   void resetLocalBunchCrossing();
 
-  friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder<Bare, CHARGESUM>& enc);
+  friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder<BareFormat, CHARGESUM>& enc);
 
   /// converts the bits within a range into an integer value.
   /// throws if the range [a,b] does not fit within 64 bits.
@@ -110,9 +110,9 @@ const BitSet sync(sampaSync().uint64(), 50);
 }
 
 template <typename CHARGESUM>
-ElinkEncoder<Bare, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
-                                            uint8_t chip,
-                                            int phase)
+ElinkEncoder<BareFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
+                                                  uint8_t chip,
+                                                  int phase)
   : mElinkId(elinkId),
     mChipAddress(chip),
     mSampaHeader{},
@@ -123,8 +123,8 @@ ElinkEncoder<Bare, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
     mLocalBunchCrossing{0},
     mPhase{phase}
 {
-  assertIsInRange("elinkId", elinkId, 0, 39);
-  assertIsInRange("chip", chip, 0, 15);
+  impl::assertIsInRange("elinkId", elinkId, 0, 39);
+  impl::assertIsInRange("chip", chip, 0, 15);
 
   // the phase is used to "simulate" a possible different timing alignment between elinks.
 
@@ -141,7 +141,7 @@ ElinkEncoder<Bare, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::addChannelData(uint8_t chId, const std::vector<SampaCluster>& data)
+void ElinkEncoder<BareFormat, CHARGESUM>::addChannelData(uint8_t chId, const std::vector<SampaCluster>& data)
 {
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
@@ -163,7 +163,7 @@ void ElinkEncoder<Bare, CHARGESUM>::addChannelData(uint8_t chId, const std::vect
 
 /// append the data of a SampaCluster
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::append(const SampaCluster& sc)
+void ElinkEncoder<BareFormat, CHARGESUM>::append(const SampaCluster& sc)
 {
   append10(sc.nofSamples());
   append10(sc.timestamp);
@@ -171,13 +171,13 @@ void ElinkEncoder<Bare, CHARGESUM>::append(const SampaCluster& sc)
 }
 
 template <>
-void ElinkEncoder<Bare, ChargeSumMode>::appendCharges(const SampaCluster& sc)
+void ElinkEncoder<BareFormat, ChargeSumMode>::appendCharges(const SampaCluster& sc)
 {
   append20(sc.chargeSum);
 }
 
 template <>
-void ElinkEncoder<Bare, SampleMode>::appendCharges(const SampaCluster& sc)
+void ElinkEncoder<BareFormat, SampleMode>::appendCharges(const SampaCluster& sc)
 {
   for (auto& s : sc.samples) {
     append10(s);
@@ -186,7 +186,7 @@ void ElinkEncoder<Bare, SampleMode>::appendCharges(const SampaCluster& sc)
 
 /// append one bit (either set or unset)
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::append(bool value)
+void ElinkEncoder<BareFormat, CHARGESUM>::append(bool value)
 {
   mBitSet.append(value);
   mNofBitSeen++;
@@ -194,7 +194,7 @@ void ElinkEncoder<Bare, CHARGESUM>::append(bool value)
 
 /// append 10 bits (if value is more than 10 bits an exception is thrown)
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::append10(uint16_t value)
+void ElinkEncoder<BareFormat, CHARGESUM>::append10(uint16_t value)
 {
   mBitSet.append(value, 10);
   mNofBitSeen += 10;
@@ -202,7 +202,7 @@ void ElinkEncoder<Bare, CHARGESUM>::append10(uint16_t value)
 
 /// append 20 bits (if value is more than 20 bits an exception is thrown)
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::append20(uint32_t value)
+void ElinkEncoder<BareFormat, CHARGESUM>::append20(uint32_t value)
 {
   mBitSet.append(value, 20);
   mNofBitSeen += 20;
@@ -210,14 +210,14 @@ void ElinkEncoder<Bare, CHARGESUM>::append20(uint32_t value)
 
 /// append 50 bits (if value is more than 50 bits an exception is thrown)
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::append50(uint64_t value)
+void ElinkEncoder<BareFormat, CHARGESUM>::append50(uint64_t value)
 {
   mBitSet.append(value, 50);
   mNofBitSeen += 50;
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::assertSync()
+void ElinkEncoder<BareFormat, CHARGESUM>::assertSync()
 {
   bool firstSync = (mNofSync == 0);
 
@@ -238,7 +238,7 @@ void ElinkEncoder<Bare, CHARGESUM>::assertSync()
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::clear()
+void ElinkEncoder<BareFormat, CHARGESUM>::clear()
 {
   // we are not resetting the global counters mNofSync, mNofBitSeen,
   // just the bit stream
@@ -246,7 +246,7 @@ void ElinkEncoder<Bare, CHARGESUM>::clear()
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::fillWithSync(int upto)
+void ElinkEncoder<BareFormat, CHARGESUM>::fillWithSync(int upto)
 {
   auto d = upto - len();
   mSyncIndex = circularAppend(mBitSet, sync, mSyncIndex, d);
@@ -255,41 +255,41 @@ void ElinkEncoder<Bare, CHARGESUM>::fillWithSync(int upto)
 }
 
 template <typename CHARGESUM>
-bool ElinkEncoder<Bare, CHARGESUM>::get(int i) const
+bool ElinkEncoder<BareFormat, CHARGESUM>::get(int i) const
 {
-  assertIsInRange("i", i, 0, len() - 1);
+  impl::assertIsInRange("i", i, 0, len() - 1);
   return mBitSet.get(i);
 }
 
 template <typename CHARGESUM>
-uint8_t ElinkEncoder<Bare, CHARGESUM>::id() const
+uint8_t ElinkEncoder<BareFormat, CHARGESUM>::id() const
 {
   return mChipAddress;
 }
 
 template <typename CHARGESUM>
-int ElinkEncoder<Bare, CHARGESUM>::len() const
+int ElinkEncoder<BareFormat, CHARGESUM>::len() const
 {
   return mBitSet.len();
 }
 
 template <typename CHARGESUM>
-uint64_t ElinkEncoder<Bare, CHARGESUM>::range(int a, int b) const
+uint64_t ElinkEncoder<BareFormat, CHARGESUM>::range(int a, int b) const
 {
   return mBitSet.subset(a, b).uint64(0, b - a + 1);
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::resetLocalBunchCrossing()
+void ElinkEncoder<BareFormat, CHARGESUM>::resetLocalBunchCrossing()
 {
   mLocalBunchCrossing = mPhase;
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<Bare, CHARGESUM>::setHeader(uint8_t chId, uint16_t n10)
+void ElinkEncoder<BareFormat, CHARGESUM>::setHeader(uint8_t chId, uint16_t n10)
 {
-  assertNofBits("chId", chId, 5);
-  assertNofBits("nof10BitWords", n10, 10);
+  impl::assertNofBits("chId", chId, 5);
+  impl::assertNofBits("nof10BitWords", n10, 10);
   mSampaHeader.bunchCrossingCounter(mLocalBunchCrossing); //FIXME: how is this one evolving ?
   mSampaHeader.packetType(SampaPacketType::Data);
   mSampaHeader.nof10BitWords(n10);
@@ -298,18 +298,6 @@ void ElinkEncoder<Bare, CHARGESUM>::setHeader(uint8_t chId, uint16_t n10)
   mSampaHeader.headerParity(computeHeaderParity(mSampaHeader.uint64()));
 }
 
-template <typename CHARGESUM>
-std::ostream& operator<<(std::ostream& os, const ElinkEncoder<Bare, CHARGESUM>& enc)
-{
-  os << fmt::sprintf(
-    "ELINK ID %2d chip %2d nsync %3llu "
-    "len %6llu syncindex %2d nbitseen %10d %10s | %s",
-    enc.mElinkId, enc.mChipAddress, enc.mNofSync, enc.mBitSet.len(),
-    enc.mSyncIndex, enc.mNofBitSeen,
-    (CHARGESUM::v ? "CLUSUM" : "SAMPLE"),
-    compactString(enc.mBitSet));
-  return os;
-}
 } // namespace o2::mch::raw
 
 #endif

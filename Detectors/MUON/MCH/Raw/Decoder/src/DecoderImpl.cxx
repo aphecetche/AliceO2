@@ -30,7 +30,7 @@ template <typename RDH, typename CRUDECODER>
 DecoderImpl<RDH, CRUDECODER>::DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler,
                                           SampaChannelHandler channelHandler,
                                           bool chargeSumMode) : mRdhHandler(rdhHandler),
-                                                                mCruDecoders{::makeArray<18>([=](size_t i) { return CRUDECODER(i, channelHandler, chargeSumMode); })},
+                                                                mCruDecoders{impl::makeArray<18>([=](size_t i) { return CRUDECODER(i, channelHandler, chargeSumMode); })},
                                                                 mOrbit{0},
                                                                 mNofOrbitSeen{0},
                                                                 mNofOrbitJumps{0}
@@ -63,7 +63,7 @@ int DecoderImpl<RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffer)
     if (!isValid(rdh)) {
       std::cout << "Got an invalid RDH\n";
       std::cout << rdh << "\n";
-      dumpBuffer(buffer.subspan(index, nofRDHWords));
+      impl::dumpBuffer(buffer.subspan(index, nofRDHWords));
       break;
     }
     ++nofRDHs;

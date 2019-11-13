@@ -16,7 +16,7 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
-#include "RefBuffers.h"
+#include "TestBuffers.h"
 
 using namespace o2::mch::raw;
 
