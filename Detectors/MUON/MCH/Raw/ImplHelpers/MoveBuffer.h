@@ -12,9 +12,14 @@
 #define O2_MCH_RAW_IMPL_HELPERS_MOVEBUFFER_H
 
 #include <vector>
+#include <iostream>
 
-/// Move the content of b64 to b8.
-/// and clears b64.
+namespace o2::mch::raw::impl
+{
+
+/// Move the content of b64 to b8 and clears b64.
+/// Returns the number of bytes moved into b8.
+
 size_t moveBuffer(std::vector<uint64_t>& b64,
                   std::vector<uint8_t>& b8,
                   uint64_t prefix = 0)
@@ -31,5 +36,6 @@ size_t moveBuffer(std::vector<uint64_t>& b64,
   b64.clear();
   return b8.size() - s;
 }
+} // namespace o2::mch::raw::impl
 
 #endif

@@ -54,14 +54,14 @@ CRUDecoder<GBTDECODER>::CRUDecoder(int cruId,
                                    SampaChannelHandler sampaChannelHandler,
                                    bool chargeSumMode)
   : mCruId{cruId},
-    mGbtDecoders{::makeArray<24>([=](size_t i) { return GBTDECODER(cruId, i, sampaChannelHandler, chargeSumMode); })}
+    mGbtDecoders{impl::makeArray<24>([=](size_t i) { return GBTDECODER(cruId, i, sampaChannelHandler, chargeSumMode); })}
 {
 }
 
 template <typename GBTDECODER>
 void CRUDecoder<GBTDECODER>::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
-  assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
+  impl::assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
   if (buffer.size() % 16) {
     throw std::invalid_argument("buffer size should be a multiple of 16");
   }

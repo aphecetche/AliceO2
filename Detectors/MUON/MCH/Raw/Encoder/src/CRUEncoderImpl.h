@@ -11,14 +11,18 @@
 #ifndef O2_MCH_RAW_CRU_ENCODER_IMPL_H
 #define O2_MCH_RAW_CRU_ENCODER_IMPL_H
 
-#include <cstdlib>
-#include <vector>
-#include <map>
 #include "MCHRawEncoder/CRUEncoder.h"
+#include "Assertions.h"
 #include "GBTEncoder.h"
-
-#include <iostream>
+#include "Headers/RAWDataHeader.h"
+#include "MCHRawCommon/RDHManip.h"
+#include "MakeArray.h"
+#include <algorithm>
+#include <cstdlib>
 #include <fmt/format.h>
+#include <iostream>
+#include <map>
+#include <vector>
 
 namespace o2::mch::raw
 {
@@ -62,13 +66,6 @@ class CRUEncoderImpl : public CRUEncoder
   size_t moveToBuffer(std::vector<uint8_t>& buffer);
   ///@}
 
-  /** @name Methods for testing.
-    */
-  ///@{
-  /// Print the current status of the encoder, for as much as maxelink elinks.
-  void printStatus(int maxgbt = -1) const;
-  ///@}
-
  private:
   void closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
   void gbts2buffer(uint32_t orbit, uint16_t bunchCrossing);
@@ -82,8 +79,85 @@ class CRUEncoderImpl : public CRUEncoder
   bool mFirstHBFrame;
 };
 
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
+  : mCruId(cruId),
+    mOrbit{},
+    mBunchCrossing{},
+    mBuffer{},
+    mGBTs{impl::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(cruId, i); })},
+    mFirstHBFrame{true}
+{
+  impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
+  mBuffer.reserve(1 << 10);
+}
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
+{
+  mGBTs[solarId].addChannelData(elinkId, chId, data);
+}
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
+{
+  // append to our own buffer all the words buffers from all our gbts,
+  // prepending each one with a corresponding Raw Data Header (RDH)
+
+  for (auto& gbt : mGBTs) {
+    std::vector<uint8_t> gbtBuffer;
+    gbt.moveToBuffer(gbtBuffer);
+    if (!gbtBuffer.size()) {
+      // unlike in real life we discard gbt content when
+      // it's completely void of data
+      continue;
+    }
+    assert(gbtBuffer.size() % 4 == 0);
+    auto payloadSize = gbtBuffer.size(); // in bytes
+    auto rdh = createRDH<RDH>(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
+    // append RDH first ...
+    appendRDH(mBuffer, rdh);
+    // ... and then the corresponding payload
+    for (auto i = 0; i < gbtBuffer.size(); i += 4) {
+      mBuffer.emplace_back(gbtBuffer[i] | (gbtBuffer[i + 1] << 8) | (gbtBuffer[i + 2] << 16) | (gbtBuffer[i + 3] << 24));
+    }
+  }
+}
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+size_t CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::moveToBuffer(std::vector<uint8_t>& buffer)
+{
+  closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  for (auto& w : mBuffer) {
+    buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
+    buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
+  }
+  auto s = mBuffer.size();
+  mBuffer.clear();
+  return s;
+}
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  gbts2buffer(orbit, bunchCrossing);
+}
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  impl::assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
+  // build a buffer with the _previous_ (orbit,bx)
+  if (!mFirstHBFrame) {
+    closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  }
+  mFirstHBFrame = false;
+  // then save the (orbit,bx) for next time
+  mOrbit = orbit;
+  mBunchCrossing = bunchCrossing;
+}
+
 } // namespace o2::mch::raw
-
-#include "CRUEncoderImpl.inl"
-
 #endif

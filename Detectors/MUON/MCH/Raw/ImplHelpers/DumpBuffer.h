@@ -15,6 +15,9 @@
 #include <iostream>
 #include <fmt/format.h>
 
+namespace o2::mch::raw::impl
+{
+
 template <typename T, std::enable_if_t<std::is_integral<T>::value, int> = 1>
 void dumpBuffer(gsl::span<T> buffer)
 {
@@ -31,4 +34,5 @@ void dumpBuffer(gsl::span<T> buffer)
   std::cout << "\n";
 }
 
+} // namespace o2::mch::raw::impl
 #endif

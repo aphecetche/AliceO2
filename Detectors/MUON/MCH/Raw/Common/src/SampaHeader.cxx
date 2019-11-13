@@ -210,7 +210,7 @@ bool SampaHeader::hasParityError() const
 
 void SampaHeader::uint64(uint64_t value)
 {
-  assertNofBits("sampa header", value, 50);
+  impl::assertNofBits("sampa header", value, 50);
   mValue = value;
 }
 

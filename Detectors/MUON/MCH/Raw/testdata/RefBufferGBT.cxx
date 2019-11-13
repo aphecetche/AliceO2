@@ -12,15 +12,19 @@
 #include "MCHRawCommon/DataFormats.h"
 #include <array>
 
-using namespace o2::mch::raw::dataformat;
-
 extern std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE_CHARGESUM;
 extern std::array<uint8_t, 96> REF_BUFFER_GBT_USER_LOGIC_CHARGESUM;
 
 template <>
-std::vector<uint8_t> REF_BUFFER_GBT<Bare, ChargeSumMode>()
+std::vector<uint8_t> REF_BUFFER_GBT<o2::mch::raw::BareFormat, o2::mch::raw::ChargeSumMode>()
 {
   return {REF_BUFFER_GBT_BARE_CHARGESUM.begin(), REF_BUFFER_GBT_BARE_CHARGESUM.end()};
+}
+
+template <>
+std::vector<uint8_t> REF_BUFFER_GBT<o2::mch::raw::UserLogicFormat, o2::mch::raw::ChargeSumMode>()
+{
+  return {REF_BUFFER_GBT_USER_LOGIC_CHARGESUM.begin(), REF_BUFFER_GBT_USER_LOGIC_CHARGESUM.end()};
 }
 
 std::array<uint8_t, 2560> REF_BUFFER_GBT_BARE_CHARGESUM =
