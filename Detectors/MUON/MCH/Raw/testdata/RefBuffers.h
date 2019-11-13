@@ -12,7 +12,7 @@
 #define O2_MCH_RAW_TEST_REF_BUFFERS_H
 
 #include <vector>
-#include <cstdlib>
+#include <cstdint>
 
 template <typename DataFormat, typename Mode>
 extern std::vector<uint8_t> REF_BUFFER_GBT();
