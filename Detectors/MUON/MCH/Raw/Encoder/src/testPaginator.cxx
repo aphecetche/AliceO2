@@ -16,17 +16,18 @@
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
-#include <iostream>
+#include "DumpBuffer.h"
+#include "Headers/RAWDataHeader.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
-#include <fstream>
-#include <fmt/printf.h>
+#include "MCHRawEncoder/CRUEncoder.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawEncoder/Paginator.h"
-#include "MCHRawEncoder/CRUEncoder.h"
-#include <boost/test/data/test_case.hpp>
-#include "Headers/RAWDataHeader.h"
 #include "TestBuffers.h"
-#include "MCHRawCommon/DataFormats.h"
+#include <boost/test/data/test_case.hpp>
+#include <fmt/printf.h>
+#include <fstream>
+#include <iostream>
 
 using namespace o2::mch::raw;
 using namespace o2::header;
@@ -122,6 +123,7 @@ BOOST_AUTO_TEST_CASE(GenerateUserLogicFile)
 {
   std::ofstream out("test.raw", std::ios::binary);
   auto buffer = impl::createPedestalBuffer<UserLogicFormat, SampleMode>(0);
+  impl::dumpBuffer(buffer);
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);
   out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
