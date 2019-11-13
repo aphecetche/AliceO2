@@ -68,8 +68,6 @@ class ElinkEncoder<BareFormat, CHARGESUM>
   /// reset our local bunch crossing counter
   void resetLocalBunchCrossing();
 
-  friend std::ostream& operator<<(std::ostream& os, const ElinkEncoder<BareFormat, CHARGESUM>& enc);
-
   /// converts the bits within a range into an integer value.
   /// throws if the range [a,b] does not fit within 64 bits.
   uint64_t range(int a, int b) const;
