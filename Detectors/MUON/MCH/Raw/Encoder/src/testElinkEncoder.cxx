@@ -29,32 +29,23 @@ BOOST_AUTO_TEST_SUITE(elinkencoder)
 
 typedef boost::mpl::list<BareFormat, UserLogicFormat> testTypes;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(CtorMustUse4BitsOnlyForChipAddress, T, testTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(CtorMustHaveElinkIdBetween0And39, T, testTypes)
 {
   using Encoder = ElinkEncoder<T, ChargeSumMode>;
-
-  BOOST_CHECK_THROW(Encoder enc(0, 32), std::invalid_argument);
-  BOOST_CHECK_THROW(Encoder enc(0, 16), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(Encoder enc(0, 15));
-}
-
-BOOST_AUTO_TEST_CASE_TEMPLATE(CtorMustHaveIdBetween0And39, T, testTypes)
-{
-  using Encoder = ElinkEncoder<T, ChargeSumMode>;
-  BOOST_CHECK_THROW(Encoder enc(40, 0), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(Encoder enc(39, 0));
+  BOOST_CHECK_THROW(Encoder enc(40), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(Encoder enc(39));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(AddEmptyDataShouldThrow, T, testTypes)
 {
-  ElinkEncoder<T, ChargeSumMode> enc(0, 0);
+  ElinkEncoder<T, ChargeSumMode> enc(0);
   std::vector<SampaCluster> data;
   BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(AddMixedDataShouldThrow, T, testTypes)
 {
-  ElinkEncoder<T, SampleMode> enc(0, 0);
+  ElinkEncoder<T, SampleMode> enc(0);
   std::vector<SampaCluster> data;
   std::vector<uint16_t> samples{123, 456, 789};
   data.emplace_back(0, 1000);
@@ -64,7 +55,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AddMixedDataShouldThrow, T, testTypes)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(ChannelIdIs5Bits, T, testTypes)
 {
-  ElinkEncoder<T, ChargeSumMode> enc(0, 0);
+  ElinkEncoder<T, ChargeSumMode> enc(0);
   std::vector<SampaCluster> data = {SampaCluster(20, 10)};
 
   BOOST_CHECK_THROW(enc.addChannelData(32, data),

@@ -18,6 +18,7 @@
 namespace o2::mch::raw
 {
 class SampaCluster;
+class SampaHeader;
 
 template <typename FORMAT, typename CHARGESUM>
 class ElinkEncoder
@@ -31,6 +32,9 @@ class ElinkEncoder
 
   void clear();
 };
+
+SampaHeader buildHeader(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
+
 } // namespace o2::mch::raw
 
 #endif
