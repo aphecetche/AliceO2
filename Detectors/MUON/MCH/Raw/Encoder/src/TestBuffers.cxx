@@ -9,11 +9,11 @@
 // or submit itself to any jurisdiction.
 
 #include "TestBuffers.h"
-#include "MCHRawEncoder/Encoder.h"
 #include "MCHRawCommon/SampaCluster.h"
-#include "MCHRawCommon/DataFormats.h"
+#include "MCHRawEncoder/CRUEncoder.h"
 
-using namespace o2::mch::raw;
+namespace o2::mch::raw::impl
+{
 
 std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
 {
@@ -37,21 +37,4 @@ std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
   cru.moveToBuffer(buffer);
   return buffer;
 }
-
-std::vector<uint8_t> createBarePedestalBuffer(int elinkId)
-{
-  uint8_t cruId(0);
-
-  auto cru = createCRUEncoderNoPhase<BareFormat, SampleMode>(cruId);
-
-  return encodePedestalBuffer(*cru, elinkId);
-}
-
-std::vector<uint8_t> createUserLogicPedestalBuffer(int elinkId)
-{
-  uint8_t cruId(0);
-
-  auto cru = createCRUEncoder<UserLogicFormat, SampleMode>(cruId);
-
-  return encodePedestalBuffer(*cru, elinkId);
-}
+} // namespace o2::mch::raw::impl
