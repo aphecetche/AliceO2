@@ -111,7 +111,7 @@ template <typename FORMAT, typename CHARGESUM>
 GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(int cruId, int linkId)
   : mCruId(cruId),
     mGbtId(linkId),
-    mElinks{impl::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, i % 16, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
+    mElinks{impl::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
     mGbtWords{},
     mElinkMerger{}
 {
