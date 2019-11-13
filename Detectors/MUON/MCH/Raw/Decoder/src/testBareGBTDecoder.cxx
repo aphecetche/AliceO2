@@ -18,12 +18,11 @@
 #include <fmt/format.h>
 #include <array>
 #include "MCHRawCommon/RDHManip.h"
-#include "MCHRawCommon/DatFormats.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "RefBuffers.h"
 #include "DumpBuffer.h"
 
 using namespace o2::mch::raw;
-using namespace o2::mch::raw::dataformat;
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
@@ -58,9 +57,9 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
   std::vector<std::string> result;
 
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  auto buf = REF_BUFFER_GBT<Bare, ChargeSumMode>();
+  auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   gsl::span<uint8_t> buffer(buf);
-  dumpBuffer(buffer);
+  impl::dumpBuffer(buffer);
   dec.append(buffer);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",
@@ -81,7 +80,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
   BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
-  auto buf = REF_BUFFER_GBT_BARE<true>();
+  auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   dec.append(buf);
   std::vector<std::string> expected{
     "chip-3-ch-13-ts-12-q-163",

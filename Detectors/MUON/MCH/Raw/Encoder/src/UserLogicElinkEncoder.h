@@ -15,6 +15,7 @@
 #include "Assertions.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawCommon/SampaHeader.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "MoveBuffer.h"
 #include "NofBits.h"
 #include <cstdlib>
@@ -24,7 +25,7 @@ namespace o2::mch::raw
 {
 
 template <typename CHARGESUM>
-class ElinkEncoder<UserLogic, CHARGESUM>
+class ElinkEncoder<UserLogicFormat, CHARGESUM>
 {
  public:
   explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
@@ -32,6 +33,8 @@ class ElinkEncoder<UserLogic, CHARGESUM>
   void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
 
   size_t moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix);
+
+  void clear();
 
  private:
   uint8_t mElinkId;     //< Elink id 0..39
@@ -54,16 +57,16 @@ uint64_t error64(int error)
 } // namespace
 
 template <typename CHARGESUM>
-ElinkEncoder<UserLogic, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
-                                                 uint8_t chip,
-                                                 int phase)
+ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
+                                                       uint8_t chip,
+                                                       int phase)
   : mElinkId{elinkId},
     mChipAddress{chip},
     mHasSync{false},
     mBuffer{}
 {
-  assertIsInRange("elinkId", elinkId, 0, 39);
-  assertIsInRange("chip", chip, 0, 15);
+  impl::assertIsInRange("elinkId", elinkId, 0, 39);
+  impl::assertIsInRange("chip", chip, 0, 15);
 }
 
 uint16_t chipAddress(int elinkId, int chId)
@@ -103,14 +106,14 @@ void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<UserLogic, CHARGESUM>::addChannelData(uint8_t chId,
-                                                        const std::vector<SampaCluster>& data)
+void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
+                                                              const std::vector<SampaCluster>& data)
 {
-  assertNofBits("chId", chId, 5);
+  impl::assertNofBits("chId", chId, 5);
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
   }
-  assertNotMixingClusters(data, CHARGESUM());
+  assertNotMixingClusters<CHARGESUM>(data);
 
   int error{0}; // FIXME: what to do with error ?
 
@@ -126,11 +129,12 @@ void ElinkEncoder<UserLogic, CHARGESUM>::addChannelData(uint8_t chId,
   mBuffer.emplace_back(b9 | headerWord(mElinkId, chId, data));
 
   int index{4};
+  CHARGESUM ref;
   uint64_t word{0};
   for (auto& cluster : data) {
     append(b9, mBuffer, index, word, cluster.nofSamples());
     append(b9, mBuffer, index, word, cluster.timestamp);
-    if (CHARGESUM() == true) {
+    if (ref() == true) {
       append(b9, mBuffer, index, word, cluster.chargeSum & 0x3FF);
       append(b9, mBuffer, index, word, (cluster.chargeSum & 0xFFC00) >> 10);
     } else {
@@ -143,9 +147,15 @@ void ElinkEncoder<UserLogic, CHARGESUM>::addChannelData(uint8_t chId,
     append(b9, mBuffer, index, word, 0);
   }
 }
+template <typename CHARGESUM>
+void ElinkEncoder<UserLogicFormat, CHARGESUM>::clear()
+{
+  mBuffer.clear();
+  mHasSync = false;
+}
 
 template <typename CHARGESUM>
-size_t ElinkEncoder<UserLogic, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix)
+size_t ElinkEncoder<UserLogicFormat, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix)
 {
   mHasSync = false;
   auto n = buffer.size();

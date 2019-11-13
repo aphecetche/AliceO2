@@ -11,14 +11,26 @@
 #ifndef O2_MCH_RAW_ELINK_ENCODER_H
 #define O2_MCH_RAW_ELINK_ENCODER_H
 
-#include "MCHRawCommon/DataFormats.h"
+#include <vector>
+#include <cstdint>
+#include <gsl/span>
 
 namespace o2::mch::raw
 {
-using namespace o2::mch::raw::dataformat;
-template <typename Format, typename ChargeSumMode>
-struct ElinkEncoder {
-};
+class SampaCluster;
 
+template <typename FORMAT, typename CHARGESUM>
+class ElinkEncoder
+{
+ public:
+  explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
+
+  void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
+
+  size_t moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix);
+
+  void clear();
+};
 } // namespace o2::mch::raw
+
 #endif

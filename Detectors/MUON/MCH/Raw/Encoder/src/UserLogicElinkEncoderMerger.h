@@ -8,21 +8,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "ElinkEncoderMerger.h"
+#ifndef O2_MCH_RAW_ENCODER_USER_LOGIC_ENCODER_MERGER_H
+#define O2_MCH_RAW_ENCODER_USER_LOGIC_ENCODER_MERGER_H
+
 #include "UserLogicElinkEncoder.h"
+#include "MCHRawCommon/DataFormats.h"
 
 namespace o2::mch::raw
 {
 
-template <>
-void ElinkEncoderMerger<UserLogic, ChargeSum>(int gbtId,
-                                              gsl::span<ElinkEncoder<UserLogic, ChargeSum>>& elinks,
-                                              gsl::span<uint64_t>& b64)
-{
-  const uint64_t gbtIdMask((static_cast<uint64_t>(gbtId & 0x1F) << 59));
-  for (auto& elink : elinks) {
-    elink.moveToBuffer(b64, gbtIdMask);
-  }
-}
+template <typename CHARGESUM>
+struct ElinkEncoderMerger<UserLogicFormat, CHARGESUM> {
 
+  void operator()(int gbtId,
+                  gsl::span<ElinkEncoder<UserLogicFormat, CHARGESUM>> elinks,
+                  std::vector<uint64_t>& b64)
+  {
+    const uint64_t gbtIdMask((static_cast<uint64_t>(gbtId & 0x1F) << 59));
+    for (auto& elink : elinks) {
+      elink.moveToBuffer(b64, gbtIdMask);
+    }
+  }
+};
 } // namespace o2::mch::raw
+#endif

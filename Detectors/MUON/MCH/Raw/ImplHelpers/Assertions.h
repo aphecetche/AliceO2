@@ -13,6 +13,9 @@
 
 #include <fmt/format.h>
 
+namespace o2::mch::raw::impl
+{
+
 inline int assertIsInRange(std::string what, int value, int min, int max)
 {
   if (value < min || value > max) {
@@ -20,5 +23,7 @@ inline int assertIsInRange(std::string what, int value, int min, int max)
   }
   return value;
 }
+
+} // namespace o2::mch::raw::impl
 
 #endif

@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <fmt/format.h>
 
 namespace o2
 {
@@ -70,10 +71,19 @@ struct SampaCluster {
 // ensure all clusters are either in sample mode or in
 // chargesum mode, no mixing allowed
 template <typename CHARGESUM>
-void assertNotMixingClusters(const std::vector<SampaCluster>& data);
+void assertNotMixingClusters(const std::vector<SampaCluster>& data)
+{
+  assert(data.size() > 0);
+  CHARGESUM a;
+  auto refValue = a();
+  for (auto i = 0; i < data.size(); i++) {
+    if (data[i].isClusterSum() != refValue) {
+      throw std::invalid_argument(fmt::format("all cluster of this encoder should be of the same type ({}) but {}-th does not match ", (refValue ? "clusterSum" : "samples"), i));
+    }
+  }
+}
 
-std::ostream&
-  operator<<(std::ostream& os, const SampaCluster& sc);
+std::ostream& operator<<(std::ostream& os, const SampaCluster& sc);
 } // namespace raw
 } // namespace mch
 } // namespace o2

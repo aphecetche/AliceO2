@@ -16,6 +16,8 @@
 #include <cmath>
 #include <fmt/format.h>
 
+namespace o2::mch::raw::impl
+{
 template <typename T>
 int nofBits(T val)
 {
@@ -30,5 +32,6 @@ void assertNofBits(std::string_view msg, T value, int n)
     throw std::invalid_argument(fmt::format("{} : 0x{:x} has {} bits, which is more than the {} allowed", msg, value, nofBits(value), n));
   }
 }
+} // namespace o2::mch::raw::impl
 
 #endif

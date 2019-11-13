@@ -22,6 +22,7 @@
 #include "BareElinkDecoder.h"
 
 using namespace o2::mch::raw;
+using ::operator<<;
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {

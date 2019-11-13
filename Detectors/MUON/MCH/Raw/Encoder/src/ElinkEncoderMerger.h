@@ -12,14 +12,21 @@
 #define O2_MCH_RAW_ELINK_ENCODER_MERGER_H
 
 #include <gsl/span>
-#include "ElinkEncoder.h"
+#include <cstdint>
+#include <vector>
 
 namespace o2::mch::raw
 {
 template <typename FORMAT, typename CHARGESUM>
-using ElinkEncoderMerger = std::function<void(int gbtId,
-                                              gsl::span<ElinkEncoder<FORMAT, CHARGESUM>> elinks,
-                                              gsl::span<uint64_t> b64)>;
-}
+struct ElinkEncoder;
+
+template <typename FORMAT, typename CHARGESUM>
+struct ElinkEncoderMerger {
+  void operator()(int gbtId,
+                  gsl::span<ElinkEncoder<FORMAT, CHARGESUM>> elinks,
+                  std::vector<uint64_t>& b64);
+};
+
+} // namespace o2::mch::raw
 
 #endif

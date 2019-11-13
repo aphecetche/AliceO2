@@ -51,13 +51,6 @@ class CRUEncoder
   /// Returns the number of bytes added to buffer.
   virtual size_t moveToBuffer(std::vector<uint8_t>& buffer) = 0;
   ///@}
-
-  /** @name Methods for testing.
-    */
-  ///@{
-  /// Print the current status of the encoder, for as much as maxelink elinks.
-  virtual void printStatus(int maxgbt = -1) const = 0;
-  ///@}
 };
 
 } // namespace o2::mch::raw
