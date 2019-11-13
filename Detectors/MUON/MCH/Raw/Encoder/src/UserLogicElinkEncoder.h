@@ -72,6 +72,7 @@ void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t
   if (index < 0) {
     buffer.emplace_back(prefix | word);
     index = 4;
+    word = 0;
   }
 }
 

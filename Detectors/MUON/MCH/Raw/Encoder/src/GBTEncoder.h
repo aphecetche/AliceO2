@@ -41,10 +41,9 @@ class GBTEncoder
 {
  public:
   /// Constructor.
-  /// \param cruId the CRU this GBT is part of
   /// \param gbtId the id of this GBT. _Must_ be between 0 and 23
   /// or an exception is thrown
-  GBTEncoder(int cruId, int gbtId);
+  GBTEncoder(int gbtId);
 
   /** @name Main interface.
     */
@@ -80,7 +79,6 @@ class GBTEncoder
   int id() const { return mGbtId; }
 
  private:
-  int mCruId;                                              //< CRU this GBT belongs to
   int mGbtId;                                              //< id of this GBT (0..23)
   std::array<ElinkEncoder<FORMAT, CHARGESUM>, 40> mElinks; //< the 40 Elinks we manage
   std::vector<uint64_t> mGbtWords;                         //< the GBT words (each GBT word of 80 bits is represented by 2 64 bits words) we've accumulated so far
@@ -108,9 +106,8 @@ template <typename FORMAT, typename CHARGESUM>
 bool GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = false;
 
 template <typename FORMAT, typename CHARGESUM>
-GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(int cruId, int linkId)
-  : mCruId(cruId),
-    mGbtId(linkId),
+GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(int linkId)
+  : mGbtId(linkId),
     mElinks{impl::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
     mGbtWords{},
     mElinkMerger{}

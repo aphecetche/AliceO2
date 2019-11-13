@@ -32,9 +32,8 @@ template <typename FORMAT, typename MODE>
 std::vector<uint8_t> createGBTBuffer()
 {
   GBTEncoder<FORMAT, MODE>::forceNoPhase = true;
-  uint8_t cruId{0};
   uint8_t gbtId{23};
-  GBTEncoder<FORMAT, MODE> enc(cruId, gbtId);
+  GBTEncoder<FORMAT, MODE> enc(gbtId);
   uint32_t bx(0);
   uint16_t ts(12);
   int elinkId = 0;
@@ -76,8 +75,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderCtorLinkIdMustBeBetween0And23, T, testTypes)
 {
   using Encoder = GBTEncoder<T, ChargeSumMode>;
-  BOOST_CHECK_THROW(Encoder enc(0, 24), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(Encoder enc(0, 23));
+  BOOST_CHECK_THROW(Encoder enc(24), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(Encoder enc(23));
 }
 
 template <typename FORMAT, typename CHARGESUM>
@@ -98,7 +97,7 @@ float expectedSize<UserLogicFormat, ChargeSumMode>()
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAddFewChannels, T, testTypes)
 {
   GBTEncoder<T, ChargeSumMode>::forceNoPhase = true;
-  GBTEncoder<T, ChargeSumMode> enc(0, 0);
+  GBTEncoder<T, ChargeSumMode> enc(0);
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkId = 0;
@@ -133,7 +132,7 @@ float expectedMaxSize<UserLogicFormat, ChargeSumMode>()
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAdd64Channels, T, testTypes)
 {
   GBTEncoder<T, ChargeSumMode>::forceNoPhase = true;
-  GBTEncoder<T, ChargeSumMode> enc(0, 0);
+  GBTEncoder<T, ChargeSumMode> enc(0);
   std::vector<uint8_t> buffer;
   enc.moveToBuffer(buffer);
   uint32_t bx(0);
@@ -149,7 +148,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAdd64Channels, T, testTypes)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderMoveToBufferClearsTheInternalBuffer, T, testTypes)
 {
-  GBTEncoder<T, ChargeSumMode> enc(0, 0);
+  GBTEncoder<T, ChargeSumMode> enc(0);
   enc.addChannelData(0, 0, {SampaCluster(0, 10)});
   std::vector<uint8_t> buffer;
   size_t n = enc.moveToBuffer(buffer);

@@ -92,12 +92,24 @@ struct resetIndex {
 };
 
 // Guards
+struct atLeastOneSync {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    return fsm.nofSync > 0;
+  }
+};
+
 struct syncFound {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     const uint64_t sync = sampaSync().uint64();
-    return evt.data == sync;
+    if (evt.data == sync) {
+      fsm.nofSync++;
+      return true;
+    }
+    return false;
   }
 };
 
@@ -106,8 +118,6 @@ struct validHeader {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     fsm.sampaHeader = SampaHeader(evt.data);
-    std::cout << "HEADER\n";
-    std::cout << fsm.sampaHeader << "\n";
     fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
     return true;
   }
@@ -145,7 +155,6 @@ struct readSize {
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     fsm.clusterSize = fsm.pop10();
-    std::cout << "fsm.clusterSize=" << fsm.clusterSize << "\n";
   }
 };
 
@@ -173,20 +182,23 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
                               // clang-format off
   //   Start            Event         Next               Action            Guard
   // +---------------+---------+---------------+-----------------------+-------------+
-  Row< WaitingSync   , NewData , WaitingHeader , none                  , syncFound             >,
-  Row< WaitingHeader , NewData , ReadingSize   , none                  , validHeader           >,
+  Row< WaitingSync   , NewData , WaitingHeader , none                  , syncFound               >,
+  Row< WaitingSync   , none    , WaitingHeader , none                  , atLeastOneSync          >,
+  Row< WaitingHeader , NewData , ReadingSize   , resetIndex            , validHeader             >,
   Row< ReadingSize   , NewData , ReadingTime   , ActionSequence_
                                                  <mpl::vector<
                                                  saveData,
-                                                 readSize>>            , validSize             >,
-  Row< ReadingTime   , none    , ReadingSample , readTime              , none                  >,
+                                                 readSize>>            , validSize               >,
+  Row< ReadingTime   , none    , ReadingSample , readTime              , none                    >,
   Row< ReadingSample , none    , ReadingSample , readSample            , And_<moreDataToRead,
-                                                                              moreWordsToRead> >,
-  Row< ReadingSample , none    , WaitingData   , none                  , Not_<moreDataToRead>  >,
+                                                                              moreWordsToRead>   >,
+  Row< ReadingSample , none    , WaitingData   , none                  , Not_<
+                                                                           And_<moreDataToRead,
+                                                                                moreWordsToRead>>>,
   Row< WaitingData   , NewData , ReadingSample , ActionSequence_
                                                  <mpl::vector<
-                                                 saveData,resetIndex>> , moreWordsToRead       >,
-  Row< WaitingData   , none   , WaitingSync   , none                  , Not_<moreWordsToRead>  >
+                                                 saveData,resetIndex>> , moreWordsToRead         >,
+  Row< WaitingData   , none    , WaitingSync   , none                  , Not_<moreWordsToRead>   >
                               // clang-format on
                               > {
   };
@@ -228,6 +240,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
   uint16_t clusterTime{0};
   uint64_t data{0};
   size_t maskIndex{0};
+  size_t nofSync{0};
   std::vector<uint16_t> samples;
   SampaHeader sampaHeader;
   SampaChannelHandler channelHandler;
