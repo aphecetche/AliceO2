@@ -43,7 +43,8 @@ if(BUILD_TESTING)
               SOURCES src/testPaginator.cxx src/TestBuffers.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                                    O2::MCHRawImplHelpers)
 
   o2_add_test(bitset
               SOURCES src/testBitSet.cxx

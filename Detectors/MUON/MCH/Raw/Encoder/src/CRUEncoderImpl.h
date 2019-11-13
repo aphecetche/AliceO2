@@ -85,7 +85,7 @@ CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
     mOrbit{},
     mBunchCrossing{},
     mBuffer{},
-    mGBTs{impl::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(cruId, i); })},
+    mGBTs{impl::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(i); })},
     mFirstHBFrame{true}
 {
   impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
