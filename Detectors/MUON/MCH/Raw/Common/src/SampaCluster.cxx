@@ -9,6 +9,7 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "Assertions.h"
 #include <fmt/format.h>
 
@@ -20,15 +21,15 @@ namespace raw
 {
 
 SampaCluster::SampaCluster(uint16_t timestamp, uint32_t chargeSum)
-  : timestamp(assertIsInRange("timestamp", timestamp, 0, 0x3FF)),
-    chargeSum(assertIsInRange("chargeSum", chargeSum, 0, 0xFFFFF)),
+  : timestamp(impl::assertIsInRange("timestamp", timestamp, 0, 0x3FF)),
+    chargeSum(impl::assertIsInRange("chargeSum", chargeSum, 0, 0xFFFFF)),
     samples{}
 
 {
 }
 
 SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samples)
-  : timestamp(assertIsInRange("timestamp", timestamp, 0, 0x3FF)),
+  : timestamp(impl::assertIsInRange("timestamp", timestamp, 0, 0x3FF)),
     chargeSum(0),
     samples(samples.begin(), samples.end())
 {
@@ -36,7 +37,7 @@ SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samp
     throw std::invalid_argument("cannot add data with no sample");
   }
   for (auto i = 0; i < samples.size(); i++) {
-    assertIsInRange(fmt::format("samples[{}]", i), samples[i], 0, 0x3FF);
+    impl::assertIsInRange(fmt::format("samples[{}]", i), samples[i], 0, 0x3FF);
   }
 }
 
@@ -79,21 +80,6 @@ std::ostream& operator<<(std::ostream& os, const SampaCluster& sc)
     os << "]";
   }
   return os;
-}
-
-// ensure all clusters are either in sample mode or in
-// chargesum mode, no mixing allowed
-template <typename CHARGESUM>
-void assertNotMixingClusters(const std::vector<SampaCluster>& data)
-{
-  assert(data.size() > 0);
-  CHARGESUM a;
-  auto refValue = a();
-  for (auto i = 0; i < data.size(); i++) {
-    if (data[i].isClusterSum() != a) {
-      throw std::invalid_argument(fmt::format("all cluster of this encoder should be of the same type ({}) but {}-th does not match ", (refValue ? "clusterSum" : "samples"), i));
-    }
-  }
 }
 
 } // namespace raw

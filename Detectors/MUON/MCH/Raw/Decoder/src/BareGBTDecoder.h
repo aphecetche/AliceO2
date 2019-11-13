@@ -53,9 +53,6 @@ class BareGBTDecoder
 
   ///@{
 
-  /// printStatus shows the status of some elinks (all if maxelink=-1)
-  void printStatus(int maxelink = -1) const;
-
   /// Clear our internal Elinks
   void reset();
   ///@}

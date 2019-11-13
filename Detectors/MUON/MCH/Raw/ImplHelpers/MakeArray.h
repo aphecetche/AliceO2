@@ -14,6 +14,9 @@
 #include <array>
 #include <type_traits>
 
+namespace o2::mch::raw::impl
+{
+
 template <typename CTOR, size_t... S>
 std::array<std::invoke_result_t<CTOR, size_t>, sizeof...(S)> makeArray(CTOR&& ctor,
                                                                        std::index_sequence<S...>)
@@ -27,4 +30,5 @@ std::array<std::invoke_result_t<CTOR, size_t>, N> makeArray(CTOR&& ctor)
   return makeArray(std::forward<CTOR>(ctor), std::make_index_sequence<N>());
 }
 
+} // namespace o2::mch::raw::impl
 #endif

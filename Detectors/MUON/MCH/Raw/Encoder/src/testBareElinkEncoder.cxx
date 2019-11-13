@@ -21,14 +21,13 @@
 
 using namespace o2::mch::raw;
 
-BareElinkEncoder createBareElinkEncoder10()
+ElinkEncoder<BareFormat, SampleMode> createBareElinkEncoder10()
 {
   uint8_t cruId{0};
   uint8_t linkId{0};
   int phase{0};
-  bool clusterSumMode{false};
 
-  BareElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
+  ElinkEncoder<BareFormat, SampleMode> enc(cruId, linkId, phase);
 
   enc.addChannelData(1, {SampaCluster{20, std::vector<uint16_t>{20}}});
   enc.addChannelData(5, {SampaCluster{100, std::vector<uint16_t>{100, 101}}});
@@ -38,14 +37,13 @@ BareElinkEncoder createBareElinkEncoder10()
   return enc;
 }
 
-BareElinkEncoder createBareElinkEncoder20()
+ElinkEncoder<BareFormat, ChargeSumMode> createBareElinkEncoder20()
 {
   uint8_t cruId{0};
   uint8_t linkId{0};
   int phase{0};
-  bool clusterSumMode{true};
 
-  BareElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(cruId, linkId, phase);
 
   enc.addChannelData(1, {SampaCluster{20, 101}});
   enc.addChannelData(5, {SampaCluster{100, 505}});
@@ -61,13 +59,13 @@ BOOST_AUTO_TEST_SUITE(elinkencoder)
 
 BOOST_AUTO_TEST_CASE(CtorBuildsAnEmptyBitSet)
 {
-  BareElinkEncoder enc(0, 0);
+  ElinkEncoder<BareFormat, SampleMode> enc(0, 0);
   BOOST_CHECK_EQUAL(enc.len(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
 {
-  BareElinkEncoder enc(0, 0);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 0);
   auto initialSize = enc.len();
   std::vector<SampaCluster> data = {SampaCluster(20, 10)};
   enc.addChannelData(31, data);
@@ -77,7 +75,7 @@ BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
 
 BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
 {
-  BareElinkEncoder enc(0, 0);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 0);
   auto initialSize = enc.len();
   uint8_t chId{31};
 
@@ -95,7 +93,7 @@ BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
 
 BOOST_AUTO_TEST_CASE(OneChipChargeSumOneCluster)
 {
-  BareElinkEncoder enc(0, 9, 20);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 9, 20);
   auto initialSize = enc.len();
   enc.addChannelData(1, {SampaCluster(20, 101)});
   enc.addChannelData(5, {SampaCluster(100, 505)});
@@ -109,8 +107,7 @@ BOOST_AUTO_TEST_CASE(OneChipSamplesOneCluster)
   uint8_t cruId{0};
   uint8_t linkId{0};
   int phase{0};
-  bool clusterSumMode{false};
-  BareElinkEncoder enc(cruId, linkId, phase, clusterSumMode);
+  ElinkEncoder<BareFormat, SampleMode> enc(cruId, linkId, phase);
   auto initialSize = enc.len();
   enc.addChannelData(1, {SampaCluster(20, std::vector<uint16_t>{1, 10, 100, 10, 1})});
   enc.addChannelData(5, {SampaCluster(100, std::vector<uint16_t>{5, 50, 5})});
@@ -120,7 +117,8 @@ BOOST_AUTO_TEST_CASE(OneChipSamplesOneCluster)
   BOOST_CHECK_EQUAL(enc.len(), initialSize + 50 + 4 * (50 + 20) + 14 * 10);
 }
 
-void print(const char* msg, const BareElinkEncoder& enc)
+template <typename FORMAT, typename CHARGESUM>
+void print(const char* msg, const ElinkEncoder<FORMAT, CHARGESUM>& enc)
 {
   std::cout << msg << "=";
   for (auto i = 0; i < enc.len(); i++) {
@@ -131,8 +129,7 @@ void print(const char* msg, const BareElinkEncoder& enc)
 
 BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen20)
 {
-  BareElinkEncoder enc = createBareElinkEncoder20();
-  std::cout << enc << "\n";
+  auto enc = createBareElinkEncoder20();
   print("encoder20", enc);
   BOOST_CHECK_THROW(enc.get(enc.len()), std::invalid_argument);
   BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
@@ -140,8 +137,7 @@ BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen20)
 
 BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen10)
 {
-  BareElinkEncoder enc = createBareElinkEncoder10();
-  std::cout << enc << "\n";
+  auto enc = createBareElinkEncoder10();
   print("encoder10", enc);
   BOOST_CHECK_THROW(enc.get(enc.len()), std::invalid_argument);
   BOOST_CHECK_NO_THROW(enc.get(enc.len() - 1));
@@ -149,7 +145,7 @@ BOOST_AUTO_TEST_CASE(GetShouldThrowIfBitNumberIsBeyondLen10)
 
 BOOST_AUTO_TEST_CASE(FillWithSync)
 {
-  BareElinkEncoder enc = createBareElinkEncoder20();
+  auto enc = createBareElinkEncoder20();
   auto s = enc.len();
   enc.fillWithSync(s + 154);
   BOOST_CHECK_EQUAL(enc.len(), s + 154);

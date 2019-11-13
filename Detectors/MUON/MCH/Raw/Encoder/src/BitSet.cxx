@@ -67,7 +67,7 @@ int appendT(BitSet& bs, T val, int n)
 {
   if (n <= 0) {
     if (val > 0) {
-      n = nofBits(val);
+      n = impl::nofBits(val);
     } else {
       n = 1;
     }

@@ -8,14 +8,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "BareElinkEncoder.h"
+#ifndef O2_MCH_RAW_ENCODER_BARE_ELINK_ENCODER_MERGER_H
+#define O2_MCH_RAW_ENCODER_BARE_ELINK_ENCODER_MERGER_H
+
+#include "ElinkEncoder.h"
 #include "ElinkEncoderMerger.h"
+#include "MCHRawCommon/DataFormats.h"
+#include <gsl/span>
 
 namespace o2::mch::raw
 {
 
 template <typename CHARGESUM>
-bool areElinksAligned(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks)
+bool areElinksAligned(gsl::span<ElinkEncoder<BareFormat, CHARGESUM>> elinks)
 {
   auto len = elinks[0].len();
   for (auto i = 1; i < elinks.size(); i++) {
@@ -27,13 +32,13 @@ bool areElinksAligned(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks)
 }
 
 template <typename CHARGESUM>
-void align(std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks)
+void align(gsl::span<ElinkEncoder<BareFormat, CHARGESUM>> elinks)
 {
   if (areElinksAligned(elinks)) {
     return;
   }
-  auto e = std::max_element(begin(elinks), end(elinks),
-                            [](const ElinkEncoder<Bare, CHARGESUM>& a, const ElinkEncoder<Bare, CHARGESUM>& b) {
+  auto e = std::max_element(elinks.begin(), elinks.end(),
+                            [](const ElinkEncoder<BareFormat, CHARGESUM>& a, const ElinkEncoder<BareFormat, CHARGESUM>& b) {
                               return a.len() < b.len();
                             });
 
@@ -44,16 +49,7 @@ void align(std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks)
 }
 
 template <typename CHARGESUM>
-void clear(std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks)
-{
-  // clear the elinks
-  for (auto& elink : elinks) {
-    elink.clear();
-  }
-}
-
-template <typename CHARGESUM>
-uint64_t aggregate(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks, int jstart, int jend, int i)
+uint64_t aggregate(gsl::span<ElinkEncoder<BareFormat, CHARGESUM>> elinks, int jstart, int jend, int i)
 {
   uint64_t w{0};
   for (int j = jstart; j < jend; j += 2) {
@@ -71,7 +67,7 @@ uint64_t aggregate(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks, int
 }
 
 template <typename CHARGESUM>
-void elink2gbt(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks, std::vector<uint64_t>& b64)
+void elink2gbt(gsl::span<ElinkEncoder<BareFormat, CHARGESUM>> elinks, std::vector<uint64_t>& b64)
 {
   int n = elinks[0].len();
 
@@ -83,19 +79,19 @@ void elink2gbt(const std::vector<ElinkEncoder<Bare, CHARGESUM>>& elinks, std::ve
   }
 }
 
-template <>
-void ElinkEncoderMerger(int gbtId,
-                        gsl::span<ElinkEncoder<Bare, ChargeSumMode>> elinks,
-                        gsl::span<uint64_t> b64)
-{
-  // align sizes of all elinks by adding sync bits
-  align(elinks);
+template <typename CHARGESUM>
+struct ElinkEncoderMerger<BareFormat, CHARGESUM> {
+  void operator()(int gbtId,
+                  gsl::span<ElinkEncoder<BareFormat, CHARGESUM>> elinks,
+                  std::vector<uint64_t>& b64)
+  {
+    // align sizes of all elinks by adding sync bits
+    align(elinks);
 
-  // convert elinks to GBT words
-  elink2gbt(elinks, b64);
-
-  // reset all the links
-  clear(elinks);
-}
+    // convert elinks to GBT words
+    elink2gbt(elinks, b64);
+  }
+};
 
 } // namespace o2::mch::raw
+#endif

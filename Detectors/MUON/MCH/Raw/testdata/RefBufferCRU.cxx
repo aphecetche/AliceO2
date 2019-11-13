@@ -12,12 +12,10 @@
 #include <array>
 #include "MCHRawCommon/DataFormats.h"
 
-using namespace o2::mch::raw::dataformat;
-
 extern std::array<uint8_t, 8336> REF_BUFFER_CRU_BARE_CHARGESUM;
 
 template <>
-std::vector<uint8_t> REF_BUFFER_CRU<Bare, ChargeSumMode>()
+std::vector<uint8_t> REF_BUFFER_CRU<o2::mch::raw::BareFormat, o2::mch::raw::ChargeSumMode>()
 {
   return std::vector<uint8_t>(REF_BUFFER_CRU_BARE_CHARGESUM.begin(), REF_BUFFER_CRU_BARE_CHARGESUM.end());
 }
