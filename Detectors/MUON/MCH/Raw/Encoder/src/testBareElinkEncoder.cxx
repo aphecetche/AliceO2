@@ -23,11 +23,9 @@ using namespace o2::mch::raw;
 
 ElinkEncoder<BareFormat, SampleMode> createBareElinkEncoder10()
 {
-  uint8_t cruId{0};
   uint8_t linkId{0};
-  int phase{0};
 
-  ElinkEncoder<BareFormat, SampleMode> enc(cruId, linkId, phase);
+  ElinkEncoder<BareFormat, SampleMode> enc(linkId);
 
   enc.addChannelData(1, {SampaCluster{20, std::vector<uint16_t>{20}}});
   enc.addChannelData(5, {SampaCluster{100, std::vector<uint16_t>{100, 101}}});
@@ -39,11 +37,9 @@ ElinkEncoder<BareFormat, SampleMode> createBareElinkEncoder10()
 
 ElinkEncoder<BareFormat, ChargeSumMode> createBareElinkEncoder20()
 {
-  uint8_t cruId{0};
   uint8_t linkId{0};
-  int phase{0};
 
-  ElinkEncoder<BareFormat, ChargeSumMode> enc(cruId, linkId, phase);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(linkId);
 
   enc.addChannelData(1, {SampaCluster{20, 101}});
   enc.addChannelData(5, {SampaCluster{100, 505}});
@@ -65,7 +61,7 @@ BOOST_AUTO_TEST_CASE(CtorBuildsAnEmptyBitSet)
 
 BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
 {
-  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 0);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(0);
   auto initialSize = enc.len();
   std::vector<SampaCluster> data = {SampaCluster(20, 10)};
   enc.addChannelData(31, data);
@@ -75,7 +71,7 @@ BOOST_AUTO_TEST_CASE(AddSingleHitShouldIncreaseSizeBy140Bits)
 
 BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
 {
-  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 0);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(0);
   auto initialSize = enc.len();
   uint8_t chId{31};
 
@@ -93,7 +89,7 @@ BOOST_AUTO_TEST_CASE(AddMultipleHitsShouldIncreateSizeBy140BitsTimeN)
 
 BOOST_AUTO_TEST_CASE(OneChipChargeSumOneCluster)
 {
-  ElinkEncoder<BareFormat, ChargeSumMode> enc(0, 9, 20);
+  ElinkEncoder<BareFormat, ChargeSumMode> enc(9, 20);
   auto initialSize = enc.len();
   enc.addChannelData(1, {SampaCluster(20, 101)});
   enc.addChannelData(5, {SampaCluster(100, 505)});
@@ -104,10 +100,8 @@ BOOST_AUTO_TEST_CASE(OneChipChargeSumOneCluster)
 
 BOOST_AUTO_TEST_CASE(OneChipSamplesOneCluster)
 {
-  uint8_t cruId{0};
   uint8_t linkId{0};
-  int phase{0};
-  ElinkEncoder<BareFormat, SampleMode> enc(cruId, linkId, phase);
+  ElinkEncoder<BareFormat, SampleMode> enc(linkId);
   auto initialSize = enc.len();
   enc.addChannelData(1, {SampaCluster(20, std::vector<uint16_t>{1, 10, 100, 10, 1})});
   enc.addChannelData(5, {SampaCluster(100, std::vector<uint16_t>{5, 50, 5})});

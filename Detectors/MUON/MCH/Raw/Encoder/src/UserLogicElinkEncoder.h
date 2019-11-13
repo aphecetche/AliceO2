@@ -28,7 +28,7 @@ template <typename CHARGESUM>
 class ElinkEncoder<UserLogicFormat, CHARGESUM>
 {
  public:
-  explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
+  explicit ElinkEncoder(uint8_t elinkId, int phase = 0);
 
   void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
 
@@ -37,9 +37,8 @@ class ElinkEncoder<UserLogicFormat, CHARGESUM>
   void clear();
 
  private:
-  uint8_t mElinkId;     //< Elink id 0..39
-  uint8_t mChipAddress; //< chip address 0..15
-  bool mHasSync;        //< whether or not we've already added a sync word
+  uint8_t mElinkId; //< Elink id 0..39
+  bool mHasSync;    //< whether or not we've already added a sync word
   std::vector<uint64_t> mBuffer;
 };
 
@@ -58,41 +57,12 @@ uint64_t error64(int error)
 
 template <typename CHARGESUM>
 ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
-                                                       uint8_t chip,
                                                        int phase)
   : mElinkId{elinkId},
-    mChipAddress{chip},
     mHasSync{false},
     mBuffer{}
 {
   impl::assertIsInRange("elinkId", elinkId, 0, 39);
-  impl::assertIsInRange("chip", chip, 0, 15);
-}
-
-uint16_t chipAddress(int elinkId, int chId)
-{
-  uint16_t chip = static_cast<uint16_t>((elinkId % 2) * 2);
-  if (chId < 32) {
-    return chip;
-  }
-  return chip + 1;
-}
-
-uint64_t headerWord(int elinkId, int chId, const std::vector<SampaCluster>& data)
-{
-  SampaHeader header;
-  header.packetType(SampaPacketType::Data);
-  int numWords{0};
-  for (auto c : data) {
-    numWords += 20 + 10 * c.samples.size(); // FIXME: assuming we're not in chargesum here
-  }
-  header.nof10BitWords(numWords);
-  header.chipAddress(chipAddress(elinkId, chId));
-  header.channelAddress(chId % 32);
-  // FIXME: compute payload parity
-  // FIXME: set local bunch crossing number
-  // header.bunchCrossingCounter();
-  return header.uint64();
 }
 
 void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t& word, int data)
@@ -126,7 +96,8 @@ void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
     mHasSync = true;
   }
 
-  mBuffer.emplace_back(b9 | headerWord(mElinkId, chId, data));
+  auto header = buildHeader(mElinkId, chId, data);
+  mBuffer.emplace_back(b9 | header.uint64());
 
   int index{4};
   CHARGESUM ref;
