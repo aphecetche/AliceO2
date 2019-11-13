@@ -57,4 +57,18 @@ std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, SampleMode>(uint8_
   return std::make_unique<CRUEncoderImpl<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
 }
 
+template <>
+std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<UserLogicFormat, ChargeSumMode>(uint8_t cruId)
+{
+  GBTEncoder<UserLogicFormat, ChargeSumMode>::forceNoPhase = true;
+  return std::make_unique<CRUEncoderImpl<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4>>(cruId);
+}
+
+template <>
+std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<UserLogicFormat, SampleMode>(uint8_t cruId)
+{
+  GBTEncoder<UserLogicFormat, SampleMode>::forceNoPhase = true;
+  return std::make_unique<CRUEncoderImpl<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
+}
+
 } // namespace o2::mch::raw

@@ -16,9 +16,23 @@
 #include <gsl/span>
 #include "MCHRawCommon/RDHManip.h"
 #include <fmt/format.h>
+#include "MCHRawEncoder/CRUEncoder.h"
+#include "MCHRawEncoder/Encoder.h"
 
-std::vector<uint8_t> createUserLogicPedestalBuffer(int elinkId);
-std::vector<uint8_t> createBarePedestalBuffer(int elinkId);
+namespace o2::mch::raw::impl
+{
+
+std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId);
+
+template <typename FORMAT, typename CHARGESUM>
+std::vector<uint8_t> createPedestalBuffer(int elinkId)
+{
+  uint8_t cruId(0);
+
+  auto cru = createCRUEncoderNoPhase<FORMAT, CHARGESUM>(cruId);
+
+  return encodePedestalBuffer(*cru, elinkId);
+}
 
 template <typename RDH>
 std::vector<uint8_t> createTestBuffer(gsl::span<uint8_t> data)
@@ -34,5 +48,6 @@ std::vector<uint8_t> createTestBuffer(gsl::span<uint8_t> data)
   std::copy(data.begin(), data.end(), std::back_inserter(buffer));
   return buffer;
 }
+} // namespace o2::mch::raw::impl
 
 #endif

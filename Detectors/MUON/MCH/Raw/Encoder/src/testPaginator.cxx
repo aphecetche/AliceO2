@@ -26,6 +26,7 @@
 #include <boost/test/data/test_case.hpp>
 #include "Headers/RAWDataHeader.h"
 #include "TestBuffers.h"
+#include "MCHRawCommon/DataFormats.h"
 
 using namespace o2::mch::raw;
 using namespace o2::header;
@@ -55,7 +56,7 @@ BOOST_AUTO_TEST_CASE(TestPadding)
   data.emplace_back(0x88);
   data.emplace_back(0x88);
 
-  auto buffer = createTestBuffer<RAWDataHeaderV4>(data);
+  auto buffer = impl::createTestBuffer<RAWDataHeaderV4>(data);
 
   std::vector<uint8_t> pages;
   size_t pageSize = 128;
@@ -80,7 +81,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
     data.emplace_back((i + 1) % 256);
   }
 
-  auto buffer = createTestBuffer<RAWDataHeaderV4>(data);
+  auto buffer = impl::createTestBuffer<RAWDataHeaderV4>(data);
 
   std::vector<uint8_t> pages;
   int expected = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
@@ -110,7 +111,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
 BOOST_AUTO_TEST_CASE(GenerateBareFile)
 {
   std::ofstream out("test.bare.raw", std::ios::binary);
-  auto buffer = createBarePedestalBuffer(0);
+  auto buffer = impl::createPedestalBuffer<BareFormat, SampleMode>(0);
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);
   out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
@@ -120,7 +121,7 @@ BOOST_AUTO_TEST_CASE(GenerateBareFile)
 BOOST_AUTO_TEST_CASE(GenerateUserLogicFile)
 {
   std::ofstream out("test.raw", std::ios::binary);
-  auto buffer = createUserLogicPedestalBuffer(0);
+  auto buffer = impl::createPedestalBuffer<UserLogicFormat, SampleMode>(0);
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);
   out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
