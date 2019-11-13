@@ -13,3 +13,9 @@ o2_add_executable(rawdump
                   COMPONENT_NAME mch
                   PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder
                                         Boost::program_options)
+
+o2_add_executable(generate-timeframe
+                  SOURCES gentimeframe.cxx
+                  COMPONENT_NAME mch
+                  PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                                        Boost::program_options)
