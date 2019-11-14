@@ -20,8 +20,24 @@ static void BM_ComputeHamming(benchmark::State& state)
   }
 }
 
+static void BM_ComputeHamming2(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHammingCode2(0x3722e80103208));
+  }
+}
+
+static void BM_ComputeHamming3(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHammingCode3(0x3722e80103208));
+  }
+}
+
 // Register the function as a benchmark
 BENCHMARK(BM_ComputeHamming);
+BENCHMARK(BM_ComputeHamming2);
+BENCHMARK(BM_ComputeHamming3);
 
 // Run the benchmark
 BENCHMARK_MAIN();
