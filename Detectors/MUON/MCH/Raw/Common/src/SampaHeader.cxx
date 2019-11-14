@@ -420,23 +420,20 @@ int partialOddParity(uint64_t value, int pos)
   uint64_t one{1};
   const uint64_t test{one << pos};
 
-  // std::cout << "pos=" << pos << " : ";
   for (uint64_t i = 0; i < 49; i++) {
     if (conv[i] < 0) {
       continue;
     }
     if ((i + 1) & test) {
-      std::cout << conv[i] << ",";
       if (value & (one << conv[i])) {
         ++n;
       }
     }
   }
-  // std::cout << "\n";
   return (n + 1) % 2 == 0;
 }
 
-int computeHammingCode(uint64_t value)
+int computeHammingCode2(uint64_t value)
 {
   // value is assumed to be 50 bits, where the 43 data bits
   // are 7-49
@@ -449,14 +446,25 @@ int computeHammingCode(uint64_t value)
 }
 
 template <size_t N>
-int partialParity(uint64_t value, const std::array<int, N>& pos)
+int partialOddParity2(uint64_t value, const std::array<int, N>& pos)
 {
-  int p{0};
   uint64_t one{1};
+  int n{0};
+
   for (auto i = 0; i < pos.size(); i++) {
-    p ^= value & (one << pos[i]);
+    n += ((value & (one << pos[i])) > 0);
   }
-  return p;
+  return (n + 1) % 2 == 0;
+}
+
+template <size_t N>
+int partialOddParity3(uint64_t value, const std::array<uint64_t, N>& masks)
+{
+  int n{0};
+  for (auto i = 0; i < masks.size(); i++) {
+    n += ((value & masks[i]) > 0);
+  }
+  return (n + 1) % 2 == 0;
 }
 
 std::array<int, 24> p0{7, 8, 10, 11, 13, 15, 17, 18, 20, 22, 24, 26, 28, 30, 32, 33, 35, 37, 39, 41, 43, 45, 47, 49};
@@ -466,20 +474,38 @@ std::array<int, 23> p3{11, 12, 13, 14, 15, 16, 17, 25, 26, 27, 28, 29, 30, 31, 3
 std::array<int, 17> p4{18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 49};
 std::array<int, 17> p5{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
 
-int computeHammingCode2(uint64_t value)
+int computeHammingCode(uint64_t value)
 {
   // value is assumed to be 50 bits, where the 43 data bits
   // are 7-49
 
-  // for (int i = 0; i < 6; i++) {
-  //   hamming += partialOddParity(value, i) * (1 << i);
-  // }
-  int h0 = partialParity(value, p0);
-  int h1 = partialParity(value, p1);
-  int h2 = partialParity(value, p2);
-  int h3 = partialParity(value, p3);
-  int h4 = partialParity(value, p4);
-  int h5 = partialParity(value, p5);
+  int h0 = partialOddParity2(value, p0);
+  int h1 = partialOddParity2(value, p1);
+  int h2 = partialOddParity2(value, p2);
+  int h3 = partialOddParity2(value, p3);
+  int h4 = partialOddParity2(value, p4);
+  int h5 = partialOddParity2(value, p5);
+  return h0 + h1 * 2 + h2 * 4 + h3 * 8 + h4 * 16 + h5 * 32;
+}
+
+std::array<uint64_t, 24> m0 = {0x80, 0x100, 0x400, 0x800, 0x2000, 0x8000, 0x20000, 0x40000, 0x100000, 0x400000, 0x1000000, 0x4000000, 0x10000000, 0x40000000, 0x100000000, 0x200000000, 0x800000000, 0x2000000000, 0x8000000000, 0x20000000000, 0x80000000000, 0x200000000000, 0x800000000000, 0x2000000000000};
+std::array<uint64_t, 23> m1 = {0x80, 0x200, 0x400, 0x1000, 0x2000, 0x10000, 0x20000, 0x80000, 0x100000, 0x800000, 0x1000000, 0x8000000, 0x10000000, 0x80000000, 0x100000000, 0x400000000, 0x800000000, 0x4000000000, 0x8000000000, 0x40000000000, 0x80000000000, 0x400000000000, 0x800000000000};
+std::array<uint64_t, 23> m2 = {0x100, 0x200, 0x400, 0x4000, 0x8000, 0x10000, 0x20000, 0x200000, 0x400000, 0x800000, 0x1000000, 0x20000000, 0x40000000, 0x80000000, 0x100000000, 0x1000000000, 0x2000000000, 0x4000000000, 0x8000000000, 0x100000000000, 0x200000000000, 0x400000000000, 0x800000000000};
+std::array<uint64_t, 23> m3 = {0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x100000000, 0x10000000000, 0x20000000000, 0x40000000000, 0x80000000000, 0x100000000000, 0x200000000000, 0x400000000000, 0x800000000000};
+std::array<uint64_t, 17> m4 = {0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x100000000, 0x1000000000000, 0x2000000000000};
+std::array<uint64_t, 17> m5 = {0x200000000, 0x400000000, 0x800000000, 0x1000000000, 0x2000000000, 0x4000000000, 0x8000000000, 0x10000000000, 0x20000000000, 0x40000000000, 0x80000000000, 0x100000000000, 0x200000000000, 0x400000000000, 0x800000000000, 0x1000000000000, 0x2000000000000};
+
+int computeHammingCode3(uint64_t value)
+{
+  // value is assumed to be 50 bits, where the 43 data bits
+  // are 7-49
+
+  int h0 = partialOddParity3(value, m0);
+  int h1 = partialOddParity3(value, m1);
+  int h2 = partialOddParity3(value, m2);
+  int h3 = partialOddParity3(value, m3);
+  int h4 = partialOddParity3(value, m4);
+  int h5 = partialOddParity3(value, m5);
   return h0 + h1 * 2 + h2 * 4 + h3 * 8 + h4 * 16 + h5 * 32;
 }
 
