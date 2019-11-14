@@ -225,6 +225,13 @@ BOOST_AUTO_TEST_CASE(ComputeHammingCode3)
   BOOST_CHECK_EQUAL(computeHammingCode3(0x1722e8090322f), 0x2F); // 111101 P0
 }
 
+BOOST_AUTO_TEST_CASE(ComputeHammingCode4)
+{
+  BOOST_CHECK_EQUAL(computeHammingCode4(0x3722e80103208), 0x8);  // 000100 P0
+  BOOST_CHECK_EQUAL(computeHammingCode4(0x1722e9f00327d), 0x3D); // 101101 P1
+  BOOST_CHECK_EQUAL(computeHammingCode4(0x1722e8090322f), 0x2F); // 111101 P0
+}
+
 BOOST_AUTO_TEST_CASE(CheckHammingCodeError)
 {
   uint64_t v = 0x1722e9f00327d;
@@ -245,6 +252,27 @@ BOOST_AUTO_TEST_CASE(CheckHeaderParity)
   BOOST_CHECK_EQUAL(computeHeaderParity(0x3722e80103208), 0); // 000100 P0
   BOOST_CHECK_EQUAL(computeHeaderParity(0x1722e8090322f), 0); // 111101 P0
   BOOST_CHECK_EQUAL(computeHeaderParity(0x1722e9f00327d), 1); // 101101 P1
+}
+
+BOOST_AUTO_TEST_CASE(CheckHeaderParity2)
+{
+  BOOST_CHECK_EQUAL(computeHeaderParity2(0x3722e80103208), 0); // 000100 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity2(0x1722e8090322f), 0); // 111101 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity2(0x1722e9f00327d), 1); // 101101 P1
+}
+
+BOOST_AUTO_TEST_CASE(CheckHeaderParity3)
+{
+  BOOST_CHECK_EQUAL(computeHeaderParity3(0x3722e80103208), 0); // 000100 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity3(0x1722e8090322f), 0); // 111101 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity3(0x1722e9f00327d), 1); // 101101 P1
+}
+
+BOOST_AUTO_TEST_CASE(CheckHeaderParity4)
+{
+  BOOST_CHECK_EQUAL(computeHeaderParity4(0x3722e80103208), 0); // 000100 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity4(0x1722e8090322f), 0); // 111101 P0
+  BOOST_CHECK_EQUAL(computeHeaderParity4(0x1722e9f00327d), 1); // 101101 P1
 }
 
 BOOST_AUTO_TEST_SUITE_END()

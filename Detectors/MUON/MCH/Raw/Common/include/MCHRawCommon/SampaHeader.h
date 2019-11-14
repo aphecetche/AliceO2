@@ -133,14 +133,22 @@ std::string packetTypeName(SampaPacketType pkt);
 /// assuming it is 50 bits
 /// and represents a Sampa header
 int computeHammingCode(uint64_t value);
+
+int computeHammingCode1(uint64_t value);
 int computeHammingCode2(uint64_t value);
 int computeHammingCode3(uint64_t value);
+int computeHammingCode4(uint64_t value);
 
 /// compute parity of value
 /// assuming it is 50 bits
 /// and represents a Sampa header
 /// (not using the existing header parity at bit pos 6)
 int computeHeaderParity(uint64_t value);
+
+int computeHeaderParity1(uint64_t value);
+int computeHeaderParity2(uint64_t value);
+int computeHeaderParity3(uint64_t value);
+int computeHeaderParity4(uint64_t value);
 
 std::ostream&
   operator<<(std::ostream& os, const SampaHeader& sh);
