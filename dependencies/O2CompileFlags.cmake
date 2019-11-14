@@ -10,10 +10,10 @@
 
 include_guard()
 
-set(CMAKE_CXX_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
-set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
-set(CMAKE_Fortran_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
-set(CMAKE_LINK_FLAGS_COVERAGE "--coverage -fprofile-arcs  -fPIC")
+# set(CMAKE_CXX_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+# set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
+# set(CMAKE_Fortran_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+# set(CMAKE_LINK_FLAGS_COVERAGE "--coverage -fprofile-arcs  -fPIC")
 
 MARK_AS_ADVANCED(
     CMAKE_CXX_FLAGS_COVERAGE
@@ -27,13 +27,13 @@ IF (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
-IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
-ELSE()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
-ENDIF()
+# IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
+#     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+# ELSE()
+#     set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+#     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+# ENDIF()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")

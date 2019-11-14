@@ -133,6 +133,7 @@ std::string packetTypeName(SampaPacketType pkt);
 /// assuming it is 50 bits
 /// and represents a Sampa header
 int computeHammingCode(uint64_t value);
+int computeHammingCode2(uint64_t value);
 
 /// compute parity of value
 /// assuming it is 50 bits

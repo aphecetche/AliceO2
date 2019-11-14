@@ -401,6 +401,15 @@ std::ostream& operator<<(std::ostream& os, const SampaHeader& sh)
   return os;
 }
 
+// conv array convert a bit position in the hamming sense
+// (i.e. where parity bits are interleaved between data bits)
+// and the data bit positions in the original value (where the 6 hamming
+// bits are "grouped" in the front of the value).
+constexpr std::array<int, 49> conv = {-1, -1, 7, -1, 8, 9, 10, -1, 11, 12, 13, 14, 15, 16, 17,
+                                      -1, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                                      29, 30, 31, 32, -1, 33, 34, 35, 36, 37, 38, 39,
+                                      40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
+
 int partialOddParity(uint64_t value, int pos)
 {
   // compute the odd parity of all the bits at position x
@@ -411,26 +420,19 @@ int partialOddParity(uint64_t value, int pos)
   uint64_t one{1};
   const uint64_t test{one << pos};
 
-  // conv array convert a bit position in the hamming sense
-  // (i.e. where parity bits are interleaved between data bits)
-  // and the data bit positions in the original value (where the 6 hamming
-  // bits are "grouped" in the front of the value).
-  constexpr std::array<int, 49> conv = {-1, -1, 7, -1, 8, 9, 10, -1, 11, 12, 13, 14, 15, 16, 17,
-                                        -1, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-                                        29, 30, 31, 32, -1, 33, 34, 35, 36, 37, 38, 39,
-                                        40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
-
+  // std::cout << "pos=" << pos << " : ";
   for (uint64_t i = 0; i < 49; i++) {
-    int t = conv[i];
-    if (t < 0)
+    if (conv[i] < 0) {
       continue;
-    int hammingPos = i + 1;
-    if (hammingPos & test) {
-      if (value & (one << t)) {
+    }
+    if ((i + 1) & test) {
+      std::cout << conv[i] << ",";
+      if (value & (one << conv[i])) {
         ++n;
       }
     }
   }
+  // std::cout << "\n";
   return (n + 1) % 2 == 0;
 }
 
@@ -444,6 +446,41 @@ int computeHammingCode(uint64_t value)
     hamming += partialOddParity(value, i) * (1 << i);
   }
   return hamming;
+}
+
+template <size_t N>
+int partialParity(uint64_t value, const std::array<int, N>& pos)
+{
+  int p{0};
+  uint64_t one{1};
+  for (auto i = 0; i < pos.size(); i++) {
+    p ^= value & (one << pos[i]);
+  }
+  return p;
+}
+
+std::array<int, 24> p0{7, 8, 10, 11, 13, 15, 17, 18, 20, 22, 24, 26, 28, 30, 32, 33, 35, 37, 39, 41, 43, 45, 47, 49};
+std::array<int, 23> p1{7, 9, 10, 12, 13, 16, 17, 19, 20, 23, 24, 27, 28, 31, 32, 34, 35, 38, 39, 42, 43, 46, 47};
+std::array<int, 23> p2{8, 9, 10, 14, 15, 16, 17, 21, 22, 23, 24, 29, 30, 31, 32, 36, 37, 38, 39, 44, 45, 46, 47};
+std::array<int, 23> p3{11, 12, 13, 14, 15, 16, 17, 25, 26, 27, 28, 29, 30, 31, 32, 40, 41, 42, 43, 44, 45, 46, 47};
+std::array<int, 17> p4{18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 49};
+std::array<int, 17> p5{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
+
+int computeHammingCode2(uint64_t value)
+{
+  // value is assumed to be 50 bits, where the 43 data bits
+  // are 7-49
+
+  // for (int i = 0; i < 6; i++) {
+  //   hamming += partialOddParity(value, i) * (1 << i);
+  // }
+  int h0 = partialParity(value, p0);
+  int h1 = partialParity(value, p1);
+  int h2 = partialParity(value, p2);
+  int h3 = partialParity(value, p3);
+  int h4 = partialParity(value, p4);
+  int h5 = partialParity(value, p5);
+  return h0 + h1 * 2 + h2 * 4 + h3 * 8 + h4 * 16 + h5 * 32;
 }
 
 /// compute parity of v, assuming it is 50 bits and

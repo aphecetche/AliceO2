@@ -78,6 +78,9 @@ class GBTEncoder
   /// returns the GBT id
   int id() const { return mGbtId; }
 
+  /// return the number of bytes our current buffer is
+  size_t size() const { return mGbtWords.size(); }
+
  private:
   int mGbtId;                                              //< id of this GBT (0..23)
   std::array<ElinkEncoder<FORMAT, CHARGESUM>, 40> mElinks; //< the 40 Elinks we manage

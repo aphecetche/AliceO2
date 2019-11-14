@@ -25,7 +25,8 @@ size_t moveBuffer(std::vector<uint64_t>& b64,
                   uint64_t prefix = 0)
 {
   constexpr uint64_t m = 0xFF;
-  auto s = b8.size();
+  auto s8 = b8.size();
+  b8.reserve(s8 + b64.size() / 8);
   for (auto& b : b64) {
     uint64_t g = b | prefix;
     for (uint64_t i = 0; i < 64; i += 8) {
@@ -34,7 +35,7 @@ size_t moveBuffer(std::vector<uint64_t>& b64,
     }
   }
   b64.clear();
-  return b8.size() - s;
+  return b8.size() - s8;
 }
 } // namespace o2::mch::raw::impl
 
