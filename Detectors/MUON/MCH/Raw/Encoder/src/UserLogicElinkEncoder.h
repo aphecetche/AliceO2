@@ -129,11 +129,12 @@ void ElinkEncoder<UserLogicFormat, CHARGESUM>::clear()
 template <typename CHARGESUM>
 size_t ElinkEncoder<UserLogicFormat, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix)
 {
-  mHasSync = false;
   auto n = buffer.size();
+  buffer.reserve(mBuffer.size());
   for (auto& b : mBuffer) {
     buffer.emplace_back(b | prefix);
   }
+  clear();
   return buffer.size() - n;
 }
 } // namespace o2::mch::raw
