@@ -74,7 +74,7 @@ class CRUEncoderImpl : public CRUEncoder
   uint16_t mCruId;
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
-  std::vector<uint32_t> mBuffer;
+  std::vector<uint8_t> mBuffer;
   std::array<GBTEncoder<FORMAT, CHARGESUM>, 24> mGBTs;
   bool mFirstHBFrame;
 };
@@ -89,7 +89,7 @@ CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
     mFirstHBFrame{true}
 {
   impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
-  mBuffer.reserve(1 << 10);
+  // mBuffer.reserve(1 << 12);
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
@@ -118,8 +118,8 @@ void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload
-    for (auto i = 0; i < gbtBuffer.size(); i += 4) {
-      mBuffer.emplace_back(gbtBuffer[i] | (gbtBuffer[i + 1] << 8) | (gbtBuffer[i + 2] << 16) | (gbtBuffer[i + 3] << 24));
+    for (auto i = 0; i < gbtBuffer.size(); i++) {
+      mBuffer.emplace_back(gbtBuffer[i]);
     }
   }
 }
@@ -129,10 +129,11 @@ size_t CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::moveToBuffer(std::vector<uint8_t>
 {
   closeHeartbeatFrame(mOrbit, mBunchCrossing);
   for (auto& w : mBuffer) {
-    buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
-    buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
-    buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
-    buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
+    buffer.emplace_back(w);
+    // buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
+    // buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
+    // buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
+    // buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
   }
   auto s = mBuffer.size();
   mBuffer.clear();
