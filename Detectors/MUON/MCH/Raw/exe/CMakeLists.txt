@@ -8,14 +8,18 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-o2_add_executable(rawdump
-                  SOURCES rawdump.cxx
-                  COMPONENT_NAME mch
-                  PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder
-                                        Boost::program_options)
+o2_add_executable(
+  rawdump
+  SOURCES rawdump.cxx
+  COMPONENT_NAME mch
+  PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options)
 
 o2_add_executable(generate-timeframe
                   SOURCES gentimeframe.cxx
                   COMPONENT_NAME mch
                   PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                                        O2::Steer
+                                        O2::MCHSimulation
+                                        O2::MCHMappingImpl3
+                                        fmt::fmt
                                         Boost::program_options)

@@ -46,7 +46,7 @@ std::vector<uint8_t> createGBTBuffer()
   std::vector<uint8_t> words;
   enc.moveToBuffer(words);
   // std::cout << "createGBTBuffer<" << typeid(FORMAT).name() << "," << std::boolalpha << typeid(MODE).name() << ">\n";
-  // impl::dumpBuffer(gsl::span<uint8_t>(words));
+  // impl::dumpBuffer(gsl::make_span(words));
   // int i{0};
   // for (auto v : words) {
   //   fmt::printf("0x%02X, ", v);
