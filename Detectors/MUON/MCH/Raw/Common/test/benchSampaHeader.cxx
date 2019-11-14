@@ -13,10 +13,10 @@
 
 using namespace o2::mch::raw;
 
-static void BM_ComputeHamming(benchmark::State& state)
+static void BM_ComputeHamming1(benchmark::State& state)
 {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(computeHammingCode(0x3722e80103208));
+    benchmark::DoNotOptimize(computeHammingCode1(0x3722e80103208));
   }
 }
 
@@ -33,18 +33,51 @@ static void BM_ComputeHamming3(benchmark::State& state)
     benchmark::DoNotOptimize(computeHammingCode3(0x3722e80103208));
   }
 }
+static void BM_ComputeHamming4(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHammingCode4(0x3722e80103208));
+  }
+}
+
+static void BM_ComputeHeaderParity1(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHeaderParity1(0x3722e80103208));
+  }
+}
+
+static void BM_ComputeHeaderParity2(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHeaderParity2(0x3722e80103208));
+  }
+}
+
+static void BM_ComputeHeaderParity3(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHeaderParity3(0x3722e80103208));
+  }
+}
+
+static void BM_ComputeHeaderParity4(benchmark::State& state)
+{
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(computeHeaderParity4(0x3722e80103208));
+  }
+}
 
 // Register the function as a benchmark
-BENCHMARK(BM_ComputeHamming);
+BENCHMARK(BM_ComputeHamming1);
 BENCHMARK(BM_ComputeHamming2);
 BENCHMARK(BM_ComputeHamming3);
+BENCHMARK(BM_ComputeHamming4);
+
+BENCHMARK(BM_ComputeHeaderParity1);
+BENCHMARK(BM_ComputeHeaderParity2);
+BENCHMARK(BM_ComputeHeaderParity3);
+BENCHMARK(BM_ComputeHeaderParity4);
 
 // Run the benchmark
 BENCHMARK_MAIN();
-
-// BOOST_AUTO_TEST_CASE(ComputeHammingCode)
-// {
-//   BOOST_CHECK_EQUAL(computeHammingCode(0x3722e80103208), 0x8);  // 000100 P0
-//   BOOST_CHECK_EQUAL(computeHammingCode(0x1722e9f00327d), 0x3D); // 101101 P1
-//   BOOST_CHECK_EQUAL(computeHammingCode(0x1722e8090322f), 0x2F); // 111101 P0
-// }

@@ -409,8 +409,9 @@ constexpr std::array<int, 49> conv = {-1, -1, 7, -1, 8, 9, 10, -1, 11, 12, 13, 1
                                       -1, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
                                       29, 30, 31, 32, -1, 33, 34, 35, 36, 37, 38, 39,
                                       40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
+int computeParity(uint64_t v);
 
-int partialOddParity(uint64_t value, int pos)
+int partialOddParity3(uint64_t value, int pos)
 {
   // compute the odd parity of all the bits at position x
   // (where x & (2^pos)) are set
@@ -433,14 +434,14 @@ int partialOddParity(uint64_t value, int pos)
   return (n + 1) % 2 == 0;
 }
 
-int computeHammingCode2(uint64_t value)
+int computeHammingCode3(uint64_t value)
 {
   // value is assumed to be 50 bits, where the 43 data bits
   // are 7-49
   int hamming{0};
 
   for (int i = 0; i < 6; i++) {
-    hamming += partialOddParity(value, i) * (1 << i);
+    hamming += partialOddParity3(value, i) * (1 << i);
   }
   return hamming;
 }
@@ -458,7 +459,7 @@ int partialOddParity2(uint64_t value, const std::array<int, N>& pos)
 }
 
 template <size_t N>
-int partialOddParity3(uint64_t value, const std::array<uint64_t, N>& masks)
+int partialOddParity(uint64_t value, const std::array<uint64_t, N>& masks)
 {
   int n{0};
   for (auto i = 0; i < masks.size(); i++) {
@@ -474,7 +475,7 @@ std::array<int, 23> p3{11, 12, 13, 14, 15, 16, 17, 25, 26, 27, 28, 29, 30, 31, 3
 std::array<int, 17> p4{18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 49};
 std::array<int, 17> p5{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49};
 
-int computeHammingCode(uint64_t value)
+int computeHammingCode2(uint64_t value)
 {
   // value is assumed to be 50 bits, where the 43 data bits
   // are 7-49
@@ -495,31 +496,72 @@ std::array<uint64_t, 23> m3 = {0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0
 std::array<uint64_t, 17> m4 = {0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x100000000, 0x1000000000000, 0x2000000000000};
 std::array<uint64_t, 17> m5 = {0x200000000, 0x400000000, 0x800000000, 0x1000000000, 0x2000000000, 0x4000000000, 0x8000000000, 0x10000000000, 0x20000000000, 0x40000000000, 0x80000000000, 0x100000000000, 0x200000000000, 0x400000000000, 0x800000000000, 0x1000000000000, 0x2000000000000};
 
-int computeHammingCode3(uint64_t value)
+int computeHammingCode(uint64_t value)
+{
+  return computeHammingCode4(value);
+}
+
+int computeHammingCode1(uint64_t value)
 {
   // value is assumed to be 50 bits, where the 43 data bits
   // are 7-49
 
-  int h0 = partialOddParity3(value, m0);
-  int h1 = partialOddParity3(value, m1);
-  int h2 = partialOddParity3(value, m2);
-  int h3 = partialOddParity3(value, m3);
-  int h4 = partialOddParity3(value, m4);
-  int h5 = partialOddParity3(value, m5);
+  int h0 = partialOddParity(value, m0);
+  int h1 = partialOddParity(value, m1);
+  int h2 = partialOddParity(value, m2);
+  int h3 = partialOddParity(value, m3);
+  int h4 = partialOddParity(value, m4);
+  int h5 = partialOddParity(value, m5);
   return h0 + h1 * 2 + h2 * 4 + h3 * 8 + h4 * 16 + h5 * 32;
+}
+
+template <size_t N>
+uint64_t computeMask(const std::array<uint64_t, N>& masks)
+{
+  uint64_t v{0};
+  for (auto i = 0; i < masks.size(); i++) {
+    v |= masks[i];
+  }
+  std::cout << fmt::format("0x{:X},", v);
+  return v;
+}
+
+int computeHammingCode4(uint64_t value)
+{
+  // value is assumed to be 50 bits, where the 43 data bits
+  // are 7-49
+
+  constexpr std::array<uint64_t, 6> masks = {0x2AAAB5556AD80,
+                                             0xCCCD999B3680, 0xF0F1E1E3C700,
+                                             0xFF01FE03F800, 0x30001FFFC0000,
+                                             0x3FFFE00000000};
+  int h0 = computeParity(value & masks[0]);
+  int h1 = computeParity(value & masks[1]);
+  int h2 = computeParity(value & masks[2]);
+  int h3 = computeParity(value & masks[3]);
+  int h4 = computeParity(value & masks[4]);
+  int h5 = computeParity(value & masks[5]);
+  return h0 + h1 * 2 + h2 * 4 + h3 * 8 + h4 * 16 + h5 * 32;
+}
+
+int computeHeaderParity(uint64_t v)
+{
+  return computeHeaderParity4(v);
 }
 
 /// compute parity of v, assuming it is 50 bits and
 /// represents a Sampa header
 /// (not using the existing header parity at bit position 6)
-int computeHeaderParity(uint64_t v)
+int computeHeaderParity1(uint64_t v)
 {
   int n{0};
   constexpr uint64_t one{1};
-  for (int i = 0; i < 50; i++) {
-    if (i == 6) {
-      continue;
+  for (int i = 0; i < 6; i++) {
+    if (v & (one << i)) {
+      n++;
     }
+  }
+  for (int i = 7; i < 50; i++) {
     if (v & (one << i)) {
       n++;
     }
@@ -527,6 +569,49 @@ int computeHeaderParity(uint64_t v)
   return (n + 1) % 2 == 0;
 }
 
+constexpr std::array<uint64_t, 49> parityMasks = {0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x100000000, 0x200000000, 0x400000000, 0x800000000, 0x1000000000, 0x2000000000, 0x4000000000, 0x8000000000, 0x10000000000, 0x20000000000, 0x40000000000, 0x80000000000, 0x100000000000, 0x200000000000, 0x400000000000, 0x800000000000, 0x1000000000000, 0x2000000000000};
+
+int computeHeaderParity2(uint64_t v)
+{
+  int n{0};
+
+  for (auto i = 0; i < parityMasks.size(); i++) {
+    if (v & parityMasks[i]) {
+      n++;
+    }
+  }
+  return (n + 1) % 2 == 0;
+}
+
+int computeHeaderParity3(uint64_t no)
+{
+  int result = 0;
+  no &= ~(1UL << 6); // reset bit 6
+  while (no != 0) {
+    no = no & (no - 1);
+    result ^= 1;
+  }
+
+  return (short)(result & 0x1);
+}
+
+int computeParity(uint64_t no)
+{
+  no ^= (no >> 32);
+  no ^= (no >> 16);
+  no ^= (no >> 8);
+  no ^= (no >> 4);
+  no ^= (no >> 2);
+  no ^= (no >> 1);
+  return (short)(no & 0x1);
+}
+
+int computeHeaderParity4(uint64_t no)
+{
+  constexpr uint64_t one{1};
+  no &= ~(one << 6); // reset bit 6
+  return computeParity(no);
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2
