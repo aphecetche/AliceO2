@@ -25,3 +25,11 @@ o2_add_test(sampa-cluster
             COMPONENT_NAME mch
             LABELS "mch;raw"
             PUBLIC_LINK_LIBRARIES O2::MCHRawCommon Boost::boost)
+
+if(benchmark_FOUND)
+  o2_add_executable(sampa-header
+                    COMPONENT_NAME mch
+                    SOURCES benchSampaHeader.cxx
+                    PUBLIC_LINK_LIBRARIES O2::MCHRawCommon benchmark::benchmark
+                    IS_BENCHMARK)
+endif()
