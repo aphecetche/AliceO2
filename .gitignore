@@ -76,3 +76,7 @@ bazel-*
 
 # direnv
 .envrc
+
+# python
+__pycache__
+
