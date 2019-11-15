@@ -62,3 +62,13 @@ A data buffer (basically corresponding to one RDH) of 32-bits words is given to 
 Still to be written/investigated/discussed :
 
 - how to go from detection element-wise dsid to flex dsid (0..15) (and reverse)
+
+## Generation of electronic mapping
+
+From a reference Excel file :
+
+```
+./elecmap.py -i Mapping-CH5L.xlsx -c elecmap.cxx -e elecmap.xlsx
+```
+
+The (optional) `elecmap.xlsx` output file contains the same information as `elecmap.cxx`
