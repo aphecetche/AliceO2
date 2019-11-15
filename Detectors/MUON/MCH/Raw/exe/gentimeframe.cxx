@@ -52,10 +52,15 @@
 #include "Steer/InteractionSampler.h"
 #include <array>
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <iostream>
 #include <gsl/span>
 #include <random>
 #include <vector>
+#include <map>
+
+extern std::map<int, int> toElec();
+extern uint32_t code(uint16_t, uint16_t);
 
 using namespace o2::mch;
 
@@ -95,7 +100,7 @@ std::vector<MCHDigit> generateDigits(int n, gsl::span<int> deids, gsl::span<int>
   return digits;
 }
 
-std::vector<int> getDetectionElementIds()
+std::vector<int> getAllDetectionElementIds()
 {
   std::vector<int> deids;
   mapping::forEachDetectionElement([&](int deid) {
@@ -149,10 +154,10 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
   auto cru = raw::createCRUEncoderNoPhase<raw::BareFormat, raw::ChargeSumMode>(cruId);
   uint16_t ts(0);
 
-  uint8_t solarId(0);  // FIXME: get this from digit (deid,padid)=>(....)=>(elinkid,chid)
-  uint16_t elinkId(0); // FIXME: get this from digit  "
-  uint16_t chId(0);    // FIXME: get this from digit  "
+  uint16_t chId(0); // FIXME: get this from digit  "
 
+  std::map<int, int> toelec = toElec();
+  int nadd{0};
   for (int i = 0; i < interactions.size(); i++) {
 
     auto& col = interactions[i];
@@ -162,6 +167,13 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << "INTERACTION " << col << "\n";
 
     for (auto d : digitsPerInteraction[i]) {
+      int deid = d.getDetID();
+      int dsid = 1; // FIXME get dsid from deid,padid
+      uint32_t m = toelec[code(deid, dsid)];
+      uint8_t solarId = ((m & 0xFFFF0000) >> 16) & 0xFF;
+      uint8_t elinkId = ((m & 0xFFFF)) & 0xFF;
+      fmt::printf("nadd %d deid %d dsid %d solarId %d elinkId %d chId %d ADC %d\n", nadd++,
+                  deid, dsid, solarId, elinkId, chId, static_cast<uint16_t>(d.getADC()));
       cru->addChannelData(solarId, elinkId, chId, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()))});
     }
     cru->moveToBuffer(buffer);
@@ -178,7 +190,8 @@ int main()
 
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame); // destination for records
 
-  auto deids = getDetectionElementIds();
+  //auto deids = getAllDetectionElementIds();
+  std::vector<int> deids = {505, 506, 507, 508, 509, 510, 511, 512, 513}; // CH5L
 
   // one vector of digits per interaction
   // FIXME: should get one such structure per CRU, i.e. per array of detection elements
