@@ -143,18 +143,10 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<MCHDigit>> digitsPerInteraction,
             std::vector<uint8_t>& buffer)
 {
-  // for (auto i = 0; i < interactions.size(); i++) {
-  //   std::cout << interactions[i] << " ";
-  //   std::cout << " ndigits=" << digitsPerInteraction[i].size() << "\n";
-  //   // for (auto d : digitsPerEvent[i]) {
-  //   //   std::cout << d << " ";
-  //   // }
-  //   // std::cout << "\n";
-  // }
-
   uint8_t cruId{0}; // FIXME: get this from digit (deid,padid)=>(cruid,solarid,dsid,chid)
 
-  auto cru = raw::createCRUEncoderNoPhase<raw::UserLogicFormat, raw::ChargeSumMode>(cruId);
+  // auto cru = raw::createCRUEncoderNoPhase<raw::UserLogicFormat, raw::ChargeSumMode>(cruId);
+  auto cru = raw::createCRUEncoderNoPhase<raw::BareFormat, raw::ChargeSumMode>(cruId);
   uint16_t ts(0);
 
   uint8_t solarId(0);  // FIXME: get this from digit (deid,padid)=>(....)=>(elinkid,chid)
@@ -166,6 +158,8 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     auto& col = interactions[i];
 
     cru->startHeartbeatFrame(col.orbit, col.bc);
+
+    std::cout << "INTERACTION " << col << "\n";
 
     for (auto d : digitsPerInteraction[i]) {
       cru->addChannelData(solarId, elinkId, chId, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()))});

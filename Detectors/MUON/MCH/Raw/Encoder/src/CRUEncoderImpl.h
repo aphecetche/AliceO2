@@ -118,9 +118,7 @@ void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload
-    for (auto i = 0; i < gbtBuffer.size(); i++) {
-      mBuffer.emplace_back(gbtBuffer[i]);
-    }
+    std::copy(gbtBuffer.begin(), gbtBuffer.end(), std::back_inserter(mBuffer));
   }
 }
 
@@ -128,13 +126,7 @@ template <typename FORMAT, typename CHARGESUM, typename RDH>
 size_t CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::moveToBuffer(std::vector<uint8_t>& buffer)
 {
   closeHeartbeatFrame(mOrbit, mBunchCrossing);
-  for (auto& w : mBuffer) {
-    buffer.emplace_back(w);
-    // buffer.emplace_back(static_cast<uint8_t>(w & 0x000000FF));
-    // buffer.emplace_back(static_cast<uint8_t>((w & 0x0000FF00) >> 8));
-    // buffer.emplace_back(static_cast<uint8_t>((w & 0x00FF0000) >> 16));
-    // buffer.emplace_back(static_cast<uint8_t>((w & 0xFF000000) >> 24));
-  }
+  std::copy(mBuffer.begin(), mBuffer.end(), std::back_inserter(buffer));
   auto s = mBuffer.size();
   mBuffer.clear();
   return s;

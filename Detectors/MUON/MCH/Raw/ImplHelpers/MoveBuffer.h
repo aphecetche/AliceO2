@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <iostream>
+#include <gsl/span>
 
 namespace o2::mch::raw::impl
 {
@@ -24,22 +25,20 @@ size_t moveBuffer(std::vector<uint64_t>& b64,
                   std::vector<uint8_t>& b8,
                   uint64_t prefix = 0)
 {
+  constexpr uint64_t m = 0xFF;
   auto s8 = b8.size();
   b8.reserve(s8 + b64.size() / 8);
   for (auto& b : b64) {
     uint64_t g = b | prefix;
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF))));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF00)) >> 8));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF0000)) >> 16));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF000000)) >> 24));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF00000000)) >> 32));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF0000000000)) >> 40));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF000000000000)) >> 48));
-    b8.emplace_back(static_cast<uint8_t>((g & UINT64_C(0xFF00000000000000)) >> 56));
+    for (uint64_t i = 0; i < 64; i += 8) {
+      uint64_t w = m << i;
+      b8.emplace_back(static_cast<uint8_t>((g & w) >> i));
+    }
   }
   b64.clear();
   return b8.size() - s8;
 }
+
 } // namespace o2::mch::raw::impl
 
 #endif
