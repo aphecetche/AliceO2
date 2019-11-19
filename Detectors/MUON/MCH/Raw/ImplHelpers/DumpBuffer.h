@@ -64,7 +64,7 @@ void dumpBuffer(const std::vector<uint8_t>& buffer)
                              (w & 0x3FF00000) >> 20,
                              (w & 0xFFC00) >> 10,
                              (w & 0x3FF));
-    SampaHeader h(w);
+    SampaHeader h(w & 0x3FFFFFFFFFFFF);
     if (h.packetType() == SampaPacketType::Data) {
       std::cout << fmt::format(" n10 {:4d} chip {:2d} ch {:2d}",
                                h.nof10BitWords(), h.chipAddress(), h.channelAddress());

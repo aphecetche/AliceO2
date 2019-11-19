@@ -123,6 +123,7 @@ void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_
     }
     assert(gbtBuffer.size() % 4 == 0);
     auto payloadSize = gbtBuffer.size(); // in bytes
+    impl::assertIsInRange("payloadSize", payloadSize, 0, (static_cast<uint32_t>(1) << 31) - 64);
     auto rdh = createRDH<RDH>(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);

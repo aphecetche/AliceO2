@@ -86,13 +86,20 @@ size_t paginateBuffer(gsl::span<uint8_t> compactBuffer,
   size_t npages{0};
 
   while (inputPos < compactBuffer.size()) {
-    auto rdh = createRDH<RDH>(compactBuffer.subspan(inputPos));
+    std::cout << "inputPos= " << inputPos << " sizeof(rdh)= " << sizeof(RDH) << "\n";
+    auto rdh = createRDH<RDH>(compactBuffer.subspan(inputPos, sizeof(RDH)));
     if (!isValid(rdh)) {
       std::cout << rdh << "\n";
+      for (int i = 0; i < 64; i++) {
+        std::cout << fmt::format("{:2x} ", compactBuffer[i + inputPos]);
+        if ((i + 1) % 16 == 0) {
+          std::cout << "\n";
+        }
+      }
       throw std::logic_error("got an invalid rdh");
     }
     auto payloadSize = rdhPayloadSize(rdh);
-    inputPos += sizeof(rdh);
+    inputPos += sizeof(RDH);
     const auto inBuffer = compactBuffer.subspan(inputPos, payloadSize);
     if (rdh.offsetToNext < pageSize) {
       // payload not big enough to fill a complete page : we add padding words

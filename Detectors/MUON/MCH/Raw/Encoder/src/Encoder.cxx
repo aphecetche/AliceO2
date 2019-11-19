@@ -40,6 +40,10 @@ struct CRUEncoderCreator {
 template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase>
 std::unique_ptr<CRUEncoder> createCRUEncoder(uint8_t cruId, const ElectronicMapper& elecmap)
 {
+  auto crus = elecmap.cruIds();
+  if (std::find(crus.begin(), crus.end(), cruId) == crus.end()) {
+    return nullptr;
+  }
   return impl::CRUEncoderCreator<FORMAT, CHARGESUM, RDH, forceNoPhase>::_(cruId, elecmap);
 }
 
