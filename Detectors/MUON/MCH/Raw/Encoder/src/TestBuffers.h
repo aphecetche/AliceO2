@@ -18,19 +18,35 @@
 #include <fmt/format.h>
 #include "MCHRawEncoder/CRUEncoder.h"
 #include "MCHRawEncoder/Encoder.h"
+#include "MCHRawEncoder/ElectronicMapper.h"
 
 namespace o2::mch::raw::impl
 {
 
+struct MockElectronicMapper : public ElectronicMapper {
+  std::pair<uint16_t, uint16_t>
+    solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid) const override
+  {
+    return std::make_pair(0, 0);
+  }
+
+  std::set<uint16_t> solarIds(uint8_t cruId) const override
+  {
+    return {0, 1, 2, 12};
+  }
+
+  std::set<uint16_t> cruIds() const override
+  {
+    return {0};
+  }
+};
+
 std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId);
 
-template <typename FORMAT, typename CHARGESUM>
+template <typename FORMAT, typename CHARGESUM, typename RDH>
 std::vector<uint8_t> createPedestalBuffer(int elinkId)
 {
-  uint8_t cruId(0);
-
-  auto cru = createCRUEncoderNoPhase<FORMAT, CHARGESUM>(cruId);
-
+  auto cru = createCRUEncoder<FORMAT, CHARGESUM, RDH, true>(0, MockElectronicMapper{});
   return encodePedestalBuffer(*cru, elinkId);
 }
 

@@ -13,15 +13,18 @@
 
 #include "MCHRawEncoder/CRUEncoder.h"
 #include <memory>
+#include "MCHRawEncoder/ElectronicMapper.h"
 
 namespace o2::mch::raw
 {
 
-template <typename FORMAT, typename CHARGESUM>
-std::unique_ptr<CRUEncoder> createCRUEncoder(uint8_t cruId);
-
-template <typename FORMAT, typename CHARGESUM>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase(uint8_t cruId);
+/// createCRUEncoder creates an encoder
+/// \param FORMAT defines the data format (either BareFormat or UserLogic)
+/// \param CHARGESUM defines the data format mode (either SampleMode or ChargeSumMode)
+/// \param ELECMAP defines the electronic mapper to be used
+/// \param forceNoPhase to be deprecated ?
+template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase = false>
+std::unique_ptr<CRUEncoder> createCRUEncoder(uint8_t cruId, const ElectronicMapper& elecmap);
 
 } // namespace o2::mch::raw
 #endif

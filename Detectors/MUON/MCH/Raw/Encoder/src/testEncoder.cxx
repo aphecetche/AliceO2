@@ -18,6 +18,7 @@
 #include <boost/test/unit_test.hpp>
 #include "TestBuffers.h"
 #include "MCHRawCommon/DataFormats.h"
+#include "Headers/RAWDataHeader.h"
 
 using namespace o2::mch::raw;
 
@@ -27,7 +28,7 @@ BOOST_AUTO_TEST_SUITE(encoder)
 
 BOOST_AUTO_TEST_CASE(GenerateBarePedestalBuffer)
 {
-  auto buffer = impl::createPedestalBuffer<BareFormat, SampleMode>(0);
+  auto buffer = impl::createPedestalBuffer<BareFormat, SampleMode, o2::header::RAWDataHeaderV4>(0);
   BOOST_CHECK_EQUAL(buffer.size(), 57504);
 }
 

@@ -12,6 +12,7 @@
 #define O2_MCH_RAW_CRU_ENCODER_IMPL_H
 
 #include "MCHRawEncoder/CRUEncoder.h"
+#include "MCHRawEncoder/ElectronicMapper.h"
 #include "Assertions.h"
 #include "GBTEncoder.h"
 #include "Headers/RAWDataHeader.h"
@@ -20,6 +21,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fmt/format.h>
+#include <gsl/span>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -41,7 +43,7 @@ class CRUEncoderImpl : public CRUEncoder
  public:
   /// Constructor.
   /// \param cruId the CRU we're encoding data for.
-  CRUEncoderImpl(uint16_t cruId);
+  explicit CRUEncoderImpl(uint16_t cruId, const ElectronicMapper& elecmap);
 
   /** @name Main interface.
     */
@@ -76,11 +78,12 @@ class CRUEncoderImpl : public CRUEncoder
   uint16_t mBunchCrossing;
   std::vector<uint8_t> mBuffer;
   std::array<GBTEncoder<FORMAT, CHARGESUM>, 24> mGBTs;
+  std::vector<uint16_t> mSolarIds;
   bool mFirstHBFrame;
 };
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
+CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId, const ElectronicMapper& elecmap)
   : mCruId(cruId),
     mOrbit{},
     mBunchCrossing{},
@@ -89,13 +92,19 @@ CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId)
     mFirstHBFrame{true}
 {
   impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
-  // mBuffer.reserve(1 << 12);
+  auto s = elecmap.solarIds(cruId);
+  std::copy(s.begin(), s.end(), std::back_inserter(mSolarIds));
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
 {
-  mGBTs[solarId].addChannelData(elinkId, chId, data);
+  auto ix = std::find(mSolarIds.begin(), mSolarIds.end(), solarId);
+  if (ix == mSolarIds.end()) {
+    throw std::invalid_argument(fmt::format("solarId {} is not known to CRU {}\n", solarId, mCruId));
+  }
+  auto relativeSolarId = std::distance(mSolarIds.begin(), ix);
+  mGBTs.at(relativeSolarId).addChannelData(elinkId, chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
