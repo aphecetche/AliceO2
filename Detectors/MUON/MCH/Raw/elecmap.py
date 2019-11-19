@@ -33,4 +33,4 @@ if args.excel:
     df.to_excel(args.excel)
 
 if args.code:
-    elecmap.gencode.do(df)
+    elecmap.gencode.do(df,{500,501,505})

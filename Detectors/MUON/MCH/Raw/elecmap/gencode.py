@@ -34,7 +34,7 @@ def insert_row_in_map(out,row):
     if row.ds_id_4:
          insert_in_map(row.ds_id_4)
 
-def cru2solar(df, out):
+def cru2solar(df, out,deids):
 
     s = '''
     namespace {
@@ -47,9 +47,10 @@ def cru2solar(df, out):
     cru2solar_dict = {}
 
     for row in df.itertuples():
-        if not row.cru_id in cru2solar_dict:
-            cru2solar_dict[row.cru_id] = set()
-            cru2solar_dict[row.cru_id].add(row.solar_id)
+        if row.de_id in deids:
+            if not row.cru_id in cru2solar_dict:
+                cru2solar_dict[row.cru_id] = set()
+                cru2solar_dict[row.cru_id].add(row.solar_id)
 
     for k, v in cru2solar_dict.items():
         for sid in v:
@@ -64,6 +65,28 @@ def cru2solar(df, out):
     
     return c
 
+def deid2cru(df,out,deids):
+
+    s='''
+    std::map<uint16_t,uint8_t> createDeId2CruIdMap() {
+    std::map<uint16_t,uint8_t> m;
+'''
+
+    c = Template("  m[${deid}]=${cruid};\n");
+
+    deid2cruid_dict = {}
+
+    for row in df.itertuples():
+        if row.de_id in deids:
+            if not row.de_id in deid2cruid_dict:
+                deid2cruid_dict[row.de_id] = row.cru_id
+
+    for k, v in deid2cruid_dict.items():
+        s += c.substitute(deid=k,cruid=v)
+
+    s += "return m;}\n"
+    out.write(s)
+
 def generate_one_chamber_file(df,chamber,deids):
     out = open_generated("Gen{}.cxx".format(chamber))
 
@@ -72,11 +95,7 @@ def generate_one_chamber_file(df,chamber,deids):
                  #include <cstdint>
                  #include <map>
 
-                 inline uint32_t encode(uint16_t a, uint16_t b) {
-                 return a<<16|b;
-                }
-
-                 void fill${ch}(std::map<uint16_t,uint16_t>& m) {
+                 void fill${ch}(std::map<uint32_t,uint32_t>& m) {
                  ''')
 
     out.write(t.substitute(ch=chamber))
@@ -88,7 +107,7 @@ def generate_one_chamber_file(df,chamber,deids):
     close_generated(out)
 
 
-def do(df):
+def do(df,deids):
 
     out = open_generated("GenElectronicMapper.cxx")
 
@@ -99,12 +118,25 @@ def do(df):
               #include <utility>
 
               #include "MCHRawEncoder/ElectronicMapper.h"
+
+                 uint32_t encode(uint16_t a, uint16_t b) {
+                 return a<<16|b;
+                }
+                 uint16_t decode_a(uint32_t x) {
+                 return static_cast<uint16_t>((x & 0xFFFF0000) >> 16);
+                }
+                 uint16_t decode_b(uint32_t x) {
+                 return static_cast<uint16_t>(x & 0xFFFF);
+                }
+
               ''')
 
-    deds2solargrp(df,out)
+    deds2solargrp(df,out,deids)
 
-    crus = cru2solar(df,out)
+    crus = cru2solar(df,out,deids)
 
+    deid2cru(df,out,deids)
+    
     out.write('''
               namespace o2::mch::raw {
 
@@ -114,39 +146,67 @@ def do(df):
               solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid)
               const override
               {
-              static std::map<uint16_t,uint16_t> m = createDeDsMap();
+              static std::map<uint32_t,uint32_t> m = createDeDsMap();
               auto it = m.find(encode(deid,dsid));
-              return *it;
+              if (it==m.end()) {
+              return {0xFFFF,0xFFFF};
+             }
+              return {decode_a(it->second),decode_b(it->second)};
              }
 
               std::set<uint16_t> solarIds(uint8_t cruId) const override
               {
               static std::map<uint16_t,std::set<uint16_t>> m = createCru2SolarMap();
+              auto it = m.find(cruId);
+              if (it==m.end()) {
+              return {};
+             }
               return m[cruId];
+             }
+
+              uint8_t cruId(uint16_t deid) const override
+              {
+              static std::map<uint16_t,uint8_t> m = createDeId2CruIdMap();
+              auto it = m.find(deid);
+              if (it==m.end()) {
+              return 0xFF;
+             }
+              return m[deid];
              }
 
               std::set<uint16_t> cruIds() const override {
               ''')
     out.write(" return {{ {} }};".format(crus))
 
-    out.write('}};}')
+    out.write('}};')
+
+
+    out.write('''
+template <>
+std::unique_ptr<ElectronicMapper> createElectronicMapper<ElectronicMapperGenerated>()
+{
+  return std::make_unique<ElectronicMapperGeneratedImpl>();
+}
+              ''')
+
+    out.write('}')
 
     close_generated(out)
 
-def deds2solargrp(df,out):
+def deds2solargrp(df,out,deids):
 
     chambers = { "ch5" }
     s = ""
 
     for chamber in chambers:
         out.write('#include "Gen{}.cxx"\n'.format(chamber))
-        generate_one_chamber_file(df,chamber,{501,502,505})
+        generate_one_chamber_file(df,chamber,deids)
         s += ' fill{}(m);\n'.format(chamber)
     
     out.write('''
               namespace {
-    std::map<uint16_t,uint16_t> createDeDsMap() {
-              std::map<uint16_t,uint16_t> m;
+    std::map<uint32_t,uint32_t> createDeDsMap() {
+              std::map<uint32_t,uint32_t> m;
               ''')
     out.write(s)
     out.write(' return m;} }')
