@@ -39,6 +39,11 @@ struct MockElectronicMapper : public ElectronicMapper {
   {
     return {0};
   }
+
+  uint8_t cruId(uint16_t deid) const override
+  {
+    return 0;
+  }
 };
 
 std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId);

@@ -45,11 +45,12 @@
 
 #include "CommonDataFormat/InteractionRecord.h"
 #include "Headers/RAWDataHeader.h"
-#include "MCHMappingInterface/Segmentation.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawCommon/RDHManip.h"
 #include "MCHRawEncoder/ElectronicMapper.h"
 #include "MCHRawEncoder/Encoder.h"
+#include "MCHRawEncoder/Paginator.h"
 #include "MCHSimulation/Digit.h"
 #include "Steer/InteractionSampler.h"
 #include <array>
@@ -58,15 +59,15 @@
 #include <gsl/span>
 #include <iostream>
 #include <map>
-#include <random>
 #include <vector>
-
-extern std::map<int, int> toElec();
-extern uint32_t code(uint16_t, uint16_t);
+#include <boost/program_options.hpp>
+#include <fstream>
+#include "gtfGenerateDigits.h"
+#include "gtfSegmentation.h"
+#include "DumpBuffer.h"
 
 using namespace o2::mch;
-
-using MCHDigit = Digit;
+namespace po = boost::program_options;
 
 std::vector<o2::InteractionTimeRecord> getCollisions(o2::steer::InteractionSampler& sampler,
                                                      int nofCollisions)
@@ -78,30 +79,6 @@ std::vector<o2::InteractionTimeRecord> getCollisions(o2::steer::InteractionSampl
   return records;
 }
 
-// generate n digits randomly distributed over the detection elements
-// whose ids are within the deids span
-std::vector<MCHDigit> generateDigits(int n, gsl::span<int> deids, gsl::span<int> nofpads)
-{
-  std::vector<MCHDigit> digits;
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-  std::uniform_int_distribution<> disDeId(0, deids.size() - 1);
-  // std::uniform_int_distribution<> disADC(0, 1023);
-
-  assert(deids.size() == nofpads.size());
-  for (auto i = 0; i < n; i++) {
-    int j = disDeId(gen);
-    int deid = deids[j];
-    std::uniform_int_distribution<> np(0, nofpads[j] - 1);
-    int padid = np(gen);
-    // double adc = disADC(gen);
-    double adc = padid;
-    double time = 0;
-    digits.emplace_back(time, deid, padid, adc);
-  }
-  return digits;
-}
-
 std::vector<int> getAllDetectionElementIds()
 {
   std::vector<int> deids;
@@ -111,101 +88,149 @@ std::vector<int> getAllDetectionElementIds()
   return deids;
 }
 
-std::vector<std::vector<MCHDigit>> getDigits(int nofEvents, gsl::span<int> deids, float occupancy)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void encodeDigits(gsl::span<o2::mch::Digit> digits,
+                  std::map<int, std::unique_ptr<raw::CRUEncoder>>& crus,
+                  o2::mch::raw::ElectronicMapper& elecmap,
+                  uint32_t orbit,
+                  uint16_t bc)
+
 {
-  std::vector<std::vector<MCHDigit>> digitsPerEvent;
-  digitsPerEvent.reserve(nofEvents); // one vector of digits per event
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::map<int, bool> startHB;
 
-  std::vector<int> nofPads;
-  int totalPads{0};
-  for (auto d : deids) {
-    mapping::Segmentation seg(d);
-    nofPads.emplace_back(seg.nofPads());
-    totalPads += seg.nofPads();
+  for (auto d : digits) {
+    int deid = d.getDetID();
+    uint8_t cruId = elecmap.cruId(deid);
+    if (cruId == 0xFF) {
+      // std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
+      continue;
+    }
+    if (crus.find(cruId) == crus.end()) {
+      crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, elecmap);
+      fmt::printf("Create cru %d\n", cruId);
+    }
+    auto& cru = crus[cruId];
+    if (!cru) {
+      continue;
+      // std::cout << "No encoder made for CRU " << cruId << "\n";
+    }
+    if (!startHB[cruId]) {
+      cru->startHeartbeatFrame(orbit, bc);
+      fmt::printf("startHB for CRU %d orbit %d bc %d\n", cruId, orbit, bc);
+      startHB[cruId] = true;
+    }
+    int dsid = segmentation(deid).padDualSampaId(d.getPadID());
+    int chid = segmentation(deid).padDualSampaChannel(d.getPadID());
+    auto p = elecmap.solarIdAndGroupIdFromDeIdAndDsId(deid, dsid);
+    uint16_t solarId = p.first;
+    uint16_t elinkId = p.second;
+    uint16_t ts(0); // FIXME: simulate something here ?
+    // fmt::printf("nadd %8d cruid %2d deid %4d dsid %4d solarId %3d elinkId %2d chId %2d ADC %4d\n", nadd++, cruId,
+    //             deid, dsid, solarId, elinkId, chid, static_cast<uint16_t>(d.getADC()));
+    cru->addChannelData(solarId, elinkId, chid % 32, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()))});
   }
-
-  std::poisson_distribution<> dis(static_cast<int>(occupancy * totalPads));
-
-  for (auto i = 0; i < nofEvents; i++) {
-    // draw n from mu
-    int n = static_cast<int>(dis(gen));
-    // generate n random digits
-    auto digits = generateDigits(n, deids, gsl::make_span(nofPads));
-    // add those n digits into this event
-    digitsPerEvent.push_back(digits);
-  }
-  return digitsPerEvent;
 }
 
-std::ostream& operator<<(std::ostream& os, const MCHDigit& d)
-{
-  os << fmt::format("DE {:4d} PAD {:6d} ADC {:g}\n",
-                    d.getDetID(), d.getPadID(), d.getADC());
-  return os;
-}
-
+template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
-            gsl::span<std::vector<MCHDigit>> digitsPerInteraction,
+            gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
             std::vector<uint8_t>& buffer)
 {
-  uint8_t cruId{0}; // FIXME: get this from digit (deid,padid)=>(cruid,solarid,dsid,chid)
+  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
+  std::map<int, std::unique_ptr<raw::CRUEncoder>> crus;
 
-  // auto cru = raw::createCRUEncoderNoPhase<raw::UserLogicFormat, raw::ChargeSumMode>(cruId);
-  auto elecmap = raw::createElectronicMapper(raw::ElectronicMapperGenerated{});
-  auto cru = raw::createCRUEncoder<raw::BareFormat, raw::ChargeSumMode,
-                                   o2::header::RAWDataHeaderV4>(cruId,
-                                                                *elecmap);
-  uint16_t ts(0);
-
-  uint16_t chId(0); // FIXME: get this from digit  "
-
-  std::map<int, int> toelec = toElec();
   int nadd{0};
+
   for (int i = 0; i < interactions.size(); i++) {
 
     auto& col = interactions[i];
 
-    cru->startHeartbeatFrame(col.orbit, col.bc);
-
     std::cout << "INTERACTION " << col << "\n";
 
-    for (auto d : digitsPerInteraction[i]) {
-      int deid = d.getDetID();
-      int dsid = 1; // FIXME get dsid from deid,padid
-      uint32_t m = toelec[code(deid, dsid)];
-      uint8_t solarId = ((m & 0xFFFF0000) >> 16) & 0xFF;
-      uint8_t elinkId = ((m & 0xFFFF)) & 0xFF;
-      fmt::printf("nadd %d deid %d dsid %d solarId %d elinkId %d chId %d ADC %d\n", nadd++,
-                  deid, dsid, solarId, elinkId, chId, static_cast<uint16_t>(d.getADC()));
-      cru->addChannelData(solarId, elinkId, chId, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()))});
+    encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
+                                         crus, *elecmap, col.orbit, col.bc);
+
+    for (auto& p : crus) {
+      if (p.second) {
+        p.second->moveToBuffer(buffer);
+      }
     }
-    cru->moveToBuffer(buffer);
+
     std::cout << fmt::format("interaction {} buffer size {}\n", i, buffer.size());
   }
 }
 
-int main()
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+void gentimeframe(std::ostream& outfile)
 {
   o2::steer::InteractionSampler sampler; // default sampler with default filling scheme, rate of 50 kHz
 
-  constexpr int nofInteractionsPerTimeFrame{1000};
-  constexpr float occupancy = 1E-2;
+  constexpr int nofInteractionsPerTimeFrame{10};
+  constexpr float occupancy = 1E-3;
 
-  std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame); // destination for records
+  std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
 
   //auto deids = getAllDetectionElementIds();
   std::vector<int> deids = {505, 506, 507, 508, 509, 510, 511, 512, 513}; // CH5L
 
   // one vector of digits per interaction
-  // FIXME: should get one such structure per CRU, i.e. per array of detection elements
-  std::vector<std::vector<MCHDigit>> digitsPerInteraction = getDigits(interactions.capacity(), deids, occupancy);
+  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
 
-  // encode is supposed to be for 1 CRU only
   std::vector<uint8_t> buffer;
-  encode(interactions, digitsPerInteraction, buffer);
+  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, buffer);
+  std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
-  std::cout << fmt::format("output buffer is {} MB\n", buffer.size() / 1024 / 1024);
+  std::cout << "--------------------\n";
+  o2::mch::raw::showRDHs<RDH>(buffer);
+
+  o2::mch::raw::impl::dumpBuffer(buffer);
+
+  gsl::span<uint32_t> buffer32(reinterpret_cast<uint32_t*>(&buffer[0]),
+                               buffer.size() / 4);
+  o2::mch::raw::dumpRDHBuffer(buffer32, "");
+
+  std::cout << "-------------------- Paginating ...\n";
+  std::vector<uint8_t> pages;
+  size_t pageSize = 8192;
+  uint8_t paddingByte = 0x0;
+  gsl::span<uint8_t> b8(&buffer[0], buffer.size());
+  raw::paginateBuffer<RDH>(b8, pages, pageSize, paddingByte);
+  // outfile.write(reinterpret_cast<char*>(&pages[0]), pages.size());
+}
+
+int main(int argc, char* argv[])
+{
+  po::options_description generic("options");
+  bool userLogic{false};
+  std::string filename;
+  po::variables_map vm;
+
+  // clang-format off
+  generic.add_options()
+      ("help:h", "produce help message")
+      ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
+      ("outfile,o",po::value<std::string>(&filename)->required(),"output filename")
+      ;
+  // clang-format on
+
+  po::options_description cmdline;
+  cmdline.add(generic);
+
+  po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
+  po::notify(vm);
+
+  if (vm.count("help")) {
+    std::cout << generic << "\n";
+    return 2;
+  }
+
+  std::ofstream outfile(filename);
+
+  if (userLogic) {
+    gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile);
+  }
+  if (!userLogic) {
+    gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile);
+  }
   return 0;
 }

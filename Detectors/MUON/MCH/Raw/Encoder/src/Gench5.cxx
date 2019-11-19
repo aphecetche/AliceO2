@@ -5,12 +5,7 @@
 #include <cstdint>
 #include <map>
 
-inline uint32_t encode(uint16_t a, uint16_t b)
-{
-  return a << 16 | b;
-}
-
-void fillch5(std::map<uint16_t, uint16_t>& m)
+void fillch5(std::map<uint32_t, uint32_t>& m)
 {
   m.insert(std::make_pair(encode(505, 16), encode(144, 0)));
   m.insert(std::make_pair(encode(505, 15), encode(144, 0)));
@@ -41,7 +36,7 @@ void fillch5(std::map<uint16_t, uint16_t>& m)
   m.insert(std::make_pair(encode(505, 1142), encode(144, 5)));
   m.insert(std::make_pair(encode(505, 1141), encode(144, 5)));
   m.insert(std::make_pair(encode(505, 1140), encode(144, 5)));
-  m.insert(std::make_pair(encode(505, 1039), encode(144, 5)));
+  m.insert(std::make_pair(encode(505, 1139), encode(144, 5)));
   m.insert(std::make_pair(encode(505, 1133), encode(144, 7)));
   m.insert(std::make_pair(encode(505, 1132), encode(144, 7)));
   m.insert(std::make_pair(encode(505, 1131), encode(144, 7)));

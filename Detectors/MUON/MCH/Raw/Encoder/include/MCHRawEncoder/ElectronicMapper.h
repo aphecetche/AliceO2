@@ -30,6 +30,9 @@ class ElectronicMapper
   /// to the given cru
   virtual std::set<uint16_t> solarIds(uint8_t cruId) const = 0;
 
+  /// cruId returns the identifier of the CRU connected to that detection element
+  virtual uint8_t cruId(uint16_t deid) const = 0;
+
   /// cruIds returns the set of MCH CRU identifiers
   virtual std::set<uint16_t> cruIds() const = 0;
 
@@ -42,7 +45,7 @@ struct ElectronicMapperFile {
 };
 
 template <typename T>
-std::unique_ptr<ElectronicMapper> createElectronicMapper(T mapper);
+std::unique_ptr<ElectronicMapper> createElectronicMapper();
 
 } // namespace o2::mch::raw
 #endif
