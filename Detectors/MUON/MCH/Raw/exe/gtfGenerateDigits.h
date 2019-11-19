@@ -8,12 +8,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHRawEncoder/ElectronicMapper.h"
-namespace o2::mch::raw
-{
-template <>
-std::unique_ptr<ElectronicMapper> createElectronicMapper(ElectronicMapperGenerated mapper)
-{
-  return
-}
-} // namespace o2::mch::raw
+#ifndef O2_MCH_RAW_EXE_GTF_GENERATE_DIGITS_H
+#define O2_MCH_RAW_EXE_GTF_GENERATE_DIGITS_H
+
+#include <vector>
+#include <gsl/span>
+#include "MCHSimulation/Digit.h"
+
+std::vector<std::vector<o2::mch::Digit>> generateDigits(int nofEvents, gsl::span<int> deids, float occupancy);
+
+#endif

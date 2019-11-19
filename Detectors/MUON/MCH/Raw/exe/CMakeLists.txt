@@ -15,11 +15,12 @@ o2_add_executable(
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options)
 
 o2_add_executable(generate-timeframe
-        SOURCES gentimeframe.cxx CH5L.cxx
+        SOURCES gentimeframe.cxx gtfSegmentation.cxx gtfGenerateDigits.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
         O2::Steer
         O2::MCHSimulation
         O2::MCHMappingImpl3
+        O2::MCHRawImplHelpers
         fmt::fmt
         Boost::program_options)
