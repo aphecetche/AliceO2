@@ -10,7 +10,7 @@
 
 o2_add_library(MCHRawEncoder
                SOURCES src/Encoder.cxx src/Paginator.cxx src/BitSet.cxx
-                       src/ElinkEncoder.cxx
+                       src/ElinkEncoder.cxx src/GenElectronicMapper.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 if(BUILD_TESTING)
