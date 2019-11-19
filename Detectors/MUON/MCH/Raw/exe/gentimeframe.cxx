@@ -44,20 +44,22 @@
 //
 
 #include "CommonDataFormat/InteractionRecord.h"
+#include "Headers/RAWDataHeader.h"
 #include "MCHMappingInterface/Segmentation.h"
-#include "MCHSimulation/Digit.h"
-#include "MCHRawEncoder/Encoder.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawEncoder/ElectronicMapper.h"
+#include "MCHRawEncoder/Encoder.h"
+#include "MCHSimulation/Digit.h"
 #include "Steer/InteractionSampler.h"
 #include <array>
 #include <fmt/format.h>
 #include <fmt/printf.h>
-#include <iostream>
 #include <gsl/span>
+#include <iostream>
+#include <map>
 #include <random>
 #include <vector>
-#include <map>
 
 extern std::map<int, int> toElec();
 extern uint32_t code(uint16_t, uint16_t);
@@ -151,7 +153,10 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
   uint8_t cruId{0}; // FIXME: get this from digit (deid,padid)=>(cruid,solarid,dsid,chid)
 
   // auto cru = raw::createCRUEncoderNoPhase<raw::UserLogicFormat, raw::ChargeSumMode>(cruId);
-  auto cru = raw::createCRUEncoderNoPhase<raw::BareFormat, raw::ChargeSumMode>(cruId);
+  auto elecmap = raw::createElectronicMapper(raw::ElectronicMapperGenerated{});
+  auto cru = raw::createCRUEncoder<raw::BareFormat, raw::ChargeSumMode,
+                                   o2::header::RAWDataHeaderV4>(cruId,
+                                                                *elecmap);
   uint16_t ts(0);
 
   uint16_t chId(0); // FIXME: get this from digit  "

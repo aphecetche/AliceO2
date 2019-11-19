@@ -18,12 +18,14 @@ def _simplify_dataframe(df):
        group_id = int(row.solar.split('-')[3].strip('J '))-1
        solar_id = crate*8 + solar_pos
        de_id = int(row.de.strip("DE "))
-       d = dict({'solar_id': solar_id,
-                 'group_id': group_id,
-                 'de_id': de_id,
-                 'ds_id_0': int(row.ds1),
-                 'ds_id_1': int(row.ds2)
-                })
+       d = dict({
+           'cru_id': row.cru,
+           'solar_id': solar_id,
+           'group_id': group_id,
+           'de_id': de_id,
+           'ds_id_0': int(row.ds1),
+           'ds_id_1': int(row.ds2)
+       })
        d['ds_id_2'] = int(row.ds3) if pd.notna(row.ds3) else 0
        d['ds_id_3'] = int(row.ds4) if pd.notna(row.ds4) else 0
        d['ds_id_4'] = int(row.ds5) if pd.notna(row.ds5) else 0
@@ -35,7 +37,10 @@ def _simplify_dataframe(df):
    return sf
 
 def get_dataframe(filename):
-    f = pd.read_excel(filename,names=["cru","fiber","crate","solar","slat","length","de","ds1","ds2","ds3","ds4","ds5"],na_filter=True)
+    f = pd.read_excel(filename,names=["cru","fiber","crate","solar","slat",
+                                      "length","de",
+                                      "ds1","ds2","ds3","ds4","ds5","dummy"],
+                      na_filter=True)
     return _simplify_dataframe(f)
 
 def is_valid_file(parser, arg):

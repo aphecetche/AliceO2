@@ -123,7 +123,7 @@ void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkId, uint8_t chId
                                                    const std::vector<SampaCluster>& data)
 {
   impl::assertIsInRange("elinkId", elinkId, 0, 39);
-  mElinks[elinkId].addChannelData(chId, data);
+  mElinks.at(elinkId).addChannelData(chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM>

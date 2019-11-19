@@ -112,7 +112,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
 BOOST_AUTO_TEST_CASE(GenerateBareFile)
 {
   std::ofstream out("test.bare.raw", std::ios::binary);
-  auto buffer = impl::createPedestalBuffer<BareFormat, SampleMode>(0);
+  auto buffer = impl::createPedestalBuffer<BareFormat, SampleMode, o2::header::RAWDataHeaderV4>(0);
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);
   out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(GenerateBareFile)
 BOOST_AUTO_TEST_CASE(GenerateUserLogicFile)
 {
   std::ofstream out("test.raw", std::ios::binary);
-  auto buffer = impl::createPedestalBuffer<UserLogicFormat, SampleMode>(0);
+  auto buffer = impl::createPedestalBuffer<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4>(0);
   impl::dumpBuffer(buffer);
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, 8192, 0x44);

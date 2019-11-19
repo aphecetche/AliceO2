@@ -44,6 +44,7 @@ class BitSet
   explicit BitSet(uint64_t v, int n = -1);
   ///@}
 
+ public:
   // check equality
   bool operator==(const BitSet& rhs) const;
   bool operator!=(const BitSet& rhs) const;
@@ -159,6 +160,7 @@ class BitSet
   int mLen;    // actual number of bits we are holding
   int mMaxLen; // the max number of bits we've ever held
   std::vector<uint8_t> mBytes;
+  static int nofInstances;
 };
 
 int circularAppend(BitSet& bs, const BitSet& ringBuffer, int startBit, int n);
