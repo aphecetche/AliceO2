@@ -16,59 +16,45 @@
 #include "BareElinkEncoderMerger.h"
 #include "UserLogicElinkEncoder.h"
 #include "UserLogicElinkEncoderMerger.h"
+#include "MCHRawEncoder/ElectronicMapper.h"
+#include <gsl/span>
 
 namespace o2::mch::raw
 {
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, ChargeSumMode>(uint8_t cruId)
+namespace impl
 {
-  return std::make_unique<CRUEncoderImpl<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4>>(cruId);
+// cannot partially specialiaze a function, so create a struct (which can
+// be specialized) and use it.
+
+template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase>
+struct CRUEncoderCreator {
+  static std::unique_ptr<CRUEncoder> _(uint8_t cruId, const ElectronicMapper& elecmap)
+  {
+    GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = forceNoPhase;
+    return std::make_unique<CRUEncoderImpl<FORMAT, CHARGESUM, RDH>>(cruId, elecmap);
+  }
+};
+
+} // namespace impl
+
+template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase>
+std::unique_ptr<CRUEncoder> createCRUEncoder(uint8_t cruId, const ElectronicMapper& elecmap)
+{
+  return impl::CRUEncoderCreator<FORMAT, CHARGESUM, RDH, forceNoPhase>::_(cruId, elecmap);
 }
 
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, SampleMode>(uint8_t cruId)
-{
-  return std::make_unique<CRUEncoderImpl<BareFormat, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
-}
+// define only the specializations we use
 
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<BareFormat, ChargeSumMode>(uint8_t cruId)
-{
-  GBTEncoder<BareFormat, ChargeSumMode>::forceNoPhase = true;
-  return createCRUEncoder<BareFormat, ChargeSumMode>(cruId);
-}
+template std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(uint8_t, const ElectronicMapper&);
+template std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(uint8_t, const ElectronicMapper&);
 
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<BareFormat, SampleMode>(uint8_t cruId)
-{
-  GBTEncoder<BareFormat, SampleMode>::forceNoPhase = true;
-  return createCRUEncoder<BareFormat, SampleMode>(cruId);
-}
+template std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(uint8_t, const ElectronicMapper&);
+template std::unique_ptr<CRUEncoder> createCRUEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(uint8_t, const ElectronicMapper&);
 
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, ChargeSumMode>(uint8_t cruId)
-{
-  return std::make_unique<CRUEncoderImpl<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4>>(cruId);
-}
+template std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(uint8_t, const ElectronicMapper&);
+template std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(uint8_t, const ElectronicMapper&);
 
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, SampleMode>(uint8_t cruId)
-{
-  return std::make_unique<CRUEncoderImpl<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
-}
-
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<UserLogicFormat, ChargeSumMode>(uint8_t cruId)
-{
-  GBTEncoder<UserLogicFormat, ChargeSumMode>::forceNoPhase = true;
-  return std::make_unique<CRUEncoderImpl<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4>>(cruId);
-}
-
-template <>
-std::unique_ptr<CRUEncoder> createCRUEncoderNoPhase<UserLogicFormat, SampleMode>(uint8_t cruId)
-{
-  GBTEncoder<UserLogicFormat, SampleMode>::forceNoPhase = true;
-  return std::make_unique<CRUEncoderImpl<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4>>(cruId);
-}
+template std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(uint8_t, const ElectronicMapper&);
+template std::unique_ptr<CRUEncoder> createCRUEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(uint8_t, const ElectronicMapper&);
 
 } // namespace o2::mch::raw

@@ -15,7 +15,7 @@ parser.add_argument('--excel','-e', dest="excel",
                     help="output excel filename", metavar="FILE")
 
 parser.add_argument('--cpp','-c++','-c++','--c++',
-                    dest="code",type=argparse.FileType('w', encoding='UTF-8'),
+                    dest="code",default=False,action="store_true",
                     help="output c++ code")
 
 parser.add_argument('--verbose','-v',
@@ -33,4 +33,4 @@ if args.excel:
     df.to_excel(args.excel)
 
 if args.code:
-    elecmap.gencode.to_elec(df,args.code)
+    elecmap.gencode.do(df)
