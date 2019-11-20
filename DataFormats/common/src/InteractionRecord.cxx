@@ -9,6 +9,7 @@
 // or submit itself to any jurisdiction.
 #include "CommonDataFormat/InteractionRecord.h"
 #include <iostream>
+#include <fmt/format.h>
 
 namespace o2
 {
@@ -17,13 +18,13 @@ namespace o2
 
 std::ostream& operator<<(std::ostream& stream, o2::InteractionRecord const& ir)
 {
-  stream << "BCid: " << ir.bc << " Orbit: " << ir.orbit;
+  stream << fmt::format("BCid: {:8d} Orbit: {:8d}", ir.bc, ir.orbit);
   return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, o2::InteractionTimeRecord const& ir)
 {
-  stream << "BCid: " << ir.bc << " Orbit: " << ir.orbit << " T(ns): " << ir.timeNS;
+  stream << fmt::format("BCid: {:8d} Orbit: {:8d} T(ns): {:8d}", ir.bc, ir.orbit, static_cast<int>(ir.timeNS));
   return stream;
 }
 
