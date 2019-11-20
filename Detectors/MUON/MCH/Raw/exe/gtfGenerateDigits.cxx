@@ -17,8 +17,9 @@
 std::vector<o2::mch::Digit> generateRandomDigits(int n, gsl::span<int> deids, gsl::span<int> nofpads)
 {
   std::vector<o2::mch::Digit> digits;
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
+  // static std::random_device rd;
+  // static std::mt19937 gen(rd());
+  static std::mt19937 gen(1234);
   std::uniform_int_distribution<> disDeId(0, deids.size() - 1);
   // std::uniform_int_distribution<> disADC(0, 1023);
 
@@ -40,8 +41,9 @@ std::vector<std::vector<o2::mch::Digit>> generateDigits(int nofEvents, gsl::span
 {
   std::vector<std::vector<o2::mch::Digit>> digitsPerEvent;
   digitsPerEvent.reserve(nofEvents); // one vector of digits per event
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  // std::random_device rd;
+  // std::mt19937 gen(rd());
+  std::mt19937 gen(1234);
 
   std::vector<int> nofPads;
   int totalPads{0};
