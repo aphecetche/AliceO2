@@ -64,7 +64,6 @@
 #include <fstream>
 #include "gtfGenerateDigits.h"
 #include "gtfSegmentation.h"
-#include "DumpBuffer.h"
 
 using namespace o2::mch;
 namespace po = boost::program_options;
@@ -98,6 +97,8 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 {
   std::map<int, bool> startHB;
 
+  static int nadd{0};
+
   for (auto d : digits) {
     int deid = d.getDetID();
     uint8_t cruId = elecmap.cruId(deid);
@@ -107,7 +108,6 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     if (crus.find(cruId) == crus.end()) {
       crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, elecmap);
-      fmt::printf("Create cru %d\n", cruId);
     }
     auto& cru = crus[cruId];
     if (!cru) {
@@ -116,18 +116,17 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     if (!startHB[cruId]) {
       cru->startHeartbeatFrame(orbit, bc);
-      fmt::printf("startHB for CRU %d orbit %d bc %d\n", cruId, orbit, bc);
       startHB[cruId] = true;
     }
     int dsid = segmentation(deid).padDualSampaId(d.getPadID());
-    int chid = segmentation(deid).padDualSampaChannel(d.getPadID());
+    int dschid = segmentation(deid).padDualSampaChannel(d.getPadID());
     auto p = elecmap.solarIdAndGroupIdFromDeIdAndDsId(deid, dsid);
     uint16_t solarId = p.first;
     uint16_t elinkId = p.second;
-    uint16_t ts(0); // FIXME: simulate something here ?
-    // fmt::printf("nadd %8d cruid %2d deid %4d dsid %4d solarId %3d elinkId %2d chId %2d ADC %4d\n", nadd++, cruId,
-    //             deid, dsid, solarId, elinkId, chid, static_cast<uint16_t>(d.getADC()));
-    cru->addChannelData(solarId, elinkId, chid % 32, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()))});
+    uint16_t ts(666); // FIXME: simulate something here ?
+    int sampachid = dschid % 32;
+    fmt::printf("nadd %8d cruid %2d deid %4d dsid %4d solarId %3d elinkId %2d dschid %2d sampach %2d ADC %4d\n", nadd++, cruId, deid, dsid, solarId, elinkId, dschid, sampachid, static_cast<uint16_t>(d.getADC()));
+    cru->addChannelData(solarId, elinkId, sampachid, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()) & 0x3FF)});
   }
 }
 
@@ -139,13 +138,11 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
   auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
   std::map<int, std::unique_ptr<raw::CRUEncoder>> crus;
 
-  int nadd{0};
-
   for (int i = 0; i < interactions.size(); i++) {
 
     auto& col = interactions[i];
 
-    std::cout << "INTERACTION " << col << "\n";
+    std::cout << fmt::format("BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
                                          crus, *elecmap, col.orbit, col.bc);
@@ -156,16 +153,16 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
       }
     }
 
-    std::cout << fmt::format("interaction {} buffer size {}\n", i, buffer.size());
+    std::cout << fmt::format("END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-void gentimeframe(std::ostream& outfile)
+void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 {
+  std::cout << __PRETTY_FUNCTION__ << "\n";
   o2::steer::InteractionSampler sampler; // default sampler with default filling scheme, rate of 50 kHz
 
-  constexpr int nofInteractionsPerTimeFrame{10};
   constexpr float occupancy = 1E-3;
 
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
@@ -180,22 +177,17 @@ void gentimeframe(std::ostream& outfile)
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
-  std::cout << "--------------------\n";
-  o2::mch::raw::showRDHs<RDH>(buffer);
-
-  o2::mch::raw::impl::dumpBuffer(buffer);
-
-  gsl::span<uint32_t> buffer32(reinterpret_cast<uint32_t*>(&buffer[0]),
-                               buffer.size() / 4);
-  o2::mch::raw::dumpRDHBuffer(buffer32, "");
-
   std::cout << "-------------------- Paginating ...\n";
   std::vector<uint8_t> pages;
   size_t pageSize = 8192;
-  uint8_t paddingByte = 0x0;
-  gsl::span<uint8_t> b8(&buffer[0], buffer.size());
+  uint8_t paddingByte = 0x00;
+  gsl::span<uint8_t> b8(buffer);
   raw::paginateBuffer<RDH>(b8, pages, pageSize, paddingByte);
-  // outfile.write(reinterpret_cast<char*>(&pages[0]), pages.size());
+  outfile.write(reinterpret_cast<char*>(&pages[0]), pages.size());
+
+  auto n = o2::mch::raw::countRDHs<RDH>(buffer);
+
+  std::cout << "n=" << n << " collisions=" << interactions.size() << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -204,12 +196,14 @@ int main(int argc, char* argv[])
   bool userLogic{false};
   std::string filename;
   po::variables_map vm;
+  int nofInteractionsPerTimeFrame{1000};
 
   // clang-format off
   generic.add_options()
       ("help:h", "produce help message")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("outfile,o",po::value<std::string>(&filename)->required(),"output filename")
+      ("nintpertf,n",po::value<int>(&nofInteractionsPerTimeFrame),"number of interactions per timeframe")
       ;
   // clang-format on
 
@@ -227,10 +221,10 @@ int main(int argc, char* argv[])
   std::ofstream outfile(filename);
 
   if (userLogic) {
-    gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile);
+    gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
   }
   if (!userLogic) {
-    gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile);
+    gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
   }
   return 0;
 }

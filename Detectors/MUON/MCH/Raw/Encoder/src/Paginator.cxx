@@ -35,7 +35,7 @@ size_t addPadding(std::vector<uint8_t>& outBuffer,
   ordh.offsetToNext = pageSize;
   appendRDH<RDH>(outBuffer, ordh);
   std::copy(inBuffer.begin(), inBuffer.end(), std::back_inserter(outBuffer));
-  auto len = pageSize - outBuffer.size();
+  auto len = pageSize - inBuffer.size() - rdhSize;
   if (!len) {
     std::cout << "no padding to be put\n";
     return 0;
@@ -86,7 +86,6 @@ size_t paginateBuffer(gsl::span<uint8_t> compactBuffer,
   size_t npages{0};
 
   while (inputPos < compactBuffer.size()) {
-    std::cout << "inputPos= " << inputPos << " sizeof(rdh)= " << sizeof(RDH) << "\n";
     auto rdh = createRDH<RDH>(compactBuffer.subspan(inputPos, sizeof(RDH)));
     if (!isValid(rdh)) {
       std::cout << rdh << "\n";
@@ -98,9 +97,9 @@ size_t paginateBuffer(gsl::span<uint8_t> compactBuffer,
       }
       throw std::logic_error("got an invalid rdh");
     }
+    std::cout << rdh << "\n";
     auto payloadSize = rdhPayloadSize(rdh);
-    inputPos += sizeof(RDH);
-    const auto inBuffer = compactBuffer.subspan(inputPos, payloadSize);
+    const auto inBuffer = compactBuffer.subspan(inputPos + sizeof(RDH), payloadSize);
     if (rdh.offsetToNext < pageSize) {
       // payload not big enough to fill a complete page : we add padding words
       npages += addPadding(outBuffer, rdh, inBuffer, pageSize, paddingByte);

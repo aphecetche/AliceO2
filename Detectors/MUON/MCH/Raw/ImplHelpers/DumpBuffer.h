@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 #include <vector>
 #include "MCHRawCommon/SampaHeader.h"
+#include <limits>
 
 namespace o2::mch::raw::impl
 {
@@ -23,7 +24,6 @@ namespace o2::mch::raw::impl
 template <typename T, std::enable_if_t<std::is_integral<T>::value, int> = 1>
 void dumpBuffer(gsl::span<T> buffer)
 {
-  // dump a buffer of T
 
   int i{0};
   while (i < buffer.size()) {
@@ -34,7 +34,7 @@ void dumpBuffer(gsl::span<T> buffer)
     i++;
   }
   std::cout << "\n";
-}
+} // namespace o2::mch::raw::impl
 
 uint64_t b8to64(const std::vector<uint8_t>& buffer, size_t i)
 {
@@ -48,29 +48,67 @@ uint64_t b8to64(const std::vector<uint8_t>& buffer, size_t i)
          (static_cast<uint64_t>(buffer[i + 7]) << 56);
 }
 
-void dumpBuffer(const std::vector<uint8_t>& buffer)
+void append(std::vector<uint8_t>& buffer, uint64_t w)
+{
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00000000000000FF))));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x000000000000FF00)) >> 8));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x0000000000FF0000)) >> 16));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00000000FF000000)) >> 24));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x000000FF00000000)) >> 32));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x0000FF0000000000)) >> 40));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00FF000000000000)) >> 48));
+  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0xFF00000000000000)) >> 56));
+}
+
+void dumpBuffer(const std::vector<uint8_t>& buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
 {
   int i{0};
-  while (i < buffer.size()) {
+  int inRDH{0};
+
+  while ((i < buffer.size() - 7) && i < maxbytes) {
     if (i % 8 == 0) {
-      std::cout << fmt::format("\n{:8d} : ", i);
+      out << fmt::format("\n{:8d} : ", i);
     }
     uint64_t w = b8to64(buffer, i);
     i += 8;
-    std::cout << fmt::format("{:016X} {:4d} {:4d} {:4d} {:4d} {:4d} ",
-                             w,
-                             (w & 0x3FF0000000000) >> 40,
-                             (w & 0xFFC0000000) >> 30,
-                             (w & 0x3FF00000) >> 20,
-                             (w & 0xFFC00) >> 10,
-                             (w & 0x3FF));
-    SampaHeader h(w & 0x3FFFFFFFFFFFF);
-    if (h.packetType() == SampaPacketType::Data) {
-      std::cout << fmt::format(" n10 {:4d} chip {:2d} ch {:2d}",
-                               h.nof10BitWords(), h.chipAddress(), h.channelAddress());
+    out << fmt::format("{:016X} {:4d} {:4d} {:4d} {:4d} {:4d} ",
+                       w,
+                       (w & 0x3FF0000000000) >> 40,
+                       (w & 0xFFC0000000) >> 30,
+                       (w & 0x3FF00000) >> 20,
+                       (w & 0xFFC00) >> 10,
+                       (w & 0x3FF));
+    if ((w & 0xFFFF) == 0x4004) {
+      inRDH = 8;
+    }
+    if (inRDH) {
+      --inRDH;
+      if (inRDH == 7) {
+        out << "Begin RDH";
+      }
+      if (inRDH == 0) {
+        out << "End RDH ";
+      }
+    } else {
+      SampaHeader h(w & 0x3FFFFFFFFFFFF);
+      if (h.packetType() == SampaPacketType::Sync) {
+        out << "SYNC";
+      } else if (h.packetType() == SampaPacketType::Data) {
+        out << fmt::format(" n10 {:4d} chip {:2d} ch {:2d}",
+                           h.nof10BitWords(), h.chipAddress(), h.channelAddress());
+      }
     }
   }
-  std::cout << "\n";
+  out << "\n";
 }
+void dumpBuffer(const std::vector<uint64_t>& buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
+{
+  std::vector<uint8_t> b8;
+  for (auto w : buffer) {
+    append(b8, w);
+  }
+  dumpBuffer(b8, out, maxbytes);
+}
+
 } // namespace o2::mch::raw::impl
 #endif
