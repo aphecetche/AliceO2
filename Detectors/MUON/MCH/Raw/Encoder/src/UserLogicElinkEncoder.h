@@ -20,6 +20,7 @@
 #include "NofBits.h"
 #include <cstdlib>
 #include <vector>
+#include <fmt/printf.h>
 
 namespace o2::mch::raw
 {
@@ -40,6 +41,7 @@ class ElinkEncoder<UserLogicFormat, CHARGESUM>
   uint8_t mElinkId; //< Elink id 0..39
   bool mHasSync;    //< whether or not we've already added a sync word
   std::vector<uint64_t> mBuffer;
+  int mCurrent10BitIndex; // 0..4
 };
 
 namespace
@@ -60,7 +62,8 @@ ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
                                                        int phase)
   : mElinkId{elinkId},
     mHasSync{false},
-    mBuffer{}
+    mBuffer{},
+    mCurrent10BitIndex{4}
 {
   impl::assertIsInRange("elinkId", elinkId, 0, 39);
 }
@@ -100,25 +103,26 @@ void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
   auto header = buildHeader(mElinkId, chId, data);
   mBuffer.emplace_back(b9 | header.uint64());
 
-  int index{4};
-  CHARGESUM ref;
+  mCurrent10BitIndex = 4;
+  CHARGESUM chargeSum;
   uint64_t word{0};
   for (auto& cluster : data) {
-    append(b9, mBuffer, index, word, cluster.nofSamples());
-    append(b9, mBuffer, index, word, cluster.timestamp);
-    if (ref() == true) {
-      append(b9, mBuffer, index, word, cluster.chargeSum & 0x3FF);
-      append(b9, mBuffer, index, word, (cluster.chargeSum & 0xFFC00) >> 10);
+    append(b9, mBuffer, mCurrent10BitIndex, word, cluster.nofSamples());
+    append(b9, mBuffer, mCurrent10BitIndex, word, cluster.timestamp);
+    if (chargeSum() == true) {
+      append(b9, mBuffer, mCurrent10BitIndex, word, cluster.chargeSum & 0x3FF);
+      append(b9, mBuffer, mCurrent10BitIndex, word, (cluster.chargeSum & 0xFFC00) >> 10);
     } else {
       for (auto& s : cluster.samples) {
-        append(b9, mBuffer, index, word, s);
+        append(b9, mBuffer, mCurrent10BitIndex, word, s);
       }
     }
   }
-  while (index != 4) {
-    append(b9, mBuffer, index, word, 0);
+  while (mCurrent10BitIndex != 4) {
+    append(b9, mBuffer, mCurrent10BitIndex, word, 0);
   }
 }
+
 template <typename CHARGESUM>
 void ElinkEncoder<UserLogicFormat, CHARGESUM>::clear()
 {
@@ -129,8 +133,11 @@ void ElinkEncoder<UserLogicFormat, CHARGESUM>::clear()
 template <typename CHARGESUM>
 size_t ElinkEncoder<UserLogicFormat, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix)
 {
+  if (mBuffer.empty()) {
+    return 0;
+  }
   auto n = buffer.size();
-  buffer.reserve(mBuffer.size());
+  buffer.reserve(n + mBuffer.size());
   for (auto& b : mBuffer) {
     buffer.emplace_back(b | prefix);
   }

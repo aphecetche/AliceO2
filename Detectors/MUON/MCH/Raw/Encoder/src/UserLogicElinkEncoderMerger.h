@@ -13,6 +13,7 @@
 
 #include "UserLogicElinkEncoder.h"
 #include "MCHRawCommon/DataFormats.h"
+#include <fmt/format.h>
 
 namespace o2::mch::raw
 {
@@ -24,6 +25,7 @@ struct ElinkEncoderMerger<UserLogicFormat, CHARGESUM> {
                   gsl::span<ElinkEncoder<UserLogicFormat, CHARGESUM>> elinks,
                   std::vector<uint64_t>& b64)
   {
+    auto s = b64.size();
     const uint64_t gbtIdMask((static_cast<uint64_t>(gbtId & 0x1F) << 59));
     for (auto& elink : elinks) {
       elink.moveToBuffer(b64, gbtIdMask);

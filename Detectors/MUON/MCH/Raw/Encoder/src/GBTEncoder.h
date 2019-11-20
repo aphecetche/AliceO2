@@ -24,6 +24,7 @@
 #include "MoveBuffer.h"
 #include "ElinkEncoder.h"
 #include "ElinkEncoderMerger.h"
+#include <gsl/span>
 
 namespace o2::mch::raw
 {
@@ -50,8 +51,8 @@ class GBTEncoder
   ///@{
   /// add data for one channel.
   ///
-  /// \param elinkId 0..39
-  /// \param chId 0..31
+  /// \param elinkId 0..39 = sampaId (not dualSampaId)
+  /// \param chId 0..31 = sampaChannel (not dualSampaChannel)
   /// \param data vector of SampaCluster objects
   void addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
 
@@ -129,7 +130,8 @@ void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkId, uint8_t chId
 template <typename FORMAT, typename CHARGESUM>
 size_t GBTEncoder<FORMAT, CHARGESUM>::moveToBuffer(std::vector<uint8_t>& buffer)
 {
-  mElinkMerger(mGbtId, gsl::span<ElinkEncoder<FORMAT, CHARGESUM>>(begin(mElinks), end(mElinks)), mGbtWords);
+  auto s = gsl::span(mElinks.begin(), mElinks.end());
+  mElinkMerger(mGbtId, s, mGbtWords);
   for (auto& elink : mElinks) {
     elink.clear();
   }
