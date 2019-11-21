@@ -13,6 +13,7 @@
 
 #include <utility>
 #include <set>
+#include "MCHRawEncoder/DualSampaElectronicLocation.h"
 
 namespace o2::mch::raw
 {
@@ -20,11 +21,11 @@ namespace o2::mch::raw
 class ElectronicMapper
 {
  public:
-  /// GroupIdFromDeIdAndDsId returns the absolute / unique
+  /// DualSampaElectronicLocation returns the absolute / unique
   /// solarId and (elink) groupd Id corresponding to the pair
   /// (detection element id, dual sampa id)
-  virtual std::pair<uint16_t, uint16_t>
-    solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid) const = 0;
+  virtual DualSampaElectronicLocation
+    dualSampaElectronicLocation(uint16_t deid, uint16_t dsid) const = 0;
 
   /// solarIds returns the set of absolute/unique solarIds connected
   /// to the given cru

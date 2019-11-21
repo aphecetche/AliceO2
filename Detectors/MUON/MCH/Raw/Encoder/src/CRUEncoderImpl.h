@@ -29,10 +29,7 @@
 namespace o2::mch::raw
 {
 
-/// @brief A CRUEncoderImpl manages 24 GBTEncoder to encode the data of one CRU.
-///
-/// Data is added using the addChannelData() method.
-/// Then it can be exported using the moveToBuffer() method.
+/// @brief (Default) implementation of CRUEncoder
 ///
 /// \nosubgrouping
 
@@ -41,32 +38,13 @@ class CRUEncoderImpl : public CRUEncoder
 {
 
  public:
-  /// Constructor.
-  /// \param cruId the CRU we're encoding data for.
   explicit CRUEncoderImpl(uint16_t cruId, const ElectronicMapper& elecmap);
 
-  /** @name Main interface.
-    */
-  ///@{
-  /// add data for one channel, identified by {solarId,elinkId,chId}
-  /// \param solarId aka GBTId 0..23
-  /// \param elinkId the linkId within the GBT
-  /// \param chId channel id
-  /// \param data the actual data to be added
-  void addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
+  void addChannelData(uint16_t solarId, uint8_t groupId, uint8_t chId, const std::vector<SampaCluster>& data) override;
 
-  // startHeartbeatFrame sets the trigger (orbit,bunchCrossing) to be used
-  // for all generated RDHs (until next call to this method).
-  // Causes the alignment of the underlying gbts.
-  void startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
+  void startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing) override;
 
-  /// Export our encoded data.
-  ///
-  /// The internal words that have been accumulated so far are
-  /// _moved_ (i.e. deleted from this object) to the external buffer of bytes
-  /// Returns the number of bytes added to buffer.
-  size_t moveToBuffer(std::vector<uint8_t>& buffer);
-  ///@}
+  size_t moveToBuffer(std::vector<uint8_t>& buffer) override;
 
  private:
   void closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
@@ -97,14 +75,14 @@ CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId, const Ele
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
+void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(uint16_t solarId, uint8_t groupId, uint8_t chId, const std::vector<SampaCluster>& data)
 {
   auto ix = std::find(mSolarIds.begin(), mSolarIds.end(), solarId);
   if (ix == mSolarIds.end()) {
     throw std::invalid_argument(fmt::format("solarId {} is not known to CRU {}\n", solarId, mCruId));
   }
-  auto relativeSolarId = std::distance(mSolarIds.begin(), ix);
-  mGBTs.at(relativeSolarId).addChannelData(elinkId, chId, data);
+  auto solarIndex = std::distance(mSolarIds.begin(), ix);
+  mGBTs.at(solarIndex).addChannelData(groupId, chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
