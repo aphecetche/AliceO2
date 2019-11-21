@@ -12,7 +12,7 @@
 #define O2_MCH_RAW_USERLOGIC_GBT_DECODER_H
 
 #include <array>
-#include "UserLogicDSDecoder.h"
+#include "UserLogicElinkDecoder.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include <gsl/span>
 
@@ -28,6 +28,7 @@ namespace raw
 class UserLogicGBTDecoder
 {
  public:
+  static constexpr uint8_t baseSize{64};
   /// Constructor.
   /// \param cruId the identifier for the CRU this GBT is part of
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
@@ -57,7 +58,7 @@ class UserLogicGBTDecoder
  private:
   int mCruId;
   int mGbtId;
-  std::array<UserLogicDSDecoder, 40> mDSDecoders;
+  std::array<UserLogicElinkDecoder, 40> mElinkDecoders;
   int mNofGbtWordsSeens;
 };
 } // namespace raw

@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "UserLogicDSDecoder.h"
+#include "UserLogicElinkDecoder.h"
 
 #include "MCHRawCommon/SampaHeader.h"
 #include <algorithm>
@@ -170,7 +170,11 @@ struct readSample {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    fsm.addSample(fsm.pop10());
+    if (fsm.chargeSumMode) {
+      fsm.addChargeSum(fsm.pop10(), fsm.pop10());
+    } else {
+      fsm.addSample(fsm.pop10());
+    }
   }
 };
 
@@ -231,8 +235,18 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
       samples.clear();
     }
   }
+  void addChargeSum(uint16_t a, uint16_t b)
+  {
+    // a cluster is ready, send it
+    channelHandler(cruId,
+                   linkId,
+                   sampaHeader.chipAddress(),
+                   sampaHeader.channelAddress(),
+                   SampaCluster(clusterTime, ((a & 0x3FF << 10) | (b & 0x3FF))));
+  }
   // masks used to access groups of 10 bits in a 50 bits range
-  std::array<uint64_t, 5> masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
+  std::array<uint64_t, 5>
+    masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
   uint8_t cruId;
   uint8_t linkId;
   uint16_t nof10BitWords{0};
@@ -241,22 +255,24 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
   uint64_t data{0};
   size_t maskIndex{0};
   size_t nofSync{0};
+  bool chargeSumMode{false};
   std::vector<uint16_t> samples;
   SampaHeader sampaHeader;
   SampaChannelHandler channelHandler;
+}; // namespace o2::mch::raw
+
+struct UserLogicElinkDecoder::Impl : public msm::back::state_machine<StateMachine_> {
 };
 
-struct UserLogicDSDecoder::Impl : public msm::back::state_machine<StateMachine_> {
-};
-
-UserLogicDSDecoder::UserLogicDSDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler, bool chargeSumMode) : mFSM(new UserLogicDSDecoder::Impl)
+UserLogicElinkDecoder::UserLogicElinkDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler, bool chargeSumMode) : mFSM(new UserLogicElinkDecoder::Impl)
 {
   mFSM->cruId = cruId;
   mFSM->linkId = linkId;
   mFSM->channelHandler = sampaChannelHandler;
+  mFSM->chargeSumMode = chargeSumMode;
 }
 
-void UserLogicDSDecoder::append(uint64_t data)
+void UserLogicElinkDecoder::append(uint64_t data)
 {
   mFSM->process_event(NewData(data));
 }

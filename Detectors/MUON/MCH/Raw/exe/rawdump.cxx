@@ -19,6 +19,7 @@
 #include "MCHRawDecoder/Decoder.h"
 #include "Headers/RAWDataHeader.h"
 #include <chrono>
+#include "DumpBuffer.h"
 
 namespace po = boost::program_options;
 
@@ -39,11 +40,14 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
   std::array<uint8_t, sizeToRead> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
+  size_t ndigits{0};
+
   memset(&buffer[0], 0, buffer.size());
-  auto hp = [](uint8_t cruId, uint8_t linkId, uint8_t chip,
-               uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    std::cout << fmt::format("CHIP {:2d} CH {:2d} ", chip, channel);
+  auto hp = [&ndigits](uint8_t cruId, uint8_t linkId, uint8_t chip,
+                       uint8_t channel, o2::mch::raw::SampaCluster sc) {
+    std::cout << fmt::format("CRU {:2d} SOLAR {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
     std::cout << sc << "\n";
+    ++ndigits;
   };
 
   size_t nrdhs{0};
@@ -77,7 +81,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
     auto start = std::chrono::high_resolution_clock::now();
     decode(buffer);
     // std::cout << "bufer.size()=" << buffer.size() << "\n";
-    // o2::mch::raw::dumpBuffer(buffer);
+    // o2::mch::raw::impl::dumpBuffer(gsl::span<uint8_t>(buffer));
     auto duration = (std::chrono::high_resolution_clock::now() - start);
     timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
@@ -89,6 +93,8 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
     out << p << " " << d.count() << "\n";
   }
   out.close();
+
+  std::cout << ndigits << " digits seen\n";
   return 0;
 }
 

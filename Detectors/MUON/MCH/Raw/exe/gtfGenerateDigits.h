@@ -15,6 +15,8 @@
 #include <gsl/span>
 #include "MCHSimulation/Digit.h"
 
-std::vector<std::vector<o2::mch::Digit>> generateDigits(int nofEvents, gsl::span<int> deids, float occupancy);
+std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl::span<int> deids, float occupancy);
+
+std::vector<std::vector<o2::mch::Digit>> generateFixedDigits(int nofEvents, gsl::span<int> deids);
 
 #endif

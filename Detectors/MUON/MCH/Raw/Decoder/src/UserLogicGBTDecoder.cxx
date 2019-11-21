@@ -25,7 +25,7 @@ UserLogicGBTDecoder::UserLogicGBTDecoder(int cruId,
                                          bool chargeSumMode)
   : mCruId(cruId),
     mGbtId(gbtId),
-    mDSDecoders{impl::makeArray<40>([=](size_t i) { return UserLogicDSDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })},
+    mElinkDecoders{impl::makeArray<40>([=](size_t i) { return UserLogicElinkDecoder(cruId, i, sampaChannelHandler, chargeSumMode); })},
     mNofGbtWordsSeens{0}
 {
   impl::assertIsInRange("gbtId", gbtId, 0, 23);
@@ -62,9 +62,9 @@ void UserLogicGBTDecoder::append(gsl::span<uint8_t> buffer)
     uint16_t dsid = (word >> 53) & 0x3F;
     impl::assertIsInRange("dsid", dsid, 0, 39);
 
-    // the remaining 50 bits are passed to the DSDecoder
+    // the remaining 50 bits are passed to the ElinkDecoder
     uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);
-    mDSDecoders[dsid].append(data);
+    mElinkDecoders[dsid].append(data);
   }
 }
 

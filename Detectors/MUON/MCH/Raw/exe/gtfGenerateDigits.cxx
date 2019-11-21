@@ -11,10 +11,11 @@
 #include "gtfGenerateDigits.h"
 #include "gtfSegmentation.h"
 #include <random>
+#include <fmt/printf.h>
 
 // generate n digits randomly distributed over the detection elements
 // whose ids are within the deids span
-std::vector<o2::mch::Digit> generateRandomDigits(int n, gsl::span<int> deids, gsl::span<int> nofpads)
+std::vector<o2::mch::Digit> makeNRandomDigits(int n, gsl::span<int> deids, gsl::span<int> nofpads)
 {
   std::vector<o2::mch::Digit> digits;
   // static std::random_device rd;
@@ -37,7 +38,38 @@ std::vector<o2::mch::Digit> generateRandomDigits(int n, gsl::span<int> deids, gs
   return digits;
 }
 
-std::vector<std::vector<o2::mch::Digit>> generateDigits(int nofEvents, gsl::span<int> deids, float occupancy)
+/// generate fake digits
+/// each DE gets n digits (where n = DEID%100), with padids ranging
+/// from 0 to n-1
+/// each digit has a fixed time of 987 and an adc value = padid*2 << 10 | padid*2
+std::vector<std::vector<o2::mch::Digit>> generateFixedDigits(int nofEvents, gsl::span<int> deids)
+{
+  // auto seg = segmentation(501);
+  // auto padid = seg.findPadByFEE(401, 47);
+  // fmt::printf("padid %d dsid %d ch %d x %g y %g\n",
+  //             padid, seg.padDualSampaId(padid), seg.padDualSampaChannel(padid),
+  //             seg.padPositionX(padid), seg.padPositionY(padid));
+  //
+  std::vector<std::vector<o2::mch::Digit>> digitsPerEvent;
+  digitsPerEvent.reserve(nofEvents); // one vector of digits per event
+
+  for (auto i = 0; i < nofEvents; i++) {
+    std::vector<o2::mch::Digit> digits;
+    for (auto deid : deids) {
+      int n = deid % 100;
+      for (auto j = 0; j < n; j++) {
+        int padid = j;
+        double adc = ((j * 2) << 10 | (j * 2));
+        double time = 987;
+        digits.emplace_back(time, deid, padid, adc);
+      }
+    }
+    digitsPerEvent.push_back(digits);
+  }
+  return digitsPerEvent;
+}
+
+std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl::span<int> deids, float occupancy)
 {
   std::vector<std::vector<o2::mch::Digit>> digitsPerEvent;
   digitsPerEvent.reserve(nofEvents); // one vector of digits per event
@@ -59,7 +91,7 @@ std::vector<std::vector<o2::mch::Digit>> generateDigits(int nofEvents, gsl::span
     // draw n from mu
     int n = static_cast<int>(dis(gen));
     // generate n random digits
-    auto digits = generateRandomDigits(n, deids, gsl::make_span(nofPads));
+    auto digits = makeNRandomDigits(n, deids, gsl::make_span(nofPads));
     // add those n digits into this event
     digitsPerEvent.push_back(digits);
   }

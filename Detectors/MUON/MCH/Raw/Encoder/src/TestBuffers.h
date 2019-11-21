@@ -24,10 +24,10 @@ namespace o2::mch::raw::impl
 {
 
 struct MockElectronicMapper : public ElectronicMapper {
-  std::pair<uint16_t, uint16_t>
-    solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid) const override
+  DualSampaElectronicLocation
+    dualSampaElectronicLocation(uint16_t deid, uint16_t dsid) const override
   {
-    return std::make_pair(0, 0);
+    return DualSampaElectronicLocation{0, 0, 0};
   }
 
   std::set<uint16_t> solarIds(uint8_t cruId) const override
