@@ -22,17 +22,17 @@ def generated_code(out):
               ''')
 
 def insert_row_in_map(out,row):
-    def insert_in_map(dsid):
-        out.write("m.insert(std::make_pair(encode({},{}),encode({},{})));\n"
-                  .format(row.de_id,dsid,row.solar_id,row.group_id))
-    insert_in_map(row.ds_id_0)
-    insert_in_map(row.ds_id_1)
+    def insert_in_map(dsid,index):
+        out.write("m.insert(std::make_pair(encodeDeDs({},{}),encodeSolarGroupIndex({},{},{})));\n"
+                  .format(row.de_id,dsid,row.solar_id,row.group_id,index))
+    insert_in_map(row.ds_id_0,0)
+    insert_in_map(row.ds_id_1,1)
     if row.ds_id_2:
-        insert_in_map(row.ds_id_2)
+        insert_in_map(row.ds_id_2,2)
     if row.ds_id_3:
-        insert_in_map(row.ds_id_3)
+        insert_in_map(row.ds_id_3,3)
     if row.ds_id_4:
-         insert_in_map(row.ds_id_4)
+         insert_in_map(row.ds_id_4,4)
 
 def cru2solar(df, out,deids):
 
@@ -95,7 +95,7 @@ def generate_one_chamber_file(df,chamber,deids):
                  #include <cstdint>
                  #include <map>
 
-                 void fill${ch}(std::map<uint32_t,uint32_t>& m) {
+                 void fill${ch}(std::map<uint32_t,uint16_t>& m) {
                  ''')
 
     out.write(t.substitute(ch=chamber))
@@ -119,7 +119,7 @@ def do(df,deids):
 
               #include "MCHRawEncoder/ElectronicMapper.h"
 
-                 uint32_t encode(uint16_t a, uint16_t b) {
+                 uint32_t encodeDeDs(uint16_t a, uint16_t b) {
                  return a<<16|b;
                 }
                  uint16_t decode_a(uint32_t x) {
@@ -129,6 +129,23 @@ def do(df,deids):
                  return static_cast<uint16_t>(x & 0xFFFF);
                 }
 
+                 uint16_t encodeSolarGroupIndex(uint16_t solarId, uint8_t
+              groupId, uint8_t index) {
+                   return (solarId&0x3FF) | ((groupId&0x7) << 10) |
+              ((index&0x7) << 13);
+                }
+
+                uint16_t decodeSolarId(uint16_t code) {
+              return code & 0x3FF;
+             }
+
+              uint8_t decodeGroupId(uint16_t code) {
+              return (code & 0x1C00)>>10;
+             }
+
+              uint8_t decodeElinkIndex(uint16_t code) {
+              return (code & 0xE000)>>13;
+             }
               ''')
 
     deds2solargrp(df,out,deids)
@@ -142,16 +159,17 @@ def do(df,deids):
 
               struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
 
-              std::pair<uint16_t, uint16_t>
-              solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid)
+              DualSampaElectronicLocation
+              dualSampaElectronicLocation(uint16_t deid, uint16_t dsid)
               const override
               {
-              static std::map<uint32_t,uint32_t> m = createDeDsMap();
-              auto it = m.find(encode(deid,dsid));
+              static std::map<uint32_t,uint16_t> m = createDeDsMap();
+              auto it = m.find(encodeDeDs(deid,dsid));
               if (it==m.end()) {
-              return {0xFFFF,0xFFFF};
+              return DualSampaElectronicLocation::Invalid();
              }
-              return {decode_a(it->second),decode_b(it->second)};
+              return
+              DualSampaElectronicLocation{decodeSolarId(it->second),decodeGroupId(it->second),decodeElinkIndex(it->second)};
              }
 
               std::set<uint16_t> solarIds(uint8_t cruId) const override
@@ -205,8 +223,8 @@ def deds2solargrp(df,out,deids):
     
     out.write('''
               namespace {
-    std::map<uint32_t,uint32_t> createDeDsMap() {
-              std::map<uint32_t,uint32_t> m;
+    std::map<uint32_t,uint16_t> createDeDsMap() {
+              std::map<uint32_t,uint16_t> m;
               ''')
     out.write(s)
     out.write(' return m;} }')

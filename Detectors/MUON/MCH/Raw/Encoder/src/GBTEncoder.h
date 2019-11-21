@@ -51,8 +51,8 @@ class GBTEncoder
   ///@{
   /// add data for one channel.
   ///
-  /// \param elinkId 0..39 = sampaId (not dualSampaId)
-  /// \param chId 0..31 = sampaChannel (not dualSampaChannel)
+  /// \param elinkId 0..39
+  /// \param chId 0..31 = sampaChannel (not dualSampaChannel, but single sampa channel)
   /// \param data vector of SampaCluster objects
   void addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
 
@@ -123,6 +123,7 @@ template <typename FORMAT, typename CHARGESUM>
 void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkId, uint8_t chId,
                                                    const std::vector<SampaCluster>& data)
 {
+
   impl::assertIsInRange("elinkId", elinkId, 0, 39);
   mElinks.at(elinkId).addChannelData(chId, data);
 }

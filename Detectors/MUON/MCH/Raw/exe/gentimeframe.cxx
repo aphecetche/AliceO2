@@ -64,6 +64,7 @@
 #include <fstream>
 #include "gtfGenerateDigits.h"
 #include "gtfSegmentation.h"
+#include "DumpBuffer.h"
 
 using namespace o2::mch;
 namespace po = boost::program_options;
@@ -120,22 +121,29 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     int dsid = segmentation(deid).padDualSampaId(d.getPadID());
     int dschid = segmentation(deid).padDualSampaChannel(d.getPadID());
-    auto p = elecmap.solarIdAndGroupIdFromDeIdAndDsId(deid, dsid);
-    uint16_t solarId = p.first;
-    uint16_t elinkId = p.second;
+    auto dseloc = elecmap.dualSampaElectronicLocation(deid, dsid);
     uint16_t ts(666); // FIXME: simulate something here ?
     int sampachid = dschid % 32;
-    fmt::printf("nadd %8d cruid %2d deid %4d dsid %4d solarId %3d elinkId %2d dschid %2d sampach %2d ADC %4d\n", nadd++, cruId, deid, dsid, solarId, elinkId, dschid, sampachid, static_cast<uint16_t>(d.getADC()));
-    cru->addChannelData(solarId, elinkId, sampachid, {raw::SampaCluster(ts, static_cast<uint16_t>(d.getADC()) & 0x3FF)});
+    uint32_t adc = static_cast<uint32_t>(d.getADC());
+
+    fmt::printf(
+      "nadd %6d deid %4d dsid %4d dschid %2d "
+      "cruId %2d solarId %3d groupId %2d elinkId %2d sampach %2d "
+      "ADC %6d (%4d|%4d)\n",
+      nadd++, deid, dsid, dschid,
+      cruId, dseloc.solarId(), dseloc.elinkGroupId(), dseloc.elinkId(), sampachid,
+      adc, ((adc & 0xFFC00) >> 10), (adc & 0x3FF));
+
+    cru->addChannelData(dseloc.solarId(), dseloc.elinkId(), sampachid, {raw::SampaCluster(ts, adc)});
   }
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
+            raw::ElectronicMapper& elecmap,
             std::vector<uint8_t>& buffer)
 {
-  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
   std::map<int, std::unique_ptr<raw::CRUEncoder>> crus;
 
   for (int i = 0; i < interactions.size(); i++) {
@@ -145,7 +153,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << fmt::format("BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
-                                         crus, *elecmap, col.orbit, col.bc);
+                                         crus, elecmap, col.orbit, col.bc);
 
     for (auto& p : crus) {
       if (p.second) {
@@ -155,6 +163,20 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
 
     std::cout << fmt::format("END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }
+}
+
+// filter out detection elements for which we don't have the
+// electronic mapping
+std::vector<int> filterDetectionElements(gsl::span<int> deids,
+                                         const raw::ElectronicMapper& elecmap)
+{
+  std::vector<int> d;
+  for (auto deid : deids) {
+    if (elecmap.cruId(deid) != 0xFF) {
+      d.emplace_back(deid);
+    }
+  }
+  return d;
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
@@ -168,19 +190,23 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
 
   //auto deids = getAllDetectionElementIds();
-  std::vector<int> deids = {505, 506, 507, 508, 509, 510, 511, 512, 513}; // CH5L
+  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
+  std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
+  std::vector<int> deids = filterDetectionElements(gsl::span<int>(ch5l), *elecmap);
 
   // one vector of digits per interaction
-  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
+  // std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
+  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deids);
 
   std::vector<uint8_t> buffer;
-  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, buffer);
+  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, *elecmap, buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
+  o2::mch::raw::impl::dumpBuffer(buffer);
   std::cout << "-------------------- Paginating ...\n";
   std::vector<uint8_t> pages;
   size_t pageSize = 8192;
-  uint8_t paddingByte = 0x00;
+  uint8_t paddingByte = 0x44;
   gsl::span<uint8_t> b8(buffer);
   raw::paginateBuffer<RDH>(b8, pages, pageSize, paddingByte);
   outfile.write(reinterpret_cast<char*>(&pages[0]), pages.size());

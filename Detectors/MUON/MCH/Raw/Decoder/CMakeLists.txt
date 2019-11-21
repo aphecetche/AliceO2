@@ -14,7 +14,7 @@ o2_add_library(MCHRawDecoder
                        src/BareElinkDecoder.cxx
                        src/BareGBTDecoder.cxx
                        src/UserLogicGBTDecoder.cxx
-                       src/UserLogicDSDecoder.cxx
+                       src/UserLogicElinkDecoder.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
@@ -38,7 +38,7 @@ if(BUILD_TESTING)
               PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHTestRawRefBuffers O2::MCHRawImplHelpers)
 
   o2_add_test(userlogic-elink-decoder
-              SOURCES src/testUserLogicDSDecoder.cxx
+          SOURCES src/testUserLogicElinkDecoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)

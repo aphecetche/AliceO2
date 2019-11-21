@@ -32,12 +32,14 @@ class CRUEncoder
   /** @name Main interface.
     */
   ///@{
-  /// add data for one channel, identified by {solarId,elinkId,chId}
-  /// \param solarId aka GBTId 0..23
-  /// \param elinkId the linkId within the GBT
-  /// \param chId channel id
+  /// add data for one channel, identified by {solarId,groupId,chId}
+  /// (where (solarId,groupId) is equivalent to (deId,dsId) somehow)
+  ///
+  /// \param solarId is the (absolute) identifier of a solar card
+  /// \param elinkId is the index of the GBT elink used 0..39
+  /// \param chId sampa channel id 0..31
   /// \param data the actual data to be added
-  virtual void addChannelData(uint8_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data) = 0;
+  virtual void addChannelData(uint16_t solarId, uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data) = 0;
 
   // startHeartbeatFrame sets the trigger (orbit,bunchCrossing) to be used
   // for all generated RDHs (until next call to this method).

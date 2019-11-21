@@ -8,25 +8,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_USER_LOGIC_DS_DECODER_H
-#define O2_MCH_RAW_USER_LOGIC_DS_DECODER_H
-
-#include "MCHRawDecoder/Decoder.h"
-#include <memory>
+#include "MCHRawEncoder/DualSampaElectronicLocation.h"
+#include "Assertions.h"
 
 namespace o2::mch::raw
 {
-class UserLogicDSDecoder
+DualSampaElectronicLocation::DualSampaElectronicLocation(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex)
+  : mSolarId{solarId}, mElinkGroupId{elinkGroupId}, mElinkIndexInGroup{elinkIndex}
 {
- public:
-  UserLogicDSDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler, bool chargeSumMode = true);
-
-  void append(uint64_t data);
-
- private:
-  struct Impl;
-  std::shared_ptr<Impl> mFSM; // FIXME: try to turn this into a unique_ptr
-};
+  impl::assertIsInRange("elinkGroupId", mElinkGroupId, 0, 7);
+  impl::assertIsInRange("elinkIndex", mElinkIndexInGroup, 0, 4);
+}
 
 } // namespace o2::mch::raw
-#endif
