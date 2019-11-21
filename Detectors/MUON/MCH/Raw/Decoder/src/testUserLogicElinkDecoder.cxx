@@ -11,7 +11,7 @@
 ///
 /// @author  Laurent Aphecetche
 
-#define BOOST_TEST_MODULE Test MCHRaw UserLogicDSDecoder
+#define BOOST_TEST_MODULE Test MCHRaw UserLogicElinkDecoder
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_DYN_LINK
 
@@ -19,7 +19,7 @@
 #include <iostream>
 #include <fstream>
 #include <fmt/printf.h>
-#include "UserLogicDSDecoder.h"
+#include "UserLogicElinkDecoder.h"
 #include "MCHRawCommon/SampaHeader.h"
 using namespace o2::mch::raw;
 
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_SUITE(userlogicdsdecoder)
 
 BOOST_AUTO_TEST_CASE(Test)
 {
-  UserLogicDSDecoder dec(0, 0, handlePacketPrint("dummy"));
+  UserLogicElinkDecoder dec(0, 0, handlePacketPrint("dummy"));
   const uint64_t sync = sampaSync().uint64();
   uint64_t size(5); // cluster size = 5 samples
   uint64_t time(345);

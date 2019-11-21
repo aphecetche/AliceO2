@@ -12,7 +12,8 @@ o2_add_executable(
         rawdump
         SOURCES rawdump.cxx
         COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options)
+        PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
+        O2::MCHRawImplHelpers)
 
 o2_add_executable(generate-timeframe
         SOURCES gentimeframe.cxx gtfSegmentation.cxx gtfGenerateDigits.cxx

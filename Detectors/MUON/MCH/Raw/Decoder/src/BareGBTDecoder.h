@@ -28,6 +28,8 @@ namespace raw
 class BareGBTDecoder
 {
  public:
+  static constexpr uint8_t baseSize{128};
+
   /// Constructor.
   /// \param cruId the identifier for the CRU this GBT is part of
   /// \param sampaChannelHandler the callable that will handle each SampaCluster

@@ -9,7 +9,7 @@
 
 #include "MCHRawEncoder/ElectronicMapper.h"
 
-uint32_t encode(uint16_t a, uint16_t b)
+uint32_t encodeDeDs(uint16_t a, uint16_t b)
 {
   return a << 16 | b;
 }
@@ -22,13 +22,33 @@ uint16_t decode_b(uint32_t x)
   return static_cast<uint16_t>(x & 0xFFFF);
 }
 
+uint16_t encodeSolarGroupIndex(uint16_t solarId, uint8_t groupId, uint8_t index)
+{
+  return (solarId & 0x3FF) | ((groupId & 0x7) << 10) |
+         ((index & 0x7) << 13);
+}
+
+uint16_t decodeSolarId(uint16_t code)
+{
+  return code & 0x3FF;
+}
+
+uint8_t decodeGroupId(uint16_t code)
+{
+  return (code & 0x1C00) >> 10;
+}
+
+uint8_t decodeElinkIndex(uint16_t code)
+{
+  return (code & 0xE000) >> 13;
+}
 #include "Gench5.cxx"
 
 namespace
 {
-std::map<uint32_t, uint32_t> createDeDsMap()
+std::map<uint32_t, uint16_t> createDeDsMap()
 {
-  std::map<uint32_t, uint32_t> m;
+  std::map<uint32_t, uint16_t> m;
   fillch5(m);
   return m;
 }
@@ -38,7 +58,7 @@ namespace
 std::map<uint16_t, std::set<uint16_t>> createCru2SolarMap()
 {
   std::map<uint16_t, std::set<uint16_t>> m;
-  m[0].insert(144);
+  m[1].insert(338);
   return m;
 }
 } // namespace
@@ -46,7 +66,7 @@ std::map<uint16_t, std::set<uint16_t>> createCru2SolarMap()
 std::map<uint16_t, uint8_t> createDeId2CruIdMap()
 {
   std::map<uint16_t, uint8_t> m;
-  m[505] = 0;
+  m[513] = 1;
   return m;
 }
 
@@ -55,16 +75,16 @@ namespace o2::mch::raw
 
 struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
 
-  std::pair<uint16_t, uint16_t>
-    solarIdAndGroupIdFromDeIdAndDsId(uint16_t deid, uint16_t dsid)
+  DualSampaElectronicLocation
+    dualSampaElectronicLocation(uint16_t deid, uint16_t dsid)
       const override
   {
-    static std::map<uint32_t, uint32_t> m = createDeDsMap();
-    auto it = m.find(encode(deid, dsid));
+    static std::map<uint32_t, uint16_t> m = createDeDsMap();
+    auto it = m.find(encodeDeDs(deid, dsid));
     if (it == m.end()) {
-      return {0xFFFF, 0xFFFF};
+      return DualSampaElectronicLocation::Invalid();
     }
-    return {decode_a(it->second), decode_b(it->second)};
+    return DualSampaElectronicLocation{decodeSolarId(it->second), decodeGroupId(it->second), decodeElinkIndex(it->second)};
   }
 
   std::set<uint16_t> solarIds(uint8_t cruId) const override
@@ -90,7 +110,7 @@ struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
   std::set<uint16_t> cruIds() const override
   {
     return {
-      0,
+      1,
     };
   }
 };
