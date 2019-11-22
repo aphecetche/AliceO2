@@ -15,6 +15,12 @@
 #include "BareElinkDecoder.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include <gsl/span>
+#include <fmt/printf.h>
+#include <fmt/format.h>
+#include "MakeArray.h"
+#include "Assertions.h"
+#include <iostream>
+#include <boost/multiprecision/cpp_int.hpp>
 
 namespace o2
 {
@@ -25,6 +31,7 @@ namespace raw
 
 /// @brief A BareGBTDecoder groups 40 ElinkDecoder objects.
 
+template <typename CHARGESUM>
 class BareGBTDecoder
 {
  public:
@@ -34,8 +41,7 @@ class BareGBTDecoder
   /// \param cruId the identifier for the CRU this GBT is part of
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
   /// \param chargeSumMode whether the Sampa is in clusterMode or not
-  BareGBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler,
-                 bool chargeSumMode = true);
+  BareGBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
     */
@@ -65,10 +71,55 @@ class BareGBTDecoder
  private:
   int mCruId;
   int mGbtId;
-  std::array<BareElinkDecoder, 40> mElinks;
+  std::array<BareElinkDecoder<CHARGESUM>, 40> mElinks;
   int mNofGbtWordsSeens;
 };
+
+using namespace boost::multiprecision;
+
+template <typename CHARGESUM>
+BareGBTDecoder<CHARGESUM>::BareGBTDecoder(int cruId,
+                                          int gbtId,
+                                          SampaChannelHandler sampaChannelHandler)
+  : mCruId(cruId),
+    mGbtId(gbtId),
+    mElinks{impl::makeArray<40>([=](size_t i) { return BareElinkDecoder<CHARGESUM>(cruId, i, sampaChannelHandler); })},
+    mNofGbtWordsSeens{0}
+{
+  impl::assertIsInRange("gbtId", gbtId, 0, 23);
+}
+
+template <typename CHARGESUM>
+void BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
+{
+  if (bytes.size() % 16 != 0) {
+    throw std::invalid_argument("can only bytes by group of 16 (i.e. 128 bits)");
+  }
+  for (int j = 0; j < bytes.size(); j += 16) {
+    if (j % 16 > 10) {
+      // only consider 80 bits of each 128 bits group
+      continue;
+    }
+    ++mNofGbtWordsSeens;
+    int elinkIndex = 0;
+    for (auto b : bytes.subspan(j, 10)) {
+      mElinks[elinkIndex++].append(b & 2, b & 1);
+      mElinks[elinkIndex++].append(b & 8, b & 4);
+      mElinks[elinkIndex++].append(b & 32, b & 16);
+      mElinks[elinkIndex++].append(b & 128, b & 64);
+    }
+  }
+}
+
+template <typename CHARGESUM>
+void BareGBTDecoder<CHARGESUM>::reset()
+{
+  for (auto& e : mElinks) {
+    e.reset();
+  }
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2
+
 #endif

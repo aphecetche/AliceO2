@@ -27,7 +27,7 @@ namespace raw
 ///
 ///
 
-template <typename GBTDECODER>
+template <typename GBTDECODER, typename CHARGESUM>
 class CRUDecoder
 {
  public:
@@ -35,8 +35,7 @@ class CRUDecoder
   /// \param cruId the identifier of the CRU
   /// \param sampaChannelHandler the callable that will handle the SampaCluster
   /// that gets decoded.
-  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler,
-                      bool chargeSumMode);
+  explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler);
 
   /// decode the data in buffer, assuming it's coming from the given GBT.
   void decode(int gbtid, gsl::span<uint8_t> buffer);
@@ -49,17 +48,16 @@ class CRUDecoder
   std::array<GBTDECODER, 24> mGbtDecoders;
 };
 
-template <typename GBTDECODER>
-CRUDecoder<GBTDECODER>::CRUDecoder(int cruId,
-                                   SampaChannelHandler sampaChannelHandler,
-                                   bool chargeSumMode)
+template <typename GBTDECODER, typename CHARGESUM>
+CRUDecoder<GBTDECODER, CHARGESUM>::CRUDecoder(int cruId,
+                                              SampaChannelHandler sampaChannelHandler)
   : mCruId{cruId},
-    mGbtDecoders{impl::makeArray<24>([=](size_t i) { return GBTDECODER(cruId, i, sampaChannelHandler, chargeSumMode); })}
+    mGbtDecoders{impl::makeArray<24>([=](size_t i) { return GBTDECODER(cruId, i, sampaChannelHandler); })}
 {
 }
 
-template <typename GBTDECODER>
-void CRUDecoder<GBTDECODER>::decode(int gbtId, gsl::span<uint8_t> buffer)
+template <typename GBTDECODER, typename CHARGESUM>
+void CRUDecoder<GBTDECODER, CHARGESUM>::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
   constexpr auto bs = GBTDECODER::baseSize / 8;
   if (buffer.size() % bs) {
@@ -68,8 +66,8 @@ void CRUDecoder<GBTDECODER>::decode(int gbtId, gsl::span<uint8_t> buffer)
   mGbtDecoders.at(gbtId).append(buffer);
 }
 
-template <typename GBTDECODER>
-void CRUDecoder<GBTDECODER>::reset()
+template <typename GBTDECODER, typename CHARGESUM>
+void CRUDecoder<GBTDECODER, CHARGESUM>::reset()
 {
   for (auto& g : mGbtDecoders) {
     g.reset();
