@@ -54,9 +54,11 @@ struct SampaCluster {
   SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samples);
 
   /// nofSamples gives the number of samples of this cluster.
+  /// Can be > 1 even in chargesum mode (it then indicates the number
+  /// of original samples that were integrated together)
   uint16_t nofSamples() const;
 
-  /// isClusterSum returns 1 if this cluster is not holding raw samples.
+  /// isClusterSum returns true if this cluster is not holding raw samples.
   bool isClusterSum() const;
 
   /// nof10BitWords returns the number of 10 bits words

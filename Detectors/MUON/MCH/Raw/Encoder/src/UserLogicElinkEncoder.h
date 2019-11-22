@@ -65,7 +65,7 @@ ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
     mBuffer{},
     mCurrent10BitIndex{4}
 {
-  impl::assertIsInRange("elinkId", elinkId, 0, 39);
+  impl::assertIsInRange<uint8_t>("elinkId", elinkId, 0, 39);
 }
 
 void append(uint64_t prefix, std::vector<uint64_t>& buffer, int& index, uint64_t& word, int data)

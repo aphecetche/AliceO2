@@ -45,7 +45,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
   memset(&buffer[0], 0, buffer.size());
   auto hp = [&ndigits](uint8_t cruId, uint8_t linkId, uint8_t chip,
                        uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    std::cout << fmt::format("CRU {:2d} SOLAR {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
+    std::cout << fmt::format("CRU {:2d} LINK {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
     std::cout << sc << "\n";
     ++ndigits;
   };
