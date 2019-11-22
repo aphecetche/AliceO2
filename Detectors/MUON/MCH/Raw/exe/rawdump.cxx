@@ -20,12 +20,17 @@
 #include "Headers/RAWDataHeader.h"
 #include <chrono>
 #include "DumpBuffer.h"
+#include "MCHRawCommon/DataFormats.h"
 
 namespace po = boost::program_options;
 
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
-int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool userLogic, bool chargeSum)
+using namespace o2::mch::raw;
+using RDHv4 = o2::header::RAWDataHeaderV4;
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
 {
   if (maxNofRDHs == 0) {
     maxNofRDHs = std::numeric_limits<unsigned int>::max();
@@ -51,7 +56,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
   };
 
   size_t nrdhs{0};
-  auto rh = [&](const o2::header::RAWDataHeaderV4& rdh) {
+  auto rh = [&](const RDH& rdh) {
     nrdhs++;
     if (showRDHs) {
       std::cout << nrdhs << "--" << rdh << "\n";
@@ -64,13 +69,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs, bool user
   auto len = in.tellg();
   in.seekg(0, in.beg);
 
-  o2::mch::raw::Decoder decode;
-
-  if (userLogic) {
-    decode = o2::mch::raw::createUserLogicDecoder<o2::header::RAWDataHeaderV4>(rh, hp, chargeSum);
-  } else {
-    decode = o2::mch::raw::createBareDecoder<o2::header::RAWDataHeaderV4>(rh, hp, chargeSum);
-  }
+  o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rh, hp);
 
   std::vector<std::chrono::microseconds> timers;
 
@@ -132,5 +131,17 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  return rawdump(inputFile, nrdhs, showRDHs, userLogic, chargeSum);
+  if (userLogic) {
+    if (chargeSum) {
+      return rawdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, nrdhs, showRDHs);
+    } else {
+      return rawdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, nrdhs, showRDHs);
+    }
+  } else {
+    if (chargeSum) {
+      return rawdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, nrdhs, showRDHs);
+    } else {
+      return rawdump<BareFormat, SampleMode, RDHv4>(inputFile, nrdhs, showRDHs);
+    }
+  }
 }

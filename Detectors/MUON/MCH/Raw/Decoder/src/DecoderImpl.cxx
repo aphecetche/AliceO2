@@ -26,14 +26,13 @@ namespace mch
 namespace raw
 {
 
-template <typename RDH, typename CRUDECODER>
-DecoderImpl<RDH, CRUDECODER>::DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler,
-                                          SampaChannelHandler channelHandler,
-                                          bool chargeSumMode) : mRdhHandler(rdhHandler),
-                                                                mCruDecoders{impl::makeArray<18>([=](size_t i) { return CRUDECODER(i, channelHandler, chargeSumMode); })},
-                                                                mOrbit{0},
-                                                                mNofOrbitSeen{0},
-                                                                mNofOrbitJumps{0}
+template <typename CHARGESUM, typename RDH, typename CRUDECODER>
+DecoderImpl<CHARGESUM, RDH, CRUDECODER>::DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler,
+                                                     SampaChannelHandler channelHandler) : mRdhHandler(rdhHandler),
+                                                                                           mCruDecoders{impl::makeArray<18>([=](size_t i) { return CRUDECODER(i, channelHandler); })},
+                                                                                           mOrbit{0},
+                                                                                           mNofOrbitSeen{0},
+                                                                                           mNofOrbitJumps{0}
 {
 }
 
@@ -42,16 +41,16 @@ bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
   return std::abs(static_cast<long int>(orb1 - orb2)) > 1;
 }
 
-template <typename RDH, typename CRUDECODER>
-DecoderImpl<RDH, CRUDECODER>::~DecoderImpl()
+template <typename CHARGESUM, typename RDH, typename CRUDECODER>
+DecoderImpl<CHARGESUM, RDH, CRUDECODER>::~DecoderImpl()
 {
   std::cout << "Nof orbits seen : " << mNofOrbitSeen << "\n";
   std::cout << "Nof orbits jumps: " << mNofOrbitJumps << "\n";
 }
 
 using ::operator<<;
-template <typename RDH, typename CRUDECODER>
-int DecoderImpl<RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffer)
+template <typename CHARGESUM, typename RDH, typename CRUDECODER>
+int DecoderImpl<CHARGESUM, RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffer)
 {
   RDH rdh;
   const size_t nofRDHWords = sizeof(rdh);
@@ -88,16 +87,20 @@ int DecoderImpl<RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffer)
   return nofRDHs;
 }
 
-template <typename RDH, typename CRUDECODER>
-void DecoderImpl<RDH, CRUDECODER>::reset()
+template <typename CHARGESUM, typename RDH, typename CRUDECODER>
+void DecoderImpl<CHARGESUM, RDH, CRUDECODER>::reset()
 {
   for (auto& c : mCruDecoders) {
     c.reset();
   }
 }
 
-template class DecoderImpl<o2::header::RAWDataHeaderV4, CRUDecoder<BareGBTDecoder>>;
-template class DecoderImpl<o2::header::RAWDataHeaderV4, CRUDecoder<UserLogicGBTDecoder>>;
+using RDHv4 = o2::header::RAWDataHeaderV4;
+
+template class DecoderImpl<ChargeSumMode, RDHv4, CRUDecoder<BareGBTDecoder<ChargeSumMode>, ChargeSumMode>>;
+template class DecoderImpl<ChargeSumMode, RDHv4, CRUDecoder<UserLogicGBTDecoder<ChargeSumMode>, ChargeSumMode>>;
+template class DecoderImpl<SampleMode, RDHv4, CRUDecoder<BareGBTDecoder<SampleMode>, SampleMode>>;
+template class DecoderImpl<SampleMode, RDHv4, CRUDecoder<UserLogicGBTDecoder<SampleMode>, SampleMode>>;
 
 } // namespace raw
 } // namespace mch

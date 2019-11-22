@@ -26,7 +26,7 @@ namespace raw
 {
 /// @brief Decoder for MCH  Raw Data Format.
 
-template <typename RDH, typename CRUDECODER>
+template <typename CHARGESUM, typename RDH, typename CRUDECODER>
 class DecoderImpl
 {
  public:
@@ -35,11 +35,7 @@ class DecoderImpl
   /// (Raw Data Header) that is found in the data stream
   /// \param channelHandler the handler that will be called for each
   /// piece of sampa data (a SampaCluster, i.e. a part of a time window)
-  /// \param chargeSumMode is true if the sampa generating the data
-  /// is in clusterSum mode. This parameter _must_ be specified and _must_
-  /// match the data used, as there is no way to deduce this value from
-  /// the data itself.
-  DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode = true);
+  DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler);
 
   ~DecoderImpl();
 

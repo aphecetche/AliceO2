@@ -13,20 +13,57 @@
 #include "BareGBTDecoder.h"
 #include "UserLogicGBTDecoder.h"
 #include "Headers/RAWDataHeader.h"
+#include "MCHRawCommon/DataFormats.h"
+
+namespace o2::mch::raw::impl
+{
+
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler,
+                      SampaChannelHandler channelHandler);
+
+// as functions cannot be partially specialized, we create a struct
+// (as struct _can_ be specialized) and use it in our function(s)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+struct DecoderCreator {
+  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
+                   SampaChannelHandler channelHandler);
+};
+
+template <typename CHARGESUM, typename RDH>
+struct DecoderCreator<BareFormat, CHARGESUM, RDH> {
+  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
+                   SampaChannelHandler channelHandler)
+  {
+    return DecoderImpl<CHARGESUM, RDH, CRUDecoder<BareGBTDecoder<CHARGESUM>, CHARGESUM>>(rdhHandler, channelHandler);
+  }
+};
+
+template <typename CHARGESUM, typename RDH>
+struct DecoderCreator<UserLogicFormat, CHARGESUM, RDH> {
+  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
+                   SampaChannelHandler channelHandler)
+  {
+    return DecoderImpl<CHARGESUM, RDH, CRUDecoder<UserLogicGBTDecoder<CHARGESUM>, CHARGESUM>>(rdhHandler, channelHandler);
+  }
+};
+} // namespace o2::mch::raw::impl
 
 namespace o2::mch::raw
 {
 
-template <>
-Decoder createBareDecoder(RawDataHeaderHandler<o2::header::RAWDataHeaderV4> rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode)
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
 {
-  return DecoderImpl<o2::header::RAWDataHeaderV4, CRUDecoder<BareGBTDecoder>>(rdhHandler, channelHandler, chargeSumMode);
+  return impl::DecoderCreator<FORMAT, CHARGESUM, RDH>::_(rdhHandler, channelHandler);
 }
 
-template <>
-Decoder createUserLogicDecoder(RawDataHeaderHandler<o2::header::RAWDataHeaderV4> rdhHandler, SampaChannelHandler channelHandler, bool chargeSumMode)
-{
-  return DecoderImpl<o2::header::RAWDataHeaderV4, CRUDecoder<UserLogicGBTDecoder>>(rdhHandler, channelHandler, chargeSumMode);
-}
+// define only the specialization we use
 
+using RDHv4 = o2::header::RAWDataHeaderV4;
+
+template Decoder createDecoder<BareFormat, SampleMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
+template Decoder createDecoder<BareFormat, ChargeSumMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
+template Decoder createDecoder<UserLogicFormat, SampleMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
+template Decoder createDecoder<UserLogicFormat, ChargeSumMode, RDHv4>(RawDataHeaderHandler<RDHv4>, SampaChannelHandler);
 } // namespace o2::mch::raw

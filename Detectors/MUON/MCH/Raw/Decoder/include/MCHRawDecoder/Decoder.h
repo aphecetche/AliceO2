@@ -26,15 +26,9 @@ namespace raw
 
 using Decoder = std::function<void(gsl::span<uint8_t> buffer)>;
 
-template <typename RDH>
-Decoder createBareDecoder(RawDataHeaderHandler<RDH> rdhHandler,
-                          SampaChannelHandler channelHandler,
-                          bool chargeSumMode);
-
-template <typename RDH>
-Decoder createUserLogicDecoder(RawDataHeaderHandler<RDH> rdhHandler,
-                               SampaChannelHandler channelHandler,
-                               bool chargeSumMode);
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler,
+                      SampaChannelHandler channelHandler);
 
 } // namespace raw
 } // namespace mch
