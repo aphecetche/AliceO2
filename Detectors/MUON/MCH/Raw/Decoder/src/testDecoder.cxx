@@ -50,13 +50,12 @@ BOOST_AUTO_TEST_CASE(Test0)
   RawDataHeaderHandler<RAWDataHeaderV4> rh;
   SampaChannelHandler ch;
 
-  auto d = createBareDecoder(rh, ch, true);
+  auto d = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(rh, ch);
 
-  createBareDecoder<RAWDataHeaderV4>(handleRDH, ch, true);
-  createBareDecoder<RAWDataHeaderV4>(
+  createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, ch);
+  createDecoder<BareFormat, SampleMode, RAWDataHeaderV4>(
     handleRDH, [](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
-    },
-    false);
+    });
 }
 
 BOOST_AUTO_TEST_CASE(Test1)
@@ -106,7 +105,7 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
     "chip-10-ch-26-ts-0-q-460",
     "chip-10-ch-12-ts-0-q-420"};
 
-  auto decode = createBareDecoder<RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result), true);
+  auto decode = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result));
   decode(testBuffer);
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());

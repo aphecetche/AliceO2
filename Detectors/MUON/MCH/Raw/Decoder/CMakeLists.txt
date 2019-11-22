@@ -12,9 +12,6 @@ o2_add_library(MCHRawDecoder
                SOURCES src/Decoder.cxx
                        src/DecoderImpl.cxx
                        src/BareElinkDecoder.cxx
-                       src/BareGBTDecoder.cxx
-                       src/UserLogicGBTDecoder.cxx
-                       src/UserLogicElinkDecoder.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
@@ -29,7 +26,7 @@ if(BUILD_TESTING)
               SOURCES src/testBareElinkDecoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHRawImplHelpers)
 
   o2_add_test(bare-gbt-decoder
               SOURCES src/testBareGBTDecoder.cxx
