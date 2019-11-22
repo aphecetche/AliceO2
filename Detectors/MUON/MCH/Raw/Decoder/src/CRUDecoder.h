@@ -61,12 +61,11 @@ CRUDecoder<GBTDECODER>::CRUDecoder(int cruId,
 template <typename GBTDECODER>
 void CRUDecoder<GBTDECODER>::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
-  impl::assertIsInRange("gbtId", gbtId, 0, mGbtDecoders.size());
   constexpr auto bs = GBTDECODER::baseSize / 8;
   if (buffer.size() % bs) {
     throw std::invalid_argument(fmt::format("buffer size {} should be a multiple of {} and is not", bs, buffer.size()));
   }
-  mGbtDecoders[gbtId].append(buffer);
+  mGbtDecoders.at(gbtId).append(buffer);
 }
 
 template <typename GBTDECODER>

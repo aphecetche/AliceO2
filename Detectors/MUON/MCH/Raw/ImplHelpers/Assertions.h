@@ -16,7 +16,8 @@
 namespace o2::mch::raw::impl
 {
 
-inline int assertIsInRange(std::string what, int value, int min, int max)
+template <typename T>
+inline int assertIsInRange(std::string what, T value, T min, T max)
 {
   if (value < min || value > max) {
     throw std::invalid_argument(fmt::format("{} should be between {} and {} but is {}", what, min, max, value));

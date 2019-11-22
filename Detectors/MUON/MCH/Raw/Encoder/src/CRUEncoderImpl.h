@@ -69,7 +69,7 @@ CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId, const Ele
     mGBTs{impl::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(i); })},
     mFirstHBFrame{true}
 {
-  impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
+  impl::assertIsInRange<uint16_t>("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
   auto s = elecmap.solarIds(cruId);
   std::copy(s.begin(), s.end(), std::back_inserter(mSolarIds));
 }
@@ -101,7 +101,7 @@ void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_
     }
     assert(gbtBuffer.size() % 4 == 0);
     auto payloadSize = gbtBuffer.size(); // in bytes
-    impl::assertIsInRange("payloadSize", payloadSize, 0, (static_cast<uint32_t>(1) << 31) - 64);
+    impl::assertIsInRange<uint32_t>("payloadSize", payloadSize, 0, (static_cast<uint32_t>(1) << 31) - 64);
     auto rdh = createRDH<RDH>(mCruId, gbt.id(), orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);
@@ -129,7 +129,7 @@ void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::closeHeartbeatFrame(uint32_t orbit,
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
 {
-  impl::assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
+  impl::assertIsInRange<uint16_t>("bunchCrossing", bunchCrossing, 0, 0xFFF);
   // build a buffer with the _previous_ (orbit,bx)
   if (!mFirstHBFrame) {
     closeHeartbeatFrame(mOrbit, mBunchCrossing);
