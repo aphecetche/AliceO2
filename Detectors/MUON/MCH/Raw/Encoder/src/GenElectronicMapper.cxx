@@ -58,7 +58,7 @@ namespace
 std::map<uint16_t, std::set<uint16_t>> createCru2SolarMap()
 {
   std::map<uint16_t, std::set<uint16_t>> m;
-  m[1].insert(338);
+  m[0].insert(144);
   return m;
 }
 } // namespace
@@ -66,7 +66,7 @@ std::map<uint16_t, std::set<uint16_t>> createCru2SolarMap()
 std::map<uint16_t, uint8_t> createDeId2CruIdMap()
 {
   std::map<uint16_t, uint8_t> m;
-  m[513] = 1;
+  m[505] = 0;
   return m;
 }
 
@@ -110,7 +110,7 @@ struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
   std::set<uint16_t> cruIds() const override
   {
     return {
-      1,
+      0,
     };
   }
 };
