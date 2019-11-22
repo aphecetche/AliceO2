@@ -119,7 +119,8 @@ std::vector<uint64_t> createBuffer(const std::vector<SampaCluster>& clusters)
   return b64;
 }
 
-void decodeBuffer(UserLogicElinkDecoder& dec, const std::vector<uint64_t>& b64)
+template <typename CHARGESUM>
+void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint64_t>& b64)
 {
   std::vector<uint8_t> b8;
   impl::copyBuffer(b64, b8);
@@ -129,11 +130,11 @@ void decodeBuffer(UserLogicElinkDecoder& dec, const std::vector<uint64_t>& b64)
   }
 }
 
+template <typename CHARGESUM>
 std::string testDecode(const std::vector<SampaCluster>& clusters)
 {
-  bool chargeSumMode = clusters[0].isClusterSum();
   std::string results;
-  UserLogicElinkDecoder dec(0, 0, handlePacket(results), chargeSumMode);
+  UserLogicElinkDecoder<CHARGESUM> dec(0, 0, handlePacket(results));
   auto b64 = createBuffer(clusters);
   decodeBuffer(dec, b64);
   return results;
@@ -144,7 +145,7 @@ BOOST_AUTO_TEST_CASE(SampleModeSimplest)
   // only one channel with one very small cluster
   // fitting within one 64-bits word
   SampaCluster cl(345, {123, 456});
-  auto r = testDecode({cl});
+  auto r = testDecode<SampleMode>({cl});
   BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123-456\n");
 }
 
@@ -153,16 +154,29 @@ BOOST_AUTO_TEST_CASE(SampleModeSimple)
   // only one channel with one cluster, but the cluster
   // spans 2 64-bits words.
   SampaCluster cl(345, {123, 456, 789, 901, 902});
-  auto r = testDecode({cl});
+  auto r = testDecode<SampleMode>({cl});
   BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123-456-789-901-902\n");
 }
 
-BOOST_AUTO_TEST_CASE(ChargeSumSimplest)
+BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
 {
   // only one channel with one cluster
-  // fitting within one 64 bits word
+  // (hence fitting within one 64 bits word)
   SampaCluster cl(345, 123456);
-  testDecode({cl});
+  auto r = testDecode<ChargeSumMode>({cl});
+  BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123456\n");
+}
+
+BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
+{
+  // only one channel with 2 clusters
+  // (hence spanning 2 64-bits words)
+  SampaCluster cl1(345, 123456);
+  SampaCluster cl2(346, 789012);
+  auto r = testDecode<ChargeSumMode>({cl1, cl2});
+  BOOST_CHECK_EQUAL(r,
+                    "chip-0-ch-0-ts-345-q-123456\n"
+                    "chip-0-ch-0-ts-346-q-789012\n");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

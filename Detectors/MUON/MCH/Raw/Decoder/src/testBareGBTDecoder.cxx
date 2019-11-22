@@ -45,8 +45,8 @@ BOOST_AUTO_TEST_SUITE(gbtdecoder)
 
 BOOST_AUTO_TEST_CASE(BareGBTDecoderLinkIdMustBeBetween0And23)
 {
-  BOOST_CHECK_THROW(BareGBTDecoder decoder(0, 24, handlePacketPrint("dummy")), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(BareGBTDecoder decoder(0, 23, handlePacketPrint("dummy")));
+  BOOST_CHECK_THROW(BareGBTDecoder<SampleMode> decoder(0, 24, handlePacketPrint("dummy")), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(BareGBTDecoder<SampleMode> decoder(0, 23, handlePacketPrint("dummy")));
 }
 
 BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 
   std::vector<std::string> result;
 
-  BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
+  BareGBTDecoder<ChargeSumMode> dec(0, 0, handlePacketStoreAsVec(result));
   auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   gsl::span<uint8_t> buffer(buf);
   dec.append(buffer);
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
-  BareGBTDecoder dec(0, 0, handlePacketStoreAsVec(result));
+  BareGBTDecoder<ChargeSumMode> dec(0, 0, handlePacketStoreAsVec(result));
   auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   dec.append(buf);
   std::vector<std::string> expected{
