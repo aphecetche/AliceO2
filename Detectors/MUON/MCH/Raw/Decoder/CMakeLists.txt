@@ -41,6 +41,6 @@ if(BUILD_TESTING)
           SOURCES src/testUserLogicElinkDecoder.cxx
               COMPONENT_NAME mch
               LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
+              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHRawImplHelpers)
 
 endif()

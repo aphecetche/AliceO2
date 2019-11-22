@@ -31,23 +31,20 @@ struct NewData {
   uint64_t data;
 };
 
-struct SyncNotFound {
-};
-
 // States
 
 struct NamedState : public msm::front::state<> {
   NamedState(const char* name_) : name{name_} {}
-  // template <class Event, class FSM>
-  // void on_entry(const Event&, const FSM&)
-  // {
-  //   std::cout << "entering " << name << "\n";
-  // }
-  // template <class Event, class FSM>
-  // void on_exit(const Event&, const FSM&)
-  // {
-  //   std::cout << "leaving " << name << "\n";
-  // }
+  template <class Event, class FSM>
+  void on_entry(const Event&, const FSM&)
+  {
+    std::cout << "--> " << name << "\n";
+  }
+  template <class Event, class FSM>
+  void on_exit(const Event&, const FSM&)
+  {
+    std::cout << name << "--> \n";
+  }
   std::string name;
 };
 
@@ -75,51 +72,13 @@ struct WaitingData : public NamedState {
   WaitingData() : NamedState("WaitingData") {}
 };
 
-struct saveData {
-  template <class EVT, class FSM, class SourceState, class TargetState>
-  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-  {
-    fsm.data = evt.data;
-  }
-};
-
-struct resetIndex {
-  template <class EVT, class FSM, class SourceState, class TargetState>
-  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-  {
-    fsm.maskIndex = 0;
-  }
-};
-
 // Guards
-struct atLeastOneSync {
-  template <class EVT, class FSM, class SourceState, class TargetState>
-  bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-  {
-    return fsm.nofSync > 0;
-  }
-};
 
-struct syncFound {
+struct isSync {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    const uint64_t sync = sampaSync().uint64();
-    if (evt.data == sync) {
-      fsm.nofSync++;
-      return true;
-    }
-    return false;
-  }
-};
-
-struct validHeader {
-  template <class EVT, class FSM, class SourceState, class TargetState>
-  bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-  {
-    fsm.sampaHeader = SampaHeader(evt.data);
-    fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
-    return true;
+    return (evt.data == sampaSyncWord);
   }
 };
 
@@ -136,6 +95,7 @@ struct moreWordsToRead {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
+    std::cout << fmt::format("moreWordsToRead {} n10 {}\n", (fsm.nof10BitWords > 0), fsm.nof10BitWords);
     return fsm.nof10BitWords > 0;
   }
 };
@@ -144,17 +104,48 @@ struct moreDataToRead {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    return (fsm.maskIndex < fsm.masks.size());
+    bool rv = (fsm.maskIndex < fsm.masks.size() - 1);
+    std::cout << fmt::format("moreDataToRead {} maskIndex {}\n", rv, fsm.maskIndex);
+    return rv;
   }
 };
 
 // Actions
 
+struct saveData {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    std::cout << fmt::format(">>>>> saveData={:8x}\n", evt.data);
+    fsm.data = evt.data;
+  }
+};
+
+struct resetIndex {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    std::cout << "!!!!!! resetIndex\n";
+    fsm.maskIndex = 0;
+  }
+};
+
+struct foundSync {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    fsm.nofSync++;
+    std::cout << "+++++ foundSync : fsm.nofSync=" << fsm.nofSync << "\n";
+  }
+};
+
 struct readSize {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
+    std::cout << "SSSSS maskIndex=" << fsm.maskIndex;
     fsm.clusterSize = fsm.pop10();
+    std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
   }
 };
 
@@ -162,7 +153,9 @@ struct readTime {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
+    std::cout << "TTTTT maskIndex=" << fsm.maskIndex;
     fsm.clusterTime = fsm.pop10();
+    std::cout << " -> time=" << fsm.clusterTime << " maskIndex=" << fsm.maskIndex << "\n";
   }
 };
 
@@ -178,6 +171,17 @@ struct readSample {
   }
 };
 
+struct setHeader {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    fsm.sampaHeader = SampaHeader(evt.data);
+    fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
+    std::cout << fmt::format(">>>>> setHeader {:08X} maskIndex {}\n", evt.data, fsm.maskIndex)
+              << fsm.sampaHeader << "\n";
+  }
+};
+
 struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
 
   typedef WaitingSync initial_state;
@@ -185,24 +189,27 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
   struct transition_table : mpl::vector<
                               // clang-format off
   //   Start            Event         Next               Action            Guard
-  // +---------------+---------+---------------+-----------------------+-------------+
-  Row< WaitingSync   , NewData , WaitingHeader , none                  , syncFound               >,
-  Row< WaitingSync   , none    , WaitingHeader , none                  , atLeastOneSync          >,
-  Row< WaitingHeader , NewData , ReadingSize   , resetIndex            , validHeader             >,
+  Row< WaitingSync   , NewData , WaitingHeader , foundSync             , isSync                  >,
+
+  Row< WaitingHeader , NewData , ReadingSize   , setHeader             , Not_<isSync>            >,
+  // Row< WaitingHeader , NewData , WaitingHeader , none                  , isSync                  >,
+
   Row< ReadingSize   , NewData , ReadingTime   , ActionSequence_
                                                  <mpl::vector<
                                                  saveData,
+                                                 resetIndex,
                                                  readSize>>            , validSize               >,
   Row< ReadingTime   , none    , ReadingSample , readTime              , none                    >,
+
   Row< ReadingSample , none    , ReadingSample , readSample            , And_<moreDataToRead,
                                                                               moreWordsToRead>   >,
   Row< ReadingSample , none    , WaitingData   , none                  , Not_<
                                                                            And_<moreDataToRead,
                                                                                 moreWordsToRead>>>,
   Row< WaitingData   , NewData , ReadingSample , ActionSequence_
-                                                 <mpl::vector<
+                                                 < mpl::vector<
                                                  saveData,resetIndex>> , moreWordsToRead         >,
-  Row< WaitingData   , none    , WaitingSync   , none                  , Not_<moreWordsToRead>   >
+  Row< WaitingData   , none    , WaitingHeader , none                  , Not_<moreWordsToRead>   >
                               // clang-format on
                               > {
   };
@@ -219,7 +226,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
   {
     auto rv = data10(data, maskIndex);
     nof10BitWords = std::max(0, nof10BitWords - 1);
-    maskIndex = std::min(masks.size(), maskIndex + 1);
+    maskIndex = std::min(masks.size() - 1, maskIndex + 1);
     return rv;
   }
   void addSample(uint16_t sample)
@@ -238,6 +245,8 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_> {
   void addChargeSum(uint16_t a, uint16_t b)
   {
     // a cluster is ready, send it
+    std::cout << fmt::format("sending cluster maskIndex={} nof10BitWords={}\n", maskIndex,
+                             nof10BitWords);
     channelHandler(cruId,
                    linkId,
                    sampaHeader.chipAddress(),
@@ -274,6 +283,7 @@ UserLogicElinkDecoder::UserLogicElinkDecoder(uint8_t cruId, uint8_t linkId, Samp
 
 void UserLogicElinkDecoder::append(uint64_t data)
 {
+  std::cout << fmt::format("UserLogicElinkDecoder::append({:8X})\n", data);
   mFSM->process_event(NewData(data));
 }
 

@@ -123,6 +123,8 @@ class SampaHeader
   uint64_t mValue;
 };
 
+constexpr uint64_t sampaSyncWord{0x1555540f00113};
+
 /// The 50-bits Sampa SYNC word.
 SampaHeader sampaSync();
 
