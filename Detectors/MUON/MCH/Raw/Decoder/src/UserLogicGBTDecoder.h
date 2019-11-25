@@ -110,11 +110,11 @@ void UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
     }
 
     uint16_t dsid = (word >> 53) & 0x3F;
-    impl::assertIsInRange<uint8_t>("dsid", dsid, 0, 39);
+    impl::assertIsInRange("dsid", dsid, 0, 39);
 
     // the remaining 50 bits are passed to the ElinkDecoder
     uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);
-    mElinkDecoders[dsid].append(data);
+    mElinkDecoders.at(dsid).append(data);
   }
 }
 

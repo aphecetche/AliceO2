@@ -21,15 +21,15 @@ namespace raw
 {
 
 SampaCluster::SampaCluster(uint16_t timestamp, uint32_t chargeSum)
-  : timestamp(impl::assertIsInRange<uint16_t>("timestamp", timestamp, 0, 0x3FF)),
-    chargeSum(impl::assertIsInRange<uint32_t>("chargeSum", chargeSum, 0, 0xFFFFF)),
+  : timestamp(impl::assertIsInRange("timestamp", timestamp, 0, 0x3FF)),   // 10 bits
+    chargeSum(impl::assertIsInRange("chargeSum", chargeSum, 0, 0xFFFFF)), // 20 bits
     samples{}
 
 {
 }
 
 SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samples)
-  : timestamp(impl::assertIsInRange<uint16_t>("timestamp", timestamp, 0, 0x3FF)),
+  : timestamp(impl::assertIsInRange("timestamp", timestamp, 0, 0x3FF)),
     chargeSum(0),
     samples(samples.begin(), samples.end())
 {
@@ -37,7 +37,7 @@ SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samp
     throw std::invalid_argument("cannot add data with no sample");
   }
   for (auto i = 0; i < samples.size(); i++) {
-    impl::assertIsInRange<uint16_t>(fmt::format("samples[{}]", i), samples[i], 0, 0x3FF);
+    impl::assertIsInRange(fmt::format("samples[{}]", i), samples[i], 0, 0x3FF);
   }
 }
 

@@ -49,11 +49,11 @@ BOOST_AUTO_TEST_SUITE(userlogicdsdecoder)
 
 uint64_t build64(uint16_t a10, uint16_t b10 = 0, uint16_t c10 = 0, uint16_t d10 = 0, uint16_t e10 = 0)
 {
-  impl::assertIsInRange<uint16_t>("a10", a10, 0, 1023);
-  impl::assertIsInRange<uint16_t>("b10", a10, 0, 1023);
-  impl::assertIsInRange<uint16_t>("c10", a10, 0, 1023);
-  impl::assertIsInRange<uint16_t>("d10", a10, 0, 1023);
-  impl::assertIsInRange<uint16_t>("e10", a10, 0, 1023);
+  impl::assertIsInRange("a10", a10, 0, 1023);
+  impl::assertIsInRange("b10", a10, 0, 1023);
+  impl::assertIsInRange("c10", a10, 0, 1023);
+  impl::assertIsInRange("d10", a10, 0, 1023);
+  impl::assertIsInRange("e10", a10, 0, 1023);
   return (static_cast<uint64_t>(a10) << 40) |
          (static_cast<uint64_t>(b10) << 30) |
          (static_cast<uint64_t>(c10) << 20) |
@@ -90,7 +90,7 @@ void bufferizeClusters(const std::vector<SampaCluster>& clusters,
                        std::vector<uint64_t>& b64,
                        const uint64_t prefix = 0)
 {
-  impl::assertIsInRange<uint64_t>("prefix", prefix, 0, 0x3FFFFFFFFFFFF);
+  impl::assertIsInRange("prefix", prefix, 0, 0x3FFFFFFFFFFFF);
   uint64_t word{0};
   uint8_t index{4};
   for (auto& c : clusters) {
