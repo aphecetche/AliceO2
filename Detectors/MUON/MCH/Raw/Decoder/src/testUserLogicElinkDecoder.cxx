@@ -71,6 +71,7 @@ SampaHeader createHeader(std::vector<SampaCluster> clusters)
   sh.nof10BitWords(n10);
   sh.packetType(SampaPacketType::Data);
   sh.hammingCode(computeHammingCode(sh.uint64()));
+  sh.headerParity(computeHeaderParity(sh.uint64()));
   return sh;
 }
 

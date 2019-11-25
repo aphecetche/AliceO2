@@ -98,8 +98,8 @@ struct moreDataAvailable {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    bool rv = (fsm.maskIndex < fsm.masks.size() - 1);
-    std::cout << fmt::format("moreDataToRead {} maskIndex {}\n", rv, fsm.maskIndex);
+    bool rv = (fsm.maskIndex < fsm.masks.size());
+    std::cout << fmt::format("moreDataAvailable {} maskIndex {}\n", rv, fsm.maskIndex);
     return rv;
   }
 };
@@ -109,7 +109,7 @@ struct moreSampleToRead {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     bool rv = (fsm.clusterSize > 0);
-    std::cout << fmt::format("moreSampleToRead {} maskIndex {}\n", rv, fsm.maskIndex);
+    std::cout << fmt::format("moreSampleToRead {} clustersize {}\n", rv, fsm.clusterSize);
     return rv;
   }
 };
@@ -125,12 +125,30 @@ struct foundSync {
   }
 };
 
+template <typename CHARGESUM>
 struct readSize {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt);
+};
+
+template <>
+struct readSize<SampleMode> {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     std::cout << "SSSSS maskIndex=" << fsm.maskIndex;
     fsm.clusterSize = fsm.pop10();
+    std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
+  }
+};
+
+template <>
+struct readSize<ChargeSumMode> {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    std::cout << "SSSSS maskIndex=" << fsm.maskIndex;
+    fsm.clusterSize = 2 * fsm.pop10();
     std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
   }
 };
@@ -177,8 +195,9 @@ struct readHeader {
   {
     fsm.sampaHeader = SampaHeader(fsm.data);
     fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
-    std::cout << fmt::format(">>>>> setHeader {:08X} maskIndex {}\n", evt.data, fsm.maskIndex)
+    std::cout << fmt::format(">>>>> readHeader {:08X} maskIndex {}\n", evt.data, fsm.maskIndex)
               << fsm.sampaHeader << "\n";
+    fsm.maskIndex = fsm.masks.size();
   }
 };
 
@@ -188,8 +207,7 @@ struct setData {
   {
     fsm.data = evt.data;
     fsm.maskIndex = 0;
-    std::cout << fmt::format(">>>>> setData {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex)
-              << fsm.sampaHeader << "\n";
+    std::cout << fmt::format(">>>>> setData {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex);
   }
 };
 
@@ -208,21 +226,23 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
                                                  setData,
                                                  readHeader>>           , Not_<isSync>            >,
 
-  Row< WaitingSize   , NewData , WaitingTime   , ActionSequence_<
-                                                 mpl::vector<
-                                                 setData,
-                                                 readSize>>            ,
-                                                                         And_<moreDataAvailable,
-                                                                         moreWordsToRead>       >,
+  Row< WaitingSize   , NewData , WaitingSize   , setData               , And_<moreWordsToRead,
+                                                                           Not_<moreDataAvailable>> >,
+  Row< WaitingSize   , none    , WaitingTime   , readSize<CHARGESUM>   , And_<moreDataAvailable,
+                                                                              moreWordsToRead>       >,
 
+  Row< WaitingTime   , NewData , WaitingTime   , setData               , And_<moreWordsToRead,
+                                                                               Not_<moreDataAvailable>> >,
   Row< WaitingTime   , none    , WaitingSample , readTime              , And_<moreSampleToRead,
                                                                          moreDataAvailable>      >,
 
+  Row< WaitingSample , NewData , WaitingSample , setData               , moreSampleToRead       >,
+
   Row< WaitingSample , none    , WaitingSample , readSample<CHARGESUM> , And_<moreDataAvailable,
-                                                                              moreSampleToRead>  >
-  // Row< WaitingSample , NewData , WaitingSample , none                  , moreSampleToRead        >,
-  // Row< WaitingSample , NewData , WaitingTime   , none                  , moreWordsToRead         >, 
-  // Row< WaitingSample , none    , WaitingHeader , none                  , Not_<moreWordsToRead>   >
+                                                                              moreSampleToRead>  >,
+
+  Row< WaitingSample , none    , WaitingSize   , none                  , And_<moreWordsToRead,
+                                                                         Not_<moreSampleToRead>>>
                               // clang-format on
                               > {
   };
@@ -239,7 +259,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   {
     auto rv = data10(data, maskIndex);
     nof10BitWords = std::max(0, nof10BitWords - 1);
-    maskIndex = std::min(masks.size() - 1, maskIndex + 1);
+    maskIndex = std::min(masks.size(), maskIndex + 1);
     return rv;
   }
   void addSample(uint16_t sample)
