@@ -173,7 +173,7 @@ BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
     mState{State::LookingForSync},
     mMask{1}
 {
-  impl::assertIsInRange<uint8_t>("linkId", linkId, 0, 39);
+  impl::assertIsInRange("linkId", linkId, 0, 39);
 }
 
 template <typename CHARGESUM>
