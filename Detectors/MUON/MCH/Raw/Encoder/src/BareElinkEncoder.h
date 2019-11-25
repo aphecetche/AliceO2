@@ -109,7 +109,7 @@ ElinkEncoder<BareFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
     mLocalBunchCrossing{0},
     mPhase{phase}
 {
-  impl::assertIsInRange<uint8_t>("elinkId", elinkId, 0, 39);
+  impl::assertIsInRange("elinkId", elinkId, 0, 39);
 
   // the phase is used to "simulate" a possible different timing alignment between elinks.
 

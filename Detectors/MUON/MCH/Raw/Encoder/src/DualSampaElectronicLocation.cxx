@@ -16,8 +16,8 @@ namespace o2::mch::raw
 DualSampaElectronicLocation::DualSampaElectronicLocation(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex)
   : mSolarId{solarId}, mElinkGroupId{elinkGroupId}, mElinkIndexInGroup{elinkIndex}
 {
-  impl::assertIsInRange<uint8_t>("elinkGroupId", mElinkGroupId, 0, 7);
-  impl::assertIsInRange<uint8_t>("elinkIndex", mElinkIndexInGroup, 0, 4);
+  impl::assertIsInRange("elinkGroupId", mElinkGroupId, 0, 7);
+  impl::assertIsInRange("elinkIndex", mElinkIndexInGroup, 0, 4);
 }
 
 } // namespace o2::mch::raw
