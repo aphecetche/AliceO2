@@ -29,14 +29,20 @@ class DualSampaElectronicLocation
     return mElinkGroupId * 5 + mElinkIndexInGroup;
   }
 
-  static DualSampaElectronicLocation Invalid()
-  {
-    return DualSampaElectronicLocation{0, 8, 5};
-  }
-
   constexpr uint16_t solarId()
   {
     return mSolarId;
+  }
+
+  bool operator==(const DualSampaElectronicLocation& rhs)
+  {
+    return mSolarId == rhs.mSolarId &&
+           mElinkIndexInGroup == rhs.mElinkIndexInGroup &&
+           mElinkGroupId == rhs.mElinkGroupId;
+  }
+  bool operator!=(const DualSampaElectronicLocation& rhs)
+  {
+    return !(*this == rhs);
   }
 
  private:
@@ -44,6 +50,7 @@ class DualSampaElectronicLocation
   uint8_t mElinkGroupId;      // 0..7
   uint8_t mElinkIndexInGroup; // 0..4
 };
+
 } // namespace o2::mch::raw
 
 #endif

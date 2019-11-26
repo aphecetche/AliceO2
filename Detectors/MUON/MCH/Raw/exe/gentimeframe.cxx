@@ -102,11 +102,12 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 
   for (auto d : digits) {
     int deid = d.getDetID();
-    uint8_t cruId = elecmap.cruId(deid);
-    if (cruId == 0xFF) {
+    auto cruopt = elecmap.cruId(deid);
+    if (!cruopt.has_value()) {
       // std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
       continue;
     }
+    uint8_t cruId = cruopt.value();
     if (crus.find(cruId) == crus.end()) {
       crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, elecmap);
     }
@@ -121,7 +122,11 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
     int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
-    auto dseloc = elecmap.dualSampaElectronicLocation(deid, dsid);
+    auto dselocopt = elecmap.dualSampaElectronicLocation(deid, dsid);
+    if (!dselocopt.has_value()) {
+      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
+    }
+    auto dseloc = dselocopt.value();
     uint16_t ts(666); // FIXME: simulate something here ?
     int sampachid = dschid % 32;
     uint32_t adc = static_cast<uint32_t>(d.getADC());

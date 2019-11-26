@@ -14,6 +14,7 @@
 #include <utility>
 #include <set>
 #include "MCHRawEncoder/DualSampaElectronicLocation.h"
+#include <optional>
 
 namespace o2::mch::raw
 {
@@ -24,7 +25,7 @@ class ElectronicMapper
   /// DualSampaElectronicLocation returns the absolute / unique
   /// solarId and (elink) groupd Id corresponding to the pair
   /// (detection element id, dual sampa id)
-  virtual DualSampaElectronicLocation
+  virtual std::optional<DualSampaElectronicLocation>
     dualSampaElectronicLocation(uint16_t deid, uint16_t dsid) const = 0;
 
   /// solarIds returns the set of absolute/unique solarIds connected
@@ -32,18 +33,28 @@ class ElectronicMapper
   virtual std::set<uint16_t> solarIds(uint8_t cruId) const = 0;
 
   /// cruId returns the identifier of the CRU connected to that detection element
-  virtual uint8_t cruId(uint16_t deid) const = 0;
+  virtual std::optional<uint8_t> cruId(uint16_t deid) const = 0;
 
   /// cruIds returns the set of MCH CRU identifiers
   virtual std::set<uint16_t> cruIds() const = 0;
 
+  /// nofSolars returns the total number of solars we're handling
+  virtual int nofSolars() const = 0;
+
   virtual ~ElectronicMapper() = default;
 };
 
+///@{ Different types of electronic mappers.
+/// The "real" one generated from reference spreadsheet
 struct ElectronicMapperGenerated {
 };
+/// Read from file
 struct ElectronicMapperFile {
 };
+/// Dummy but complete mapper (for testing)
+struct ElectronicMapperDummy {
+};
+///@}
 
 template <typename T>
 std::unique_ptr<ElectronicMapper> createElectronicMapper();

@@ -24,7 +24,7 @@ namespace o2::mch::raw::impl
 {
 
 struct MockElectronicMapper : public ElectronicMapper {
-  DualSampaElectronicLocation
+  std::optional<DualSampaElectronicLocation>
     dualSampaElectronicLocation(uint16_t deid, uint16_t dsid) const override
   {
     return DualSampaElectronicLocation{0, 0, 0};
@@ -40,9 +40,14 @@ struct MockElectronicMapper : public ElectronicMapper {
     return {0};
   }
 
-  uint8_t cruId(uint16_t deid) const override
+  std::optional<uint8_t> cruId(uint16_t deid) const override
   {
     return 0;
+  }
+
+  int nofSolars() const override
+  {
+    return 1;
   }
 };
 
