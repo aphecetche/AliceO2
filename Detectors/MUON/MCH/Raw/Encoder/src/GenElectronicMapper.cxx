@@ -9,39 +9,8 @@
 
 #include "MCHRawEncoder/ElectronicMapper.h"
 
-uint32_t encodeDeDs(uint16_t a, uint16_t b)
-{
-  return a << 16 | b;
-}
-uint16_t decode_a(uint32_t x)
-{
-  return static_cast<uint16_t>((x & 0xFFFF0000) >> 16);
-}
-uint16_t decode_b(uint32_t x)
-{
-  return static_cast<uint16_t>(x & 0xFFFF);
-}
+#include "ElectronicMappingImplHelper.h"
 
-uint16_t encodeSolarGroupIndex(uint16_t solarId, uint8_t groupId, uint8_t index)
-{
-  return (solarId & 0x3FF) | ((groupId & 0x7) << 10) |
-         ((index & 0x7) << 13);
-}
-
-uint16_t decodeSolarId(uint16_t code)
-{
-  return code & 0x3FF;
-}
-
-uint8_t decodeGroupId(uint16_t code)
-{
-  return (code & 0x1C00) >> 10;
-}
-
-uint8_t decodeElinkIndex(uint16_t code)
-{
-  return (code & 0xE000) >> 13;
-}
 #include "Gench5.cxx"
 
 namespace
@@ -75,14 +44,14 @@ namespace o2::mch::raw
 
 struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
 
-  DualSampaElectronicLocation
+  std::optional<DualSampaElectronicLocation>
     dualSampaElectronicLocation(uint16_t deid, uint16_t dsid)
       const override
   {
     static std::map<uint32_t, uint16_t> m = createDeDsMap();
     auto it = m.find(encodeDeDs(deid, dsid));
     if (it == m.end()) {
-      return DualSampaElectronicLocation::Invalid();
+      return std::nullopt;
     }
     return DualSampaElectronicLocation{decodeSolarId(it->second), decodeGroupId(it->second), decodeElinkIndex(it->second)};
   }
@@ -97,12 +66,12 @@ struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
     return m[cruId];
   }
 
-  uint8_t cruId(uint16_t deid) const override
+  std::optional<uint8_t> cruId(uint16_t deid) const override
   {
     static std::map<uint16_t, uint8_t> m = createDeId2CruIdMap();
     auto it = m.find(deid);
     if (it == m.end()) {
-      return 0xFF;
+      return std::nullopt;
     }
     return m[deid];
   }
@@ -113,6 +82,7 @@ struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
       0,
     };
   }
+  int nofSolars() const override { return 1; }
 };
 template <>
 std::unique_ptr<ElectronicMapper> createElectronicMapper<ElectronicMapperGenerated>()

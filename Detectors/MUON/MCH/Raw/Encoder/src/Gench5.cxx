@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <map>
 
+using namespace o2::mch::raw::impl;
+
 void fillch5(std::map<uint32_t, uint16_t>& m)
 {
   m.insert(std::make_pair(encodeDeDs(505, 16), encodeSolarGroupIndex(144, 0, 0)));
