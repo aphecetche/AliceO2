@@ -9,6 +9,7 @@
 // or submit itself to any jurisdiction.
 
 #include "gtfGetDigits.h"
+#include "MCHMappingFactory/CreateSegmentation.h"
 
 std::vector<std::vector<MCHDigit>> getDigits(int nofEvents, gsl::span<int> deids, float occupancy)
 {
@@ -20,7 +21,7 @@ std::vector<std::vector<MCHDigit>> getDigits(int nofEvents, gsl::span<int> deids
   std::vector<int> nofPads;
   int totalPads{0};
   for (auto d : deids) {
-    auto npads = segmentation(d).nofPads();
+    auto npads = mapping::segmentation(d).nofPads();
     nofPads.emplace_back(npads);
     totalPads += npads;
   }

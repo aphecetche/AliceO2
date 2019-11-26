@@ -9,8 +9,8 @@
 // or submit itself to any jurisdiction.
 
 #include "gtfGenerateDigits.h"
-#include "gtfSegmentation.h"
 #include <random>
+#include "MCHMappingFactory/CreateSegmentation.h"
 #include <fmt/printf.h>
 
 // generate n digits randomly distributed over the detection elements
@@ -80,7 +80,7 @@ std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl
   std::vector<int> nofPads;
   int totalPads{0};
   for (auto d : deids) {
-    auto npads = segmentation(d).nofPads();
+    auto npads = o2::mch::mapping::segmentation(d).nofPads();
     nofPads.emplace_back(npads);
     totalPads += npads;
   }
