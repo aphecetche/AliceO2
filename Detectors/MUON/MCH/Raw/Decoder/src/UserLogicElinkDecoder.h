@@ -27,6 +27,8 @@ namespace mpl = boost::mpl;
 using namespace msm::front;
 using namespace msm::front::euml; // for Not_ operator
 
+//#define ULDEBUG
+
 namespace o2::mch::raw
 {
 
@@ -42,6 +44,7 @@ struct Never {
 
 struct NamedState : public msm::front::state<> {
   NamedState(const char* name_) : name{name_} {}
+#ifdef ULDEBUG
   template <class Event, class FSM>
   void on_entry(const Event&, const FSM&)
   {
@@ -52,6 +55,7 @@ struct NamedState : public msm::front::state<> {
   {
     std::cout << name << "--> \n";
   }
+#endif
   std::string name;
 };
 
@@ -89,7 +93,9 @@ struct moreWordsToRead {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
+#ifdef ULDEBUG
     std::cout << fmt::format("moreWordsToRead {} n10 {}\n", (fsm.nof10BitWords > 0), fsm.nof10BitWords);
+#endif
     return fsm.nof10BitWords > 0;
   }
 };
@@ -99,7 +105,9 @@ struct moreDataAvailable {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     bool rv = (fsm.maskIndex < fsm.masks.size());
+#ifdef ULDEBUG
     std::cout << fmt::format("moreDataAvailable {} maskIndex {}\n", rv, fsm.maskIndex);
+#endif
     return rv;
   }
 };
@@ -109,7 +117,9 @@ struct moreSampleToRead {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     bool rv = (fsm.clusterSize > 0);
+#ifdef ULDEBUG
     std::cout << fmt::format("moreSampleToRead {} clustersize {}\n", rv, fsm.clusterSize);
+#endif
     return rv;
   }
 };
@@ -121,7 +131,6 @@ struct foundSync {
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     fsm.nofSync++;
-    std::cout << "+++++ foundSync : fsm.nofSync=" << fsm.nofSync << "\n";
   }
 };
 
@@ -136,9 +145,10 @@ struct readSize<SampleMode> {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    std::cout << "SSSSS maskIndex=" << fsm.maskIndex;
     fsm.clusterSize = fsm.pop10();
+#ifdef ULDEBUG
     std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
+#endif
   }
 };
 
@@ -147,9 +157,10 @@ struct readSize<ChargeSumMode> {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    std::cout << "SSSSS maskIndex=" << fsm.maskIndex;
     fsm.clusterSize = 2 * fsm.pop10();
+#ifdef ULDEBUG
     std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
+#endif
   }
 };
 
@@ -157,9 +168,10 @@ struct readTime {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    std::cout << "TTTTT maskIndex=" << fsm.maskIndex;
     fsm.clusterTime = fsm.pop10();
+#ifdef ULDEBUG
     std::cout << " -> time=" << fsm.clusterTime << " maskIndex=" << fsm.maskIndex << "\n";
+#endif
   }
 };
 
@@ -195,8 +207,10 @@ struct readHeader {
   {
     fsm.sampaHeader = SampaHeader(fsm.data);
     fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
+#ifdef ULDEBUG
     std::cout << fmt::format(">>>>> readHeader {:08X} maskIndex {}\n", evt.data, fsm.maskIndex)
               << fsm.sampaHeader << "\n";
+#endif
     fsm.maskIndex = fsm.masks.size();
   }
 };
@@ -207,7 +221,9 @@ struct setData {
   {
     fsm.data = evt.data;
     fsm.maskIndex = 0;
+#ifdef ULDEBUG
     std::cout << fmt::format(">>>>> setData {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex);
+#endif
   }
 };
 
@@ -265,8 +281,6 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   void addSample(uint16_t sample)
   {
     samples.emplace_back(sample);
-    std::cout << fmt::format("addSample {} samples.size()={} clusterSize={}\n",
-                             sample, samples.size(), clusterSize);
     if (clusterSize == 0) {
       // a cluster is ready, send it
       channelHandler(cruId,
@@ -279,7 +293,6 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   }
   void addChargeSum(uint16_t b, uint16_t a)
   {
-    std::cout << "addChargeSum " << a << "," << b << "\n";
     // a cluster is ready, send it
     uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
     channelHandler(cruId,
@@ -327,7 +340,9 @@ class UserLogicElinkDecoder
 
   void append(uint64_t data)
   {
+#ifdef ULDEBUG
     std::cout << fmt::format("******************************* append {:8X}\n", data);
+#endif
     mFSM.process_event(NewData(data));
   }
 
