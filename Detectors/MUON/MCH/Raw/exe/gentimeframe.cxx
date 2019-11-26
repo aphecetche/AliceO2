@@ -63,8 +63,8 @@
 #include <boost/program_options.hpp>
 #include <fstream>
 #include "gtfGenerateDigits.h"
-#include "gtfSegmentation.h"
 #include "DumpBuffer.h"
+#include "MCHMappingFactory/CreateSegmentation.h"
 
 using namespace o2::mch;
 namespace po = boost::program_options;
@@ -119,8 +119,8 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
       cru->startHeartbeatFrame(orbit, bc);
       startHB[cruId] = true;
     }
-    int dsid = segmentation(deid).padDualSampaId(d.getPadID());
-    int dschid = segmentation(deid).padDualSampaChannel(d.getPadID());
+    int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
+    int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
     auto dseloc = elecmap.dualSampaElectronicLocation(deid, dsid);
     uint16_t ts(666); // FIXME: simulate something here ?
     int sampachid = dschid % 32;
