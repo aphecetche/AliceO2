@@ -15,6 +15,7 @@
 #include <set>
 #include "MCHRawEncoder/DualSampaElectronicLocation.h"
 #include <optional>
+#include <memory>
 
 namespace o2::mch::raw
 {

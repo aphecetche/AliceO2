@@ -35,7 +35,7 @@ namespace o2::mch::raw
 /// it is passed to the SampaChannelHandler for further processing (or none).
 ///
 /// \nosubgrouping
-
+///
 template <typename CHARGESUM>
 class BareElinkDecoder
 {
@@ -97,7 +97,8 @@ class BareElinkDecoder
   void sendCluster();
   void softReset();
 
-  friend std::ostream& operator<<(std::ostream& os, const BareElinkDecoder& e);
+  template <typename T>
+  friend std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<T>& e);
 
  private:
   uint8_t mCruId;                           //< Identifier of the CRU this Elink is part of
@@ -400,8 +401,6 @@ void BareElinkDecoder<CHARGESUM>::reset()
   mState = State::LookingForSync;
 }
 
-} // namespace o2::mch::raw
-
 template <typename CHARGESUM>
 std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<CHARGESUM>& e)
 {
@@ -418,5 +417,7 @@ std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<
                     bitBufferString(e.mBitBuffer, e.mMask));
   return os;
 }
+
+} // namespace o2::mch::raw
 
 #endif
