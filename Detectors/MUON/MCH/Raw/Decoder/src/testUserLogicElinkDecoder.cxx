@@ -91,7 +91,6 @@ void bufferizeClusters(const std::vector<SampaCluster>& clusters,
                        std::vector<uint64_t>& b64,
                        const uint64_t prefix = 0)
 {
-  impl::assertIsInRange("prefix", prefix, 0, 0x3FFFFFFFFFFFF);
   uint64_t word{0};
   uint8_t index{4};
   for (auto& c : clusters) {
@@ -112,11 +111,21 @@ void bufferizeClusters(const std::vector<SampaCluster>& clusters,
   }
 }
 
-std::vector<uint64_t> createBuffer(const std::vector<SampaCluster>& clusters)
+std::vector<uint64_t> createBuffer(const std::vector<SampaCluster>& clusters,
+                                   uint8_t chip,
+                                   uint8_t ch,
+                                   uint64_t prefix,
+                                   bool sync)
 {
   auto sh = createHeader(clusters);
-  std::vector<uint64_t> b64{sampaSyncWord, sh.uint64()};
-  bufferizeClusters(clusters, b64);
+  sh.chipAddress(chip);
+  sh.channelAddress(ch);
+  std::vector<uint64_t> b64;
+  if (sync) {
+    b64.emplace_back(sampaSyncWord | prefix);
+  }
+  b64.emplace_back(sh.uint64() | prefix);
+  bufferizeClusters(clusters, b64, prefix);
   return b64;
 }
 
@@ -132,11 +141,23 @@ void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint6
 }
 
 template <typename CHARGESUM>
-std::string testDecode(const std::vector<SampaCluster>& clusters)
+std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
+                       const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   std::string results;
   UserLogicElinkDecoder<CHARGESUM> dec(0, 0, handlePacket(results));
-  auto b64 = createBuffer(clusters);
+  uint64_t prefix{22}; // 14-bits value.
+  // exact value not relevant as long as it is non-zero.
+  // Idea being to populate bits 50-63 with some data to ensure
+  // the decoder is only using the lower 50 bits to get the sync and
+  // header values, for instance.
+  prefix <<= 50;
+  bool sync{true};
+  auto b64 = createBuffer(clustersFirstChannel, 5, 31, prefix, sync);
+  if (clustersSecondChannel.size()) {
+    auto b64_2 = createBuffer(clustersSecondChannel, 4, 12, prefix, !sync);
+    std::copy(b64_2.begin(), b64_2.end(), std::back_inserter(b64));
+  }
   decodeBuffer(dec, b64);
   return results;
 }
@@ -147,7 +168,7 @@ BOOST_AUTO_TEST_CASE(SampleModeSimplest)
   // fitting within one 64-bits word
   SampaCluster cl(345, {123, 456});
   auto r = testDecode<SampleMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123-456\n");
+  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123-456\n");
 }
 
 BOOST_AUTO_TEST_CASE(SampleModeSimple)
@@ -156,7 +177,18 @@ BOOST_AUTO_TEST_CASE(SampleModeSimple)
   // spans 2 64-bits words.
   SampaCluster cl(345, {123, 456, 789, 901, 902});
   auto r = testDecode<SampleMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123-456-789-901-902\n");
+  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123-456-789-901-902\n");
+}
+
+BOOST_AUTO_TEST_CASE(SampleModeTwoChannels)
+{
+  // 2 channels with one cluster
+  SampaCluster cl(345, {123, 456, 789, 901, 902});
+  SampaCluster cl2(346, {1001, 1002, 1003, 1004, 1005, 1006, 1007});
+  auto r = testDecode<SampleMode>({cl}, {cl2});
+  BOOST_CHECK_EQUAL(r,
+                    "chip-5-ch-31-ts-345-q-123-456-789-901-902\n"
+                    "chip-4-ch-12-ts-346-q-1001-1002-1003-1004-1005-1006-1007\n");
 }
 
 BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
@@ -165,7 +197,7 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
   // (hence fitting within one 64 bits word)
   SampaCluster cl(345, 123456);
   auto r = testDecode<ChargeSumMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-0-ch-0-ts-345-q-123456\n");
+  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123456\n");
 }
 
 BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
@@ -176,8 +208,23 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
   SampaCluster cl2(346, 789012);
   auto r = testDecode<ChargeSumMode>({cl1, cl2});
   BOOST_CHECK_EQUAL(r,
-                    "chip-0-ch-0-ts-345-q-123456\n"
-                    "chip-0-ch-0-ts-346-q-789012\n");
+                    "chip-5-ch-31-ts-345-q-123456\n"
+                    "chip-5-ch-31-ts-346-q-789012\n");
+}
+
+BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
+{
+  // two channels with 2 clusters
+  SampaCluster cl1(345, 123456);
+  SampaCluster cl2(346, 789012);
+  SampaCluster cl3(347, 1357);
+  SampaCluster cl4(348, 791);
+  auto r = testDecode<ChargeSumMode>({cl1, cl2}, {cl3, cl4});
+  BOOST_CHECK_EQUAL(r,
+                    "chip-5-ch-31-ts-345-q-123456\n"
+                    "chip-5-ch-31-ts-346-q-789012\n"
+                    "chip-4-ch-12-ts-347-q-1357\n"
+                    "chip-4-ch-12-ts-348-q-791\n");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
