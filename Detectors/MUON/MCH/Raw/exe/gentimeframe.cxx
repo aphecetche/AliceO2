@@ -231,8 +231,8 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, *elecmap, buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
-  o2::mch::raw::impl::dumpBuffer(buffer);
 #if 0
+  o2::mch::raw::impl::dumpBuffer(buffer);
   std::cout << "-------------------- Paginating ...\n";
   std::vector<uint8_t> pages;
   size_t pageSize = 8192;
