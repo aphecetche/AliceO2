@@ -20,51 +20,51 @@ if(BUILD_TESTING)
     o2_add_test(elink-encoder
         SOURCES src/testElinkEncoder.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
     o2_add_test(gbt-encoder
         SOURCES src/testGBTEncoder.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHTestRawRefBuffers
         O2::MCHRawImplHelpers)
 
     o2_add_test(cru-encoder
         SOURCES src/testCRUEncoder.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
     o2_add_test(encoder
         SOURCES src/testEncoder.cxx src/TestBuffers.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
     o2_add_test(paginator
         SOURCES src/testPaginator.cxx src/TestBuffers.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
         O2::MCHRawImplHelpers)
 
     o2_add_test(bitset
         SOURCES src/testBitSet.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder)
 
     o2_add_test(bare-elink-encoder
         SOURCES src/testBareElinkEncoder.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
     o2_add_test(elecmap-dummy
         SOURCES src/testElectronicMapperDummy.cxx
         COMPONENT_NAME mch
-        LABELS "mch;raw"
+        LABELS "muon;mch;raw;long"
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHMappingFactory)
 
 endif()

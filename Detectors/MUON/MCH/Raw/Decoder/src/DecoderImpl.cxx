@@ -57,7 +57,7 @@ int DecoderImpl<CHARGESUM, RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffe
   int index{0};
   int nofRDHs{0};
 
-  while (index < buffer.size()) {
+  while ((index + nofRDHWords) < buffer.size()) {
     rdh = createRDH<RDH>(buffer.subspan(index, nofRDHWords));
     if (!isValid(rdh)) {
       std::cout << "Got an invalid RDH\n";

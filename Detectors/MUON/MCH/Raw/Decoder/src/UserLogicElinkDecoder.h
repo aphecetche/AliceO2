@@ -32,8 +32,10 @@ using namespace msm::front::euml; // for Not_ operator
 namespace o2::mch::raw
 {
 
+constexpr uint64_t FIFTYBITSATONE = 0x3FFFFFFFFFFFF;
+
 struct NewData {
-  NewData(uint64_t d) : data{d} {}
+  NewData(uint64_t d) : data{d & FIFTYBITSATONE} {}
   uint64_t data;
 };
 
@@ -208,7 +210,7 @@ struct readHeader {
     fsm.sampaHeader = SampaHeader(fsm.data);
     fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
 #ifdef ULDEBUG
-    std::cout << fmt::format(">>>>> readHeader {:08X} maskIndex {}\n", evt.data, fsm.maskIndex)
+    std::cout << fmt::format(">>>>> readHeader {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex)
               << fsm.sampaHeader << "\n";
 #endif
     fsm.maskIndex = fsm.masks.size();
@@ -237,26 +239,23 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   //   Start            Event         Next               Action            Guard
   Row< WaitingSync   , NewData , WaitingHeader , foundSync             , isSync                  >,
 
-  Row< WaitingHeader , NewData , WaitingSize   , ActionSequence_<
-                                                 mpl::vector<
-                                                 setData,
-                                                 readHeader>>           , Not_<isSync>            >,
-
+  Row< WaitingHeader , NewData , WaitingSize , ActionSequence_<
+                                               mpl::vector<setData,
+                                               readHeader>>            , Not_<isSync>            >,
   Row< WaitingSize   , NewData , WaitingSize   , setData               , And_<moreWordsToRead,
                                                                            Not_<moreDataAvailable>> >,
   Row< WaitingSize   , none    , WaitingTime   , readSize<CHARGESUM>   , And_<moreDataAvailable,
                                                                               moreWordsToRead>       >,
-
   Row< WaitingTime   , NewData , WaitingTime   , setData               , And_<moreWordsToRead,
                                                                                Not_<moreDataAvailable>> >,
   Row< WaitingTime   , none    , WaitingSample , readTime              , And_<moreSampleToRead,
                                                                          moreDataAvailable>      >,
 
   Row< WaitingSample , NewData , WaitingSample , setData               , moreSampleToRead       >,
+  Row< WaitingSample , none    , WaitingHeader , none                  , Not_<moreSampleToRead>       >,
 
   Row< WaitingSample , none    , WaitingSample , readSample<CHARGESUM> , And_<moreDataAvailable,
                                                                               moreSampleToRead>  >,
-
   Row< WaitingSample , none    , WaitingSize   , none                  , And_<moreWordsToRead,
                                                                          Not_<moreSampleToRead>>>
                               // clang-format on
@@ -280,6 +279,9 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   }
   void addSample(uint16_t sample)
   {
+#ifdef ULDEBUG
+    std::cout << "sample = " << sample << "\n";
+#endif
     samples.emplace_back(sample);
     if (clusterSize == 0) {
       // a cluster is ready, send it
@@ -295,6 +297,9 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   {
     // a cluster is ready, send it
     uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
+#ifdef ULDEBUG
+    std::cout << "chargeSum = " << q << "\n";
+#endif
     channelHandler(cruId,
                    linkId,
                    sampaHeader.chipAddress(),

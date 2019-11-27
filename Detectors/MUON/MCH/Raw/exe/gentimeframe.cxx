@@ -67,6 +67,7 @@
 #include "MCHMappingFactory/CreateSegmentation.h"
 
 using namespace o2::mch;
+using namespace o2::mch::raw;
 namespace po = boost::program_options;
 
 std::vector<o2::InteractionTimeRecord> getCollisions(o2::steer::InteractionSampler& sampler,
@@ -86,6 +87,26 @@ std::vector<int> getAllDetectionElementIds()
     deids.push_back(deid);
   });
   return deids;
+}
+
+template <typename CHARGESUM>
+std::vector<SampaCluster> createSampaClusters(uint16_t ts, float adc);
+
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::ChargeSumMode>(uint16_t ts, float adc)
+{
+  return {raw::SampaCluster(ts, static_cast<uint32_t>(adc))};
+}
+
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, float adc)
+{
+  uint32_t a = static_cast<uint32_t>(adc);
+  std::vector<uint16_t> samples;
+
+  samples.emplace_back(static_cast<uint16_t>((a & 0xFFC00) >> 10));
+  samples.emplace_back(static_cast<uint16_t>(a & 0x3FF));
+  return {raw::SampaCluster(ts, samples)};
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
@@ -129,17 +150,17 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     auto dseloc = dselocopt.value();
     uint16_t ts(666); // FIXME: simulate something here ?
     int sampachid = dschid % 32;
-    uint32_t adc = static_cast<uint32_t>(d.getADC());
+
+    auto clusters = createSampaClusters<CHARGESUM>(ts, d.getADC());
 
     fmt::printf(
       "nadd %6d deid %4d dsid %4d dschid %2d "
-      "cruId %2d solarId %3d groupId %2d elinkId %2d sampach %2d "
-      "ADC %6d (%4d|%4d)\n",
+      "cruId %2d solarId %3d groupId %2d elinkId %2d sampach %2d\n",
       nadd++, deid, dsid, dschid,
-      cruId, dseloc.solarId(), dseloc.elinkGroupId(), dseloc.elinkId(), sampachid,
-      adc, ((adc & 0xFFC00) >> 10), (adc & 0x3FF));
+      cruId, dseloc.solarId(), dseloc.elinkGroupId(), dseloc.elinkId(), sampachid);
+    std::cout << clusters[0] << "\n";
 
-    cru->addChannelData(dseloc.solarId(), dseloc.elinkId(), sampachid, {raw::SampaCluster(ts, adc)});
+    cru->addChannelData(dseloc.solarId(), dseloc.elinkId(), sampachid, clusters);
   }
 }
 
@@ -194,9 +215,12 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
 
+  // auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
+  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperDummy>();
+  // std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
+  std::vector<int> ch5l = {505};
+
   //auto deids = getAllDetectionElementIds();
-  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
-  std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
   std::vector<int> deids = filterDetectionElements(gsl::span<int>(ch5l), *elecmap);
 
   // one vector of digits per interaction
@@ -208,6 +232,7 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
   o2::mch::raw::impl::dumpBuffer(buffer);
+#if 0
   std::cout << "-------------------- Paginating ...\n";
   std::vector<uint8_t> pages;
   size_t pageSize = 8192;
@@ -215,6 +240,8 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   gsl::span<uint8_t> b8(buffer);
   raw::paginateBuffer<RDH>(b8, pages, pageSize, paddingByte);
   outfile.write(reinterpret_cast<char*>(&pages[0]), pages.size());
+#endif
+  outfile.write(reinterpret_cast<char*>(&buffer[0]), buffer.size());
 
   auto n = o2::mch::raw::countRDHs<RDH>(buffer);
 
@@ -225,6 +252,7 @@ int main(int argc, char* argv[])
 {
   po::options_description generic("options");
   bool userLogic{false};
+  bool chargeSum{false};
   std::string filename;
   po::variables_map vm;
   int nofInteractionsPerTimeFrame{1000};
@@ -233,6 +261,7 @@ int main(int argc, char* argv[])
   generic.add_options()
       ("help:h", "produce help message")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
+      ("chargesum,c",po::bool_switch(&chargeSum),"charge sum mode")
       ("outfile,o",po::value<std::string>(&filename)->required(),"output filename")
       ("nintpertf,n",po::value<int>(&nofInteractionsPerTimeFrame),"number of interactions per timeframe")
       ;
@@ -252,10 +281,18 @@ int main(int argc, char* argv[])
   std::ofstream outfile(filename);
 
   if (userLogic) {
-    gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    if (chargeSum) {
+      gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    } else {
+      gentimeframe<raw::UserLogicFormat, raw::SampleMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    }
   }
   if (!userLogic) {
-    gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    if (chargeSum) {
+      gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    } else {
+      gentimeframe<raw::BareFormat, raw::SampleMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    }
   }
   return 0;
 }
