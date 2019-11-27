@@ -74,7 +74,6 @@ ElectronicMapperDummyImpl::ElectronicMapperDummyImpl()
   /// cannot be split between two CRUs. That way we end up with 19
   /// CRUs.
 
-  std::cout << "ElectronicMapperDummy ctor\n";
   constexpr int nofDualSampaPerCRU = 40 * 24;
   uint16_t n{0};
   uint16_t solarId{0};
