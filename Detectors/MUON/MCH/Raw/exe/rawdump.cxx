@@ -35,14 +35,16 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   if (maxNofRDHs == 0) {
     maxNofRDHs = std::numeric_limits<unsigned int>::max();
   }
+  std::cout << __PRETTY_FUNCTION__ << " maxNofRDHs=" << maxNofRDHs << "\n";
+
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
     std::cout << "could not open file " << input << "\n";
     return 1;
   }
-  constexpr int sizeToRead = 8192;
+  constexpr size_t pageSize = 8192;
 
-  std::array<uint8_t, sizeToRead> buffer;
+  std::array<uint8_t, pageSize> buffer;
   char* ptr = reinterpret_cast<char*>(&buffer[0]);
 
   size_t ndigits{0};
@@ -67,20 +69,29 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   size_t pos{0};
   in.seekg(0, in.end);
   auto len = in.tellg();
+  std::cout << "len=" << len << "\n";
   in.seekg(0, in.beg);
+
+  len = std::min<size_t>(len, pageSize);
+  std::cout << "len=" << len << "\n";
 
   o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rh, hp);
 
   std::vector<std::chrono::microseconds> timers;
 
-  while (pos + sizeToRead <= len && nrdhs < maxNofRDHs) {
-    in.seekg(pos);
-    in.read(ptr, sizeToRead);
-    pos += sizeToRead;
+  int nread{0};
+
+  while (nrdhs < maxNofRDHs && in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(RDH))) {
+    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, sizeof(RDH));
+    auto rdh = createRDH<RDH>(gsl::span<uint8_t>(buffer));
+    //FIXME : should check here we got a valid RDH...
+    auto payloadSize = rdhPayloadSize(rdh);
+    in.read(ptr + sizeof(RDH), payloadSize);
+    nread++;
+    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize);
+    o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize + sizeof(RDH));
     auto start = std::chrono::high_resolution_clock::now();
-    decode(buffer);
-    // std::cout << "bufer.size()=" << buffer.size() << "\n";
-    // o2::mch::raw::impl::dumpBuffer(gsl::span<uint8_t>(buffer));
+    decode(gsl::span<uint8_t>(&buffer[0], sizeof(RDH) + payloadSize));
     auto duration = (std::chrono::high_resolution_clock::now() - start);
     timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
   }
@@ -94,6 +105,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   out.close();
 
   std::cout << ndigits << " digits seen\n";
+  std::cout << "nread=" << nread << "\n";
   return 0;
 }
 
@@ -111,7 +123,7 @@ int main(int argc, char* argv[])
 
   // clang-format off
   generic.add_options()
-      ("help:h", "produce help message")
+      ("help,h", "produce help message")
       ("input-file,i", po::value<std::string>(&inputFile), "input file name")
       ("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through")
       ("showRDHs,s",po::bool_switch(&showRDHs),"show RDHs")
