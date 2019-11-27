@@ -66,30 +66,16 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
     return true;
   };
 
-  size_t pos{0};
-  in.seekg(0, in.end);
-  auto len = in.tellg();
-  std::cout << "len=" << len << "\n";
-  in.seekg(0, in.beg);
-
-  len = std::min<size_t>(len, pageSize);
-  std::cout << "len=" << len << "\n";
-
   o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rh, hp);
 
   std::vector<std::chrono::microseconds> timers;
 
-  int nread{0};
-
   while (nrdhs < maxNofRDHs && in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(RDH))) {
-    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, sizeof(RDH));
     auto rdh = createRDH<RDH>(gsl::span<uint8_t>(buffer));
     //FIXME : should check here we got a valid RDH...
     auto payloadSize = rdhPayloadSize(rdh);
     in.read(ptr + sizeof(RDH), payloadSize);
-    nread++;
-    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize);
-    o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize + sizeof(RDH));
+    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize + sizeof(RDH));
     auto start = std::chrono::high_resolution_clock::now();
     decode(gsl::span<uint8_t>(&buffer[0], sizeof(RDH) + payloadSize));
     auto duration = (std::chrono::high_resolution_clock::now() - start);
@@ -105,7 +91,6 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   out.close();
 
   std::cout << ndigits << " digits seen\n";
-  std::cout << "nread=" << nread << "\n";
   return 0;
 }
 
