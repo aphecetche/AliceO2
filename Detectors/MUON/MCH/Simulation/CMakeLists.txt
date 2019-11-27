@@ -43,5 +43,5 @@ if(BUILD_TESTING)
   add_subdirectory(test)
   o2_add_test_root_macro(macros/drawMCHGeometry.C
                          PUBLIC_LINK_LIBRARIES O2::MCHSimulation
-                         LABELS "muon;mch")
+                         LABELS "muon;mch;long")
 endif()
