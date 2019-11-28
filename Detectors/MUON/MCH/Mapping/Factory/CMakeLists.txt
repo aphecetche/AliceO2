@@ -10,4 +10,4 @@
 
 o2_add_library(MCHMappingFactory
         SOURCES src/CreateSegmentation.cxx
-        PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3)
+        PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl3 fmt::fmt)
