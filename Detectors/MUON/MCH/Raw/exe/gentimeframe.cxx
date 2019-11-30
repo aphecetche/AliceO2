@@ -44,27 +44,28 @@
 //
 
 #include "CommonDataFormat/InteractionRecord.h"
+#include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
+#include "MCHMappingFactory/CreateSegmentation.h"
 #include "MCHRawCommon/DataFormats.h"
-#include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawCommon/RDHManip.h"
-#include "MCHRawEncoder/ElectronicMapper.h"
+#include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawElecMap/ElectronicMapperDummy.h"
+#include "MCHRawElecMap/Mapper.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawEncoder/Paginator.h"
 #include "MCHSimulation/Digit.h"
 #include "Steer/InteractionSampler.h"
+#include "gtfGenerateDigits.h"
 #include <array>
+#include <boost/program_options.hpp>
 #include <fmt/format.h>
 #include <fmt/printf.h>
+#include <fstream>
 #include <gsl/span>
 #include <iostream>
 #include <map>
 #include <vector>
-#include <boost/program_options.hpp>
-#include <fstream>
-#include "gtfGenerateDigits.h"
-#include "DumpBuffer.h"
-#include "MCHMappingFactory/CreateSegmentation.h"
 
 using namespace o2::mch;
 using namespace o2::mch::raw;
@@ -112,7 +113,9 @@ std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, floa
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encodeDigits(gsl::span<o2::mch::Digit> digits,
                   std::map<int, std::unique_ptr<raw::CRUEncoder>>& crus,
-                  o2::mch::raw::ElectronicMapper& elecmap,
+                  std::function<std::optional<uint16_t>(uint16_t)> de2cru,
+                  std::function<std::optional<DsElecId>(DsDetId)> det2elec,
+                  std::function<std::set<uint16_t>(uint16_t)> cru2solar,
                   uint32_t orbit,
                   uint16_t bc)
 
@@ -123,14 +126,14 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 
   for (auto d : digits) {
     int deid = d.getDetID();
-    auto cruopt = elecmap.cruId(deid);
+    auto cruopt = de2cru(deid);
     if (!cruopt.has_value()) {
       // std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
       continue;
     }
     uint8_t cruId = cruopt.value();
     if (crus.find(cruId) == crus.end()) {
-      crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, elecmap);
+      crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, cru2solar(cruId));
     }
     auto& cru = crus[cruId];
     if (!cru) {
@@ -143,7 +146,7 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
     int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
-    auto dselocopt = elecmap.dualSampaElectronicLocation(deid, dsid);
+    auto dselocopt = det2elec(DsDetId(deid, dsid));
     if (!dselocopt.has_value()) {
       std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
     }
@@ -167,7 +170,9 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
-            raw::ElectronicMapper& elecmap,
+            std::function<std::optional<uint16_t>(uint16_t)> de2cru,
+            std::function<std::optional<DsElecId>(DsDetId)> det2elec,
+            std::function<std::set<uint16_t>(uint16_t)> cru2solar,
             std::vector<uint8_t>& buffer)
 {
   std::map<int, std::unique_ptr<raw::CRUEncoder>> crus;
@@ -179,7 +184,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << fmt::format("BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
-                                         crus, elecmap, col.orbit, col.bc);
+                                         crus, de2cru, det2elec, cru2solar, col.orbit, col.bc);
 
     for (auto& p : crus) {
       if (p.second) {
@@ -194,18 +199,18 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
 // filter out detection elements for which we don't have the
 // electronic mapping
 std::vector<int> filterDetectionElements(gsl::span<int> deids,
-                                         const raw::ElectronicMapper& elecmap)
+                                         std::function<std::optional<uint16_t>(uint16_t)> de2cru)
 {
   std::vector<int> d;
   for (auto deid : deids) {
-    if (elecmap.cruId(deid) != 0xFF) {
+    if (de2cru(deid)) {
       d.emplace_back(deid);
     }
   }
   return d;
 }
 
-template <typename FORMAT, typename CHARGESUM, typename RDH>
+template <typename FORMAT, typename CHARGESUM, typename RDH, typename ELECMAP = o2::mch::raw::ElectronicMapperDummy>
 void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 {
   std::cout << __PRETTY_FUNCTION__ << "\n";
@@ -215,20 +220,20 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
 
-  // auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperGenerated>();
-  auto elecmap = raw::createElectronicMapper<raw::ElectronicMapperDummy>();
   // std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
   std::vector<int> ch5l = {505};
 
   //auto deids = getAllDetectionElementIds();
-  std::vector<int> deids = filterDetectionElements(gsl::span<int>(ch5l), *elecmap);
+  auto de2cru = o2::mch::raw::mapperDe2Cru<ELECMAP>();
+  std::vector<int> deids = filterDetectionElements(gsl::span<int>(ch5l), de2cru);
 
   // one vector of digits per interaction
   // std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
   std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deids);
 
   std::vector<uint8_t> buffer;
-  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, *elecmap, buffer);
+  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, de2cru, mapperDet2Elec<ELECMAP>(),
+                                 mapperCru2Solar<ELECMAP>(), buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
 #if 0
