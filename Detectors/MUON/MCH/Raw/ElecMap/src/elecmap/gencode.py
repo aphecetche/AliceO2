@@ -129,9 +129,9 @@ def do(df,deids):
               #include <set>
               #include <utility>
 
-              #include "MCHRawEncoder/ElectronicMapper.h"
+              #include "MCHRawElecMap/Mapper.h"
 
-              #include "ElectronicMappingImplHelper.h"
+              #include "ImplHelper.h"
 
               ''')
 

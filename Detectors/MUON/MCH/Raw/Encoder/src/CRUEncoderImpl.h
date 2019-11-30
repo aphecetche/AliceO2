@@ -12,7 +12,6 @@
 #define O2_MCH_RAW_CRU_ENCODER_IMPL_H
 
 #include "MCHRawEncoder/CRUEncoder.h"
-#include "MCHRawEncoder/ElectronicMapper.h"
 #include "Assertions.h"
 #include "GBTEncoder.h"
 #include "Headers/RAWDataHeader.h"
@@ -25,6 +24,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <set>
 
 namespace o2::mch::raw
 {
@@ -38,7 +38,7 @@ class CRUEncoderImpl : public CRUEncoder
 {
 
  public:
-  explicit CRUEncoderImpl(uint16_t cruId, const ElectronicMapper& elecmap);
+  explicit CRUEncoderImpl(uint16_t cruId, std::set<uint16_t> solarIds);
 
   void addChannelData(uint16_t solarId, uint8_t groupId, uint8_t chId, const std::vector<SampaCluster>& data) override;
 
@@ -61,17 +61,16 @@ class CRUEncoderImpl : public CRUEncoder
 };
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId, const ElectronicMapper& elecmap)
+CRUEncoderImpl<FORMAT, CHARGESUM, RDH>::CRUEncoderImpl(uint16_t cruId, std::set<uint16_t> solarIds)
   : mCruId(cruId),
     mOrbit{},
     mBunchCrossing{},
     mBuffer{},
     mGBTs{impl::makeArray<24>([cruId](size_t i) { return GBTEncoder<FORMAT, CHARGESUM>(i); })},
-    mFirstHBFrame{true}
+    mFirstHBFrame{true},
+    mSolarIds(solarIds.begin(), solarIds.end())
 {
   impl::assertIsInRange("cruId", cruId, 0, 0xFFF); // 12 bits for cruId
-  auto s = elecmap.solarIds(cruId);
-  std::copy(s.begin(), s.end(), std::back_inserter(mSolarIds));
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>

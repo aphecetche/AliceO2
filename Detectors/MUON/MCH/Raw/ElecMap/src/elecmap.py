@@ -4,12 +4,16 @@ import argparse
 import os
 import elecmap.excel
 import elecmap.gencode
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--infile','-i', dest="dataframe", required=True,
-                    help="input excel filename", metavar="FILE",
-                    type=lambda x: elecmap.excel.is_valid_file(parser,x))
+parser.add_argument('--infile','-i', dest="inputfiles", required=True,
+                    action="append",
+                    help="input excel filename(s)")
+
+# , metavar="FILE",i
+#                     type=lambda x: elecmap.excel.is_valid_file(parser,x))
 
 parser.add_argument('--excel','-e', dest="excel",
                     help="output excel filename", metavar="FILE")
@@ -24,7 +28,11 @@ parser.add_argument('--verbose','-v',
 
 args = parser.parse_args()
 
-df = args.dataframe
+df = pd.DataFrame()
+
+for ifile in args.inputfiles:
+    df = df.append(elecmap.excel.is_valid_file(parser, ifile))
+
 if args.verbose:
   print(df.to_string())
 

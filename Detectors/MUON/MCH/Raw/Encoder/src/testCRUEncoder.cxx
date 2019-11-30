@@ -16,7 +16,6 @@
 
 #include <boost/test/unit_test.hpp>
 #include "MCHRawEncoder/Encoder.h"
-#include "MCHRawEncoder/ElectronicMapper.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "Headers/RAWDataHeader.h"
@@ -29,7 +28,7 @@ uint8_t defaultCruId = 0;
 
 std::unique_ptr<CRUEncoder> defaultCRUEncoder()
 {
-  return createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(defaultCruId, impl::MockElectronicMapper{});
+  return createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(defaultCruId, {0, 1, 2, 12});
 }
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
@@ -55,7 +54,7 @@ BOOST_AUTO_TEST_CASE(EmptyEncoderHasEmptyBufferIfPhaseIsZero)
 BOOST_AUTO_TEST_CASE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase)
 {
   srand(time(nullptr));
-  auto cru = createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(defaultCruId, impl::MockElectronicMapper{});
+  auto cru = createCRUEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(defaultCruId, {0, 1, 2, 12});
   cru->startHeartbeatFrame(12345, 123);
   std::vector<uint8_t> buffer;
   cru->moveToBuffer(buffer);
@@ -77,7 +76,7 @@ BOOST_AUTO_TEST_CASE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZero)
 std::vector<uint8_t> createCRUBuffer(int cruId)
 {
 
-  auto cru = createCRUEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(defaultCruId, impl::MockElectronicMapper{});
+  auto cru = createCRUEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(defaultCruId, {0, 1, 2, 12});
 
   uint32_t bx(0);
   uint8_t solarId(0);
