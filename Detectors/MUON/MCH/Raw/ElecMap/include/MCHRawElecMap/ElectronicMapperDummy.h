@@ -8,24 +8,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_DATA_FORMATS_H
-#define O2_MCH_RAW_DATA_FORMATS_H
+#ifndef O2_MCH_RAW_ELECMAP_ELECTRONIC_MAPPER_DUMMY_H
+#define O2_MCH_RAW_ELECMAP_ELECTRONIC_MAPPER_DUMMY_H
+
+#include "MCHRawElecMap/Mapper.h"
 
 namespace o2::mch::raw
 {
-
-struct BareFormat {
+struct ElectronicMapperDummy {
 };
-struct UserLogicFormat {
-};
-
-struct ChargeSumMode {
-  bool operator()() const { return true; }
-};
-struct SampleMode {
-  bool operator()() const { return false; }
-};
-
-}; // namespace o2::mch::raw
+} // namespace o2::mch::raw
 
 #endif

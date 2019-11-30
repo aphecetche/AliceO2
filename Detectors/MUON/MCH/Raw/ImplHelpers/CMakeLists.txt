@@ -10,7 +10,7 @@
 
 o2_add_header_only_library(
   MCHRawImplHelpers 
-  INTERFACE_LINK_LIBRARIES ms_gsl::ms_gsl
+  INTERFACE_LINK_LIBRARIES ms_gsl::ms_gsl fmt::fmt
   INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIRECTORY})
 
 o2_add_test(movebuffer

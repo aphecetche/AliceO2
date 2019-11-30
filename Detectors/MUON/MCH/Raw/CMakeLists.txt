@@ -10,7 +10,10 @@
 
 add_subdirectory(ImplHelpers)
 add_subdirectory(Common)
-add_subdirectory(testdata)
+add_subdirectory(ElecMap)
 add_subdirectory(Encoder)
 add_subdirectory(Decoder)
 add_subdirectory(exe)
+if(BUILD_TESTING)
+        add_subdirectory(testdata)
+endif()
