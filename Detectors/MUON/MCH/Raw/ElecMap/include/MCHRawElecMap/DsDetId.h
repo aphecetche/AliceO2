@@ -8,24 +8,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_DATA_FORMATS_H
-#define O2_MCH_RAW_DATA_FORMATS_H
+#ifndef O2_MCH_RAW_ELECMAP_DS_DET_ID_H
+#define O2_MCH_RAW_ELECMAP_DS_DET_ID_H
+
+#include <cstdint>
 
 namespace o2::mch::raw
 {
+class DsDetId
+{
+ public:
+  DsDetId(int deId, int dsId);
 
-struct BareFormat {
-};
-struct UserLogicFormat {
+  uint16_t deId() const { return mDeId; }
+  uint16_t dsId() const { return mDsId; }
+
+ private:
+  uint16_t mDeId;
+  uint16_t mDsId;
 };
 
-struct ChargeSumMode {
-  bool operator()() const { return true; }
-};
-struct SampleMode {
-  bool operator()() const { return false; }
-};
+DsDetId decodeDsDetId(uint32_t code);
+uint32_t encode(const DsDetId& id);
 
-}; // namespace o2::mch::raw
-
+} // namespace o2::mch::raw
 #endif

@@ -7,9 +7,9 @@
 #include <set>
 #include <utility>
 
-#include "MCHRawEncoder/ElectronicMapper.h"
+#include "MCHRawElecMap/Mapper.h"
 
-#include "ElectronicMappingImplHelper.h"
+#include "ImplHelper.h"
 
 #include "Gench5.cxx"
 
@@ -28,6 +28,7 @@ std::map<uint16_t, std::set<uint16_t>> createCru2SolarMap()
 {
   std::map<uint16_t, std::set<uint16_t>> m;
   m[0].insert(144);
+  m[1].insert(186);
   return m;
 }
 } // namespace
@@ -36,6 +37,8 @@ std::map<uint16_t, uint8_t> createDeId2CruIdMap()
 {
   std::map<uint16_t, uint8_t> m;
   m[505] = 0;
+  m[501] = 1;
+  m[500] = 1;
   return m;
 }
 
@@ -80,9 +83,10 @@ struct ElectronicMapperGeneratedImpl : public ElectronicMapper {
   {
     return {
       0,
+      1,
     };
   }
-  int nofSolars() const override { return 1; }
+  int nofSolars() const override { return 9; }
 };
 template <>
 std::unique_ptr<ElectronicMapper> createElectronicMapper<ElectronicMapperGenerated>()

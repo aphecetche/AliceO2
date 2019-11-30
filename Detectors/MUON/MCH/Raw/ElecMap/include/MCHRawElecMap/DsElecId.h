@@ -8,39 +8,45 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ENCODER_DUAL_SAMPA_ELECTRONIC_LOCATION_H
-#define O2_MCH_RAW_ENCODER_DUAL_SAMPA_ELECTRONIC_LOCATION_H
+#ifndef O2_MCH_RAW_ELECMAP_DS_ELEC_ID_H
+#define O2_MCH_RAW_ELECMAP_DS_ELEC_ID_H
 
 #include <cstdint>
 
 namespace o2::mch::raw
 {
-class DualSampaElectronicLocation
+class DsElecId
 {
  public:
-  explicit DualSampaElectronicLocation(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex);
+  explicit DsElecId(uint16_t solarId, uint8_t elinkGroupId, uint8_t elinkIndex);
 
-  constexpr uint8_t elinkGroupId()
+  constexpr uint8_t elinkIndexInGroup() const
+  {
+    return mElinkIndexInGroup;
+  }
+
+  constexpr uint8_t elinkGroupId() const
   {
     return mElinkGroupId;
   }
-  constexpr uint8_t elinkId()
+
+  constexpr uint8_t elinkId() const
   {
     return mElinkGroupId * 5 + mElinkIndexInGroup;
   }
 
-  constexpr uint16_t solarId()
+  constexpr uint16_t solarId() const
   {
     return mSolarId;
   }
 
-  bool operator==(const DualSampaElectronicLocation& rhs)
+  bool operator==(const DsElecId& rhs)
   {
     return mSolarId == rhs.mSolarId &&
            mElinkIndexInGroup == rhs.mElinkIndexInGroup &&
            mElinkGroupId == rhs.mElinkGroupId;
   }
-  bool operator!=(const DualSampaElectronicLocation& rhs)
+  bool operator!=(const DsElecId& rhs)
   {
     return !(*this == rhs);
   }
@@ -50,6 +56,10 @@ class DualSampaElectronicLocation
   uint8_t mElinkGroupId;      // 0..7
   uint8_t mElinkIndexInGroup; // 0..4
 };
+
+uint16_t encode(const DsElecId& id);
+
+DsElecId decodeDsElecId(uint16_t code);
 
 } // namespace o2::mch::raw
 
