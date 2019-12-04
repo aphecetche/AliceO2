@@ -223,17 +223,18 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   // std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
   std::vector<int> ch5l = {505};
 
-  //auto deids = getAllDetectionElementIds();
-  auto de2cru = o2::mch::raw::mapperDe2Cru<ELECMAP>();
-  std::vector<int> deids = filterDetectionElements(gsl::span<int>(ch5l), de2cru);
+  auto allDeIds = getAllDetectionElementIds();
+  auto de2cru = o2::mch::raw::createDe2CruMapper<ELECMAP>(ch5l);
+  std::vector<int> deIds = filterDetectionElements(allDeIds, de2cru);
 
   // one vector of digits per interaction
   // std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
-  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deids);
+  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
 
   std::vector<uint8_t> buffer;
-  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, de2cru, mapperDet2Elec<ELECMAP>(),
-                                 mapperCru2Solar<ELECMAP>(), buffer);
+  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, de2cru,
+                                 createDet2ElecMapper<ELECMAP>(deIds),
+                                 createCru2SolarMapper<ELECMAP>(deIds), buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
 #if 0

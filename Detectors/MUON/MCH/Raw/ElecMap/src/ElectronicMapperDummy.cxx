@@ -14,6 +14,7 @@
 #include <fmt/format.h>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
+#include "ElectronicMapperImplHelper.h"
 namespace
 {
 struct ElectronicMapperDummyImpl {
@@ -72,6 +73,45 @@ std::set<uint16_t> fillElec2DetMap(std::map<uint16_t, uint32_t>& e2d)
   return solars;
 }
 
+std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
+{
+  std::map<uint16_t, uint32_t> e2d;
+
+  uint16_t n{0};
+  uint16_t solarId{0};
+  uint8_t groupId{0};
+  uint8_t index{0};
+
+  for (auto deId : deIds) {
+    auto seg = o2::mch::mapping::segmentation(deId);
+    // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
+    seg.forEachDualSampa([&](int dsId) {
+      // index 0..4
+      // groupId 0..7
+      // solarId 0..nsolars
+      if (n % 5 == 0) {
+        index = 0;
+        if (n % 8 == 0) {
+          groupId = 0;
+        } else {
+          groupId++;
+        }
+      } else {
+        index++;
+      }
+      if (n % 40 == 0) {
+        solarId++;
+      }
+      o2::mch::raw::DsElecId dsElecId(solarId, groupId, index);
+      o2::mch::raw::DsDetId dsDetId(deId, dsId);
+      e2d.emplace(o2::mch::raw::encode(dsElecId),
+                  o2::mch::raw::encode(dsDetId));
+      n++;
+    });
+  }
+  return e2d;
+}
+
 void fillCru2SolarMap(std::map<uint16_t, std::set<uint16_t>>& c2s,
                       const std::set<uint16_t> solarIds)
 {
@@ -105,67 +145,73 @@ static const ElectronicMapperDummyImpl& mapper()
 
 template <>
 std::function<std::optional<DsDetId>(DsElecId)>
-  mapperElec2Det<ElectronicMapperDummy>()
+  createElec2DetMapper<ElectronicMapperDummy>(gsl::span<int> deids, uint64_t timestamp)
 {
-  return [](DsElecId id) -> std::optional<DsDetId> {
-    auto it = mapper().mDsElecId2DsDetId.find(encode(id));
-    if (it == mapper().mDsElecId2DsDetId.end()) {
-      return std::nullopt;
-    }
-    return decodeDsDetId(it->second);
-  };
+  std::map<uint16_t, uint32_t> dsElecId2DsDetId = buildDsElecId2DsDetIdMap(deids);
+  return impl::mapperElec2Det<ElectronicMapperDummy>(dsElecId2DsDetId);
 }
-
 template <>
 std::function<std::optional<DsElecId>(DsDetId)>
-  mapperDet2Elec<ElectronicMapperDummy>()
+  createDet2ElecMapper<ElectronicMapperDummy>(gsl::span<int> deids)
 {
-  std::map<uint32_t, uint16_t> det2elec;
-
-  for (auto p : mapper().mDsElecId2DsDetId) {
-    det2elec.emplace(p.second, p.first);
-  }
-
-  return [det2elec](DsDetId id) -> std::optional<DsElecId> {
-    auto it = det2elec.find(encode(id));
-    if (it == det2elec.end()) {
-      return std::nullopt;
-    }
-    return decodeDsElecId(it->second);
-  };
+  return nullptr;
 }
-
 template <>
 std::function<std::set<uint16_t>(uint16_t)>
-  mapperCru2Solar<ElectronicMapperDummy>()
+  createCru2SolarMapper<ElectronicMapperDummy>(gsl::span<int> deids)
 {
-  return [](uint16_t cruId) -> std::set<uint16_t> {
-    auto it = mapper().mCruId2SolarId.find(cruId);
-    if (it == mapper().mCruId2SolarId.end()) {
-      return {};
-    }
-    return it->second;
-  };
+  return nullptr;
 }
 
-template <>
-std::function<std::optional<uint16_t>(uint16_t)>
-  mapperSolar2Cru<ElectronicMapperDummy>()
-{
-  std::map<uint16_t, uint16_t> solar2cru;
-
-  for (auto p : mapper().mCruId2SolarId) {
-    for (auto s : p.second) {
-      solar2cru.emplace(s, p.first);
-      std::cout << s << "->" << p.first << "\n";
-    }
-  }
-  return [solar2cru](uint16_t solarId) -> std::optional<uint16_t> {
-    auto it = solar2cru.find(solarId);
-    if (it == solar2cru.end()) {
-      return std::nullopt;
-    }
-    return it->second;
-  };
-}
+// template <>
+// std::function<std::optional<DsElecId>(DsDetId)>
+//   mapperDet2Elec<ElectronicMapperDummy>()
+// {
+//   std::map<uint32_t, uint16_t> det2elec;
+//
+//   for (auto p : mapper().mDsElecId2DsDetId) {
+//     det2elec.emplace(p.second, p.first);
+//   }
+//
+//   return [det2elec](DsDetId id) -> std::optional<DsElecId> {
+//     auto it = det2elec.find(encode(id));
+//     if (it == det2elec.end()) {
+//       return std::nullopt;
+//     }
+//     return decodeDsElecId(it->second);
+//   };
+// }
+//
+// template <>
+// std::function<std::set<uint16_t>(uint16_t)>
+//   mapperCru2Solar<ElectronicMapperDummy>()
+// {
+//   return [](uint16_t cruId) -> std::set<uint16_t> {
+//     auto it = mapper().mCruId2SolarId.find(cruId);
+//     if (it == mapper().mCruId2SolarId.end()) {
+//       return {};
+//     }
+//     return it->second;
+//   };
+// }
+//
+// template <>
+// std::function<std::optional<uint16_t>(uint16_t)>
+//   mapperSolar2Cru<ElectronicMapperDummy>()
+// {
+//   std::map<uint16_t, uint16_t> solar2cru;
+//
+//   for (auto p : mapper().mCruId2SolarId) {
+//     for (auto s : p.second) {
+//       solar2cru.emplace(s, p.first);
+//     }
+//   }
+//   return [solar2cru](uint16_t solarId) -> std::optional<uint16_t> {
+//     auto it = solar2cru.find(solarId);
+//     if (it == solar2cru.end()) {
+//       return std::nullopt;
+//     }
+//     return it->second;
+//   };
+// }
 } // namespace o2::mch::raw

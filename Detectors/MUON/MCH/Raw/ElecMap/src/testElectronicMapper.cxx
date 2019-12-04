@@ -20,6 +20,8 @@
 #include <fmt/format.h>
 #include <set>
 #include <boost/mpl/list.hpp>
+#include <gsl/span>
+#include <array>
 
 using namespace o2::mch::raw;
 
@@ -32,13 +34,14 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(electronicmapperdummy)
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAll16828DualSampas, T, testTypes)
+template <typename T>
+size_t nofDualSampasFromMapper(gsl::span<int> deids)
 {
   std::set<int> ds;
 
-  auto d2e = o2::mch::raw::mapperDet2Elec<T>();
+  auto d2e = o2::mch::raw::createDet2ElecMapper<T>(deids);
 
-  o2::mch::mapping::forEachDetectionElement([&ds, d2e](int deid) {
+  for (auto deid : deids) {
     auto seg = o2::mch::mapping::segmentation(deid);
     seg.forEachDualSampa([&seg, &ds, d2e, deid](int dsid) {
       auto dsel = d2e(DsDetId{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)});
@@ -46,31 +49,69 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAll16828DualSampas, T, testTypes)
         ds.insert(o2::mch::raw::encode(dsel.value())); // encode to be sure we're counting unique pairs (deid,dsid)
       }
     });
-  });
-  BOOST_CHECK_EQUAL(ds.size(), 16828);
+  }
+  return ds.size();
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)
+template <size_t N>
+size_t nofDualSampas(std::array<int, N> deIds)
 {
-  std::set<int> missing;
+  size_t n{0};
 
-  auto de2cru = o2::mch::raw::mapperDe2Cru<T>();
-
-  o2::mch::mapping::forEachDetectionElement([&](int deid) {
-    auto cru = de2cru(deid);
-    if (!cru.has_value()) {
-      missing.insert(deid);
-    }
-  });
-  BOOST_CHECK_EQUAL(missing.size(), 0);
+  for (auto deid : deIds) {
+    auto seg = o2::mch::mapping::segmentation(deid);
+    n += seg.nofDualSampas();
+  }
+  return n;
 }
 
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH5R, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH5R);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH5R);
+}
+
+// BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAll16828DualSampas, T, testTypes)
+// {
+//   std::set<int> ds;
+//
+//   auto d2e = o2::mch::raw::mapperDet2Elec<T>();
+//
+//   o2::mch::mapping::forEachDetectionElement([&ds, d2e](int deid) {
+//     auto seg = o2::mch::mapping::segmentation(deid);
+//     seg.forEachDualSampa([&seg, &ds, d2e, deid](int dsid) {
+//       auto dsel = d2e(DsDetId{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)});
+//       if (dsel.has_value()) {
+//         ds.insert(o2::mch::raw::encode(dsel.value())); // encode to be sure we're counting unique pairs (deid,dsid)
+//       }
+//     });
+//   });
+//   BOOST_CHECK_EQUAL(ds.size(), 16828);
+// }
+//
+// BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)
+// {
+//   std::set<int> missing;
+//
+//   auto de2cru = o2::mch::raw::mapperDe2Cru<T>();
+//
+//   o2::mch::mapping::forEachDetectionElement([&](int deid) {
+//     auto cru = de2cru(deid);
+//     if (!cru.has_value()) {
+//       missing.insert(deid);
+//     }
+//   });
+//   BOOST_CHECK_EQUAL(missing.size(), 0);
+// }
+//
 // BOOST_AUTO_TEST_CASE_TEMPLATE(EachCruHasLessThan960DualSampas, T, testTypes)
 // {
 //   std::map<int, int> nofDualSampaPerCRU;
 //
+//   auto de2cru = o2::mch::raw::mapperDe2Cru<T>();
+//
 //   o2::mch::mapping::forEachDetectionElement([&](int deid) {
-//     auto cru = elecmap<T>().cruId(deid);
+//     auto cru = de2cru(deid);
 //     if (cru.has_value()) {
 //       auto seg = o2::mch::mapping::segmentation(deid);
 //       nofDualSampaPerCRU[cru.value()] += seg.nofDualSampas();

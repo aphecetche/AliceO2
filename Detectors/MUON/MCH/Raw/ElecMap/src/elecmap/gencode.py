@@ -119,7 +119,7 @@ def generate_one_chamber_file(df,chamber,deids):
     return len(solars)
 
 
-def do(df,deids):
+def do(df,chamber_name,chamber_deids):
 
     out = open_generated("GenElectronicMapper.cxx")
 
