@@ -20,29 +20,35 @@
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHMappingFactory/CreateSegmentation.h"
 #include <fmt/format.h>
+#include <array>
+#include <gsl/span>
 
 namespace o2::mch::raw
 {
+
+static std::array<int, 9> deIdsOfCH5R{504, 503, 502, 501, 500, 517, 516, 515, 514}; // from top to bottom
 
 /**@name Primary mappers
     */
 ///@{
 
 /// From (solarId,groupdId,index) to (deId,dsId)
+/// use timestamp to specify a data taking period, use 0 to get the latest mapping
 template <typename T>
-std::function<std::optional<DsDetId>(DsElecId id)> mapperElec2Det();
+std::function<std::optional<DsDetId>(DsElecId)> createElec2DetMapper(gsl::span<int> deIds,
+                                                                     uint64_t timestamp = 0);
 
 /// From cruId to { solarId }
 template <typename T>
-std::function<std::set<uint16_t>(uint16_t cruId)> mapperCru2Solar();
+std::function<std::set<uint16_t>(uint16_t cruId)> createCru2SolarMapper(gsl::span<int> deIds);
 
 /// From (deId,dsId) to (solarId,groupId,index)
 template <typename T>
-std::function<std::optional<DsElecId>(DsDetId id)> mapperDet2Elec();
+std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper(gsl::span<int> deIds);
 
 /// From solarId to cruId
 template <typename T>
-std::function<std::optional<uint16_t>(uint16_t solarId)> mapperSolar2Cru();
+std::function<std::optional<uint16_t>(uint16_t solarId)> createSolar2CruMapper(gsl::span<int> deIds);
 ///@}
 
 /// From deId to cruId.
@@ -51,30 +57,32 @@ std::function<std::optional<uint16_t>(uint16_t solarId)> mapperSolar2Cru();
 /// or just implemented using the primary ones here.
 ///
 template <typename T>
-std::function<std::optional<uint16_t>(uint16_t deId)> mapperDe2Cru()
+std::function<std::optional<uint16_t>(uint16_t deId)> createDe2CruMapper(gsl::span<int> deIds)
 {
-  // this is to be viewed as a default implementation
-  // (i.e. not optimized)
-  // feel free to specialize it for your T
-  auto det2elec = mapperDet2Elec<T>();
-  auto solar2cru = mapperSolar2Cru<T>();
-  return [&, det2elec, solar2cru](uint16_t deId) -> std::optional<uint16_t> {
-    std::set<uint16_t> deSolars;
-    auto seg = o2::mch::mapping::segmentation(deId);
-    std::optional<uint16_t> cruId;
-    seg.forEachDualSampa([&deId, det2elec, solar2cru, &cruId](int dsId) {
-      auto dselec = det2elec(DsDetId(deId, dsId));
-      if (dselec.has_value()) {
-        cruId = solar2cru(dselec->solarId());
-        std::cout << fmt::format("DE {:4d} DS {:4d} SOLAR {:4d} CRU {}\n",
-                                 deId, dsId, dselec->solarId(), (cruId.has_value() ? cruId.value() : -42));
-        return;
-      }
-    });
-    return cruId;
-  };
+  std::cout << __FILE__ << "createDe2CruMapper implemented me !\n";
+  return nullptr;
 }
-///@}
+
+// {
+//   // this is to be viewed as a default implementation
+//   // (i.e. not optimized)
+//   // feel free to specialize it for your T
+//   auto det2elec = createDet2ElecMapper<T>();
+//   auto solar2cru = createSolar2CruMapper<T>();
+//   return [&, det2elec, solar2cru](uint16_t deId) -> std::optional<uint16_t> {
+//     std::set<uint16_t> deSolars;
+//     auto seg = o2::mch::mapping::segmentation(deId);
+//     std::optional<uint16_t> cruId;
+//     seg.forEachDualSampa([&deId, det2elec, solar2cru, &cruId](int dsId) {
+//       auto dselec = det2elec(DsDetId(deId, dsId));
+//       if (dselec.has_value()) {
+//         cruId = solar2cru(dselec->solarId());
+//         return;
+//       }
+//     });
+//     return cruId;
+//   };
+// }
 
 } // namespace o2::mch::raw
 
