@@ -40,5 +40,7 @@ if args.verbose:
 if args.excel:
     df.to_excel(args.excel)
 
+ch6r = { 604,603,602,601,600,617,616,615,614 } # CH6-R starting from top
+
 if args.code:
-    elecmap.gencode.do(df,{500,501,505})
+    elecmap.gencode.do(df,'ch6r',ch6r)
