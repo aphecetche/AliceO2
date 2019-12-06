@@ -8,31 +8,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELECMAP_DS_DET_ID_H
-#define O2_MCH_RAW_ELECMAP_DS_DET_ID_H
+///
+/// GENERATED CODE ! DO NOT EDIT !
+///
 
+#include <map>
 #include <cstdint>
-#include <iosfwd>
+#include "MCHRawElecMap/DsElecId.h"
+#include "MCHRawElecMap/DsDetId.h"
+using namespace o2::mch::raw;
 
-namespace o2::mch::raw
+void fillElec2DetCH6L(std::map<uint16_t, uint32_t>& e2d)
 {
-class DsDetId
-{
- public:
-  DsDetId(int deId, int dsId);
-
-  uint16_t deId() const { return mDeId; }
-  uint16_t dsId() const { return mDsId; }
-
- private:
-  uint16_t mDeId;
-  uint16_t mDsId;
-};
-
-DsDetId decodeDsDetId(uint32_t code);
-uint32_t encode(const DsDetId& id);
-
-std::ostream& operator<<(std::ostream& os, const DsDetId& id);
-
-} // namespace o2::mch::raw
-#endif
+}

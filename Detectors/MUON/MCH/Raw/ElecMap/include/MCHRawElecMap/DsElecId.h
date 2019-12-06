@@ -12,6 +12,7 @@
 #define O2_MCH_RAW_ELECMAP_DS_ELEC_ID_H
 
 #include <cstdint>
+#include <iosfwd>
 
 namespace o2::mch::raw
 {
@@ -60,6 +61,8 @@ class DsElecId
 uint16_t encode(const DsElecId& id);
 
 DsElecId decodeDsElecId(uint16_t code);
+
+std::ostream& operator<<(std::ostream& os, const DsElecId& id);
 
 } // namespace o2::mch::raw
 
