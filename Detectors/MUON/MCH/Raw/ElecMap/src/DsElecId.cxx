@@ -10,6 +10,8 @@
 
 #include "MCHRawElecMap/DsElecId.h"
 #include "Assertions.h"
+#include <fmt/format.h>
+#include <iostream>
 
 namespace o2::mch::raw
 {
@@ -35,5 +37,11 @@ DsElecId decodeDsElecId(uint16_t code)
   uint8_t index = (code & 0xE000) >> 13;
 
   return DsElecId(solarId, groupId, index);
+}
+std::ostream& operator<<(std::ostream& os, const DsElecId& id)
+{
+  std::cout << fmt::format("DsElecId(SOLAR={:4d} GROUP={:2d} INDEX={:2d}) CODE={:8d}",
+                           id.solarId(), id.elinkGroupId(), id.elinkIndexInGroup(), encode(id));
+  return os;
 }
 } // namespace o2::mch::raw

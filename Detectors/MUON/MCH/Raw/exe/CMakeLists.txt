@@ -18,7 +18,7 @@ o2_add_executable(
 o2_add_executable(generate-timeframe
         SOURCES gentimeframe.cxx gtfGenerateDigits.cxx
         COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
         O2::Steer
         O2::MCHSimulation
         O2::MCHMappingFactory
