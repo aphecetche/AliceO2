@@ -13,6 +13,7 @@ def _simplify_dataframe(df):
    row_list = []
 
    for row in df.itertuples():
+       #print(row)
        crate = int(str(row.crate).strip('C '))
        solar_pos = int(row.solar.split('-')[2].strip('S '))-1
        group_id = int(row.solar.split('-')[3].strip('J '))-1
@@ -37,9 +38,11 @@ def _simplify_dataframe(df):
    return sf
 
 def get_dataframe(filename):
-    f = pd.read_excel(filename,names=["cru","fiber","crate","solar","sid","j","slat",
+    f = pd.read_excel(filename,names=["cru","fiber","crate","solar",
+                                      "solar_local_id","j","slat",
                                       "length","de",
                                       "ds1","ds2","ds3","ds4","ds5"],
+                      usecols="A:N",
                       na_values=[" "],
                       na_filter=True)
     return _simplify_dataframe(f)

@@ -17,6 +17,7 @@
 #include "MCHMappingFactory/CreateSegmentation.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "MCHRawElecMap/ElectronicMapperDummy.h"
+#include "MCHRawElecMap/ElectronicMapperGenerated.h"
 #include <fmt/format.h>
 #include <set>
 #include <boost/mpl/list.hpp>
@@ -25,17 +26,30 @@
 
 using namespace o2::mch::raw;
 
-typedef boost::mpl::list<o2::mch::raw::ElectronicMapperDummy /*,
-                         o2::mch::raw::ElectronicMapperGenerated*/
-                         >
+typedef boost::mpl::list<o2::mch::raw::ElectronicMapperDummy,
+                         o2::mch::raw::ElectronicMapperGenerated>
   testTypes;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(electronicmapperdummy)
 
+template <size_t N>
+std::set<int> nofDualSampas(std::array<int, N> deIds)
+{
+  std::set<int> ds;
+
+  for (auto deId : deIds) {
+    auto seg = o2::mch::mapping::segmentation(deId);
+    seg.forEachDualSampa([&ds, deId](int dsid) {
+      ds.insert(encode(DsDetId{deId, dsid}));
+    });
+  }
+  return ds;
+}
+
 template <typename T>
-size_t nofDualSampasFromMapper(gsl::span<int> deids)
+std::set<int> nofDualSampasFromMapper(gsl::span<int> deids)
 {
   std::set<int> ds;
 
@@ -43,52 +57,54 @@ size_t nofDualSampasFromMapper(gsl::span<int> deids)
 
   for (auto deid : deids) {
     auto seg = o2::mch::mapping::segmentation(deid);
-    seg.forEachDualSampa([&seg, &ds, d2e, deid](int dsid) {
-      auto dsel = d2e(DsDetId{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)});
+    size_t nref = seg.nofDualSampas();
+    std::set<int> dsForOneDE;
+    seg.forEachDualSampa([&seg, &ds, d2e, deid, &dsForOneDE](int dsid) {
+      DsDetId id{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)};
+      auto dsel = d2e(id);
       if (dsel.has_value()) {
-        ds.insert(o2::mch::raw::encode(dsel.value())); // encode to be sure we're counting unique pairs (deid,dsid)
+        auto code = o2::mch::raw::encode(id); // encode to be sure we're counting unique pairs (deid,dsid)
+        ds.insert(code);
+        dsForOneDE.insert(code);
       }
     });
+    if (dsForOneDE.size() != nref) {
+      std::cout << fmt::format("ERROR : mapper has {:4d} DS while DE {:4d} should have {:4d}\n", dsForOneDE.size(), deid, nref);
+    }
   }
-  return ds.size();
-}
-
-template <size_t N>
-size_t nofDualSampas(std::array<int, N> deIds)
-{
-  size_t n{0};
-
-  for (auto deid : deIds) {
-    auto seg = o2::mch::mapping::segmentation(deid);
-    n += seg.nofDualSampas();
-  }
-  return n;
+  return ds;
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH5R, T, testTypes)
 {
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH5R);
   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH5R);
+  BOOST_CHECK_EQUAL(check.size(), expected.size());
+  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
 }
 
-// BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAll16828DualSampas, T, testTypes)
-// {
-//   std::set<int> ds;
-//
-//   auto d2e = o2::mch::raw::mapperDet2Elec<T>();
-//
-//   o2::mch::mapping::forEachDetectionElement([&ds, d2e](int deid) {
-//     auto seg = o2::mch::mapping::segmentation(deid);
-//     seg.forEachDualSampa([&seg, &ds, d2e, deid](int dsid) {
-//       auto dsel = d2e(DsDetId{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)});
-//       if (dsel.has_value()) {
-//         ds.insert(o2::mch::raw::encode(dsel.value())); // encode to be sure we're counting unique pairs (deid,dsid)
-//       }
-//     });
-//   });
-//   BOOST_CHECK_EQUAL(ds.size(), 16828);
-// }
-//
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH5L, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH5L);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH5L);
+  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6R, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6R);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6R);
+  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+}
+
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6L, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6L);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6L);
+  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+}
+
 // BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)
 // {
 //   std::set<int> missing;

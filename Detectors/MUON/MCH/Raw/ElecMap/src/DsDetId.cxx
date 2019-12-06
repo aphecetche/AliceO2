@@ -10,6 +10,8 @@
 
 #include "MCHRawElecMap/DsDetId.h"
 #include "Assertions.h"
+#include <fmt/format.h>
+#include <iostream>
 
 namespace o2::mch::raw
 {
@@ -32,6 +34,12 @@ DsDetId decodeDsDetId(uint32_t x)
   uint16_t deId = static_cast<uint16_t>((x & 0xFFFF0000) >> 16);
   uint16_t dsId = static_cast<uint16_t>(x & 0xFFFF);
   return DsDetId(deId, dsId);
+}
+
+std::ostream& operator<<(std::ostream& os, const DsDetId& id)
+{
+  os << fmt::format("DsDetId(DE={:4d},DS={:4d}) CODE={:8d}", id.deId(), id.dsId(), encode(id));
+  return os;
 }
 
 } // namespace o2::mch::raw
