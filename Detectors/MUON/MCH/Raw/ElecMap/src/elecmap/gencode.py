@@ -73,4 +73,6 @@ def do(df,chamber):
 
     out.write("}")
 
+    out.write("void fillSolar2Cru{}(std::map<uint16_t, uint16_t>& s2c){{".format(chamber))
+    out.write("}")
     close_generated(out)

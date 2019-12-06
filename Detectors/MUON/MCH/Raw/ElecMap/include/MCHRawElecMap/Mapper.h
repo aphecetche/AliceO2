@@ -47,11 +47,11 @@ std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper(gsl::spa
 
 /// From cruId to { solarId }
 template <typename T>
-std::function<std::set<uint16_t>(uint16_t cruId)> createCru2SolarMapper(gsl::span<int> deIds);
+std::function<std::set<uint16_t>(uint16_t cruId)> createCru2SolarMapper();
 
 /// From solarId to cruId
 template <typename T>
-std::function<std::optional<uint16_t>(uint16_t solarId)> createSolar2CruMapper(gsl::span<int> deIds);
+std::function<std::optional<uint16_t>(uint16_t solarId)> createSolar2CruMapper();
 ///@}
 
 } // namespace o2::mch::raw
