@@ -32,6 +32,19 @@ std::function<std::optional<o2::mch::raw::DsDetId>(o2::mch::raw::DsElecId)>
     return o2::mch::raw::decodeDsDetId(it->second);
   };
 }
+
+template <typename T>
+std::function<std::optional<o2::mch::raw::DsElecId>(o2::mch::raw::DsDetId)>
+  mapperDet2Elec(std::map<uint32_t, uint16_t> det2elec)
+{
+  return [det2elec](o2::mch::raw::DsDetId id) -> std::optional<o2::mch::raw::DsElecId> {
+    auto it = det2elec.find(encode(id));
+    if (it == det2elec.end()) {
+      return std::nullopt;
+    }
+    return o2::mch::raw::decodeDsElecId(it->second);
+  };
+}
 } // namespace o2::mch::raw::impl
 
 #endif

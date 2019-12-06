@@ -51,6 +51,7 @@
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawElecMap/ElectronicMapperDummy.h"
+#include "MCHRawElecMap/ElectronicMapperGenerated.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawEncoder/Paginator.h"
@@ -113,7 +114,7 @@ std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, floa
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encodeDigits(gsl::span<o2::mch::Digit> digits,
                   std::map<int, std::unique_ptr<raw::CRUEncoder>>& crus,
-                  std::function<std::optional<uint16_t>(uint16_t)> de2cru,
+                  std::function<std::optional<uint16_t>(uint16_t)> solar2cru,
                   std::function<std::optional<DsElecId>(DsDetId)> det2elec,
                   std::function<std::set<uint16_t>(uint16_t)> cru2solar,
                   uint32_t orbit,
@@ -126,7 +127,16 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 
   for (auto d : digits) {
     int deid = d.getDetID();
-    auto cruopt = de2cru(deid);
+    int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
+    DsDetId detId{deid, dsid};
+    auto dselocopt = det2elec(DsDetId(deid, dsid));
+    if (!dselocopt.has_value()) {
+      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
+      continue;
+    }
+    DsElecId elecId = dselocopt.value();
+    auto solarId = elecId.solarId();
+    auto cruopt = solar2cru(solarId);
     if (!cruopt.has_value()) {
       // std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
       continue;
@@ -144,13 +154,7 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
       cru->startHeartbeatFrame(orbit, bc);
       startHB[cruId] = true;
     }
-    int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
     int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
-    auto dselocopt = det2elec(DsDetId(deid, dsid));
-    if (!dselocopt.has_value()) {
-      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
-    }
-    auto dseloc = dselocopt.value();
     uint16_t ts(666); // FIXME: simulate something here ?
     int sampachid = dschid % 32;
 
@@ -160,17 +164,17 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
       "nadd %6d deid %4d dsid %4d dschid %2d "
       "cruId %2d solarId %3d groupId %2d elinkId %2d sampach %2d\n",
       nadd++, deid, dsid, dschid,
-      cruId, dseloc.solarId(), dseloc.elinkGroupId(), dseloc.elinkId(), sampachid);
+      cruId, elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid);
     std::cout << clusters[0] << "\n";
 
-    cru->addChannelData(dseloc.solarId(), dseloc.elinkId(), sampachid, clusters);
+    cru->addChannelData(elecId.solarId(), elecId.elinkId(), sampachid, clusters);
   }
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
-            std::function<std::optional<uint16_t>(uint16_t)> de2cru,
+            std::function<std::optional<uint16_t>(uint16_t)> solar2cru,
             std::function<std::optional<DsElecId>(DsDetId)> det2elec,
             std::function<std::set<uint16_t>(uint16_t)> cru2solar,
             std::vector<uint8_t>& buffer)
@@ -184,7 +188,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << fmt::format("BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
-                                         crus, de2cru, det2elec, cru2solar, col.orbit, col.bc);
+                                         crus, solar2cru, det2elec, cru2solar, col.orbit, col.bc);
 
     for (auto& p : crus) {
       if (p.second) {
@@ -194,20 +198,6 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
 
     std::cout << fmt::format("END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }
-}
-
-// filter out detection elements for which we don't have the
-// electronic mapping
-std::vector<int> filterDetectionElements(gsl::span<int> deids,
-                                         std::function<std::optional<uint16_t>(uint16_t)> de2cru)
-{
-  std::vector<int> d;
-  for (auto deid : deids) {
-    if (de2cru(deid)) {
-      d.emplace_back(deid);
-    }
-  }
-  return d;
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH, typename ELECMAP = o2::mch::raw::ElectronicMapperDummy>
@@ -220,19 +210,16 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 
   std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
 
-  // std::vector<int> ch5l = {505, 506, 507, 508, 509, 510, 511, 512, 513};
-  std::vector<int> ch5l = {505};
-
-  auto allDeIds = getAllDetectionElementIds();
-  auto de2cru = o2::mch::raw::createDe2CruMapper<ELECMAP>(ch5l);
-  std::vector<int> deIds = filterDetectionElements(allDeIds, de2cru);
+  // auto allDeIds = getAllDetectionElementIds();
+  auto deIds = deIdsOfCH5L;
 
   // one vector of digits per interaction
   // std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
   std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
 
   std::vector<uint8_t> buffer;
-  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction, de2cru,
+  encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction,
+                                 createSolar2CruMapper<ELECMAP>(deIds),
                                  createDet2ElecMapper<ELECMAP>(deIds),
                                  createCru2SolarMapper<ELECMAP>(deIds), buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
@@ -259,6 +246,7 @@ int main(int argc, char* argv[])
   po::options_description generic("options");
   bool userLogic{false};
   bool chargeSum{false};
+  bool dummyElecMap{false};
   std::string filename;
   po::variables_map vm;
   int nofInteractionsPerTimeFrame{1000};
@@ -268,6 +256,7 @@ int main(int argc, char* argv[])
       ("help:h", "produce help message")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargesum,c",po::bool_switch(&chargeSum),"charge sum mode")
+      ("dummyElecMap,d",po::bool_switch(&dummyElecMap),"use a dummy electronic mapping (for testing only)")
       ("outfile,o",po::value<std::string>(&filename)->required(),"output filename")
       ("nintpertf,n",po::value<int>(&nofInteractionsPerTimeFrame),"number of interactions per timeframe")
       ;
@@ -286,18 +275,35 @@ int main(int argc, char* argv[])
 
   std::ofstream outfile(filename);
 
-  if (userLogic) {
-    if (chargeSum) {
-      gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
-    } else {
-      gentimeframe<raw::UserLogicFormat, raw::SampleMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+  if (dummyElecMap) {
+    if (userLogic) {
+      if (chargeSum) {
+        gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
+      } else {
+        gentimeframe<raw::UserLogicFormat, raw::SampleMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
+      }
     }
-  }
-  if (!userLogic) {
-    if (chargeSum) {
-      gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
-    } else {
-      gentimeframe<raw::BareFormat, raw::SampleMode, o2::header::RAWDataHeaderV4>(outfile, nofInteractionsPerTimeFrame);
+    if (!userLogic) {
+      if (chargeSum) {
+        gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
+      } else {
+        gentimeframe<raw::BareFormat, raw::SampleMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
+      }
+    }
+  } else {
+    if (userLogic) {
+      if (chargeSum) {
+        gentimeframe<raw::UserLogicFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
+      } else {
+        gentimeframe<raw::UserLogicFormat, raw::SampleMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
+      }
+    }
+    if (!userLogic) {
+      if (chargeSum) {
+        gentimeframe<raw::BareFormat, raw::ChargeSumMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
+      } else {
+        gentimeframe<raw::BareFormat, raw::SampleMode, o2::header::RAWDataHeaderV4, raw::ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
+      }
     }
   }
   return 0;
