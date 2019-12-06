@@ -633,3 +633,4 @@ void fillElec2DetCH5L(std::map<uint16_t, uint32_t>& e2d)
   add(e2d, 513, 1131, 338, 7, 2);
   add(e2d, 513, 1130, 338, 7, 3);
 }
+void fillSolar2CruCH5L(std::map<uint16_t, uint16_t>& s2c) {}

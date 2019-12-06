@@ -162,17 +162,17 @@ std::function<std::optional<DsElecId>(DsDetId)>
 
 template <>
 std::function<std::set<uint16_t>(uint16_t)>
-  createCru2SolarMapper<ElectronicMapperDummy>(gsl::span<int> deIds)
+  createCru2SolarMapper<ElectronicMapperDummy>()
 {
-  std::cout << "IMPLEMENT ME!\n";
+  std::cout << "createCru2SolarMapper : IMPLEMENT ME!\n";
   return nullptr;
 }
 
 template <>
 std::function<std::optional<uint16_t>(uint16_t)>
-  createSolar2CruMapper<ElectronicMapperDummy>(gsl::span<int> deIds)
+  createSolar2CruMapper<ElectronicMapperDummy>()
 {
-  std::cout << "IMPLEMENT ME!\n";
+  std::cout << "createSolar2CruMapper : IMPLEMENT ME!\n";
   return nullptr;
 }
 } // namespace o2::mch::raw
