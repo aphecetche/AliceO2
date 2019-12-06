@@ -219,9 +219,9 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
 
   std::vector<uint8_t> buffer;
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction,
-                                 createSolar2CruMapper<ELECMAP>(deIds),
+                                 createSolar2CruMapper<ELECMAP>(),
                                  createDet2ElecMapper<ELECMAP>(deIds),
-                                 createCru2SolarMapper<ELECMAP>(deIds), buffer);
+                                 createCru2SolarMapper<ELECMAP>(), buffer);
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
 #if 0
