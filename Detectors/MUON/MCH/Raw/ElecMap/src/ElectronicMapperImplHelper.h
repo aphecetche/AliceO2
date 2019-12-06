@@ -17,6 +17,7 @@
 #include <optional>
 #include <map>
 #include <cstdint>
+#include <set>
 
 namespace o2::mch::raw::impl
 {
@@ -45,6 +46,33 @@ std::function<std::optional<o2::mch::raw::DsElecId>(o2::mch::raw::DsDetId)>
     return o2::mch::raw::decodeDsElecId(it->second);
   };
 }
+
+template <typename T>
+std::function<std::optional<uint16_t>(uint16_t)>
+  mapperSolar2Cru(std::map<uint16_t, uint16_t> solar2cru)
+{
+  return [solar2cru](uint16_t solarId) -> std::optional<uint16_t> {
+    auto it = solar2cru.find(solarId);
+    if (it == solar2cru.end()) {
+      return std::nullopt;
+    }
+    return it->second;
+  };
+}
+
+template <typename T>
+std::function<std::set<uint16_t>(uint16_t)>
+  mapperCru2Solar(std::map<uint16_t, std::set<uint16_t>> cru2solar)
+{
+  return [cru2solar](uint16_t cruId) -> std::set<uint16_t> {
+    auto it = cru2solar.find(cruId);
+    if (it == cru2solar.end()) {
+      return {};
+    }
+    return it->second;
+  };
+}
+
 } // namespace o2::mch::raw::impl
 
 #endif

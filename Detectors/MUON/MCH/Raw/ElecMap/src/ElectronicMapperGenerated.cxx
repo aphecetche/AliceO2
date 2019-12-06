@@ -21,6 +21,11 @@ extern void fillElec2DetCH5L(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH6R(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH6L(std::map<uint16_t, uint32_t>& e2d);
 
+extern void fillSolar2CruCH5R(std::map<uint16_t, uint16_t>& s2c);
+extern void fillSolar2CruCH5L(std::map<uint16_t, uint16_t>& s2c);
+extern void fillSolar2CruCH6R(std::map<uint16_t, uint16_t>& s2c);
+extern void fillSolar2CruCH6L(std::map<uint16_t, uint16_t>& s2c);
+
 namespace o2::mch::raw
 {
 
@@ -55,6 +60,16 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   return filter(e2d, deIds);
 }
 
+std::map<uint16_t, uint16_t> buildSolarId2CruIdMap()
+{
+  std::map<uint16_t, uint16_t> s2c;
+  fillSolar2CruCH5R(s2c);
+  fillSolar2CruCH5L(s2c);
+  fillSolar2CruCH6R(s2c);
+  fillSolar2CruCH6L(s2c);
+  return s2c;
+}
+
 template <>
 std::function<std::optional<DsDetId>(DsElecId)>
   createElec2DetMapper<ElectronicMapperGenerated>(gsl::span<int> deIds, uint64_t timestamp)
@@ -77,19 +92,23 @@ std::function<std::optional<DsElecId>(DsDetId)>
 }
 
 template <>
-std::function<std::set<uint16_t>(uint16_t)>
-  createCru2SolarMapper<ElectronicMapperGenerated>(gsl::span<int> deIds)
+std::function<std::optional<uint16_t>(uint16_t)>
+  createSolar2CruMapper<ElectronicMapperGenerated>()
 {
-  std::cout << "IMPLEMENT ME!\n";
-  return nullptr;
+  std::map<uint16_t, uint16_t> solarId2CruId = buildSolarId2CruIdMap();
+  return impl::mapperSolar2Cru<ElectronicMapperGenerated>(solarId2CruId);
 }
 
 template <>
-std::function<std::optional<uint16_t>(uint16_t)>
-  createSolar2CruMapper<ElectronicMapperGenerated>(gsl::span<int> deIds)
+std::function<std::set<uint16_t>(uint16_t)>
+  createCru2SolarMapper<ElectronicMapperGenerated>()
 {
-  std::cout << "IMPLEMENT ME!\n";
-  return nullptr;
+  std::map<uint16_t, uint16_t> solarId2CruId = buildSolarId2CruIdMap();
+  std::map<uint16_t, std::set<uint16_t>> cruId2SolarId;
+  for (auto p : solarId2CruId) {
+    cruId2SolarId[p.second].insert(p.first);
+  }
+  return impl::mapperCru2Solar<ElectronicMapperGenerated>(cruId2SolarId);
 }
 
 } // namespace o2::mch::raw
