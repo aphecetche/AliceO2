@@ -79,7 +79,6 @@ if args.excel_filename:
 
 if args.gs_name:
     df = df.append(elecmap.gs.read_sheet(args.credentials,args.gs_name,args.sheet))
-    df.to_pickle("toto.pkl")
 
 df = _simplify_dataframe(df)
 
