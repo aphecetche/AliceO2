@@ -69,6 +69,10 @@ parser.add_argument('--credentials',
                     dest="credentials",
                     help="json credential file for Google Sheet API access")
 
+parser.add_argument("--fec_map","-f",
+                    dest="fecmapfile",
+                    help="fec.map output filename")
+
 args = parser.parse_args()
 
 df = pd.DataFrame()
@@ -87,3 +91,22 @@ if args.verbose:
 
 if args.chamber:
     elecmap.gencode.do(df,args.chamber)
+
+if args.fecmapfile:
+    s = df.to_string(
+              columns=["solar_id","group_id","de_id","ds_id_0","ds_id_1","ds_id_2","ds_id_3","ds_id_4"],
+              header=False,
+              index=False,
+              formatters={
+                  "solar_id": lambda x: "%-6s" % x,
+                  "group_id": lambda x: "%2s" % x,
+                  "de_id": lambda x: "%9s   " % x,
+                  "ds_id_0": lambda x: " %-6s" % x,
+                  "ds_id_1": lambda x: " %-6s" % x,
+                  "ds_id_2": lambda x: " %-6s" % x,
+                  "ds_id_3": lambda x: " %-6s" % x,
+                  "ds_id_4": lambda x: " %-6s" % x,
+              })
+    out = open(args.fecmapfile,"w")
+    out.write(s)
+
