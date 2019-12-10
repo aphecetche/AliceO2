@@ -26,10 +26,12 @@
 namespace o2::mch::raw
 {
 
-static std::array<int, 9> deIdsOfCH5R{504, 503, 502, 501, 500, 517, 516, 515, 514}; // from top to bottom
-static std::array<int, 9> deIdsOfCH5L{505, 506, 507, 508, 509, 510, 511, 512, 513}; // from top to bottom
-static std::array<int, 9> deIdsOfCH6R{604, 603, 602, 601, 600, 617, 616, 615, 614}; // from top to bottom
-static std::array<int, 9> deIdsOfCH6L{605, 606, 607, 608, 609, 610, 611, 612, 613}; // from top to bottom
+static std::array<int, 9> deIdsOfCH5R{504, 503, 502, 501, 500, 517, 516, 515, 514};                      // from top to bottom
+static std::array<int, 9> deIdsOfCH5L{505, 506, 507, 508, 509, 510, 511, 512, 513};                      // from top to bottom
+static std::array<int, 9> deIdsOfCH6R{604, 603, 602, 601, 600, 617, 616, 615, 614};                      // from top to bottom
+static std::array<int, 9> deIdsOfCH6L{605, 606, 607, 608, 609, 610, 611, 612, 613};                      // from top to bottom
+static std::array<int, 13> deIdsOfCH7R{706, 705, 704, 703, 702, 701, 700, 725, 724, 723, 722, 721, 720}; // from top to bottom
+static std::array<int, 13> deIdsOfCH7L{707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719}; // from top to bottom
 
 /**@name Primary mappers
     */

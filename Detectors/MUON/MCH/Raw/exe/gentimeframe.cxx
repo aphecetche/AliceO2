@@ -138,7 +138,7 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     auto solarId = elecId.solarId();
     auto cruopt = solar2cru(solarId);
     if (!cruopt.has_value()) {
-      // std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
+      std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
       continue;
     }
     uint8_t cruId = cruopt.value();
@@ -147,8 +147,8 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
     }
     auto& cru = crus[cruId];
     if (!cru) {
+      std::cout << "No encoder made for CRU " << cruId << "\n";
       continue;
-      // std::cout << "No encoder made for CRU " << cruId << "\n";
     }
     if (!startHB[cruId]) {
       cru->startHeartbeatFrame(orbit, bc);
@@ -185,7 +185,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
 
     auto& col = interactions[i];
 
-    std::cout << fmt::format("BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
+    std::cout << fmt::format(">>> BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
                                          crus, solar2cru, det2elec, cru2solar, col.orbit, col.bc);
@@ -196,7 +196,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
       }
     }
 
-    std::cout << fmt::format("END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
+    std::cout << fmt::format("<<< END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }
 }
 
@@ -218,10 +218,21 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
 
   std::vector<uint8_t> buffer;
+  std::cout << "creating solar2cru\n";
+  auto solar2cru = createSolar2CruMapper<ELECMAP>();
+  std::cout << "creating cru2solar\n";
+  auto cru2solar = createCru2SolarMapper<ELECMAP>();
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction,
-                                 createSolar2CruMapper<ELECMAP>(),
+                                 solar2cru,
                                  createDet2ElecMapper<ELECMAP>(deIds),
-                                 createCru2SolarMapper<ELECMAP>(), buffer);
+                                 cru2solar,
+                                 buffer);
+
+  if (buffer.empty()) {
+    std::cout << "Something went wrong : got an empty buffer\n";
+    return;
+  }
+
   std::cout << fmt::format("output buffer is {:5.2f} MB\n", 1.0 * buffer.size() / 1024 / 1024);
 
 #if 0

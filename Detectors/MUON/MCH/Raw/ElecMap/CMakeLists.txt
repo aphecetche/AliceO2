@@ -16,6 +16,8 @@ o2_add_library(MCHRawElecMap SOURCES src/DsElecId.cxx
     src/CH5L.cxx
     src/CH6R.cxx
     src/CH6L.cxx
+    src/CH7R.cxx
+    src/CH7L.cxx
     PUBLIC_LINK_LIBRARIES O2::MCHRawImplHelpers ms_gsl::ms_gsl
     O2::MCHMappingFactory)
 
