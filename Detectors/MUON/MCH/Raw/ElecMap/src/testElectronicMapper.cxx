@@ -80,21 +80,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH5R, T, testTypes)
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH5R);
   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH5R);
   BOOST_CHECK_EQUAL(check.size(), expected.size());
-  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH5L, T, testTypes)
 {
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH5L);
   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH5L);
-  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6R, T, testTypes)
 {
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6R);
   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6R);
-  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
 BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
@@ -102,7 +102,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6L, T, testTypes)
 {
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6L);
   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6L);
-  BOOST_CHECK(std::equal(check.begin(), check.end(), expected.begin()));
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH7R, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH7R);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH7R);
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH7L, T, testTypes)
+{
+  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH7L);
+  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH7L);
+  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
 // BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)

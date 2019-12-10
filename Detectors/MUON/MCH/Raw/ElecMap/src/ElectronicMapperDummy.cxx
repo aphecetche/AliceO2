@@ -15,64 +15,11 @@
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
 #include "ElectronicMapperImplHelper.h"
+
 namespace
 {
-// struct ElectronicMapperDummyImpl {
-//   ElectronicMapperDummyImpl();
-//   std::map<uint16_t, uint32_t> mDsElecId2DsDetId;
-//   std::map<uint16_t, std::set<uint16_t>> mCruId2SolarId;
-// };
+// build the map to go from electronic ds id to detector ds id
 
-// std::set<uint16_t> fillElec2DetMap(std::map<uint16_t, uint32_t>& e2d)
-// {
-//   /// e2d is a (fake) (solarId,groupId,index)->(deId,dsId) map
-//   ///
-//   /// to build this map we assume all solars have 8 groups (not true in reality)
-//   /// and that all groups have 5 dual sampas (i.e. index = 0..4) (which is
-//   /// also not true in reality).
-//   /// That way we end up with "only" 421 solars, while in reality we have
-//   /// more than 600.
-//   ///
-//
-//   uint16_t n{0};
-//   uint16_t solarId{0};
-//   uint8_t groupId{0};
-//   uint8_t index{0};
-//
-//   std::set<uint16_t> solars;
-//
-//   o2::mch::mapping::forEachDetectionElement([&](int deId) {
-//     auto seg = o2::mch::mapping::segmentation(deId);
-//     // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
-//     seg.forEachDualSampa([&](int dsId) {
-//       // index 0..4
-//       // groupId 0..7
-//       // solarId 0..nsolars
-//       if (n % 5 == 0) {
-//         index = 0;
-//         if (n % 8 == 0) {
-//           groupId = 0;
-//         } else {
-//           groupId++;
-//         }
-//       } else {
-//         index++;
-//       }
-//       if (n % 40 == 0) {
-//         solarId++;
-//       }
-//       o2::mch::raw::DsElecId dsElecId(solarId, groupId, index);
-//       o2::mch::raw::DsDetId dsDetId(deId, dsId);
-//       e2d.emplace(o2::mch::raw::encode(dsElecId),
-//                   o2::mch::raw::encode(dsDetId));
-//       solars.insert(solarId);
-//       n++;
-//     });
-//   });
-//
-//   return solars;
-// }
-//
 std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
 {
   std::map<uint16_t, uint32_t> e2d;
@@ -82,7 +29,7 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   uint8_t groupId{0};
   uint8_t index{0};
 
-  for (auto deId : deIds) {
+  o2::mch::mapping::forEachDetectionElement([&](int deId) {
     auto seg = o2::mch::mapping::segmentation(deId);
     // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
     seg.forEachDualSampa([&](int dsId) {
@@ -104,35 +51,38 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
       }
       o2::mch::raw::DsElecId dsElecId(solarId, groupId, index);
       o2::mch::raw::DsDetId dsDetId(deId, dsId);
-      e2d.emplace(o2::mch::raw::encode(dsElecId),
-                  o2::mch::raw::encode(dsDetId));
+      // only update the map if deId is one of the desired ones
+      if (std::find(deIds.begin(), deIds.end(), deId) != deIds.end()) {
+        e2d.emplace(o2::mch::raw::encode(dsElecId),
+                    o2::mch::raw::encode(dsDetId));
+      }
       n++;
     });
-  }
+  });
   return e2d;
 }
 
-// void fillCru2SolarMap(std::map<uint16_t, std::set<uint16_t>>& c2s,
-//                       const std::set<uint16_t> solarIds)
-// {
-//   /// c2s is a (fake) map of cruId -> { solarId }
-//   /// we assume here that all CRUS are "full" = 6 solars / CRU
-//   uint16_t n{0};
-//   for (auto s : solarIds) {
-//     auto cruId = n / 6;
-//     c2s[cruId].insert(s);
-//     n++;
-//   }
-// }
+std::map<uint16_t, std::set<uint16_t>> buildSolarId2CruIdMap()
+{
+  std::map<uint16_t, std::set<uint16_t>> c2s;
 
-// ElectronicMapperDummyImpl::ElectronicMapperDummyImpl()
-//   : mDsElecId2DsDetId{},
-//     mCruId2SolarId{}
-// {
-//   auto solars = fillElec2DetMap(mDsElecId2DsDetId);
-//   fillCru2SolarMap(mCruId2SolarId, solars);
-// }
+  uint16_t n{0};
+  uint16_t solarId{0};
 
+  o2::mch::mapping::forEachDetectionElement([&](int deId) {
+    auto seg = o2::mch::mapping::segmentation(deId);
+    // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
+    seg.forEachDualSampa([&](int dsId) {
+      if (n % 40 == 0) {
+        solarId++;
+      }
+      auto cruId = solarId / 24;
+      c2s[cruId].insert(solarId);
+      n++;
+    });
+  });
+  return c2s;
+}
 } // namespace
 
 namespace o2::mch::raw
@@ -164,15 +114,21 @@ template <>
 std::function<std::set<uint16_t>(uint16_t)>
   createCru2SolarMapper<ElectronicMapperDummy>()
 {
-  std::cout << "createCru2SolarMapper : IMPLEMENT ME!\n";
-  return nullptr;
+  auto c2s = buildSolarId2CruIdMap();
+  return impl::mapperCru2Solar<ElectronicMapperDummy>(c2s);
 }
 
 template <>
 std::function<std::optional<uint16_t>(uint16_t)>
   createSolar2CruMapper<ElectronicMapperDummy>()
 {
-  std::cout << "createSolar2CruMapper : IMPLEMENT ME!\n";
-  return nullptr;
+  std::map<uint16_t, uint16_t> s2c;
+  auto c2s = buildSolarId2CruIdMap();
+  for (auto p : c2s) {
+    for (auto s : p.second) {
+      s2c[s] = p.first;
+    }
+  }
+  return impl::mapperSolar2Cru<ElectronicMapperDummy>(s2c);
 }
 } // namespace o2::mch::raw
