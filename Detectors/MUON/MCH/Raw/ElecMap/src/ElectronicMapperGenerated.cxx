@@ -20,19 +20,23 @@ extern void fillElec2DetCH5R(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH5L(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH6R(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH6L(std::map<uint16_t, uint32_t>& e2d);
+extern void fillElec2DetCH7R(std::map<uint16_t, uint32_t>& e2d);
+extern void fillElec2DetCH7L(std::map<uint16_t, uint32_t>& e2d);
 
 extern void fillSolar2CruCH5R(std::map<uint16_t, uint16_t>& s2c);
 extern void fillSolar2CruCH5L(std::map<uint16_t, uint16_t>& s2c);
 extern void fillSolar2CruCH6R(std::map<uint16_t, uint16_t>& s2c);
 extern void fillSolar2CruCH6L(std::map<uint16_t, uint16_t>& s2c);
+extern void fillSolar2CruCH7R(std::map<uint16_t, uint16_t>& s2c);
+extern void fillSolar2CruCH7L(std::map<uint16_t, uint16_t>& s2c);
 
-namespace o2::mch::raw
+namespace
 {
 
 void dump(const std::map<uint16_t, uint32_t>& e2d)
 {
   for (auto p : e2d) {
-    std::cout << decodeDsElecId(p.first) << " -> " << decodeDsDetId(p.second) << "\n";
+    std::cout << o2::mch::raw::decodeDsElecId(p.first) << " -> " << o2::mch::raw::decodeDsDetId(p.second) << "\n";
   }
 }
 
@@ -42,7 +46,7 @@ std::map<uint16_t, uint32_t> filter(const std::map<uint16_t, uint32_t>& m, gsl::
 {
   std::map<uint16_t, uint32_t> e2d;
   for (auto p : m) {
-    DsDetId id = decodeDsDetId(p.second);
+    o2::mch::raw::DsDetId id = o2::mch::raw::decodeDsDetId(p.second);
     if (std::find(deIds.begin(), deIds.end(), id.deId()) != deIds.end()) {
       e2d.emplace(p.first, p.second);
     }
@@ -57,6 +61,8 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   fillElec2DetCH5L(e2d);
   fillElec2DetCH6R(e2d);
   fillElec2DetCH6L(e2d);
+  fillElec2DetCH7R(e2d);
+  fillElec2DetCH7L(e2d);
   return filter(e2d, deIds);
 }
 
@@ -67,8 +73,15 @@ std::map<uint16_t, uint16_t> buildSolarId2CruIdMap()
   fillSolar2CruCH5L(s2c);
   fillSolar2CruCH6R(s2c);
   fillSolar2CruCH6L(s2c);
+  fillSolar2CruCH7R(s2c);
+  fillSolar2CruCH7L(s2c);
   return s2c;
 }
+
+} // namespace
+
+namespace o2::mch::raw
+{
 
 template <>
 std::function<std::optional<DsDetId>(DsElecId)>
