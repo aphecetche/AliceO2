@@ -218,9 +218,7 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
 
   std::vector<uint8_t> buffer;
-  std::cout << "creating solar2cru\n";
   auto solar2cru = createSolar2CruMapper<ELECMAP>();
-  std::cout << "creating cru2solar\n";
   auto cru2solar = createCru2SolarMapper<ELECMAP>();
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction,
                                  solar2cru,
