@@ -45,7 +45,7 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   constexpr size_t pageSize = 8192;
 
   std::array<uint8_t, pageSize> buffer;
-  char* ptr = reinterpret_cast<char*>(&buffer[0]);
+  gsl::span<uint8_t> sbuffer(buffer);
 
   size_t ndigits{0};
 
@@ -70,27 +70,14 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
 
   std::vector<std::chrono::microseconds> timers;
 
-  while (nrdhs < maxNofRDHs && in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(RDH))) {
-    auto rdh = createRDH<RDH>(gsl::span<uint8_t>(buffer));
-    //FIXME : should check here we got a valid RDH...
-    auto payloadSize = rdhPayloadSize(rdh);
-    in.read(ptr + sizeof(RDH), payloadSize);
-    // o2::mch::raw::impl::dumpBuffer(std::vector<uint8_t>(buffer.begin(), buffer.end()), std::cout, payloadSize + sizeof(RDH));
-    auto start = std::chrono::high_resolution_clock::now();
-    decode(gsl::span<uint8_t>(&buffer[0], sizeof(RDH) + payloadSize));
-    auto duration = (std::chrono::high_resolution_clock::now() - start);
-    timers.push_back(std::chrono::duration_cast<std::chrono::microseconds>(duration));
+  size_t npages{0};
+
+  while (in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
+    npages++;
+    decode(sbuffer);
   }
 
-  std::ofstream out("rawdump.timing.txt");
-  int p{0};
-  for (auto d : timers) {
-    p++;
-    out << p << " " << d.count() << "\n";
-  }
-  out.close();
-
-  std::cout << ndigits << " digits seen\n";
+  std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
   return 0;
 }
 
