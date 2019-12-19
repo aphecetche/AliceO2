@@ -77,9 +77,10 @@ int DecoderImpl<CHARGESUM, RDH, CRUDECODER>::operator()(gsl::span<uint8_t> buffe
     bool shouldDecode = mRdhHandler(rdh);
     if (shouldDecode) {
       size_t n = static_cast<size_t>(payloadSize);
-      size_t pos = static_cast<size_t>(index + nofRDHWords);
       if (n) {
-        mCruDecoders[rdh.cruID].decode(rdh.linkID, buffer.subspan(pos, n));
+        size_t pos = static_cast<size_t>(index + nofRDHWords);
+        std::cout << fmt::format("CRU ID {} linkId {}\n", rdh.cruID, rdhLinkId(rdh));
+        mCruDecoders[rdh.cruID].decode(rdhLinkId(rdh), buffer.subspan(pos, n));
       }
     }
     index += rdh.offsetToNext;
