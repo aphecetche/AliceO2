@@ -207,6 +207,12 @@ size_t rdhPayloadSize(const RAWDataHeaderV4& rdh)
   return rdh.memorySize - sizeof(rdh);
 }
 
+template <>
+uint8_t rdhLinkId(const RAWDataHeaderV4& rdh)
+{
+  return rdh.linkID + 12 * rdh.endPointID;
+}
+
 void dumpRDHBuffer(gsl::span<uint32_t> buffer, std::string_view indent)
 {
   auto rdh = createRDH<o2::header::RAWDataHeaderV4>(buffer);

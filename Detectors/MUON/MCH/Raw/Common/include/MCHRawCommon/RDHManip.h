@@ -40,6 +40,9 @@ template <typename RDH>
 size_t rdhPayloadSize(const RDH& rdh);
 
 template <typename RDH>
+uint8_t rdhLinkId(const RDH& rdh);
+
+template <typename RDH>
 uint32_t rdhOrbit(const RDH& rdh);
 
 template <typename RDH>
