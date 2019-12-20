@@ -49,35 +49,52 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
 
   size_t ndigits{0};
 
+  std::map<std::string, int> uniqueDS;
+  std::map<std::string, int> uniqueChannel;
+
   memset(&buffer[0], 0, buffer.size());
-  auto hp = [&ndigits](uint8_t cruId, uint8_t linkId, uint8_t chip,
-                       uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    std::cout << fmt::format("CRU {:2d} LINK {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
+  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel](uint8_t cruId, uint8_t linkId, uint8_t chip,
+                                                              uint8_t channel, o2::mch::raw::SampaCluster sc) {
+    std::cout << fmt::format("CRU {:2d} ELINK {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
     std::cout << sc << "\n";
+    auto group = linkId / 5;
+    auto index = linkId % 5;
+    auto s = fmt::format("CRU-{}-ELINK-{}-CHIP-{}-GROUP-{}-INDEX-{}", cruId, linkId, chip, group, index);
+    uniqueDS[s]++;
+    uniqueChannel[fmt::format("{}-CH-{}", s, channel)]++;
     ++ndigits;
   };
 
   size_t nrdhs{0};
-  auto rh = [&](const RDH& rdh) {
+  auto rdhHandler = [&](const RDH& rdh) {
     nrdhs++;
     if (showRDHs) {
       std::cout << nrdhs << "--" << rdh << "\n";
     }
-    return true;
+    return rdh;
   };
 
-  o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rh, hp);
+  o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
 
   std::vector<std::chrono::microseconds> timers;
 
   size_t npages{0};
 
-  while (in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
+  while (npages < maxNofRDHs && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
-    decode(sbuffer);
+    int n = decode(sbuffer);
+    std::cout << fmt::format("PAGE {:6d} buffer size {:d} n {:d}\n", npages, sbuffer.size(), n);
   }
 
   std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
+  std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
+  for (auto s : uniqueDS) {
+    std::cout << s.first << " " << s.second << "\n";
+  }
+  std::cout << "--------\n";
+  for (auto s : uniqueChannel) {
+    std::cout << s.first << " " << s.second << "\n";
+  }
   return 0;
 }
 

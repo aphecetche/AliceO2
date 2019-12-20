@@ -8,11 +8,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_DECODER_IMPL_H
-#define O2_MCH_RAW_DECODER_IMPL_H
+#ifndef O2_MCH_RAW_PAYLOAD_DECODER_H
+#define O2_MCH_RAW_PAYLOAD_DECODER_H
 
+#include "BareGBTDecoder.h"
+#include "CRUDecoder.h"
+#include "DumpBuffer.h"
+#include "Headers/RAWDataHeader.h"
 #include "MCHRawDecoder/Decoder.h"
 #include "MakeArray.h"
+#include "PayloadDecoder.h"
+#include "UserLogicGBTDecoder.h"
 #include <cstdlib>
 #include <fmt/format.h>
 #include <gsl/span>
@@ -26,8 +32,10 @@ namespace raw
 {
 /// @brief Decoder for MCH  Raw Data Format.
 
-template <typename CHARGESUM, typename RDH, typename CRUDECODER>
-class DecoderImpl
+constexpr int MAX_NOF_CRUS{33};
+
+template <typename RDH, typename CRUDECODER>
+class PayloadDecoder
 {
  public:
   /// Constructs a decoder
@@ -35,26 +43,37 @@ class DecoderImpl
   /// (Raw Data Header) that is found in the data stream
   /// \param channelHandler the handler that will be called for each
   /// piece of sampa data (a SampaCluster, i.e. a part of a time window)
-  DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler);
-
-  ~DecoderImpl();
+  PayloadDecoder(SampaChannelHandler channelHandler);
 
   /// decode the buffer
   /// \return the number of RDH encountered
-  int operator()(gsl::span<uint8_t> buffer);
+  size_t process(const RDH& rdh, gsl::span<uint8_t> buffer);
 
- private:
   void reset();
 
  private:
-  // FIXME: how many CRUs really ? 18 gives already 17280 elinks,
-  // which is more than the number of dual sampas ?
-  std::array<CRUDECODER, 18> mCruDecoders; //< helper decoders
-  RawDataHeaderHandler<RDH> mRdhHandler;   //< RDH handler that is called at each RDH
-  uint32_t mOrbit;                         //< the current orbit the decoder is currently at
-  size_t mNofOrbitSeen;                    //< the total number of orbits the decoder has seen so far
-  size_t mNofOrbitJumps;                   //< the total number of orbit jumps the decoder has seen so far
+  std::array<CRUDECODER, MAX_NOF_CRUS> mCruDecoders; //< helper decoders
 };
+
+template <typename RDH, typename CRUDECODER>
+PayloadDecoder<RDH, CRUDECODER>::PayloadDecoder(
+  SampaChannelHandler channelHandler) : mCruDecoders{impl::makeArray<MAX_NOF_CRUS>([=](size_t i) { return CRUDECODER(i, channelHandler); })}
+{
+}
+
+template <typename RDH, typename CRUDECODER>
+size_t PayloadDecoder<RDH, CRUDECODER>::process(const RDH& rdh, gsl::span<uint8_t> buffer)
+{
+  return mCruDecoders[rdh.cruID].decode(rdhLinkId(rdh), buffer);
+}
+
+template <typename RDH, typename CRUDECODER>
+void PayloadDecoder<RDH, CRUDECODER>::reset()
+{
+  for (auto& c : mCruDecoders) {
+    c.reset();
+  }
+}
 
 } // namespace raw
 } // namespace mch

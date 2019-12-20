@@ -13,6 +13,7 @@
 
 #include <functional>
 #include "MCHRawCommon/RDHManip.h"
+#include <optional>
 
 namespace o2
 {
@@ -21,7 +22,7 @@ namespace mch
 namespace raw
 {
 template <typename RDH>
-using RawDataHeaderHandler = std::function<bool(const RDH& rdh)>;
+using RawDataHeaderHandler = std::function<std::optional<RDH>(const RDH& rdh)>;
 
 } // namespace raw
 } // namespace mch
