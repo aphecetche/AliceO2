@@ -45,8 +45,10 @@ class UserLogicGBTDecoder
 
   /** @brief Append the equivalent n 64-bits words 
     * bytes size (=n) must be a multiple of 8
+    *
+    * @return the number of bytes used in the bytes span
     */
-  void append(gsl::span<uint8_t> bytes);
+  size_t append(gsl::span<uint8_t> bytes);
   ///@}
 
   /** @name Methods for testing
@@ -81,11 +83,13 @@ UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(int cruId,
 }
 
 template <typename CHARGESUM>
-void UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
+size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
 {
   if (buffer.size() % 8) {
     throw std::invalid_argument("buffer size should be a multiple of 8");
   }
+  size_t n{0};
+
   for (size_t i = 0; i < buffer.size(); i += 8) {
 
     uint64_t word = (static_cast<uint64_t>(buffer[i + 0])) |
@@ -115,7 +119,9 @@ void UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
     // the remaining 50 bits are passed to the ElinkDecoder
     uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);
     mElinkDecoders.at(dsid).append(data);
+    n += 8;
   }
+  return n;
 }
 
 } // namespace o2::mch::raw
