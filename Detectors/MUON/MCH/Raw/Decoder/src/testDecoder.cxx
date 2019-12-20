@@ -27,11 +27,11 @@ using o2::header::RAWDataHeaderV4;
 
 std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
 
-bool handleRDH(const RAWDataHeaderV4& rdh)
+std::optional<RAWDataHeaderV4> handleRDH(const RAWDataHeaderV4& rdh)
 {
   // std::cout << std::string(80, '-') << "\n";
   // std::cout << rdh << "\n";
-  return true;
+  return rdh;
 }
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
@@ -110,6 +110,14 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());
   BOOST_CHECK(std::is_permutation(begin(result), end(result), begin(expected)));
+  std::cout << "Got:\n";
+  for (auto s : result) {
+    std::cout << s << "\n";
+  }
+  std::cout << "Expected:\n";
+  for (auto s : expected) {
+    std::cout << s << "\n";
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

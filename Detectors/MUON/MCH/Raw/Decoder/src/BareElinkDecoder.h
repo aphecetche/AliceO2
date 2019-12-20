@@ -45,7 +45,7 @@ class BareElinkDecoder
   /// \param linkId the identifier of this Elink 0..39. If not within range, ctor will throw.
   /// \param sampaChannelHandler a callable that is passed each SampaCluster that will be decoded
   /// \param chargeSumMode whether or not the Sampa is in clusterSum mode
-  BareElinkDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler);
+  BareElinkDecoder(uint8_t cruId, uint16_t solarId, uint8_t linkId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
   */
@@ -101,7 +101,8 @@ class BareElinkDecoder
   friend std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<T>& e);
 
  private:
-  uint8_t mCruId;                           //< Identifier of the CRU this Elink is part of
+  uint8_t mCruId; //< Identifier of the CRU this Elink is part of
+  uint16_t mSolarId;
   uint8_t mLinkId;                          //< Identifier of this Elink (0..39)
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
   SampaHeader mSampaHeader;                 //< Current SampaHeader
@@ -153,9 +154,11 @@ std::string bitBufferString(const std::bitset<50>& bs, int imax)
 //FIXME: probably needs the GBT id as well here ?
 template <typename CHARGESUM>
 BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
+                                              uint16_t solarId,
                                               uint8_t linkId,
                                               SampaChannelHandler sampaChannelHandler)
   : mCruId{cruId},
+    mSolarId{solarId},
     mLinkId{linkId},
     mSampaChannelHandler{sampaChannelHandler},
     mSampaHeader{},
@@ -174,6 +177,8 @@ BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
     mState{State::LookingForSync},
     mMask{1}
 {
+  //   std::cout << fmt::format("BareElinkDecoder::BareElinkDecoder cruId {} solarId {} linkId {}\n", mCruId, mSolarId, mLinkId);
+
   impl::assertIsInRange("linkId", linkId, 0, 39);
 }
 
@@ -230,6 +235,14 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
   assert(mState == State::LookingForHeader);
 
   mSampaHeader.uint64(mBitBuffer);
+
+  uint8_t mCruId; //< Identifier of the CRU this Elink is part of
+  uint16_t mSolarId;
+  uint8_t mLinkId; //< Identifier of this Elink (0..39)
+  std::cout << fmt::format("CRU {} SOLAR {} LINK {} NofBitsSeen {}\n",
+                           mCruId, mSolarId, mLinkId, mNofBitSeen);
+  std::cout << mSampaHeader << "\n";
+
   ++mNofHeaderSeen;
 
   if (mSampaHeader.hasError()) {

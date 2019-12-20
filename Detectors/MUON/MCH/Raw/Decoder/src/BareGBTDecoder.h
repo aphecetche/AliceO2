@@ -52,8 +52,10 @@ class BareGBTDecoder
     * bytes size (=n) must be a multiple of 16
     * Given that the MCH data only uses 80 out of the 128 bits
     * only the 10 first bytes of each group of 16 are used
+    * 
+    * @return the number of bytes that have been used from bytes span
     */
-  void append(gsl::span<uint8_t> bytes);
+  size_t append(gsl::span<uint8_t> bytes);
   ///@}
 
   /** @name Methods for testing
@@ -83,23 +85,20 @@ BareGBTDecoder<CHARGESUM>::BareGBTDecoder(int cruId,
                                           SampaChannelHandler sampaChannelHandler)
   : mCruId(cruId),
     mGbtId(gbtId),
-    mElinks{impl::makeArray<40>([=](size_t i) { return BareElinkDecoder<CHARGESUM>(cruId, i, sampaChannelHandler); })},
+    mElinks{impl::makeArray<40>([=](size_t i) { return BareElinkDecoder<CHARGESUM>(cruId, gbtId, i, sampaChannelHandler); })},
     mNofGbtWordsSeens{0}
 {
   impl::assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
 template <typename CHARGESUM>
-void BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
+size_t BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
 {
   if (bytes.size() % 16 != 0) {
     throw std::invalid_argument("can only bytes by group of 16 (i.e. 128 bits)");
   }
+  size_t n{0};
   for (int j = 0; j < bytes.size(); j += 16) {
-    if (j % 16 > 10) {
-      // only consider 80 bits of each 128 bits group
-      continue;
-    }
     ++mNofGbtWordsSeens;
     int elinkIndex = 0;
     for (auto b : bytes.subspan(j, 10)) {
@@ -108,7 +107,9 @@ void BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
       mElinks[elinkIndex++].append(b & 32, b & 16);
       mElinks[elinkIndex++].append(b & 128, b & 64);
     }
+    n += 16;
   }
+  return n;
 }
 
 template <typename CHARGESUM>

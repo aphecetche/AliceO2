@@ -8,54 +8,40 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "DecoderImpl.h"
+#include "PageParser.h"
 #include "CRUDecoder.h"
 #include "BareGBTDecoder.h"
 #include "UserLogicGBTDecoder.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawCommon/DataFormats.h"
 
-namespace o2::mch::raw::impl
-{
-
-template <typename FORMAT, typename CHARGESUM, typename RDH>
-Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler,
-                      SampaChannelHandler channelHandler);
-
-// as functions cannot be partially specialized, we create a struct
-// (as struct _can_ be specialized) and use it in our function(s)
-template <typename FORMAT, typename CHARGESUM, typename RDH>
-struct DecoderCreator {
-  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
-                   SampaChannelHandler channelHandler);
-};
-
-template <typename CHARGESUM, typename RDH>
-struct DecoderCreator<BareFormat, CHARGESUM, RDH> {
-  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
-                   SampaChannelHandler channelHandler)
-  {
-    return DecoderImpl<CHARGESUM, RDH, CRUDecoder<BareGBTDecoder<CHARGESUM>, CHARGESUM>>(rdhHandler, channelHandler);
-  }
-};
-
-template <typename CHARGESUM, typename RDH>
-struct DecoderCreator<UserLogicFormat, CHARGESUM, RDH> {
-  static Decoder _(RawDataHeaderHandler<RDH> rdhHandler,
-                   SampaChannelHandler channelHandler)
-  {
-    return DecoderImpl<CHARGESUM, RDH, CRUDecoder<UserLogicGBTDecoder<CHARGESUM>, CHARGESUM>>(rdhHandler, channelHandler);
-  }
-};
-} // namespace o2::mch::raw::impl
-
 namespace o2::mch::raw
 {
+
+template <typename FORMAT, typename CHARGESUM>
+struct GBTDecoderTrait {
+  using type = void;
+};
+
+template <typename CHARGESUM>
+struct GBTDecoderTrait<BareFormat, CHARGESUM> {
+  using type = BareGBTDecoder<CHARGESUM>;
+};
+
+template <typename CHARGESUM>
+struct GBTDecoderTrait<UserLogicFormat, CHARGESUM> {
+  using type = UserLogicGBTDecoder<CHARGESUM>;
+};
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
 {
-  return impl::DecoderCreator<FORMAT, CHARGESUM, RDH>::_(rdhHandler, channelHandler);
+  using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
+  using PAYLOADDECODER = PayloadDecoder<RDH, CRUDecoder<GBTDecoder>>;
+  return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> int {
+    static PageParser<RDH, PAYLOADDECODER> mPageParser(rdhHandler, PAYLOADDECODER(channelHandler));
+    return mPageParser.parse(buffer);
+  };
 }
 
 // define only the specialization we use

@@ -23,8 +23,7 @@ namespace mch
 /// Classes and functions to deal with MCH Raw Data Formats.
 namespace raw
 {
-
-using Decoder = std::function<void(gsl::span<uint8_t> buffer)>;
+using Decoder = std::function<int(gsl::span<uint8_t> buffer)>;
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler,
