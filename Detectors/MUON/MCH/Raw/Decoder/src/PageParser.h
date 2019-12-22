@@ -86,7 +86,6 @@ size_t PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
     size_t n = static_cast<size_t>(payloadSize);
     if (n) {
       size_t pos = static_cast<size_t>(index + nofRDHWords);
-      std::cout << fmt::format("CRU ID {} linkId {} pos {} n {}\n", rdh.cruID, rdhLinkId(rdh), pos, n);
       mDecoder.process(rdh, buffer.subspan(pos, n));
     }
     index += rdh.offsetToNext;

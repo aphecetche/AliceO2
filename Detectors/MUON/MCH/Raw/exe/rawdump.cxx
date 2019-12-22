@@ -55,8 +55,6 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   memset(&buffer[0], 0, buffer.size());
   auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel](uint8_t cruId, uint8_t linkId, uint8_t chip,
                                                               uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    std::cout << fmt::format("CRU {:2d} ELINK {:4d} CHIP {:2d} CH {:2d} ", cruId, linkId, chip, channel);
-    std::cout << sc << "\n";
     auto group = linkId / 5;
     auto index = linkId % 5;
     auto s = fmt::format("CRU-{}-ELINK-{}-CHIP-{}-GROUP-{}-INDEX-{}", cruId, linkId, chip, group, index);
@@ -83,7 +81,6 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   while (npages < maxNofRDHs && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
     int n = decode(sbuffer);
-    std::cout << fmt::format("PAGE {:6d} buffer size {:d} n {:d}\n", npages, sbuffer.size(), n);
   }
 
   std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";

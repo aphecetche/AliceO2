@@ -110,7 +110,7 @@ std::vector<uint8_t> createCRUBuffer(int cruId)
   cru->addChannelData(solarId, elinkId, 2, {SampaCluster(ts, 30)});
   cru->addChannelData(solarId, elinkId, 3, {SampaCluster(ts, 40)});
 
-  elinkId = 20;
+  elinkId = 10;
 
   cru->addChannelData(solarId, elinkId, 22, {SampaCluster(ts, 420)});
   cru->addChannelData(solarId, elinkId, 23, {SampaCluster(ts, 430)});
