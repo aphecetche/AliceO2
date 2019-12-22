@@ -82,6 +82,7 @@ class BareElinkDecoder
   };
 
   std::string name(State state) const;
+  void appendOneBit(bool bit);
   void changeState(State newState, int newCheckpoint);
   void changeToReadingData();
   void clear(int checkpoint);
@@ -177,22 +178,27 @@ BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
     mState{State::LookingForSync},
     mMask{1}
 {
-  //   std::cout << fmt::format("BareElinkDecoder::BareElinkDecoder cruId {} solarId {} linkId {}\n", mCruId, mSolarId, mLinkId);
-
   impl::assertIsInRange("linkId", linkId, 0, 39);
+}
+
+template <typename CHARGESUM>
+void BareElinkDecoder<CHARGESUM>::appendOneBit(bool bit)
+{
+  mNofBitSeen++;
+
+  mBitBuffer += bit * mMask;
+  mMask *= 2;
+
+  if (mMask == mCheckpoint) {
+    process();
+  }
 }
 
 template <typename CHARGESUM>
 void BareElinkDecoder<CHARGESUM>::append(bool bit0, bool bit1)
 {
-  mNofBitSeen += 2;
-
-  mBitBuffer += bit0 * mMask + bit1 * mMask * 2;
-  mMask *= 4;
-
-  if (mMask == mCheckpoint) {
-    process();
-  }
+  appendOneBit(bit0);
+  appendOneBit(bit1);
 }
 
 template <typename CHARGESUM>
@@ -218,8 +224,8 @@ void BareElinkDecoder<CHARGESUM>::clear(int checkpoint)
 template <typename CHARGESUM>
 void BareElinkDecoder<CHARGESUM>::findSync()
 {
-  assert(mState == State::LookingForSync);
   const uint64_t sync = sampaSync().uint64();
+  assert(mState == State::LookingForSync);
   if (mBitBuffer != sync) {
     mBitBuffer >>= 1;
     mMask /= 2;
@@ -239,9 +245,6 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
   uint8_t mCruId; //< Identifier of the CRU this Elink is part of
   uint16_t mSolarId;
   uint8_t mLinkId; //< Identifier of this Elink (0..39)
-  std::cout << fmt::format("CRU {} SOLAR {} LINK {} NofBitsSeen {}\n",
-                           mCruId, mSolarId, mLinkId, mNofBitSeen);
-  std::cout << mSampaHeader << "\n";
 
   ++mNofHeaderSeen;
 
@@ -429,6 +432,43 @@ std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<
                     (e.mClusterSumMode ? "CLUSUM" : "SAMPLE"),
                     bitBufferString(e.mBitBuffer, e.mMask));
   return os;
+}
+
+template <>
+void BareElinkDecoder<ChargeSumMode>::sendCluster()
+{
+  if (mSampaChannelHandler) {
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(mTimestamp, mClusterSum));
+  }
+}
+
+template <>
+void BareElinkDecoder<SampleMode>::sendCluster()
+{
+  if (mSampaChannelHandler) {
+    mSampaChannelHandler(mCruId,
+                         mLinkId,
+                         mSampaHeader.chipAddress(),
+                         mSampaHeader.channelAddress(),
+                         SampaCluster(mTimestamp, mSamples));
+  }
+  mSamples.clear();
+}
+
+template <>
+void BareElinkDecoder<ChargeSumMode>::changeToReadingData()
+{
+  changeState(State::ReadingClusterSum, 20);
+}
+
+template <>
+void BareElinkDecoder<SampleMode>::changeToReadingData()
+{
+  changeState(State::ReadingSample, 10);
 }
 
 } // namespace o2::mch::raw

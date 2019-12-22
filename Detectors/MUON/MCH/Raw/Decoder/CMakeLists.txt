@@ -10,7 +10,6 @@
 
 o2_add_library(MCHRawDecoder
                SOURCES src/Decoder.cxx
-                       src/BareElinkDecoder.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 

@@ -37,7 +37,8 @@ class CRUDecoder
   /// that gets decoded.
   explicit CRUDecoder(int cruId, SampaChannelHandler channelHandler);
 
-  /// decode the data in buffer, assuming it's coming from the given GBT.
+  /// decode the payload data (i.e. without any RDH) in buffer,
+  /// assuming it's coming from the given GBT.
   size_t decode(int gbtid, gsl::span<uint8_t> buffer);
 
   /// reset our internal GBTDecoders
@@ -59,7 +60,6 @@ CRUDecoder<GBTDECODER>::CRUDecoder(int cruId,
 template <typename GBTDECODER>
 size_t CRUDecoder<GBTDECODER>::decode(int gbtId, gsl::span<uint8_t> buffer)
 {
-  std::cout << __PRETTY_FUNCTION__ << "\ncruId=" << mCruId << " gbtId=" << gbtId << "\n";
   constexpr auto bs = GBTDECODER::baseSize / 8;
   if (buffer.size() % bs) {
     throw std::invalid_argument(fmt::format("buffer size {} should be a multiple of {} and is not", bs, buffer.size()));
