@@ -107,7 +107,7 @@ size_t BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
       mElinks[elinkIndex++].append(b & 32, b & 16);
       mElinks[elinkIndex++].append(b & 128, b & 64);
     }
-    n += 16;
+    n += 10;
   }
   return n;
 }
