@@ -14,6 +14,7 @@
 #include <functional>
 
 #include "MCHRawCommon/SampaCluster.h"
+#include "MCHRawElecMap/DsElecId.h"
 
 namespace o2
 {
@@ -21,12 +22,9 @@ namespace mch
 {
 namespace raw
 {
-/// A SampaChannelHandler is a function that take a few integers
-/// which identify a sampa channel and
-/// a SampaCluster containing the channel data.
-using SampaChannelHandler = std::function<void(uint8_t cruId,
-                                               uint8_t linkId,
-                                               uint8_t chip,
+/// A SampaChannelHandler is a function that takes a pair to identify
+/// a readout sampa channel and a SampaCluster containing the channel data.
+using SampaChannelHandler = std::function<void(DsElecId dsId,
                                                uint8_t channel,
                                                SampaCluster)>;
 } // namespace raw

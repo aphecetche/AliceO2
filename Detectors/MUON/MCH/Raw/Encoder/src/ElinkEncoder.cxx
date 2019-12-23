@@ -32,7 +32,7 @@ namespace o2::mch::raw
 
 SampaHeader buildHeader(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data)
 {
-  impl::assertNofBits("chId", chId, 5);
+  impl::assertIsInRange("chId", chId, 0, 63);
 
   SampaHeader header;
   header.packetType(SampaPacketType::Data);

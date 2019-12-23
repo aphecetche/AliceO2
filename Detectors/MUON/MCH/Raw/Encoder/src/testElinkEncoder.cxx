@@ -53,14 +53,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AddMixedDataShouldThrow, T, testTypes)
   BOOST_CHECK_THROW(enc.addChannelData(31, data), std::invalid_argument);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(ChannelIdIs5Bits, T, testTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(ChannelIdIsBetween0And63, T, testTypes)
 {
   ElinkEncoder<T, ChargeSumMode> enc(0);
   std::vector<SampaCluster> data = {SampaCluster(20, 10)};
 
-  BOOST_CHECK_THROW(enc.addChannelData(32, data),
+  BOOST_CHECK_THROW(enc.addChannelData(64, data),
                     std::invalid_argument);
-  BOOST_CHECK_NO_THROW(enc.addChannelData(31, data));
+  BOOST_CHECK_NO_THROW(enc.addChannelData(63, data));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

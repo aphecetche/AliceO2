@@ -10,7 +10,7 @@
 
 o2_add_library(MCHRawDecoder
                SOURCES src/Decoder.cxx
-               PUBLIC_LINK_LIBRARIES O2::MCHRawCommon
+               PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHRawElecMap
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
 if(BUILD_TESTING)

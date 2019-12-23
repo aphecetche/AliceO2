@@ -41,11 +41,11 @@ class BareElinkDecoder
 {
  public:
   /// Constructor.
-  /// \param cruId cru this Elink is part of
-  /// \param linkId the identifier of this Elink 0..39. If not within range, ctor will throw.
-  /// \param sampaChannelHandler a callable that is passed each SampaCluster that will be decoded
-  /// \param chargeSumMode whether or not the Sampa is in clusterSum mode
-  BareElinkDecoder(uint8_t cruId, uint16_t solarId, uint8_t linkId, SampaChannelHandler sampaChannelHandler);
+  /// \param dsId the (electronic) id of the dual sampa this elink
+  /// is connected  to
+  /// \param sampaChannelHandler a callable that is passed
+  /// each SampaCluster that will be decoded
+  BareElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
   */
@@ -55,8 +55,8 @@ class BareElinkDecoder
   void append(bool bit0, bool bit1);
   ///@}
 
-  /// linkId is the GBT id this Elink is part of
-  uint8_t linkId() const;
+  // /// linkId is the GBT id this Elink is part of
+  // uint8_t linkId() const;
 
   /** @name Methods for testing
     */
@@ -102,9 +102,7 @@ class BareElinkDecoder
   friend std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<T>& e);
 
  private:
-  uint8_t mCruId; //< Identifier of the CRU this Elink is part of
-  uint16_t mSolarId;
-  uint8_t mLinkId;                          //< Identifier of this Elink (0..39)
+  DsElecId mDsId;
   SampaChannelHandler mSampaChannelHandler; //< The callable that will deal with the SampaCluster objects we decode
   SampaHeader mSampaHeader;                 //< Current SampaHeader
   uint64_t mBitBuffer;                      //< Our internal bit stream buffer
@@ -154,13 +152,9 @@ std::string bitBufferString(const std::bitset<50>& bs, int imax)
 
 //FIXME: probably needs the GBT id as well here ?
 template <typename CHARGESUM>
-BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
-                                              uint16_t solarId,
-                                              uint8_t linkId,
+BareElinkDecoder<CHARGESUM>::BareElinkDecoder(DsElecId dsId,
                                               SampaChannelHandler sampaChannelHandler)
-  : mCruId{cruId},
-    mSolarId{solarId},
-    mLinkId{linkId},
+  : mDsId{dsId},
     mSampaChannelHandler{sampaChannelHandler},
     mSampaHeader{},
     mBitBuffer{},
@@ -178,7 +172,6 @@ BareElinkDecoder<CHARGESUM>::BareElinkDecoder(uint8_t cruId,
     mState{State::LookingForSync},
     mMask{1}
 {
-  impl::assertIsInRange("linkId", linkId, 0, 39);
 }
 
 template <typename CHARGESUM>
@@ -242,10 +235,6 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
 
   mSampaHeader.uint64(mBitBuffer);
 
-  uint8_t mCruId; //< Identifier of the CRU this Elink is part of
-  uint16_t mSolarId;
-  uint8_t mLinkId; //< Identifier of this Elink (0..39)
-
   ++mNofHeaderSeen;
 
   if (mSampaHeader.hasError()) {
@@ -270,7 +259,7 @@ void BareElinkDecoder<CHARGESUM>::handleHeader()
       softReset();
       break;
     case SampaPacketType::HeartBeat:
-      fmt::printf("BareElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mLinkId);
+      fmt::printf("BareElinkDecoder %d: HEARTBEAT found. Should be doing sth about it ?\n", mDsId);
       softReset();
       break;
     default:
@@ -339,11 +328,11 @@ int BareElinkDecoder<CHARGESUM>::len() const
   return static_cast<int>(std::floor(log2(1.0 * mMask)) + 1);
 }
 
-template <typename CHARGESUM>
-uint8_t BareElinkDecoder<CHARGESUM>::linkId() const
-{
-  return mLinkId;
-}
+// template <typename CHARGESUM>
+// uint8_t BareElinkDecoder<CHARGESUM>::linkId() const
+// {
+//   return mLinkId;
+// }
 
 template <typename CHARGESUM>
 std::string BareElinkDecoder<CHARGESUM>::name(State s) const
@@ -434,14 +423,17 @@ std::ostream& operator<<(std::ostream& os, const o2::mch::raw::BareElinkDecoder<
   return os;
 }
 
+uint8_t channelNumber(const SampaHeader& sh)
+{
+  return sh.channelAddress() + (sh.chipAddress() % 2) * 32;
+}
+
 template <>
 void BareElinkDecoder<ChargeSumMode>::sendCluster()
 {
   if (mSampaChannelHandler) {
-    mSampaChannelHandler(mCruId,
-                         mLinkId,
-                         mSampaHeader.chipAddress(),
-                         mSampaHeader.channelAddress(),
+    mSampaChannelHandler(mDsId,
+                         channelNumber(mSampaHeader),
                          SampaCluster(mTimestamp, mClusterSum));
   }
 }
@@ -450,10 +442,8 @@ template <>
 void BareElinkDecoder<SampleMode>::sendCluster()
 {
   if (mSampaChannelHandler) {
-    mSampaChannelHandler(mCruId,
-                         mLinkId,
-                         mSampaHeader.chipAddress(),
-                         mSampaHeader.channelAddress(),
+    mSampaChannelHandler(mDsId,
+                         channelNumber(mSampaHeader),
                          SampaCluster(mTimestamp, mSamples));
   }
   mSamples.clear();

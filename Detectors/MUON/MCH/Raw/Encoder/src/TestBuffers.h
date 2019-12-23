@@ -16,19 +16,18 @@
 #include <gsl/span>
 #include "MCHRawCommon/RDHManip.h"
 #include <fmt/format.h>
-#include "MCHRawEncoder/CRUEncoder.h"
 #include "MCHRawEncoder/Encoder.h"
 
 namespace o2::mch::raw::impl
 {
 
-std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId);
+std::vector<uint8_t> encodePedestalBuffer(Encoder& cru, uint8_t elinkId);
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-std::vector<uint8_t> createPedestalBuffer(int elinkId)
+std::vector<uint8_t> createPedestalBuffer(uint8_t elinkId)
 {
-  auto cru = createCRUEncoder<FORMAT, CHARGESUM, RDH, true>(0, {0, 1, 2, 12});
-  return encodePedestalBuffer(*cru, elinkId);
+  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH, true>([](uint16_t) -> std::optional<uint16_t> { return 0; });
+  return encodePedestalBuffer(*encoder, elinkId);
 }
 
 template <typename RDH>

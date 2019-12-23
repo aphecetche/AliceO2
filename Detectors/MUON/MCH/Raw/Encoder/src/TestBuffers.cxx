@@ -10,12 +10,12 @@
 
 #include "TestBuffers.h"
 #include "MCHRawCommon/SampaCluster.h"
-#include "MCHRawEncoder/CRUEncoder.h"
+#include "MCHRawEncoder/Encoder.h"
 
 namespace o2::mch::raw::impl
 {
 
-std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
+std::vector<uint8_t> encodePedestalBuffer(Encoder& encoder, uint8_t elinkGroupId)
 {
   uint32_t bx(0);
   uint8_t solarId(0);
@@ -23,18 +23,20 @@ std::vector<uint8_t> encodePedestalBuffer(CRUEncoder& cru, int elinkId)
   uint32_t orbit{42};
   const int N{1};
 
+  uint8_t index{0};
+
   for (int i = 0; i < N; i++) {
-    cru.startHeartbeatFrame(orbit, bx + i);
-    for (uint16_t j = 0; j < 31; j++) {
+    encoder.startHeartbeatFrame(orbit, bx + i);
+    for (uint8_t j = 0; j < 31; j++) {
       std::vector<uint16_t> samples;
       for (auto k = 0; k < j + 1; k++) {
         samples.push_back(10 + j);
       }
-      cru.addChannelData(solarId, elinkId, j, {SampaCluster(ts, samples)});
+      encoder.addChannelData(DsElecId{solarId, elinkGroupId, index}, j, {SampaCluster(ts, samples)});
     }
   }
   std::vector<uint8_t> buffer;
-  cru.moveToBuffer(buffer);
+  encoder.moveToBuffer(buffer);
   return buffer;
 }
 } // namespace o2::mch::raw::impl

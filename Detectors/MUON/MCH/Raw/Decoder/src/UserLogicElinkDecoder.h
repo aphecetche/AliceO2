@@ -21,6 +21,7 @@
 #include <boost/msm/front/state_machine_def.hpp>
 #include <fmt/format.h>
 #include <memory>
+#include "MCHRawElecMap/DsElecId.h"
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
@@ -270,6 +271,10 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
     uint64_t m = masks[index];
     return static_cast<uint16_t>(((value & m) >> (masks.size() - 1 - index) * 10) & 0x3FF);
   }
+  uint8_t channelNumber(const SampaHeader& sh)
+  {
+    return sh.channelAddress() + (sh.chipAddress() % 2) * 32;
+  }
   uint16_t pop10()
   {
     auto rv = data10(data, maskIndex);
@@ -285,10 +290,8 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
     samples.emplace_back(sample);
     if (clusterSize == 0) {
       // a cluster is ready, send it
-      channelHandler(cruId,
-                     linkId,
-                     sampaHeader.chipAddress(),
-                     sampaHeader.channelAddress(),
+      channelHandler(dsId,
+                     channelNumber(sampaHeader),
                      SampaCluster(clusterTime, samples));
       samples.clear();
     }
@@ -300,10 +303,8 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
 #ifdef ULDEBUG
     std::cout << "chargeSum = " << q << "\n";
 #endif
-    channelHandler(cruId,
-                   linkId,
-                   sampaHeader.chipAddress(),
-                   sampaHeader.channelAddress(),
+    channelHandler(dsId,
+                   channelNumber(sampaHeader),
                    SampaCluster(clusterTime, q));
   }
 
@@ -318,8 +319,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   // masks used to access groups of 10 bits in a 50 bits range
   std::array<uint64_t, 5>
     masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
-  uint8_t cruId;
-  uint8_t linkId;
+  DsElecId dsId{0, 0, 0};
   uint16_t nof10BitWords{0};
   uint16_t clusterSize{0};
   uint16_t clusterTime{0};
@@ -335,11 +335,10 @@ template <typename CHARGESUM>
 class UserLogicElinkDecoder
 {
  public:
-  UserLogicElinkDecoder(uint8_t cruId, uint8_t linkId, SampaChannelHandler sampaChannelHandler)
+  UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
     : mFSM{}
   {
-    mFSM.cruId = cruId;
-    mFSM.linkId = linkId;
+    mFSM.dsId = dsId;
     mFSM.channelHandler = sampaChannelHandler;
   }
 

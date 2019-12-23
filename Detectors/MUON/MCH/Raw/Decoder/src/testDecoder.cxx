@@ -36,8 +36,8 @@ std::optional<RAWDataHeaderV4> handleRDH(const RAWDataHeaderV4& rdh)
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
-  return [&result](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, sc.timestamp, sc.chargeSum));
+  return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+    result.emplace_back(fmt::format("s{}-j{}-ds{}--ch-{}-ts-{}-q-{}", dsId.solarId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup(), channel, sc.timestamp, sc.chargeSum));
   };
 }
 
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(Test0)
 
   createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, ch);
   createDecoder<BareFormat, SampleMode, RAWDataHeaderV4>(
-    handleRDH, [](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
+    handleRDH, [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
     });
 }
 

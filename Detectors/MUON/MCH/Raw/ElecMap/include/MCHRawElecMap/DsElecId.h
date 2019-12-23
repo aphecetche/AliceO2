@@ -64,6 +64,8 @@ DsElecId decodeDsElecId(uint16_t code);
 
 std::ostream& operator<<(std::ostream& os, const DsElecId& id);
 
+std::string asString(DsElecId dsId);
+
 } // namespace o2::mch::raw
 
 #endif

@@ -40,8 +40,13 @@ DsElecId decodeDsElecId(uint16_t code)
 }
 std::ostream& operator<<(std::ostream& os, const DsElecId& id)
 {
-  std::cout << fmt::format("DsElecId(SOLAR={:4d} GROUP={:2d} INDEX={:2d}) CODE={:8d}",
+  std::cout << fmt::format("DsElecId(SOLAR=S{:4d} GROUP=J{:2d} INDEX=DS{:2d}) CODE={:8d}",
                            id.solarId(), id.elinkGroupId(), id.elinkIndexInGroup(), encode(id));
   return os;
+}
+
+std::string asString(DsElecId dsId)
+{
+  return fmt::format("S{}-J{}-DS{}", dsId.solarId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup());
 }
 } // namespace o2::mch::raw

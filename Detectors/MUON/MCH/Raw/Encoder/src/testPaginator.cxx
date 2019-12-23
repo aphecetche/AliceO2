@@ -20,7 +20,6 @@
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
-#include "MCHRawEncoder/CRUEncoder.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawEncoder/Paginator.h"
 #include "TestBuffers.h"
