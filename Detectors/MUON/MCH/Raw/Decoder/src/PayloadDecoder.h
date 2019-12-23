@@ -12,7 +12,6 @@
 #define O2_MCH_RAW_PAYLOAD_DECODER_H
 
 #include "BareGBTDecoder.h"
-#include "CRUDecoder.h"
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawDecoder/Decoder.h"
@@ -23,6 +22,7 @@
 #include <fmt/format.h>
 #include <gsl/span>
 #include <iostream>
+#include "MCHRawElecMap/Cru2SolarMapper.h"
 
 namespace o2
 {
@@ -32,9 +32,7 @@ namespace raw
 {
 /// @brief Decoder for MCH  Raw Data Format.
 
-constexpr int MAX_NOF_CRUS{33};
-
-template <typename RDH, typename CRUDECODER>
+template <typename RDH, typename GBTDECODER>
 class PayloadDecoder
 {
  public:
@@ -52,26 +50,33 @@ class PayloadDecoder
   void reset();
 
  private:
-  std::array<CRUDECODER, MAX_NOF_CRUS> mCruDecoders; //< helper decoders
+  std::map<uint16_t, GBTDECODER> mDecoders; //< helper decoders
+  SampaChannelHandler mChannelHandler;
 };
 
-template <typename RDH, typename CRUDECODER>
-PayloadDecoder<RDH, CRUDECODER>::PayloadDecoder(
-  SampaChannelHandler channelHandler) : mCruDecoders{impl::makeArray<MAX_NOF_CRUS>([=](size_t i) { return CRUDECODER(i, channelHandler); })}
+template <typename RDH, typename GBTDECODER>
+PayloadDecoder<RDH, GBTDECODER>::PayloadDecoder(SampaChannelHandler channelHandler)
+  : mChannelHandler(channelHandler)
 {
 }
 
-template <typename RDH, typename CRUDECODER>
-size_t PayloadDecoder<RDH, CRUDECODER>::process(const RDH& rdh, gsl::span<uint8_t> buffer)
+template <typename RDH, typename GBTDECODER>
+size_t PayloadDecoder<RDH, GBTDECODER>::process(const RDH& rdh, gsl::span<uint8_t> buffer)
 {
-  return mCruDecoders[rdh.cruID].decode(rdhLinkId(rdh), buffer);
+  auto solarId = rdh.feeId;
+  auto c = mDecoders.find(solarId);
+  if (c == mDecoders.end()) {
+    mDecoders.emplace(solarId, GBTDECODER(solarId, mChannelHandler));
+    c = mDecoders.find(solarId);
+  }
+  return c->second.append(buffer);
 }
 
-template <typename RDH, typename CRUDECODER>
-void PayloadDecoder<RDH, CRUDECODER>::reset()
+template <typename RDH, typename GBTDECODER>
+void PayloadDecoder<RDH, GBTDECODER>::reset()
 {
-  for (auto& c : mCruDecoders) {
-    c.reset();
+  for (auto& c : mDecoders) {
+    c.second.reset();
   }
 }
 

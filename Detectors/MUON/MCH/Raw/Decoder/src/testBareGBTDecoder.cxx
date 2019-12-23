@@ -26,28 +26,22 @@ using namespace o2::mch::raw;
 
 SampaChannelHandler handlePacketPrint(std::string_view msg)
 {
-  return [msg](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
-    std::cout << fmt::format("{}chip={:2d} ch={:2d} ", msg, chip, channel);
+  return [msg](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+    std::cout << fmt::format("{}{} ch={:2d} ", msg, asString(dsId), channel);
     std::cout << sc << "\n";
   };
 }
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
-  return [&result](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
-    result.emplace_back(fmt::format("chip-{}-ch-{}-ts-{}-q-{}", chip, channel, sc.timestamp, sc.chargeSum));
+  return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+    result.emplace_back(fmt::format("{}-ch-{}-ts-{}-q-{}", asString(dsId), channel, sc.timestamp, sc.chargeSum));
   };
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(gbtdecoder)
-
-BOOST_AUTO_TEST_CASE(BareGBTDecoderLinkIdMustBeBetween0And23)
-{
-  BOOST_CHECK_THROW(BareGBTDecoder<SampleMode> decoder(0, 24, handlePacketPrint("dummy")), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(BareGBTDecoder<SampleMode> decoder(0, 23, handlePacketPrint("dummy")));
-}
 
 BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 {
@@ -56,7 +50,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 
   std::vector<std::string> result;
 
-  BareGBTDecoder<ChargeSumMode> dec(0, 0, handlePacketStoreAsVec(result));
+  BareGBTDecoder<ChargeSumMode> dec(0, handlePacketStoreAsVec(result));
   auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   gsl::span<uint8_t> buffer(buf);
   dec.append(buffer);
@@ -78,7 +72,7 @@ BOOST_AUTO_TEST_CASE(BareGBTDecoderFromKnownEncoder)
 BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)
 {
   std::vector<std::string> result;
-  BareGBTDecoder<ChargeSumMode> dec(0, 0, handlePacketStoreAsVec(result));
+  BareGBTDecoder<ChargeSumMode> dec(0, handlePacketStoreAsVec(result));
   auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
   dec.append(buf);
   std::vector<std::string> expected{

@@ -30,12 +30,6 @@ if(BUILD_TESTING)
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHTestRawRefBuffers
                 O2::MCHRawImplHelpers)
 
-        o2_add_test(cru-encoder
-                SOURCES src/testCRUEncoder.cxx
-                COMPONENT_NAME mch
-                LABELS "muon;mch;raw"
-                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
-
         o2_add_test(encoder
                 SOURCES src/testEncoder.cxx src/TestBuffers.cxx
                 COMPONENT_NAME mch

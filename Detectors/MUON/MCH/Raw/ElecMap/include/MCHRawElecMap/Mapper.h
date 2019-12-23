@@ -18,6 +18,8 @@
 #include <cstdint>
 #include "MCHRawElecMap/DsDetId.h"
 #include "MCHRawElecMap/DsElecId.h"
+#include "MCHRawElecMap/Solar2CruMapper.h"
+#include "MCHRawElecMap/Cru2SolarMapper.h"
 #include "MCHMappingFactory/CreateSegmentation.h"
 #include <fmt/format.h>
 #include <array>
@@ -49,11 +51,10 @@ std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper(gsl::spa
 
 /// From cruId to { solarId }
 template <typename T>
-std::function<std::set<uint16_t>(uint16_t cruId)> createCru2SolarMapper();
+Cru2SolarMapper createCru2SolarMapper();
 
-/// From solarId to cruId
 template <typename T>
-std::function<std::optional<uint16_t>(uint16_t solarId)> createSolar2CruMapper();
+Solar2CruMapper createSolar2CruMapper();
 ///@}
 
 } // namespace o2::mch::raw

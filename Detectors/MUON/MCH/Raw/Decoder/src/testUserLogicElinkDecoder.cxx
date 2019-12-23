@@ -30,8 +30,8 @@ using namespace o2::mch::raw;
 
 SampaChannelHandler handlePacket(std::string& result)
 {
-  return [&result](uint8_t cruId, uint8_t linkId, uint8_t chip, uint8_t channel, SampaCluster sc) {
-    result += fmt::format("chip-{}-ch-{}-ts-{}-q", chip, channel, sc.timestamp);
+  return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+    result += fmt::format("{}-ch-{}-ts-{}-q", asString(dsId), channel, sc.timestamp);
     if (sc.isClusterSum()) {
       result += fmt::format("-{}", sc.chargeSum);
     } else {
@@ -145,7 +145,7 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
                        const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   std::string results;
-  UserLogicElinkDecoder<CHARGESUM> dec(0, 0, handlePacket(results));
+  UserLogicElinkDecoder<CHARGESUM> dec(DsElecId{0, 0, 0}, handlePacket(results));
   uint64_t prefix{22}; // 14-bits value.
   // exact value not relevant as long as it is non-zero.
   // Idea being to populate bits 50-63 with some data to ensure

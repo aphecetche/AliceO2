@@ -9,7 +9,6 @@
 // or submit itself to any jurisdiction.
 
 #include "PageParser.h"
-#include "CRUDecoder.h"
 #include "BareGBTDecoder.h"
 #include "UserLogicGBTDecoder.h"
 #include "Headers/RAWDataHeader.h"
@@ -37,7 +36,7 @@ template <typename FORMAT, typename CHARGESUM, typename RDH>
 Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
 {
   using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
-  using PAYLOADDECODER = PayloadDecoder<RDH, CRUDecoder<GBTDecoder>>;
+  using PAYLOADDECODER = PayloadDecoder<RDH, GBTDecoder>;
   return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> int {
     static PageParser<RDH, PAYLOADDECODER> mPageParser(rdhHandler, PAYLOADDECODER(channelHandler));
     return mPageParser.parse(buffer);

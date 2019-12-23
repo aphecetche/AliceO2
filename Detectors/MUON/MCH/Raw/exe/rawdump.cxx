@@ -53,11 +53,11 @@ int rawdump(std::string input, unsigned int maxNofRDHs, bool showRDHs)
   std::map<std::string, int> uniqueChannel;
 
   memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel](uint8_t cruId, uint8_t linkId, uint8_t chip,
+  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel](DsElecId dsId,
                                                               uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    auto group = linkId / 5;
-    auto index = linkId % 5;
-    auto s = fmt::format("CRU-{}-ELINK-{}-CHIP-{}-GROUP-{}-INDEX-{}", cruId, linkId, chip, group, index);
+    std::stringstream ss;
+    ss << dsId;
+    auto s = ss.str();
     uniqueDS[s]++;
     uniqueChannel[fmt::format("{}-CH-{}", s, channel)]++;
     ++ndigits;

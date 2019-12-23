@@ -34,10 +34,9 @@ class UserLogicGBTDecoder
  public:
   static constexpr uint8_t baseSize{64};
   /// Constructor.
-  /// \param cruId the identifier for the CRU this GBT is part of
+  /// \param solarId
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
-  /// \param chargeSumMode whether the Sampa is in clusterMode or not
-  UserLogicGBTDecoder(int cruId, int gbtId, SampaChannelHandler sampaChannelHandler);
+  UserLogicGBTDecoder(uint16_t solarId, SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
     */
@@ -61,8 +60,7 @@ class UserLogicGBTDecoder
   ///@}
 
  private:
-  int mCruId;
-  int mGbtId;
+  int mSolarId;
   std::array<UserLogicElinkDecoder<CHARGESUM>, 40> mElinkDecoders;
   int mNofGbtWordsSeens;
 };
@@ -71,15 +69,16 @@ using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 
 template <typename CHARGESUM>
-UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(int cruId,
-                                                    int gbtId,
+UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(uint16_t solarId,
                                                     SampaChannelHandler sampaChannelHandler)
-  : mCruId(cruId),
-    mGbtId(gbtId),
-    mElinkDecoders{impl::makeArray<40>([=](size_t i) { return UserLogicElinkDecoder<CHARGESUM>(cruId, i, sampaChannelHandler); })},
+  : mSolarId{solarId},
+    mElinkDecoders{
+      impl::makeArray<40>([=](size_t i) {
+        return UserLogicElinkDecoder<CHARGESUM>(DsElecId{solarId, static_cast<uint8_t>(i / 8), static_cast<uint8_t>(i % 5)}, sampaChannelHandler);
+      })} // namespace o2::mch::raw
+    ,
     mNofGbtWordsSeens{0}
 {
-  impl::assertIsInRange("gbtId", gbtId, 0, 23);
 }
 
 template <typename CHARGESUM>
@@ -108,8 +107,8 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
       continue;
     }
     int gbt = (word >> 59) & 0x1F;
-    if (gbt != mGbtId) {
-      std::cout << fmt::format("warning : gbt {} != expected {} word={:08X}\n", gbt, mGbtId, word);
+    if (gbt != mSolarId) {
+      std::cout << fmt::format("warning : solarId {} != expected {} word={:08X}\n", gbt, mSolarId, word);
       // throw std::invalid_argument(fmt::format("gbt {} != expected {} word={:X}\n", gbt, mGbtId, word));
     }
 

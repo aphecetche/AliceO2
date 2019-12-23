@@ -36,13 +36,14 @@ std::vector<uint8_t> createGBTBuffer()
   GBTEncoder<FORMAT, MODE> enc(gbtId);
   uint32_t bx(0);
   uint16_t ts(12);
-  int elinkId = 0;
-  enc.addChannelData(elinkId, 0, {SampaCluster(ts, 10)});
-  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 160)});
-  elinkId = 3;
-  enc.addChannelData(elinkId, 3, {SampaCluster(ts, 13)});
-  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 133)});
-  enc.addChannelData(elinkId, 13, {SampaCluster(ts, 163)});
+  int elinkGroupId = 0;
+  int elinkIndexInGroup = 0;
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 0, {SampaCluster(ts, 10)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 31, {SampaCluster(ts, 160)});
+  elinkIndexInGroup = 3;
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 3, {SampaCluster(ts, 13)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 31, {SampaCluster(ts, 133)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 13, {SampaCluster(ts, 163)});
   std::vector<uint8_t> words;
   enc.moveToBuffer(words);
   // std::cout << "createGBTBuffer<" << typeid(FORMAT).name() << "," << std::boolalpha << typeid(MODE).name() << ">\n";
@@ -72,13 +73,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
   BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(ref)));
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderCtorLinkIdMustBeBetween0And23, T, testTypes)
-{
-  using Encoder = GBTEncoder<T, ChargeSumMode>;
-  BOOST_CHECK_THROW(Encoder enc(24), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(Encoder enc(23));
-}
-
 template <typename FORMAT, typename CHARGESUM>
 float expectedSize();
 
@@ -100,14 +94,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAddFewChannels, T, testTypes)
   GBTEncoder<T, ChargeSumMode> enc(0);
   uint32_t bx(0);
   uint16_t ts(0);
-  int elinkId = 0;
-  enc.addChannelData(elinkId, 0, {SampaCluster(ts, 10)});
-  enc.addChannelData(elinkId, 31, {SampaCluster(ts, 160)});
-  elinkId = 3;
-  enc.addChannelData(elinkId, 3, {SampaCluster(ts, 13)});
-  enc.addChannelData(elinkId, 13, {SampaCluster(ts, 133)});
-  enc.addChannelData(elinkId, 23, {SampaCluster(ts, 163)});
-  BOOST_CHECK_THROW(enc.addChannelData(40, 0, {SampaCluster(ts, 10)}), std::invalid_argument);
+  int elinkGroupId = 0;
+  int elinkIndexInGroup = 0;
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 0, {SampaCluster(ts, 10)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 31, {SampaCluster(ts, 160)});
+  elinkIndexInGroup = 3;
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 3, {SampaCluster(ts, 13)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 13, {SampaCluster(ts, 133)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 23, {SampaCluster(ts, 163)});
+  BOOST_CHECK_THROW(enc.addChannelData(8, 0, 0, {SampaCluster(ts, 10)}), std::invalid_argument);
   std::vector<uint8_t> buffer;
   enc.moveToBuffer(buffer);
   float e = expectedSize<T, ChargeSumMode>();
@@ -137,9 +132,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAdd64Channels, T, testTypes)
   enc.moveToBuffer(buffer);
   uint32_t bx(0);
   uint16_t ts(0);
-  int elinkId = 0;
+  int elinkGroupId = 0;
   for (int i = 0; i < 64; i++) {
-    enc.addChannelData(elinkId, i % 32, {SampaCluster(ts, i * 10)});
+    enc.addChannelData(elinkGroupId, 0, i, {SampaCluster(ts, i * 10)});
   }
   enc.moveToBuffer(buffer);
   float e = expectedMaxSize<T, ChargeSumMode>();
@@ -149,7 +144,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAdd64Channels, T, testTypes)
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderMoveToBufferClearsTheInternalBuffer, T, testTypes)
 {
   GBTEncoder<T, ChargeSumMode> enc(0);
-  enc.addChannelData(0, 0, {SampaCluster(0, 10)});
+  enc.addChannelData(0, 0, 0, {SampaCluster(0, 10)});
   std::vector<uint8_t> buffer;
   size_t n = enc.moveToBuffer(buffer);
   BOOST_CHECK_GE(n, 0);

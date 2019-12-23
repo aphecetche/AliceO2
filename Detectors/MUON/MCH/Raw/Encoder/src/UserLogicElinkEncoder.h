@@ -83,7 +83,6 @@ template <typename CHARGESUM>
 void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
                                                               const std::vector<SampaCluster>& data)
 {
-  impl::assertNofBits("chId", chId, 5);
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
   }

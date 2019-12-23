@@ -113,7 +113,7 @@ std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, floa
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encodeDigits(gsl::span<o2::mch::Digit> digits,
-                  std::map<int, std::unique_ptr<raw::CRUEncoder>>& crus,
+                  std::unique_ptr<Encoder>& encoder,
                   std::function<std::optional<uint16_t>(uint16_t)> solar2cru,
                   std::function<std::optional<DsElecId>(DsDetId)> det2elec,
                   std::function<std::set<uint16_t>(uint16_t)> cru2solar,
@@ -121,7 +121,7 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
                   uint16_t bc)
 
 {
-  std::map<int, bool> startHB;
+  bool startHB{false};
 
   static int nadd{0};
 
@@ -135,24 +135,9 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
       continue;
     }
     DsElecId elecId = dselocopt.value();
-    auto solarId = elecId.solarId();
-    auto cruopt = solar2cru(solarId);
-    if (!cruopt.has_value()) {
-      std::cout << "WARNING : no electronic mapping found for DE " << deid << "\n";
-      continue;
-    }
-    uint8_t cruId = cruopt.value();
-    if (crus.find(cruId) == crus.end()) {
-      crus[cruId] = raw::createCRUEncoder<FORMAT, CHARGESUM, RDH>(cruId, cru2solar(cruId));
-    }
-    auto& cru = crus[cruId];
-    if (!cru) {
-      std::cout << "No encoder made for CRU " << cruId << "\n";
-      continue;
-    }
-    if (!startHB[cruId]) {
-      cru->startHeartbeatFrame(orbit, bc);
-      startHB[cruId] = true;
+    if (!startHB) {
+      encoder->startHeartbeatFrame(orbit, bc);
+      startHB = true;
     }
     int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
     uint16_t ts(666); // FIXME: simulate something here ?
@@ -162,12 +147,12 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 
     fmt::printf(
       "nadd %6d deid %4d dsid %4d dschid %2d "
-      "cruId %2d solarId %3d groupId %2d elinkId %2d sampach %2d\n",
+      "solarId %3d groupId %2d elinkId %2d sampach %2d\n",
       nadd++, deid, dsid, dschid,
-      cruId, elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid);
+      elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid);
     std::cout << clusters[0] << "\n";
 
-    cru->addChannelData(elecId.solarId(), elecId.elinkId(), sampachid, clusters);
+    encoder->addChannelData(elecId, sampachid, clusters);
   }
 }
 
@@ -179,7 +164,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             std::function<std::set<uint16_t>(uint16_t)> cru2solar,
             std::vector<uint8_t>& buffer)
 {
-  std::map<int, std::unique_ptr<raw::CRUEncoder>> crus;
+  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH>(solar2cru);
 
   for (int i = 0; i < interactions.size(); i++) {
 
@@ -188,13 +173,9 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << fmt::format(">>> BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
-                                         crus, solar2cru, det2elec, cru2solar, col.orbit, col.bc);
+                                         encoder, solar2cru, det2elec, cru2solar, col.orbit, col.bc);
 
-    for (auto& p : crus) {
-      if (p.second) {
-        p.second->moveToBuffer(buffer);
-      }
-    }
+    encoder->moveToBuffer(buffer);
 
     std::cout << fmt::format("<<< END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }

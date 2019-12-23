@@ -42,19 +42,19 @@ class GBTEncoder
 {
  public:
   /// Constructor.
-  /// \param gbtId the id of this GBT. _Must_ be between 0 and 23
-  /// or an exception is thrown
-  GBTEncoder(int gbtId);
+  /// \param solarId the (unique) id of this GBT (aka Solar)
+  GBTEncoder(int solarId);
 
   /** @name Main interface.
     */
   ///@{
   /// add data for one channel.
   ///
-  /// \param elinkId 0..39
-  /// \param chId 0..31 = sampaChannel (not dualSampaChannel, but single sampa channel)
+  /// \param elinkGroupId 0..7
+  /// \param elinkIndexInGroup 0..4
+  /// \param chId 0..63 dualSampa channel
   /// \param data vector of SampaCluster objects
-  void addChannelData(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
+  void addChannelData(uint8_t elinkGroupId, uint8_t elinkIndexInGroup, uint8_t chId, const std::vector<SampaCluster>& data);
 
   /// reset local bunch-crossing counter.
   ///
@@ -116,16 +116,16 @@ GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(int linkId)
     mGbtWords{},
     mElinkMerger{}
 {
-  impl::assertIsInRange("linkId", linkId, 0, 23);
 }
 
 template <typename FORMAT, typename CHARGESUM>
-void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkId, uint8_t chId,
+void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkGroupId, uint8_t elinkIndexInGroup, uint8_t chId,
                                                    const std::vector<SampaCluster>& data)
 {
 
-  impl::assertIsInRange("elinkId", elinkId, 0, 39);
-  mElinks.at(elinkId).addChannelData(chId, data);
+  impl::assertIsInRange("elinkGroupId", elinkGroupId, 0, 7);
+  impl::assertIsInRange("elinkIndexInGroup", elinkIndexInGroup, 0, 4);
+  mElinks.at(elinkGroupId * 5 + elinkIndexInGroup).addChannelData(chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM>
