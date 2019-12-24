@@ -162,7 +162,7 @@ RAWDataHeaderV4 createRDH(gsl::span<uint32_t> buffer)
 }
 
 template <>
-RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing,
+RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t solarId, uint32_t orbit, uint16_t bunchCrossing,
                           uint16_t payloadSize)
 {
   RAWDataHeaderV4 rdh;
@@ -174,9 +174,11 @@ RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16
   uint16_t memorySize = payloadSize + sizeof(rdh);
 
   rdh.cruID = cruId;
-  rdh.linkID = linkId;
-  rdh.endPointID = 0; // FIXME: fill this ?
-  rdh.feeId = 0;      //FIXME: what is this field supposed to contain ? unclear to me.
+  rdh.linkID = 0; // FIXME: how to fill this ?
+  // (need cru mappper : from (cruid,linkid)->(solarid) ? and then we pass cruId,linkId to this function
+  // and deduce solarId instead ?)
+  rdh.endPointID = 0;  // FIXME: fill this ?
+  rdh.feeId = solarId; //FIXME: what is this field supposed to contain ? unclear to me.
   rdh.priority = 0;
   rdh.blockLength = memorySize - sizeof(rdh); // FIXME: the blockLength disappears in RDHv5 ?
   rdh.memorySize = memorySize;

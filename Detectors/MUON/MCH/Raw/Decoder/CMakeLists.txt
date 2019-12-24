@@ -26,12 +26,6 @@ if(BUILD_TESTING)
               LABELS "mch;raw"
               PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHRawImplHelpers)
 
-  o2_add_test(bare-gbt-decoder
-              SOURCES src/testBareGBTDecoder.cxx
-              COMPONENT_NAME mch
-              LABELS "mch;raw"
-              PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHTestRawRefBuffers O2::MCHRawImplHelpers)
-
   o2_add_test(userlogic-elink-decoder
           SOURCES src/testUserLogicElinkDecoder.cxx
               COMPONENT_NAME mch

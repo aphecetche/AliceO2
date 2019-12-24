@@ -41,9 +41,9 @@ std::vector<uint8_t> createGBTBuffer()
   enc.addChannelData(elinkGroupId, elinkIndexInGroup, 0, {SampaCluster(ts, 10)});
   enc.addChannelData(elinkGroupId, elinkIndexInGroup, 31, {SampaCluster(ts, 160)});
   elinkIndexInGroup = 3;
-  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 3, {SampaCluster(ts, 13)});
-  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 31, {SampaCluster(ts, 133)});
-  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 13, {SampaCluster(ts, 163)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 13, {SampaCluster(ts, 13)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 33, {SampaCluster(ts, 133)});
+  enc.addChannelData(elinkGroupId, elinkIndexInGroup, 63, {SampaCluster(ts, 163)});
   std::vector<uint8_t> words;
   enc.moveToBuffer(words);
   // std::cout << "createGBTBuffer<" << typeid(FORMAT).name() << "," << std::boolalpha << typeid(MODE).name() << ">\n";

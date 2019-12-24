@@ -24,9 +24,18 @@
 
 using namespace o2::mch::raw;
 
-std::optional<uint16_t> dummyMapper(uint16_t)
+std::optional<uint16_t> dummyMapper(uint16_t solarId)
 {
-  return 0;
+  if (solarId == 728) {
+    return 0;
+  }
+  if (solarId == 361) {
+    return 1;
+  }
+  if (solarId == 448) {
+    return 2;
+  }
+  return std::nullopt;
 }
 std::unique_ptr<Encoder> defaultEncoder()
 {
@@ -80,47 +89,32 @@ std::vector<uint8_t> createCRUBuffer()
 
   auto encoder = createEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(dummyMapper);
 
-  uint32_t bx(0);
-  uint8_t solarId(0);
-  uint8_t groupId(0);
   uint16_t ts(0);
-  uint8_t index{0};
 
   encoder->startHeartbeatFrame(12345, 678);
 
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 0, {SampaCluster(ts, 10)});
+  encoder->addChannelData(DsElecId{728, 1, 2}, 0, {SampaCluster(ts, 10)});
 
   encoder->startHeartbeatFrame(12345, 910);
 
-  solarId = 1;
-  groupId = 2;
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 0, {SampaCluster(ts, 10)});
-  solarId = 2;
-  groupId = 3;
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 0, {SampaCluster(ts, 10)});
+  encoder->addChannelData(DsElecId{728, 1, 2}, 0, {SampaCluster(ts, 10)});
+  encoder->addChannelData(DsElecId{728, 1, 2}, 0, {SampaCluster(ts, 10)});
 
-  solarId = 12;
-  groupId = 3;
+  encoder->addChannelData(DsElecId{728, 1, 0}, 3, {SampaCluster(ts, 13)});
+  encoder->addChannelData(DsElecId{728, 1, 0}, 13, {SampaCluster(ts, 133)});
+  encoder->addChannelData(DsElecId{728, 1, 0}, 23, {SampaCluster(ts, 163)});
 
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 3, {SampaCluster(ts, 13)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 13, {SampaCluster(ts, 133)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 23, {SampaCluster(ts, 163)});
+  encoder->addChannelData(DsElecId{361, 0, 4}, 0, {SampaCluster(ts, 10)});
+  encoder->addChannelData(DsElecId{361, 0, 4}, 1, {SampaCluster(ts, 20)});
+  encoder->addChannelData(DsElecId{361, 0, 4}, 2, {SampaCluster(ts, 30)});
+  encoder->addChannelData(DsElecId{361, 0, 4}, 3, {SampaCluster(ts, 40)});
 
-  groupId = 2;
-
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 0, {SampaCluster(ts, 10)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 1, {SampaCluster(ts, 20)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 2, {SampaCluster(ts, 30)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 3, {SampaCluster(ts, 40)});
-
-  groupId = 7;
-
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 22, {SampaCluster(ts, 420)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 23, {SampaCluster(ts, 430)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 24, {SampaCluster(ts, 440)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 25, {SampaCluster(ts, 450)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 26, {SampaCluster(ts, 460)});
-  encoder->addChannelData(DsElecId{solarId, groupId, index}, 12, {SampaCluster(ts, 420)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 22, {SampaCluster(ts, 420)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 23, {SampaCluster(ts, 430)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 24, {SampaCluster(ts, 440)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 25, {SampaCluster(ts, 450)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 26, {SampaCluster(ts, 460)});
+  encoder->addChannelData(DsElecId{448, 6, 2}, 12, {SampaCluster(ts, 420)});
 
   std::vector<uint8_t> buffer;
   encoder->moveToBuffer(buffer);
