@@ -21,6 +21,7 @@
 #include "MCHRawDecoder/Decoder.h"
 #include "Headers/RAWDataHeader.h"
 #include "RefBuffers.h"
+#include "BareGBTDecoder.h"
 
 using namespace o2::mch::raw;
 using o2::header::RAWDataHeaderV4;
@@ -37,7 +38,7 @@ std::optional<RAWDataHeaderV4> handleRDH(const RAWDataHeaderV4& rdh)
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
   return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
-    result.emplace_back(fmt::format("s{}-j{}-ds{}--ch-{}-ts-{}-q-{}", dsId.solarId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup(), channel, sc.timestamp, sc.chargeSum));
+    result.emplace_back(fmt::format("{}-ch-{}-ts-{}-q-{}", asString(dsId), channel, sc.timestamp, sc.chargeSum));
   };
 }
 
@@ -118,6 +119,22 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
   for (auto s : expected) {
     std::cout << s << "\n";
   }
+}
+
+BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)
+{
+  std::vector<std::string> result;
+  BareGBTDecoder<ChargeSumMode> dec(0, handlePacketStoreAsVec(result));
+  auto buf = REF_BUFFER_GBT<BareFormat, ChargeSumMode>();
+  dec.append(buf);
+  std::vector<std::string> expected{
+    "S0-J0-DS3-ch-63-ts-12-q-163",
+    "S0-J0-DS3-ch-33-ts-12-q-133",
+    "S0-J0-DS3-ch-13-ts-12-q-13",
+    "S0-J0-DS0-ch-31-ts-12-q-160",
+    "S0-J0-DS0-ch-0-ts-12-q-10"};
+  BOOST_CHECK_EQUAL(result.size(), expected.size());
+  BOOST_CHECK(std::is_permutation(begin(result), end(result), begin(expected)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

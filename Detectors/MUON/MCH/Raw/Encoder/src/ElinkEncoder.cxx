@@ -14,16 +14,17 @@
 #include "MCHRawCommon/SampaCluster.h"
 #include "Assertions.h"
 #include "NofBits.h"
+#include "MCHRawElecMap/DsElecId.h"
 
 namespace
 {
 uint16_t chipAddress(uint8_t elinkId, uint8_t chId)
 {
-  uint16_t chip = static_cast<uint16_t>((elinkId % 2) * 2);
-  if (chId < 32) {
-    return chip;
+  auto opt = o2::mch::raw::indexFromElinkId(elinkId);
+  if (!opt.has_value()) {
+    throw std::invalid_argument(fmt::format("elinkId {} is not valid", elinkId));
   }
-  return chip + 1;
+  return opt.value() * 2 + (chId > 31);
 }
 } // namespace
 

@@ -49,4 +49,20 @@ std::string asString(DsElecId dsId)
 {
   return fmt::format("S{}-J{}-DS{}", dsId.solarId(), dsId.elinkGroupId(), dsId.elinkIndexInGroup());
 }
+
+std::optional<uint8_t> groupFromElinkId(uint8_t elinkId)
+{
+  if (elinkId < 40) {
+    return elinkId / 5;
+  }
+  return std::nullopt;
+}
+
+std::optional<uint8_t> indexFromElinkId(uint8_t elinkId)
+{
+  if (elinkId < 40) {
+    return elinkId - (elinkId / 5) * 5;
+  }
+  return std::nullopt;
+}
 } // namespace o2::mch::raw

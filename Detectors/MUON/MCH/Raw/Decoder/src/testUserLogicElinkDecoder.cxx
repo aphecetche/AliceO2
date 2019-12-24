@@ -145,7 +145,6 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
                        const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   std::string results;
-  UserLogicElinkDecoder<CHARGESUM> dec(DsElecId{0, 0, 0}, handlePacket(results));
   uint64_t prefix{22}; // 14-bits value.
   // exact value not relevant as long as it is non-zero.
   // Idea being to populate bits 50-63 with some data to ensure
@@ -153,9 +152,16 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
   // header values, for instance.
   prefix <<= 50;
   bool sync{true};
-  auto b64 = createBuffer(clustersFirstChannel, 5, 31, prefix, sync);
+  uint16_t dummySolarId{0};
+  uint8_t dummyGroup{0};
+  uint8_t chip = 5;
+  uint8_t ch = 31;
+  uint8_t index = (chip - (ch > 32)) / 2;
+  DsElecId dsId{dummySolarId, dummyGroup, index};
+  UserLogicElinkDecoder<CHARGESUM> dec(dsId, handlePacket(results));
+  auto b64 = createBuffer(clustersFirstChannel, chip, ch, prefix, sync);
   if (clustersSecondChannel.size()) {
-    auto b64_2 = createBuffer(clustersSecondChannel, 4, 12, prefix, !sync);
+    auto b64_2 = createBuffer(clustersSecondChannel, chip, ch / 2, prefix, !sync);
     std::copy(b64_2.begin(), b64_2.end(), std::back_inserter(b64));
   }
   decodeBuffer(dec, b64);
@@ -168,7 +174,7 @@ BOOST_AUTO_TEST_CASE(SampleModeSimplest)
   // fitting within one 64-bits word
   SampaCluster cl(345, {123, 456});
   auto r = testDecode<SampleMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123-456\n");
+  BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123-456\n");
 }
 
 BOOST_AUTO_TEST_CASE(SampleModeSimple)
@@ -177,7 +183,7 @@ BOOST_AUTO_TEST_CASE(SampleModeSimple)
   // spans 2 64-bits words.
   SampaCluster cl(345, {123, 456, 789, 901, 902});
   auto r = testDecode<SampleMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123-456-789-901-902\n");
+  BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123-456-789-901-902\n");
 }
 
 BOOST_AUTO_TEST_CASE(SampleModeTwoChannels)
@@ -187,8 +193,8 @@ BOOST_AUTO_TEST_CASE(SampleModeTwoChannels)
   SampaCluster cl2(346, {1001, 1002, 1003, 1004, 1005, 1006, 1007});
   auto r = testDecode<SampleMode>({cl}, {cl2});
   BOOST_CHECK_EQUAL(r,
-                    "chip-5-ch-31-ts-345-q-123-456-789-901-902\n"
-                    "chip-4-ch-12-ts-346-q-1001-1002-1003-1004-1005-1006-1007\n");
+                    "S0-J0-DS2-ch-63-ts-345-q-123-456-789-901-902\n"
+                    "S0-J0-DS2-ch-47-ts-346-q-1001-1002-1003-1004-1005-1006-1007\n");
 }
 
 BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
@@ -197,7 +203,7 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
   // (hence fitting within one 64 bits word)
   SampaCluster cl(345, 123456);
   auto r = testDecode<ChargeSumMode>({cl});
-  BOOST_CHECK_EQUAL(r, "chip-5-ch-31-ts-345-q-123456\n");
+  BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123456\n");
 }
 
 BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
@@ -208,8 +214,8 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
   SampaCluster cl2(346, 789012);
   auto r = testDecode<ChargeSumMode>({cl1, cl2});
   BOOST_CHECK_EQUAL(r,
-                    "chip-5-ch-31-ts-345-q-123456\n"
-                    "chip-5-ch-31-ts-346-q-789012\n");
+                    "S0-J0-DS2-ch-63-ts-345-q-123456\n"
+                    "S0-J0-DS2-ch-63-ts-346-q-789012\n");
 }
 
 BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
@@ -221,10 +227,10 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
   SampaCluster cl4(348, 791);
   auto r = testDecode<ChargeSumMode>({cl1, cl2}, {cl3, cl4});
   BOOST_CHECK_EQUAL(r,
-                    "chip-5-ch-31-ts-345-q-123456\n"
-                    "chip-5-ch-31-ts-346-q-789012\n"
-                    "chip-4-ch-12-ts-347-q-1357\n"
-                    "chip-4-ch-12-ts-348-q-791\n");
+                    "S0-J0-DS2-ch-63-ts-345-q-123456\n"
+                    "S0-J0-DS2-ch-63-ts-346-q-789012\n"
+                    "S0-J0-DS2-ch-47-ts-347-q-1357\n"
+                    "S0-J0-DS2-ch-47-ts-348-q-791\n");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

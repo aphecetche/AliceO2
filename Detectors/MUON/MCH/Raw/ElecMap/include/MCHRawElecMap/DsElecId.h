@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <optional>
 
 namespace o2::mch::raw
 {
@@ -65,6 +66,9 @@ DsElecId decodeDsElecId(uint16_t code);
 std::ostream& operator<<(std::ostream& os, const DsElecId& id);
 
 std::string asString(DsElecId dsId);
+
+std::optional<uint8_t> groupFromElinkId(uint8_t elinkId);
+std::optional<uint8_t> indexFromElinkId(uint8_t elinkId);
 
 } // namespace o2::mch::raw
 
