@@ -31,7 +31,7 @@ template <typename RDH>
 RDH createRDH(gsl::span<uint32_t> buffer);
 
 template <typename RDH>
-RDH createRDH(uint16_t cruId, uint8_t linkId, uint32_t orbit, uint16_t bunchCrossing, uint16_t payloadSize);
+RDH createRDH(uint16_t cruId, uint16_t solarId, uint32_t orbit, uint16_t bunchCrossing, uint16_t payloadSize);
 
 template <typename RDH>
 bool isValid(const RDH& rdh);
@@ -44,6 +44,9 @@ uint8_t rdhLinkId(const RDH& rdh);
 
 template <typename RDH>
 uint32_t rdhOrbit(const RDH& rdh);
+
+template <typename RDH>
+uint16_t rdhBunchCrossing(const RDH& rdh);
 
 template <typename RDH>
 int countRDHs(gsl::span<uint8_t> buffer);

@@ -162,7 +162,7 @@ RAWDataHeaderV4 createRDH(gsl::span<uint32_t> buffer)
 }
 
 template <>
-RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t solarId, uint32_t orbit, uint16_t bunchCrossing,
+RAWDataHeaderV4 createRDH(uint16_t cruId, uint16_t solarId, uint32_t orbit, uint16_t bunchCrossing,
                           uint16_t payloadSize)
 {
   RAWDataHeaderV4 rdh;
@@ -213,6 +213,12 @@ template <>
 uint8_t rdhLinkId(const RAWDataHeaderV4& rdh)
 {
   return rdh.linkID + 12 * rdh.endPointID;
+}
+
+template <>
+uint16_t rdhBunchCrossing(const RAWDataHeaderV4& rdh)
+{
+  return static_cast<uint16_t>(rdh.triggerBC & 0xFFF);
 }
 
 void dumpRDHBuffer(gsl::span<uint32_t> buffer, std::string_view indent)

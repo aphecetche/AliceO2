@@ -17,6 +17,8 @@
 #include <vector>
 #include "MCHRawCommon/SampaHeader.h"
 #include <limits>
+#include "MCHRawCommon/RDHManip.h"
+#include "Headers/RAWDataHeader.h"
 
 namespace o2::mch::raw::impl
 {
@@ -34,9 +36,9 @@ void dumpBuffer(gsl::span<T> buffer)
     i++;
   }
   std::cout << "\n";
-} // namespace o2::mch::raw::impl
+}
 
-uint64_t b8to64(const std::vector<uint8_t>& buffer, size_t i)
+uint64_t b8to64(gsl::span<uint8_t> buffer, size_t i)
 {
   return (static_cast<uint64_t>(buffer[i + 0])) |
          (static_cast<uint64_t>(buffer[i + 1]) << 8) |
@@ -60,17 +62,20 @@ void append(std::vector<uint8_t>& buffer, uint64_t w)
   buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0xFF00000000000000)) >> 56));
 }
 
-void dumpBuffer(const std::vector<uint8_t>& buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
+void dumpBuffer(gsl::span<uint8_t> buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
 {
   int i{0};
   int inRDH{0};
 
+  if (buffer.size() < 8) {
+    std::cout << "Should at least get 8 bytes to be able to dump\n";
+    return;
+  }
   while ((i < buffer.size() - 7) && i < maxbytes) {
     if (i % 8 == 0) {
       out << fmt::format("\n{:8d} : ", i);
     }
     uint64_t w = b8to64(buffer, i);
-    i += 8;
     out << fmt::format("{:016X} {:4d} {:4d} {:4d} {:4d} {:4d} ",
                        w,
                        (w & 0x3FF0000000000) >> 40,
@@ -84,7 +89,10 @@ void dumpBuffer(const std::vector<uint8_t>& buffer, std::ostream& out = std::cou
     if (inRDH) {
       --inRDH;
       if (inRDH == 7) {
-        out << "Begin RDH";
+        out << "Begin RDH ";
+        auto rdh = o2::mch::raw::createRDH<o2::header::RAWDataHeaderV4>(buffer.subspan(i, 64));
+        std::cout << fmt::format("ORBIT {} BX {} FEEID {}", rdhOrbit(rdh), rdhBunchCrossing(rdh),
+                                 rdh.feeId);
       }
       if (inRDH == 0) {
         out << "End RDH ";
@@ -98,6 +106,7 @@ void dumpBuffer(const std::vector<uint8_t>& buffer, std::ostream& out = std::cou
                            h.nof10BitWords(), h.chipAddress(), h.channelAddress());
       }
     }
+    i += 8;
   }
   out << "\n";
 }
