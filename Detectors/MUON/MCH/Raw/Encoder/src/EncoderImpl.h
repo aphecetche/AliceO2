@@ -81,7 +81,7 @@ void EncoderImpl<FORMAT, CHARGESUM, RDH>::addChannelData(DsElecId dsId, uint8_t 
   if (gbt == mGBTs.end()) {
     mGBTs.emplace(solarId, std::make_unique<GBTEncoder<FORMAT, CHARGESUM>>(solarId));
   }
-  mGBTs[dsId.solarId()]->addChannelData(dsId.elinkGroupId(), dsId.elinkIndexInGroup(), chId, data);
+  mGBTs[solarId]->addChannelData(dsId.elinkGroupId(), dsId.elinkIndexInGroup(), chId, data);
 }
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
