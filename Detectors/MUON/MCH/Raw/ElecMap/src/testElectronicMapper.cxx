@@ -119,6 +119,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH7L, T, testTypes)
   BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
+BOOST_AUTO_TEST_CASE(DsElecId)
+{
+  o2::mch::raw::DsElecId eid(448, 6, 2);
+  BOOST_CHECK_EQUAL(asString(eid), "S448-J6-DS2");
+  auto code = encode(eid);
+  auto x = decodeDsElecId(code);
+  BOOST_CHECK_EQUAL(code, encode(x));
+}
+
 // BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)
 // {
 //   std::set<int> missing;
