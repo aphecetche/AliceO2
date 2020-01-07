@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(Test1)
 
   BOOST_CHECK_EQUAL(n, nrdhs);
 
-  showRDHs<RAWDataHeaderV4>(testBuffer);
+  //   showRDHs<RAWDataHeaderV4>(testBuffer);
 }
 
 BOOST_AUTO_TEST_CASE(TestDecoding)
@@ -89,36 +89,42 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
   BOOST_CHECK_EQUAL(n, 4);
   std::vector<std::string> result;
   std::vector<std::string> expected{
-    "chip-0-ch-0-ts-0-q-10",
-    "chip-2-ch-0-ts-0-q-10",
-    "chip-3-ch-0-ts-0-q-10",
-    "chip-3-ch-3-ts-0-q-13",
-    "chip-3-ch-13-ts-0-q-133",
-    "chip-3-ch-23-ts-0-q-163",
-    "chip-2-ch-0-ts-0-q-10",
-    "chip-2-ch-1-ts-0-q-20",
-    "chip-2-ch-2-ts-0-q-30",
-    "chip-2-ch-3-ts-0-q-40",
-    "chip-10-ch-22-ts-0-q-420",
-    "chip-10-ch-23-ts-0-q-430",
-    "chip-10-ch-24-ts-0-q-440",
-    "chip-10-ch-25-ts-0-q-450",
-    "chip-10-ch-26-ts-0-q-460",
-    "chip-10-ch-12-ts-0-q-420"};
+    "S728-J1-DS2-ch-0-ts-0-q-10",
+
+    "S728-J1-DS2-ch-0-ts-0-q-10",
+    "S728-J1-DS2-ch-1-ts-0-q-10",
+
+    "S728-J1-DS0-ch-3-ts-0-q-13",
+    "S728-J1-DS0-ch-13-ts-0-q-133",
+    "S728-J1-DS0-ch-23-ts-0-q-163",
+
+    "S361-J0-DS4-ch-0-ts-0-q-10",
+    "S361-J0-DS4-ch-1-ts-0-q-20",
+    "S361-J0-DS4-ch-2-ts-0-q-30",
+    "S361-J0-DS4-ch-3-ts-0-q-40",
+
+    "S448-J6-DS2-ch-22-ts-0-q-420",
+    "S448-J6-DS2-ch-23-ts-0-q-430",
+    "S448-J6-DS2-ch-24-ts-0-q-440",
+    "S448-J6-DS2-ch-25-ts-0-q-450",
+    "S448-J6-DS2-ch-26-ts-0-q-460",
+    "S448-J6-DS2-ch-12-ts-0-q-420"
+
+  };
 
   auto decode = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result));
   decode(testBuffer);
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());
   BOOST_CHECK(std::is_permutation(begin(result), end(result), begin(expected)));
-  std::cout << "Got:\n";
-  for (auto s : result) {
-    std::cout << s << "\n";
-  }
-  std::cout << "Expected:\n";
-  for (auto s : expected) {
-    std::cout << s << "\n";
-  }
+  // std::cout << "Got:\n";
+  // for (auto s : result) {
+  //   std::cout << s << "\n";
+  // }
+  // std::cout << "Expected:\n";
+  // for (auto s : expected) {
+  //   std::cout << s << "\n";
+  // }
 }
 
 BOOST_AUTO_TEST_CASE(BareGBTDecoderFromBuffer)

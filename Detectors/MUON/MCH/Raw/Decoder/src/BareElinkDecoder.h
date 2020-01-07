@@ -328,12 +328,6 @@ int BareElinkDecoder<CHARGESUM>::len() const
   return static_cast<int>(std::floor(log2(1.0 * mMask)) + 1);
 }
 
-// template <typename CHARGESUM>
-// uint8_t BareElinkDecoder<CHARGESUM>::linkId() const
-// {
-//   return mLinkId;
-// }
-
 template <typename CHARGESUM>
 std::string BareElinkDecoder<CHARGESUM>::name(State s) const
 {
