@@ -21,6 +21,9 @@
 #include <chrono>
 #include "DumpBuffer.h"
 #include "MCHRawCommon/DataFormats.h"
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 namespace po = boost::program_options;
 
@@ -32,10 +35,11 @@ using RDHv4 = o2::header::RAWDataHeaderV4;
 class DumpOptions
 {
  public:
-  DumpOptions(uint16_t solarOffset, unsigned int maxNofRDHs, bool showRDHs)
+  DumpOptions(uint16_t solarOffset, unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
     : mSolarOffset{solarOffset},
       mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs},
-      mShowRDHs{showRDHs} {}
+      mShowRDHs{showRDHs},
+      mJSON{jsonOutput} {}
 
   unsigned int maxNofRDHs() const
   {
@@ -52,10 +56,16 @@ class DumpOptions
     return mShowRDHs;
   }
 
+  bool json() const
+  {
+    return mJSON;
+  }
+
  private:
   uint16_t mSolarOffset;
   unsigned int mMaxNofRDHs;
   bool mShowRDHs;
+  bool mJSON;
 };
 
 struct Stat {
@@ -79,12 +89,12 @@ std::ostream& operator<<(std::ostream& os, const Stat& s)
   return os;
 }
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-int rawdump(std::string input, DumpOptions opt)
+std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
     std::cout << "could not open file " << input << "\n";
-    return 1;
+    return {};
   }
   constexpr size_t pageSize = 8192;
 
@@ -127,22 +137,45 @@ int rawdump(std::string input, DumpOptions opt)
   std::vector<std::chrono::microseconds> timers;
 
   size_t npages{0};
+  DecoderStat decStat;
 
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
     npages++;
-    int n = decode(sbuffer);
+    decStat = decode(sbuffer);
   }
 
-  std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
-  std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
-  for (auto s : uniqueDS) {
-    std::cout << s.first << " " << s.second << "\n";
+  if (!opt.json()) {
+    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
+    std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
+    std::cout << decStat << "\n";
   }
-  std::cout << "--------\n";
-  for (auto s : uniqueChannel) {
-    std::cout << fmt::format("{:18s}", s.first) << statChannel.at(s.first) << fmt::format("NCLU {:5d}\n", s.second);
+  return statChannel;
+}
+
+void output(const std::map<std::string, Stat>& channels)
+{
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+  const char* output = buffer.GetString();
+  writer.StartObject();
+  writer.Key("channels");
+  writer.StartArray();
+  for (auto s : channels) {
+    writer.StartObject();
+    writer.Key("id");
+    writer.String(s.first.c_str());
+    writer.Key("ped");
+    writer.Double(s.second.mean);
+    writer.Key("noise");
+    writer.Double(s.second.rms);
+    writer.Key("nof_samples");
+    writer.Int(s.second.n);
+    writer.EndObject();
   }
-  return 0;
+  writer.EndArray();
+  writer.EndObject();
+  std::cout << buffer.GetString() << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -157,6 +190,7 @@ int main(int argc, char* argv[])
   bool showRDHs{false};
   bool userLogic{false}; // default format is bareformat...
   bool chargeSum{false}; //... in sample mode
+  bool jsonOutput{false};
 
   // clang-format off
   generic.add_options()
@@ -166,6 +200,7 @@ int main(int argc, char* argv[])
       ("showRDHs,s",po::bool_switch(&showRDHs),"show RDHs")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
+      ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format")
       ("solarOffset,o",po::value<uint16_t>(&solarOffset),"offset to add to linkID to get a solarID")
       ;
   // clang-format on
@@ -181,19 +216,25 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  DumpOptions opt(solarOffset, nrdhs, showRDHs);
+  DumpOptions opt(solarOffset, nrdhs, showRDHs, jsonOutput);
+  std::map<std::string, Stat> statChannel;
 
   if (userLogic) {
     if (chargeSum) {
-      return rawdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      statChannel = rawdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      return rawdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
+      statChannel = rawdump<UserLogicFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   } else {
     if (chargeSum) {
-      return rawdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
+      statChannel = rawdump<BareFormat, ChargeSumMode, RDHv4>(inputFile, opt);
     } else {
-      return rawdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
+      statChannel = rawdump<BareFormat, SampleMode, RDHv4>(inputFile, opt);
     }
   }
+
+  if (jsonOutput) {
+    output(statChannel);
+  }
+  return 0;
 }

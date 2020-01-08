@@ -13,7 +13,14 @@ o2_add_executable(
         SOURCES rawdump.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder Boost::program_options
-        O2::MCHRawImplHelpers)
+        O2::MCHRawImplHelpers RapidJSON::RapidJSON)
+
+o2_add_executable(
+        rawplot
+        SOURCES rawplot.cxx
+        COMPONENT_NAME mch
+        PUBLIC_LINK_LIBRARIES Boost::program_options O2::MCHRawElecMap fmt::fmt RapidJSON::RapidJSON
+        O2::MCHMappingSegContour)
 
 o2_add_executable(generate-timeframe
         SOURCES gentimeframe.cxx gtfGenerateDigits.cxx

@@ -77,7 +77,7 @@ void svgCathodeSegmentation(const CathodeSegmentation& seg, SVGWriter& w, bool s
     w.svgGroupStart("pads");
     for (auto& dsp : dualSampaPads) {
       for (auto& p : dsp) {
-        w.polygon(p);
+        w.polygon(p, "red");
       }
     }
     w.svgGroupEnd();
