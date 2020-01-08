@@ -37,10 +37,18 @@ Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler 
 {
   using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
   using PAYLOADDECODER = PayloadDecoder<RDH, GBTDecoder>;
-  return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> int {
+  return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> DecoderStat {
     static PageParser<RDH, PAYLOADDECODER> mPageParser(rdhHandler, PAYLOADDECODER(channelHandler));
     return mPageParser.parse(buffer);
   };
+}
+
+std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat)
+{
+  out << fmt::format("Nof orbits seen {} - Nof orbits jumps {}",
+                     decStat.nofOrbitSeen,
+                     decStat.nofOrbitJumps);
+  return out;
 }
 
 // define only the specialization we use

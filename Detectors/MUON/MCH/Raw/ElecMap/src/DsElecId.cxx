@@ -12,6 +12,9 @@
 #include "Assertions.h"
 #include <fmt/format.h>
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
 
 namespace o2::mch::raw
 {
@@ -38,6 +41,34 @@ DsElecId decodeDsElecId(uint16_t code)
 
   return DsElecId(solarId, groupId, index);
 }
+
+DsElecId decodeDsElecId(std::string rep)
+{
+  std::istringstream is(rep);
+  std::string line;
+  std::vector<std::string> tokens;
+  while (getline(is, line, '-')) {
+    tokens.emplace_back(line);
+  }
+  if (tokens.size() < 3) {
+    throw std::invalid_argument(fmt::format("string {} is not a valid representation of a DsElecId", rep));
+  }
+  if (tokens[0].empty() || tokens[0][0] != 'S') {
+    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a solarId", tokens[0]));
+  }
+  if (tokens[1].empty() || tokens[1][0] != 'J') {
+    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a groupId", tokens[1]));
+  }
+  if (tokens[2].size() < 3 || tokens[2][0] != 'D' || tokens[2][1] != 'S') {
+    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a DS", tokens[2]));
+  }
+  uint16_t solarId = std::atoi(tokens[0].substr(1).c_str());
+  uint8_t groupId = std::atoi(tokens[1].substr(1).c_str());
+  uint8_t index = std::atoi(tokens[2].substr(2).c_str());
+  ;
+  return DsElecId(solarId, groupId, index);
+}
+
 std::ostream& operator<<(std::ostream& os, const DsElecId& id)
 {
   std::cout << fmt::format("DsElecId(SOLAR=S{:4d} GROUP=J{:2d} INDEX=DS{:2d}) CODE={:8d}",

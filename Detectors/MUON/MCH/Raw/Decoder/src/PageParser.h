@@ -33,53 +33,51 @@ class PageParser
   PageParser(RawDataHeaderHandler<RDH> rdhHandler, PAYLOADDECODER decoder);
   ~PageParser();
 
-  size_t parse(gsl::span<uint8_t> buffer);
+  DecoderStat parse(gsl::span<uint8_t> buffer);
 
  private:
   RawDataHeaderHandler<RDH> mRdhHandler;
   PAYLOADDECODER mDecoder;
   uint32_t mOrbit{0};
-  uint64_t mNofOrbitJumps{0};
-  uint64_t mNofOrbitSeen{0};
+  DecoderStat mStats;
 };
 
 template <typename RDH, typename PAYLOADDECODER>
 PageParser<RDH, PAYLOADDECODER>::PageParser(RawDataHeaderHandler<RDH> rdhHandler, PAYLOADDECODER decoder)
-  : mRdhHandler(rdhHandler), mDecoder(decoder)
+  : mRdhHandler(rdhHandler), mDecoder(decoder), mStats{}
 {
 }
 
 template <typename RDH, typename PAYLOADDECODER>
 PageParser<RDH, PAYLOADDECODER>::~PageParser()
 {
-  std::cout << "Nof orbits seen : " << mNofOrbitSeen << "\n";
-  std::cout << "Nof orbits jumps: " << mNofOrbitJumps << "\n";
 }
 
 template <typename RDH, typename PAYLOADDECODER>
-size_t PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
+DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
 {
   RDH originalRDH;
   const size_t nofRDHWords = sizeof(originalRDH);
   size_t index{0};
+  uint64_t nbytes{0};
 
   while ((index + nofRDHWords) < buffer.size()) {
     originalRDH = createRDH<RDH>(buffer.subspan(index, nofRDHWords));
     if (!isValid(originalRDH)) {
       std::cout << "Got an invalid RDH\n";
       impl::dumpBuffer(buffer.subspan(index, nofRDHWords));
-      return 0;
+      return mStats;
     }
     if (hasOrbitJump(rdhOrbit(originalRDH), mOrbit)) {
-      ++mNofOrbitJumps;
+      ++mStats.nofOrbitJumps;
       mDecoder.reset();
     } else if (rdhOrbit(originalRDH) != mOrbit) {
-      ++mNofOrbitSeen;
+      ++mStats.nofOrbitSeen;
     }
     mOrbit = rdhOrbit(originalRDH);
     auto rdhOpt = mRdhHandler(originalRDH);
     if (!rdhOpt.has_value()) {
-      return 0;
+      break;
     }
     auto rdh = rdhOpt.value();
     int payloadSize = rdhPayloadSize(rdh);
@@ -87,10 +85,12 @@ size_t PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
     if (n) {
       size_t pos = static_cast<size_t>(index + nofRDHWords);
       mDecoder.process(rdh, buffer.subspan(pos, n));
+      nbytes += n + nofRDHWords;
     }
     index += rdh.offsetToNext;
   }
-  return index;
+  mStats.nofBytesUsed += nbytes;
+  return mStats;
 }
 
 } // namespace o2::mch::raw
