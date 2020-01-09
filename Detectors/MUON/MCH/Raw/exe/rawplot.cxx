@@ -26,10 +26,145 @@
 #include "MCHMappingSegContour/SegmentationContours.h"
 #include "MCHMappingSegContour/CathodeSegmentationContours.h"
 #include "MCHMappingSegContour/CathodeSegmentationSVGWriter.h"
+
 using namespace rapidjson;
+using namespace o2::mch::mapping;
+using namespace o2::mch::raw;
+using namespace o2::mch::contour;
 using namespace std;
 
 namespace po = boost::program_options;
+
+// return the color corresponding to value (which is expected between 0 and 1)
+// palette taken from http://colorbrewer2.org/#type=sequential&scheme=YlGnBu&n=8
+std::string getColor(float value)
+{
+  static const std::array<std::string, 8> colors = {"#ffffd9", "#edf8b1", "#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84"};
+
+  if (value < 0 || value > 1.0) {
+    return "black";
+  }
+  return colors[static_cast<int>(std::floor(value * 8))];
+}
+
+struct PadInfo {
+  int deId;
+  int index;
+  double value;
+  double x;
+  double y;
+  double dx;
+  double dy;
+  bool bending;
+};
+
+std::vector<PadInfo> filter(const Value& channels,
+                            std::function<std::optional<PadInfo>(const Value& v)> selector)
+{
+  std::vector<PadInfo> pads;
+
+  for (const auto& c : channels.GetArray()) {
+    auto s = selector(c);
+    if (s.has_value()) {
+      pads.emplace_back(s.value());
+    }
+  }
+  return pads;
+}
+
+std::pair<double, double> getRange(gsl::span<PadInfo> pads)
+{
+  double minValue = std::numeric_limits<double>::max();
+  double maxValue = std::numeric_limits<double>::min();
+
+  for (auto p : pads) {
+    minValue = std::min(minValue, p.value);
+    maxValue = std::max(maxValue, p.value);
+  }
+  return std::make_pair(minValue, maxValue);
+}
+
+std::function<std::optional<DsDetId>(const Value& v)> getDsDetId()
+{
+  auto e2d = o2::mch::raw::createElec2DetMapper<o2::mch::raw::ElectronicMapperGenerated>(o2::mch::raw::deIdsOfCH6R); // FIXME: use them all
+  return [e2d](const Value& v) -> std::optional<DsDetId> {
+    const auto& o = v.GetObject();
+    auto sid = o["id"].GetString();
+    auto dsElecId = o2::mch::raw::decodeDsElecId(sid);
+    if (!dsElecId.has_value()) {
+      std::cout << fmt::format("{} is not a valid dsElecId\n", sid);
+      return std::nullopt;
+    }
+    auto dsDetId = e2d(dsElecId.value());
+    if (!dsDetId.has_value()) {
+      std::cout << fmt::format("Got no dsDetId for dsElecId={}\n", sid);
+      return std::nullopt;
+    }
+    return dsDetId;
+  };
+}
+
+std::set<int> getDeIds(const Value& channels)
+{
+  auto toDsDetId = getDsDetId();
+  std::set<int> deids;
+  for (const auto& c : channels.GetArray()) {
+    auto dsDetId = toDsDetId(c);
+    if (dsDetId.has_value()) {
+      deids.insert(dsDetId->deId());
+    }
+  }
+  return deids;
+}
+
+std::function<std::optional<PadInfo>(const Value& v)> getPadInfoCreator(int deId, std::string what)
+{
+  o2::mch::mapping::Segmentation seg{deId};
+  auto toDsDetId = getDsDetId();
+
+  return [seg, toDsDetId, deId, what](const Value& v) -> std::optional<PadInfo> {
+    auto dsDetId = toDsDetId(v);
+    if (!dsDetId.has_value()) {
+      return std::nullopt;
+    }
+    if (dsDetId.value().deId() != deId) {
+      return std::nullopt;
+    }
+    const auto& o = v.GetObject();
+    auto chId = o2::mch::raw::decodeChannelId(o["id"].GetString());
+    if (!chId.has_value()) {
+      return std::nullopt;
+    }
+    auto padIndex = seg.findPadByFEE(dsDetId->dsId(), chId.value());
+    if (!seg.isValid(padIndex)) {
+      return std::nullopt;
+    }
+    return PadInfo{
+      deId, padIndex, o[what.c_str()].GetDouble(),
+      seg.padPositionX(padIndex),
+      seg.padPositionY(padIndex),
+      seg.padSizeX(padIndex) / 2.0,
+      seg.padSizeY(padIndex) / 2.0,
+      seg.isBendingPad(padIndex)};
+  };
+}
+
+std::function<std::optional<PadInfo>(const Value& v)>
+  selectByDeId(int deId, std::string what)
+{
+  auto toPadInfo = getPadInfoCreator(deId, what);
+
+  return [deId, toPadInfo](const Value& v) -> std::optional<PadInfo> {
+    auto pad = toPadInfo(v);
+    if (!pad.has_value()) {
+      return std::nullopt;
+    }
+    if (pad->deId != deId) {
+      return std::nullopt;
+    }
+    return pad;
+  };
+}
 
 int main(int argc, char* argv[])
 {
@@ -55,8 +190,6 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  auto e2d = o2::mch::raw::createElec2DetMapper<o2::mch::raw::ElectronicMapperGenerated>(o2::mch::raw::deIdsOfCH6R);
-
   IStreamWrapper isw(std::cin);
   Document d;
   d.ParseStream(isw);
@@ -65,52 +198,63 @@ int main(int argc, char* argv[])
 
   const Value& channels = d["channels"];
 
-  //auto deids = getListOfDetectionElements(channels);
-  std::vector<int> deids;
-  deids.emplace_back(600);
-  deids.emplace_back(604);
+  auto deids = getDeIds(channels);
 
   for (auto deId : deids) {
-    o2::mch::mapping::Segmentation seg{deId};
-    o2::mch::mapping::CathodeSegmentation cseg{deId, true};
-    auto w = new o2::mch::contour::SVGWriter(o2::mch::mapping::getBBox(cseg));
-    w->addStyle(o2::mch::mapping::svgCathodeSegmentationDefaultStyle());
-    w->svgGroupStart("detectionelements");
-    w->contour(getEnvelop(cseg));
-    w->svgGroupEnd();
-    w->svgGroupStart("pads");
-    svgWriters.emplace(deId, w);
 
-    for (const auto& c : channels.GetArray()) {
-      const auto& o = c.GetObject();
-      auto dsElecId = o2::mch::raw::decodeDsElecId(o["id"].GetString());
-      auto dsDetId = e2d(dsElecId);
-      if (!dsDetId.has_value()) {
-        continue;
-      }
-      if (dsDetId.value().deId() != deId) {
-        continue;
-      }
-      auto chId = 0; //decodeChannelId(o["id"].GetString());
-      auto padIndex = seg.findPadByFEE(dsDetId.value().dsId(), chId);
-      double x = seg.padPositionX(padIndex);
-      double y = seg.padPositionY(padIndex);
-      double dx = seg.padSizeX(padIndex) / 2.0;
-      double dy = seg.padSizeY(padIndex) / 2.0;
-      w->polygon(o2::mch::contour::Polygon<double>{
-                   {x - dx, y - dy}, {x + dx, y - dy}, {x + dx, y + dy}, {x - dx, y + dy}, {x - dx, y - dy}},
-                 "#00FF00");
+    auto pads = filter(channels, selectByDeId(deId, "noise"));
+
+    std::array<CathodeSegmentation, 2> cathodes{
+      CathodeSegmentation{deId, true},
+      CathodeSegmentation{deId, false}};
+
+    std::array<o2::mch::contour::SVGWriter, 2> writers{
+      SVGWriter(getBBox(cathodes[0])),
+      SVGWriter(getBBox(cathodes[1]))};
+
+    for (auto& w : writers) {
+      w.svgGroupStart("pads");
     }
+
+    std::pair<double, double> range = getRange(pads);
+
+    for (const auto& p : pads) {
+      writers[p.bending == true ? 0 : 1].polygon(o2::mch::contour::Polygon<double>{
+                                                   {p.x - p.dx, p.y - p.dy}, {p.x + p.dx, p.y - p.dy}, {p.x + p.dx, p.y + p.dy}, {p.x - p.dx, p.y + p.dy}, {p.x - p.dx, p.y - p.dy}},
+                                                 getColor(p.value / range.second));
+    }
+
+    // rapidjson::OStreamWrapper osw(std::cout);
+    // rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+    // d.Accept(writer);
+
+    std::cout << "<html>\n";
+    std::cout << "<style>\n";
+    std::cout << R"(
+  .detectionelements{
+    stroke: black;
+    stroke-width: 0.1px;
+    fill:none;
+  }
+  svg {
+  border: 1px solid blue;
+  padding: 10px;
+  }
+  )";
+    std::cout << "</style>\n";
+    std::cout << "<body>\n";
+
+    for (auto bending : {0, 1}) {
+      auto& w = writers[bending];
+      w.svgGroupEnd();
+      w.svgGroupStart("detectionelements");
+      w.contour(getEnvelop(cathodes[bending]));
+      w.svgGroupEnd();
+      w.writeSVG(std::cout);
+    }
+    std::cout << "</body>\n";
+    std::cout << "</html>\n";
   }
 
-  // rapidjson::OStreamWrapper osw(std::cout);
-  // rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-  // d.Accept(writer);
-
-  for (auto p : svgWriters) {
-    p.second->svgGroupEnd();
-    std::cout << p.first << "\n";
-    p.second->writeHTML(std::cout);
-  }
   return 0;
 }

@@ -112,7 +112,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
                                                                             uint8_t channel, o2::mch::raw::SampaCluster sc) {
     auto s = asString(dsId);
     uniqueDS[s]++;
-    auto ch = fmt::format("{}-CH-{}", s, channel);
+    auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
     auto& stat = statChannel[ch];
     for (auto d = 0; d < sc.nofSamples(); d++) {

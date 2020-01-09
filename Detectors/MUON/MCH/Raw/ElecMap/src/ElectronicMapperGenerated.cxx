@@ -36,7 +36,7 @@ namespace
 void dump(const std::map<uint16_t, uint32_t>& e2d)
 {
   for (auto p : e2d) {
-    std::cout << o2::mch::raw::decodeDsElecId(p.first) << " -> " << o2::mch::raw::decodeDsDetId(p.second) << "\n";
+    std::cout << o2::mch::raw::decodeDsElecId(p.first).value() << " -> " << o2::mch::raw::decodeDsDetId(p.second) << "\n";
   }
 }
 

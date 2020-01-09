@@ -61,8 +61,9 @@ class DsElecId
 
 uint16_t encode(const DsElecId& id);
 
-DsElecId decodeDsElecId(uint16_t code);
-DsElecId decodeDsElecId(std::string rep);
+std::optional<DsElecId> decodeDsElecId(uint16_t code);
+std::optional<DsElecId> decodeDsElecId(std::string rep);
+std::optional<uint8_t> decodeChannelId(std::string rep);
 
 std::ostream& operator<<(std::ostream& os, const DsElecId& id);
 
