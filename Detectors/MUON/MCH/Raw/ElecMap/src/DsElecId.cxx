@@ -31,7 +31,7 @@ uint16_t encode(const DsElecId& id)
          ((id.elinkIndexInGroup() & 0x7) << 13);
 }
 
-DsElecId decodeDsElecId(uint16_t code)
+std::optional<DsElecId> decodeDsElecId(uint16_t code)
 {
   uint16_t solarId = code & 0x3FF;
 
@@ -39,10 +39,16 @@ DsElecId decodeDsElecId(uint16_t code)
 
   uint8_t index = (code & 0xE000) >> 13;
 
+  if (groupId > 7) {
+    return std::nullopt;
+  }
+  if (index > 4) {
+    return std::nullopt;
+  }
   return DsElecId(solarId, groupId, index);
 }
 
-DsElecId decodeDsElecId(std::string rep)
+std::optional<DsElecId> decodeDsElecId(std::string rep)
 {
   std::istringstream is(rep);
   std::string line;
@@ -51,22 +57,53 @@ DsElecId decodeDsElecId(std::string rep)
     tokens.emplace_back(line);
   }
   if (tokens.size() < 3) {
-    throw std::invalid_argument(fmt::format("string {} is not a valid representation of a DsElecId", rep));
+    // not a valid representation of a DsElecId
+    return std::nullopt;
   }
   if (tokens[0].empty() || tokens[0][0] != 'S') {
-    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a solarId", tokens[0]));
+    // token[0] is not a valid representation of a solarId
+    return std::nullopt;
   }
   if (tokens[1].empty() || tokens[1][0] != 'J') {
-    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a groupId", tokens[1]));
+    // token[1] is not a valid representation of a groupId
+    return std::nullopt;
   }
   if (tokens[2].size() < 3 || tokens[2][0] != 'D' || tokens[2][1] != 'S') {
-    throw std::invalid_argument(fmt::format("Token {} is not a valid representation of a DS", tokens[2]));
+    // token is not a valid representation of a DS
+    return std::nullopt;
   }
   uint16_t solarId = std::atoi(tokens[0].substr(1).c_str());
   uint8_t groupId = std::atoi(tokens[1].substr(1).c_str());
   uint8_t index = std::atoi(tokens[2].substr(2).c_str());
-  ;
   return DsElecId(solarId, groupId, index);
+}
+
+std::optional<uint8_t> decodeChannelId(std::string rep)
+{
+  auto dsElecId = decodeDsElecId(rep);
+  if (!dsElecId.has_value()) {
+    // must be a valid dsElecId
+    return std::nullopt;
+  }
+  std::istringstream is(rep);
+  std::string line;
+  std::vector<std::string> tokens;
+  while (getline(is, line, '-')) {
+    tokens.emplace_back(line);
+  }
+  if (tokens.size() < 4) {
+    // not a valid representation of a {DsElecId,ChannelId}
+    return std::nullopt;
+  }
+  if (tokens[3].size() < 3 || tokens[3][0] != 'C' || tokens[3][1] != 'H') {
+    // token[3] is not a valid representation of a CH
+    return std::nullopt;
+  }
+  auto chId = std::atoi(tokens[3].substr(2).c_str());
+  if (chId >= 0 && chId <= 63) {
+    return chId;
+  }
+  return std::nullopt;
 }
 
 std::ostream& operator<<(std::ostream& os, const DsElecId& id)

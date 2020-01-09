@@ -125,14 +125,14 @@ BOOST_AUTO_TEST_CASE(DsElecId)
   BOOST_CHECK_EQUAL(asString(eid), "S448-J6-DS2");
   auto code = encode(eid);
   auto x = decodeDsElecId(code);
-  BOOST_CHECK_EQUAL(code, encode(x));
+  BOOST_CHECK_EQUAL(code, encode(x.value()));
 }
 
 BOOST_AUTO_TEST_CASE(DsElecIdString)
 {
   o2::mch::raw::DsElecId eid(448, 6, 2);
   auto x = decodeDsElecId("S448-J6-DS2");
-  BOOST_CHECK_EQUAL(encode(eid), encode(x));
+  BOOST_CHECK_EQUAL(encode(eid), encode(x.value()));
 }
 
 // BOOST_AUTO_TEST_CASE_TEMPLATE(MustGetACruIdForEachDeId, T, testTypes)
