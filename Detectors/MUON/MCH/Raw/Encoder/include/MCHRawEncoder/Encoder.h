@@ -15,7 +15,9 @@
 #include <set>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawCommon/SampaCluster.h"
-#include "MCHRawElecMap/Solar2CruMapper.h"
+#include "MCHRawElecMap/CruLinkId.h"
+#include <functional>
+#include <optional>
 
 namespace o2::mch::raw
 {
@@ -65,7 +67,6 @@ class Encoder
 /// \param forceNoPhase to be deprecated ?
 ///
 template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase = false>
-std::unique_ptr<Encoder> createEncoder(Solar2CruMapper solar2cru);
-
+std::unique_ptr<Encoder> createEncoder(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cruLink);
 } // namespace o2::mch::raw
 #endif

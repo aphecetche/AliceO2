@@ -26,7 +26,7 @@ std::vector<uint8_t> encodePedestalBuffer(Encoder& cru, uint8_t elinkId);
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 std::vector<uint8_t> createPedestalBuffer(uint8_t elinkId)
 {
-  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH, true>([](uint16_t) -> std::optional<uint16_t> { return 0; });
+  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH, true>([](uint16_t) -> std::optional<CruLinkId> { return CruLinkId(0, 0); });
   return encodePedestalBuffer(*encoder, elinkId);
 }
 
@@ -39,7 +39,7 @@ std::vector<uint8_t> createTestBuffer(gsl::span<uint8_t> data)
   if (payloadSize > (1 << 16) - sizeof(RDH)) {
     throw std::logic_error(fmt::format("cannot generate a buffer with a payload above {} (tried {})", 0xFFFF - sizeof(RDH), payloadSize));
   }
-  auto rdh = o2::mch::raw::createRDH<RDH>(0, 0, 1234, 567, payloadSize);
+  auto rdh = o2::mch::raw::createRDH<RDH>(0, 0, 0, 1234, 567, payloadSize);
   o2::mch::raw::appendRDH<RDH>(buffer, rdh);
   std::copy(data.begin(), data.end(), std::back_inserter(buffer));
   return buffer;

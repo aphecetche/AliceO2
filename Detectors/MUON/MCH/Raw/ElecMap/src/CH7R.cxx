@@ -892,4 +892,4 @@ void fillElec2DetCH7R(std::map<uint16_t, uint32_t>& e2d)
   add(e2d, 720, 1129, 588, 6, 0);
   add(e2d, 720, 1128, 588, 6, 1);
 }
-void fillSolar2CruCH7R(std::map<uint16_t, uint16_t>& s2c) {}
+void fillSolar2CruLinkCH7R(std::map<uint16_t, uint32_t>& s2c) {}

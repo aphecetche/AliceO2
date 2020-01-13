@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(Test1)
   std::vector<uint8_t> buffer(1024);
   std::generate(buffer.begin(), buffer.end(), std::rand);
 
-  auto rdh = createRDH<RAWDataHeaderV4>(0, 0, 12, 34, buffer.size());
+  auto rdh = createRDH<RAWDataHeaderV4>(0, 0, 0, 12, 34, buffer.size());
 
   std::vector<uint8_t> testBuffer;
 

@@ -65,10 +65,9 @@ Still to be written/investigated/discussed :
 
 ## Generation of electronic mapping
 
-From a reference Excel file :
+Use the [gen.sh](ElecMap/src/gen.sh) script which basically loops on all
+chambers and call `elecmap.py` for each one, e.g.
 
 ```
-./elecmap.py -i Mapping-CH5L.xlsx -c elecmap.cxx -e elecmap.xlsx
+./elecmap.py -gs "MCH Electronic Mapping" -s CH6R --credentials=cred.json -c CH6R
 ```
-
-The (optional) `elecmap.xlsx` output file contains the same information as `elecmap.cxx`

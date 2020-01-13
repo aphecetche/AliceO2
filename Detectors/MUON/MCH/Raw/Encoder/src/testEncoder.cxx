@@ -26,16 +26,16 @@
 
 using namespace o2::mch::raw;
 
-std::optional<uint16_t> dummyMapper(uint16_t solarId)
+std::optional<CruLinkId> dummyMapper(uint16_t solarId)
 {
   if (solarId == 728) {
-    return 3;
+    return CruLinkId(0, 3);
   }
   if (solarId == 361) {
-    return 11;
+    return CruLinkId(0, 19);
   }
   if (solarId == 448) {
-    return 23;
+    return CruLinkId(0, 12);
   }
   return std::nullopt;
 }

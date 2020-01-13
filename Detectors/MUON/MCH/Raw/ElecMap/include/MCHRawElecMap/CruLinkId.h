@@ -8,17 +8,31 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELECMAP_SOLAR2CRU_MAPPER_H
-#define O2_MCH_RAW_ELECMAP_SOLAR2CRU_MAPPER_H
+#ifndef O2_MCH_RAW_ELECMAP_CRU_LINK_ID_H
+#define O2_MCH_RAW_ELECMAP_CRU_LINK_ID_H
 
-#include <functional>
 #include <cstdint>
-#include <optional>
+#include <iosfwd>
 
 namespace o2::mch::raw
 {
-/// Mapper from solarId to cruId
-using Solar2CruMapper = std::function<std::optional<uint16_t>(uint16_t solarId)>;
-} // namespace o2::mch::raw
+class CruLinkId
+{
+ public:
+  CruLinkId(uint16_t cruId, uint8_t linkId);
 
+  uint16_t cruId() const { return mCruId; }
+  uint8_t linkId() const { return mLinkId; }
+
+ private:
+  uint16_t mCruId;
+  uint8_t mLinkId;
+};
+
+CruLinkId decodeCruLinkId(uint32_t code);
+uint32_t encode(const CruLinkId& id);
+
+std::ostream& operator<<(std::ostream& os, const CruLinkId& id);
+
+} // namespace o2::mch::raw
 #endif

@@ -32,6 +32,8 @@ class DsDetId
 DsDetId decodeDsDetId(uint32_t code);
 uint32_t encode(const DsDetId& id);
 
+std::string asString(DsDetId dsDetId);
+
 std::ostream& operator<<(std::ostream& os, const DsDetId& id);
 
 } // namespace o2::mch::raw
