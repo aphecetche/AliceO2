@@ -22,7 +22,6 @@
 #include <fmt/format.h>
 #include <gsl/span>
 #include <iostream>
-#include "MCHRawElecMap/Cru2SolarMapper.h"
 
 namespace o2
 {

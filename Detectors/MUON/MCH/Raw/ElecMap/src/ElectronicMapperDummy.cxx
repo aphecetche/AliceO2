@@ -14,6 +14,7 @@
 #include <fmt/format.h>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
+#include "MCHRawElecMap/CruLinkId.h"
 #include "ElectronicMapperImplHelper.h"
 
 namespace
@@ -62,9 +63,9 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   return e2d;
 }
 
-std::map<uint16_t, std::set<uint16_t>> buildSolarId2CruIdMap()
+std::map<uint32_t, uint16_t> buildCruLinkId2SolarIdMap()
 {
-  std::map<uint16_t, std::set<uint16_t>> c2s;
+  std::map<uint32_t, uint16_t> c2s;
 
   uint16_t n{0};
   uint16_t solarId{0};
@@ -75,12 +76,16 @@ std::map<uint16_t, std::set<uint16_t>> buildSolarId2CruIdMap()
     seg.forEachDualSampa([&](int dsId) {
       if (n % 40 == 0) {
         solarId++;
+        auto cruId = solarId / 24;
+        auto linkId = solarId - cruId * 24;
+        c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;
       }
-      auto cruId = solarId / 24;
-      c2s[cruId].insert(solarId);
       n++;
     });
   });
+  auto cruId = solarId / 24;
+  auto linkId = solarId - cruId * 24;
+  c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;
   return c2s;
 }
 } // namespace
@@ -111,24 +116,22 @@ std::function<std::optional<DsElecId>(DsDetId)>
 }
 
 template <>
-std::function<std::set<uint16_t>(uint16_t)>
-  createCru2SolarMapper<ElectronicMapperDummy>()
+std::function<std::optional<uint16_t>(CruLinkId)>
+  createCruLink2SolarMapper<ElectronicMapperDummy>()
 {
-  auto c2s = buildSolarId2CruIdMap();
-  return impl::mapperCru2Solar<ElectronicMapperDummy>(c2s);
+  auto c2s = buildCruLinkId2SolarIdMap();
+  return impl::mapperCruLink2Solar<ElectronicMapperDummy>(c2s);
 }
 
 template <>
-std::function<std::optional<uint16_t>(uint16_t)>
-  createSolar2CruMapper<ElectronicMapperDummy>()
+std::function<std::optional<CruLinkId>(uint16_t)>
+  createSolar2CruLinkMapper<ElectronicMapperDummy>()
 {
-  std::map<uint16_t, uint16_t> s2c;
-  auto c2s = buildSolarId2CruIdMap();
+  std::map<uint16_t, uint32_t> s2c;
+  auto c2s = buildCruLinkId2SolarIdMap();
   for (auto p : c2s) {
-    for (auto s : p.second) {
-      s2c[s] = p.first;
-    }
+    s2c[p.second] = p.first;
   }
-  return impl::mapperSolar2Cru<ElectronicMapperDummy>(s2c);
+  return impl::mapperSolar2CruLink<ElectronicMapperDummy>(s2c);
 }
 } // namespace o2::mch::raw

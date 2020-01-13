@@ -128,7 +128,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
       std::cout << nrdhs << "--" << rdh << "\n";
     }
     auto r = rdh;
-    r.feeId = rdhLinkId(r) + opt.solarOffset();
+    r.feeId = rdhLinkId(r) + opt.solarOffset(); // FIXME: get this from ElecMap : (cru,linkid)->solarid
     return r;
   };
 

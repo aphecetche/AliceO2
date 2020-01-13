@@ -10,6 +10,7 @@
 
 o2_add_library(MCHRawElecMap SOURCES src/DsElecId.cxx
         src/DsDetId.cxx
+        src/CruLinkId.cxx
         src/ElectronicMapperDummy.cxx
         src/ElectronicMapperGenerated.cxx
         src/CH5R.cxx

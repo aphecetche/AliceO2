@@ -15,7 +15,7 @@
 #include "GBTEncoder.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawCommon/RDHManip.h"
-#include "MCHRawElecMap/Solar2CruMapper.h"
+#include "MCHRawElecMap/Mapper.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MakeArray.h"
 #include <algorithm>
@@ -41,7 +41,7 @@ template <typename FORMAT, typename CHARGESUM, typename RDHTYPE>
 class EncoderImpl : public Encoder
 {
  public:
-  EncoderImpl(Solar2CruMapper solar2cru);
+  EncoderImpl(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cruLink);
 
   void addChannelData(DsElecId dsId, uint8_t chId, const std::vector<SampaCluster>& data) override;
 
@@ -54,7 +54,7 @@ class EncoderImpl : public Encoder
   void gbts2buffer(uint32_t orbit, uint16_t bunchCrossing);
 
  private:
-  Solar2CruMapper mSolar2Cru;
+  std::function<std::optional<CruLinkId>(uint16_t solarId)> mSolar2Cru;
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
   std::vector<uint8_t> mBuffer;
@@ -63,7 +63,7 @@ class EncoderImpl : public Encoder
 };
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-EncoderImpl<FORMAT, CHARGESUM, RDH>::EncoderImpl(Solar2CruMapper solar2cru)
+EncoderImpl<FORMAT, CHARGESUM, RDH>::EncoderImpl(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cru)
   : mSolar2Cru(solar2cru),
     mOrbit{},
     mBunchCrossing{},
@@ -103,14 +103,16 @@ void EncoderImpl<FORMAT, CHARGESUM, RDH>::gbts2buffer(uint32_t orbit, uint16_t b
     auto payloadSize = gbtBuffer.size(); // in bytes
     impl::assertIsInRange("payloadSize", payloadSize, 0, (static_cast<uint32_t>(1) << 31) - 64);
     auto solarId = gbt->id();
-    auto cru = mSolar2Cru(solarId);
+    auto cruLinkId = mSolar2Cru(solarId);
     uint16_t cruId = 0;
-    if (!cru.has_value()) {
-      std::cout << "WARNING : could not get cruId from solarId=" << solarId << " using dummy value = 0\n";
+    uint8_t linkId = 0;
+    if (!cruLinkId.has_value()) {
+      std::cout << "WARNING : could not get cruLinkId from solarId=" << solarId << " using dummy value = 0\n";
     } else {
-      cruId = cru.value();
+      cruId = cruLinkId->cruId();
+      linkId = cruLinkId->linkId();
     }
-    auto rdh = createRDH<RDH>(cruId, solarId, orbit, bunchCrossing, payloadSize);
+    auto rdh = createRDH<RDH>(cruId, linkId, solarId, orbit, bunchCrossing, payloadSize);
     // append RDH first ...
     appendRDH(mBuffer, rdh);
     // ... and then the corresponding payload

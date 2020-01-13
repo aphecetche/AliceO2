@@ -16,7 +16,6 @@
 #include "BareElinkEncoderMerger.h"
 #include "UserLogicElinkEncoder.h"
 #include "UserLogicElinkEncoderMerger.h"
-#include "MCHRawElecMap/Solar2CruMapper.h"
 #include <gsl/span>
 
 namespace o2::mch::raw
@@ -28,7 +27,7 @@ namespace impl
 
 template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase>
 struct EncoderCreator {
-  static std::unique_ptr<Encoder> _(Solar2CruMapper solar2cru)
+  static std::unique_ptr<Encoder> _(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cru)
   {
     GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = forceNoPhase;
     return std::make_unique<EncoderImpl<FORMAT, CHARGESUM, RDH>>(solar2cru);
@@ -37,23 +36,24 @@ struct EncoderCreator {
 } // namespace impl
 
 template <typename FORMAT, typename CHARGESUM, typename RDH, bool forceNoPhase>
-std::unique_ptr<Encoder> createEncoder(Solar2CruMapper solar2cru)
+std::unique_ptr<Encoder> createEncoder(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cru)
 {
   return impl::EncoderCreator<FORMAT, CHARGESUM, RDH, forceNoPhase>::_(solar2cru);
 }
+std::unique_ptr<Encoder> createEncoder(std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cruLink);
 
 // define only the specializations we use
 
-template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(Solar2CruMapper);
-template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(Solar2CruMapper);
+template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
+template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
 
-template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(Solar2CruMapper);
-template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(Solar2CruMapper);
+template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
+template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
 
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(Solar2CruMapper);
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(Solar2CruMapper);
+template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, true>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
+template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, false>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
 
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(Solar2CruMapper);
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(Solar2CruMapper);
+template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, true>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
+template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, false>(std::function<std::optional<CruLinkId>(uint16_t solarId)>);
 
 } // namespace o2::mch::raw

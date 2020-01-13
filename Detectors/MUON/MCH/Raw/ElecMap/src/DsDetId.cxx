@@ -42,4 +42,9 @@ std::ostream& operator<<(std::ostream& os, const DsDetId& id)
   return os;
 }
 
+std::string asString(DsDetId dsDetId)
+{
+  return fmt::format("DE{}-DS{}", dsDetId.deId(), dsDetId.dsId());
+}
+
 } // namespace o2::mch::raw

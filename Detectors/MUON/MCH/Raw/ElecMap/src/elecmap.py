@@ -56,7 +56,7 @@ def gencode_insert_row_in_map(out,row):
     if row.ds_id_4:
          insert_in_map(row.ds_id_4,4)
 
-def gencode_do(df,chamber):
+def gencode_do(df,df_cru,chamber):
     """ Generate code for one chamber
 
 
@@ -72,12 +72,17 @@ def gencode_do(df,chamber):
               #include <cstdint>
               #include "MCHRawElecMap/DsElecId.h"
               #include "MCHRawElecMap/DsDetId.h"
+              #include "MCHRawElecMap/CruLinkId.h"
               using namespace o2::mch::raw;
 
               namespace {
               void add(std::map<uint16_t,uint32_t>& e2d, int deId, int dsId,
               uint16_t solarId, uint8_t groupId, uint8_t index) {
               e2d.emplace(encode(DsElecId(solarId,groupId,index)),encode(DsDetId(deId,dsId)));
+             }
+              void add_cru(std::map<uint16_t,uint32_t>& s2c, int cruId, int
+              linkId, uint16_t solarId) {
+              s2c.emplace(solarId,encode(CruLinkId(cruId,linkId)));
              }
              }
               ''')
@@ -89,7 +94,11 @@ def gencode_do(df,chamber):
 
     out.write("}")
 
-    out.write("void fillSolar2Cru{}(std::map<uint16_t, uint16_t>& s2c){{".format(chamber))
+    out.write("void fillSolar2CruLink{}(std::map<uint16_t, uint32_t>& s2c){{".format(chamber))
+
+    for row in df_cru.itertuples():
+        out.write("add_cru(s2c,{},{},{});\n".format(row.cru_id,row.link_id,row.solar_uid))
+
     out.write("}")
     gencode_close_generated(out)
 
@@ -110,12 +119,37 @@ def gs_read_sheet(credential_file,workbook,sheet_name):
 
     data = wks.get_all_values()
 
-    cols = np.array([0,1,3,4,5,6,7,8,9,10,11,12,13,14])
+    cols = np.array([0,1,3,4,5,6,7,8,9,10,11,12,13,14,15])
     df = pd.DataFrame(np.asarray(data)[:,cols], columns=["cru","fiber","crate","solar",
-                                      "solar_local_id","j","slat",
+                                      "solar_local_id","j","solar_uid","flat_cable_name",
                                       "length","de",
                                       "ds1","ds2","ds3","ds4","ds5"])
     return df.iloc[3:]
+
+def gs_read_sheet_cru(credential_file,workbook,sheet_name):
+    """ Read a Google Spreadsheet 
+
+    """
+
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(
+             credential_file, scope) # Your json file here
+
+    gc = gspread.authorize(credentials)
+
+    wks = gc.open(workbook).worksheet(sheet_name)
+
+    data = wks.get_all_values()
+
+# LINK ID	CRU ID	CRU LINK	DWP	CRU ADDR	DW ADDR
+
+    cols = np.array([0,1,2,3,4,5])
+    df = pd.DataFrame(np.asarray(data)[:,cols],
+                      columns=["solar_uid","cru_id","link_id",
+                               "dwp","cru_address_0","cru_address_1"])
+    return df.iloc[1:]
 
 def excel_get_dataframe(filename,sheet):
     """ Read a dataframe from an excel file """
@@ -207,6 +241,7 @@ parser.add_argument("--fec_map","-f",
 args = parser.parse_args()
 
 df = pd.DataFrame()
+df_cru = pd.DataFrame()
 
 if args.excel_filename:
     for ifile in args.excel_filename:
@@ -214,6 +249,9 @@ if args.excel_filename:
 
 if args.gs_name:
     df = df.append(gs_read_sheet(args.credentials,args.gs_name,args.sheet))
+    df_cru= df_cru.append(gs_read_sheet_cru(args.credentials,args.gs_name,
+                                       args.sheet+" CRU map"))
+    df_cru = df_cru[df_cru.solar_uid!=""]
 
 df = _simplify_dataframe(df)
 
@@ -221,7 +259,7 @@ if args.verbose:
   print(df.to_string())
 
 if args.chamber:
-    elecmap.gencode.do(df,args.chamber)
+    gencode_do(df,df_cru,args.chamber)
 
 if args.fecmapfile:
     s = df.to_string(

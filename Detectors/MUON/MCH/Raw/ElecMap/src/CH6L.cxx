@@ -21,4 +21,4 @@ using namespace o2::mch::raw;
 void fillElec2DetCH6L(std::map<uint16_t, uint32_t>& e2d)
 {
 }
-void fillSolar2CruCH6L(std::map<uint16_t, uint16_t>& s2c) {}
+void fillSolar2CruLinkCH6L(std::map<uint16_t, uint32_t>& s2c) {}

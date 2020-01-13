@@ -114,9 +114,7 @@ std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, floa
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encodeDigits(gsl::span<o2::mch::Digit> digits,
                   std::unique_ptr<Encoder>& encoder,
-                  std::function<std::optional<uint16_t>(uint16_t)> solar2cru,
                   std::function<std::optional<DsElecId>(DsDetId)> det2elec,
-                  std::function<std::set<uint16_t>(uint16_t)> cru2solar,
                   uint32_t orbit,
                   uint16_t bc)
 
@@ -159,12 +157,11 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
-            std::function<std::optional<uint16_t>(uint16_t)> solar2cru,
+            std::function<std::optional<CruLinkId>(uint16_t)> solar2cruLink,
             std::function<std::optional<DsElecId>(DsDetId)> det2elec,
-            std::function<std::set<uint16_t>(uint16_t)> cru2solar,
             std::vector<uint8_t>& buffer)
 {
-  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH>(solar2cru);
+  auto encoder = createEncoder<FORMAT, CHARGESUM, RDH>(solar2cruLink);
 
   for (int i = 0; i < interactions.size(); i++) {
 
@@ -173,7 +170,7 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
     std::cout << fmt::format(">>> BEGIN INTERACTION {:4d} ", i) << col << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
 
     encodeDigits<FORMAT, CHARGESUM, RDH>(digitsPerInteraction[i],
-                                         encoder, solar2cru, det2elec, cru2solar, col.orbit, col.bc);
+                                         encoder, det2elec, col.orbit, col.bc);
 
     encoder->moveToBuffer(buffer);
 
@@ -199,12 +196,9 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
 
   std::vector<uint8_t> buffer;
-  auto solar2cru = createSolar2CruMapper<ELECMAP>();
-  auto cru2solar = createCru2SolarMapper<ELECMAP>();
   encode<FORMAT, CHARGESUM, RDH>(interactions, digitsPerInteraction,
-                                 solar2cru,
+                                 createSolar2CruLinkMapper<ELECMAP>(),
                                  createDet2ElecMapper<ELECMAP>(deIds),
-                                 cru2solar,
                                  buffer);
 
   if (buffer.empty()) {
