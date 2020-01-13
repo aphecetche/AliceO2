@@ -16,6 +16,7 @@
 #include <cstdint>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
+#include "MCHRawElecMap/CruLinkId.h"
 using namespace o2::mch::raw;
 
 namespace
@@ -24,6 +25,10 @@ void add(std::map<uint16_t, uint32_t>& e2d, int deId, int dsId,
          uint16_t solarId, uint8_t groupId, uint8_t index)
 {
   e2d.emplace(encode(DsElecId(solarId, groupId, index)), encode(DsDetId(deId, dsId)));
+}
+void add_cru(std::map<uint16_t, uint32_t>& s2c, int cruId, int linkId, uint16_t solarId)
+{
+  s2c.emplace(solarId, encode(CruLinkId(cruId, linkId)));
 }
 } // namespace
 void fillElec2DetCH7L(std::map<uint16_t, uint32_t>& e2d)
@@ -892,4 +897,44 @@ void fillElec2DetCH7L(std::map<uint16_t, uint32_t>& e2d)
   add(e2d, 719, 1129, 860, 6, 0);
   add(e2d, 719, 1128, 860, 6, 1);
 }
-void fillSolar2CruLinkCH7L(std::map<uint16_t, uint32_t>& s2c) {}
+void fillSolar2CruLinkCH7L(std::map<uint16_t, uint32_t>& s2c)
+{
+  add_cru(s2c, 0, 0, 728);
+  add_cru(s2c, 0, 1, 729);
+  add_cru(s2c, 0, 2, 730);
+  add_cru(s2c, 0, 3, 731);
+  add_cru(s2c, 0, 4, 732);
+  add_cru(s2c, 0, 5, 736);
+  add_cru(s2c, 0, 6, 737);
+  add_cru(s2c, 0, 7, 738);
+  add_cru(s2c, 0, 8, 739);
+  add_cru(s2c, 0, 9, 740);
+  add_cru(s2c, 0, 9, 741);
+  add_cru(s2c, 0, 10, 776);
+  add_cru(s2c, 0, 11, 777);
+  add_cru(s2c, 0, 12, 778);
+  add_cru(s2c, 0, 13, 779);
+  add_cru(s2c, 0, 14, 780);
+  add_cru(s2c, 0, 15, 781);
+  add_cru(s2c, 0, 16, 864);
+  add_cru(s2c, 0, 17, 865);
+  add_cru(s2c, 0, 18, 866);
+  add_cru(s2c, 0, 19, 867);
+  add_cru(s2c, 0, 20, 352);
+  add_cru(s2c, 0, 21, 353);
+  add_cru(s2c, 0, 22, 354);
+  add_cru(s2c, 0, 23, 355);
+  add_cru(s2c, 1, 0, 356);
+  add_cru(s2c, 1, 1, 357);
+  add_cru(s2c, 1, 2, 304);
+  add_cru(s2c, 1, 3, 305);
+  add_cru(s2c, 1, 4, 306);
+  add_cru(s2c, 1, 5, 307);
+  add_cru(s2c, 1, 6, 308);
+  add_cru(s2c, 1, 7, 309);
+  add_cru(s2c, 1, 8, 856);
+  add_cru(s2c, 1, 9, 857);
+  add_cru(s2c, 1, 10, 858);
+  add_cru(s2c, 1, 11, 859);
+  add_cru(s2c, 1, 12, 860);
+}
