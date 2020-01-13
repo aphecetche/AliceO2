@@ -20,7 +20,7 @@ CruLinkId::CruLinkId(uint16_t cruId, uint8_t linkId)
   : mCruId(cruId), mLinkId(linkId)
 {
   //impl::assertIsInRange("cruId", cruId, 0, xxx);
-  impl::assertIsInRange("cruId", mLinkId, 0, 23);
+  impl::assertIsInRange("linkId", mLinkId, 0, 23);
 }
 
 uint32_t encode(const CruLinkId& id)
