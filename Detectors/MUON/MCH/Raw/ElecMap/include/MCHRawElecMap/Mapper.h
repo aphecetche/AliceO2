@@ -19,7 +19,6 @@
 #include "MCHRawElecMap/DsDetId.h"
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/CruLinkId.h"
-#include "MCHMappingFactory/CreateSegmentation.h"
 #include <fmt/format.h>
 #include <array>
 #include <gsl/span>
@@ -48,7 +47,7 @@ static std::array<int, 156> deIdsForAllMCH{
   900, 901, 902, 903, 904, 905, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925,
   1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025};
 
-/**@name Primary mappers
+/**@name Mapper templates.
     */
 ///@{
 
@@ -75,6 +74,16 @@ std::function<std::optional<uint16_t>(CruLinkId id)> createCruLink2SolarMapper()
 /// From solarId to (cruId,linkId)
 template <typename T>
 std::function<std::optional<CruLinkId>(uint16_t solarId)> createSolar2CruLinkMapper();
+///@}
+
+/**@name Actual mapper types.
+    */
+///@{
+
+struct ElectronicMapperDummy {
+};
+struct ElectronicMapperGenerated {
+};
 ///@}
 
 } // namespace o2::mch::raw

@@ -20,7 +20,7 @@
 #include <rapidjson/prettywriter.h>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/Mapper.h"
-#include "MCHRawElecMap/ElectronicMapperGenerated.h"
+#include "MCHRawElecMap/Mapper.h"
 #include "MCHMappingInterface/CathodeSegmentation.h"
 #include "MCHContour/SVGWriter.h"
 #include "MCHMappingSegContour/SegmentationContours.h"

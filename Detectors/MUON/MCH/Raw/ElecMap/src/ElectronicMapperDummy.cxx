@@ -8,32 +8,34 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHRawElecMap/ElectronicMapperDummy.h"
+#include "MCHRawElecMap/Mapper.h"
 #include <map>
-#include "MCHMappingFactory/CreateSegmentation.h"
 #include <fmt/format.h>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
 #include "MCHRawElecMap/CruLinkId.h"
 #include "ElectronicMapperImplHelper.h"
+#include "dslist.h"
 
 namespace
 {
+
 // build the map to go from electronic ds id to detector ds id
 
 std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
 {
   std::map<uint16_t, uint32_t> e2d;
 
+  auto dslist = createDualSampaMapper();
+
   uint16_t n{0};
   uint16_t solarId{0};
   uint8_t groupId{0};
   uint8_t index{0};
 
-  o2::mch::mapping::forEachDetectionElement([&](int deId) {
-    auto seg = o2::mch::mapping::segmentation(deId);
+  for (auto deId : o2::mch::raw::deIdsForAllMCH) {
     // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
-    seg.forEachDualSampa([&](int dsId) {
+    for (auto dsId : dslist(deId)) {
       // index 0..4
       // groupId 0..7
       // solarId 0..nsolars
@@ -58,8 +60,8 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
                     o2::mch::raw::encode(dsDetId));
       }
       n++;
-    });
-  });
+    };
+  };
   return e2d;
 }
 
@@ -70,10 +72,11 @@ std::map<uint32_t, uint16_t> buildCruLinkId2SolarIdMap()
   uint16_t n{0};
   uint16_t solarId{0};
 
-  o2::mch::mapping::forEachDetectionElement([&](int deId) {
-    auto seg = o2::mch::mapping::segmentation(deId);
+  auto dslist = createDualSampaMapper();
+
+  for (auto deId : o2::mch::raw::deIdsForAllMCH) {
     // assign a tuple (solarId,groupId,index) to the pair (deId,dsId)
-    seg.forEachDualSampa([&](int dsId) {
+    for (auto dsId : dslist(deId)) {
       if (n % 40 == 0) {
         solarId++;
         auto cruId = solarId / 24;
@@ -81,8 +84,8 @@ std::map<uint32_t, uint16_t> buildCruLinkId2SolarIdMap()
         c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;
       }
       n++;
-    });
-  });
+    };
+  };
   auto cruId = solarId / 24;
   auto linkId = solarId - cruId * 24;
   c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;

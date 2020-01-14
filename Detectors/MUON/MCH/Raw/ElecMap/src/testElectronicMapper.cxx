@@ -14,15 +14,13 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "MCHMappingFactory/CreateSegmentation.h"
 #include "MCHRawElecMap/Mapper.h"
-#include "MCHRawElecMap/ElectronicMapperDummy.h"
-#include "MCHRawElecMap/ElectronicMapperGenerated.h"
 #include <fmt/format.h>
 #include <set>
 #include <boost/mpl/list.hpp>
 #include <gsl/span>
 #include <array>
+#include "dslist.h"
 
 using namespace o2::mch::raw;
 
@@ -37,16 +35,41 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(electronicmapperdummy)
 
+// BOOST_AUTO_TEST_CASE(dumpseg)
+// {
+//   std::map<int, std::vector<int>> dsids;
+//
+//   o2::mch::mapping::forEachDetectionElement([&dsids](int deId) {
+//     auto seg = o2::mch::mapping::segmentation(deId);
+//     seg.forEachDualSampa([&dsids, deId](int dsid) {
+//       dsids[deId].emplace_back(dsid);
+//     });
+//   });
+//
+//   for (auto p : dsids) {
+//     std::cout << "dsids[" << p.first << "]={";
+//     for (auto i = 0; i < p.second.size(); i++) {
+//       std::cout << p.second[i];
+//       if (i != p.second.size() - 1) {
+//         std::cout << ",";
+//       }
+//     }
+//     std::cout << "};\n";
+//   }
+//   std::cout << "\n";
+// }
+
+auto dslist = createDualSampaMapper();
+
 template <size_t N>
 std::set<int> nofDualSampas(std::array<int, N> deIds)
 {
   std::set<int> ds;
 
   for (auto deId : deIds) {
-    auto seg = o2::mch::mapping::segmentation(deId);
-    seg.forEachDualSampa([&ds, deId](int dsid) {
+    for (auto dsid : dslist(deId)) {
       ds.insert(encode(DsDetId{deId, dsid}));
-    });
+    }
   }
   return ds;
 }
@@ -59,10 +82,9 @@ std::set<int> nofDualSampasFromMapper(gsl::span<int> deids)
   auto d2e = o2::mch::raw::createDet2ElecMapper<T>(deids);
 
   for (auto deid : deids) {
-    auto seg = o2::mch::mapping::segmentation(deid);
-    size_t nref = seg.nofDualSampas();
+    size_t nref = dslist(deid).size();
     std::set<int> dsForOneDE;
-    seg.forEachDualSampa([&seg, &ds, d2e, deid, &dsForOneDE](int dsid) {
+    for (auto dsid : dslist(deid)) {
       DsDetId id{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)};
       auto dsel = d2e(id);
       if (dsel.has_value()) {
@@ -70,7 +92,7 @@ std::set<int> nofDualSampasFromMapper(gsl::span<int> deids)
         ds.insert(code);
         dsForOneDE.insert(code);
       }
-    });
+    };
     if (dsForOneDE.size() != nref) {
       std::cout << fmt::format("ERROR : mapper has {:4d} DS while DE {:4d} should have {:4d}\n", dsForOneDE.size(), deid, nref);
     }
@@ -81,15 +103,14 @@ template <typename T>
 std::set<uint16_t> getSolarUIDs(int deid)
 {
   auto d2e = o2::mch::raw::createDet2ElecMapper<T>();
-  auto seg = o2::mch::mapping::segmentation(deid);
   std::set<uint16_t> solarsForDE;
-  seg.forEachDualSampa([&solarsForDE, &seg, d2e, deid](int dsid) {
+  for (auto dsid : dslist(deid)) {
     DsDetId id{static_cast<uint16_t>(deid), static_cast<uint16_t>(dsid)};
     auto dsel = d2e(id);
     if (dsel.has_value()) {
       solarsForDE.insert(dsel->solarId());
     }
-  });
+  }
   return solarsForDE;
 }
 
@@ -98,13 +119,12 @@ std::set<uint16_t> getSolarUIDs()
 {
   std::set<uint16_t> solarUIDs;
 
-  o2::mch::mapping::forEachDetectionElement([&solarUIDs](int deid) {
-    auto seg = o2::mch::mapping::segmentation(deid);
+  for (auto deid : deIdsForAllMCH) {
     std::set<uint16_t> solarsForDE = getSolarUIDs<T>(deid);
     for (auto s : solarsForDE) {
       solarUIDs.insert(s);
     }
-  });
+  }
   return solarUIDs;
 }
 
@@ -130,14 +150,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6R, T, testTypes)
   BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
 }
 
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
-BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6L, T, testTypes)
-{
-  auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6L);
-  auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6L);
-  BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
-}
-
+// BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+// BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH6L, T, testTypes)
+// {
+//   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH6L);
+//   auto expected = nofDualSampas(o2::mch::raw::deIdsOfCH6L);
+//   BOOST_CHECK(std::equal(expected.begin(), expected.end(), check.begin()));
+// }
+//
 BOOST_AUTO_TEST_CASE_TEMPLATE(MustContainAllSampaCH7R, T, testTypes)
 {
   auto check = nofDualSampasFromMapper<T>(o2::mch::raw::deIdsOfCH7R);
@@ -353,33 +373,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AllSolarsMustGetACruLink, T, realTypes)
     if (!p.has_value()) {
       ++nbad;
     }
-    std::cout << fmt::format("SOLAR {:4d} ", s);
-    if (p.has_value()) {
-      std::cout << fmt::format("CRU {:4d} LINK {:1d}\n", p->cruId(), p->linkId());
-    } else {
-      std::cout << " NO DATA\n";
-    }
+    // std::cout << fmt::format("SOLAR {:4d} ", s);
+    // if (p.has_value()) {
+    //   std::cout << fmt::format("CRU {:4d} LINK {:1d}\n", p->cruId(), p->linkId());
+    // } else {
+    //   std::cout << " NO DATA\n";
+    // }
   }
   BOOST_CHECK_EQUAL(nbad, 0);
 }
 
-// BOOST_AUTO_TEST_CASE_TEMPLATE(EachCruHasLessThan960DualSampas, T, testTypes)
-// {
-//   std::map<int, int> nofDualSampaPerCRU;
-//
-//   auto de2cru = o2::mch::raw::mapperDe2Cru<T>();
-//
-//   o2::mch::mapping::forEachDetectionElement([&](int deid) {
-//     auto cru = de2cru(deid);
-//     if (cru.has_value()) {
-//       auto seg = o2::mch::mapping::segmentation(deid);
-//       nofDualSampaPerCRU[cru.value()] += seg.nofDualSampas();
-//     }
-//   });
-//   for (auto p : nofDualSampaPerCRU) {
-//     BOOST_CHECK_LE(p.second, 40 * 24);
-//   }
-// }
-//
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

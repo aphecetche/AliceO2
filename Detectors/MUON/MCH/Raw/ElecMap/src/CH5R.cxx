@@ -12,25 +12,7 @@
 /// GENERATED CODE ! DO NOT EDIT !
 ///
 
-#include <map>
-#include <cstdint>
-#include "MCHRawElecMap/DsElecId.h"
-#include "MCHRawElecMap/DsDetId.h"
-#include "MCHRawElecMap/CruLinkId.h"
-using namespace o2::mch::raw;
-
-namespace
-{
-void add(std::map<uint16_t, uint32_t>& e2d, int deId, int dsId,
-         uint16_t solarId, uint8_t groupId, uint8_t index)
-{
-  e2d.emplace(encode(DsElecId(solarId, groupId, index)), encode(DsDetId(deId, dsId)));
-}
-void add_cru(std::map<uint16_t, uint32_t>& s2c, int cruId, int linkId, uint16_t solarId)
-{
-  s2c.emplace(solarId, encode(CruLinkId(cruId, linkId)));
-}
-} // namespace
+#include "CH.cxx"
 void fillElec2DetCH5R(std::map<uint16_t, uint32_t>& e2d)
 {
   add(e2d, 504, 16, 72, 0, 0);
@@ -640,30 +622,30 @@ void fillElec2DetCH5R(std::map<uint16_t, uint32_t>& e2d)
 }
 void fillSolar2CruLinkCH5R(std::map<uint16_t, uint32_t>& s2c)
 {
-  add_cru(s2c, 1, 18, 72);
-  add_cru(s2c, 1, 19, 73);
-  add_cru(s2c, 1, 20, 74);
-  add_cru(s2c, 1, 21, 75);
-  add_cru(s2c, 1, 22, 76);
-  add_cru(s2c, 1, 12, 184);
-  add_cru(s2c, 1, 13, 185);
-  add_cru(s2c, 1, 14, 186);
-  add_cru(s2c, 1, 15, 187);
-  add_cru(s2c, 1, 16, 188);
-  add_cru(s2c, 1, 17, 189);
-  add_cru(s2c, 2, 0, 456);
-  add_cru(s2c, 2, 1, 457);
-  add_cru(s2c, 2, 2, 458);
-  add_cru(s2c, 2, 3, 459);
-  add_cru(s2c, 2, 4, 460);
-  add_cru(s2c, 2, 5, 461);
-  add_cru(s2c, 2, 12, 400);
-  add_cru(s2c, 2, 13, 401);
-  add_cru(s2c, 2, 14, 402);
-  add_cru(s2c, 2, 15, 403);
-  add_cru(s2c, 2, 16, 404);
-  add_cru(s2c, 2, 17, 405);
-  add_cru(s2c, 2, 6, 368);
-  add_cru(s2c, 2, 7, 369);
-  add_cru(s2c, 2, 8, 370);
+  add_cru(s2c, 1, 18, 72, 504);
+  add_cru(s2c, 1, 19, 73, 503);
+  add_cru(s2c, 1, 20, 74, 503);
+  add_cru(s2c, 1, 21, 75, 502);
+  add_cru(s2c, 1, 22, 76, 502);
+  add_cru(s2c, 1, 12, 184, 502);
+  add_cru(s2c, 1, 13, 185, 502);
+  add_cru(s2c, 1, 14, 186, 501);
+  add_cru(s2c, 1, 15, 187, 501);
+  add_cru(s2c, 1, 16, 188, 501);
+  add_cru(s2c, 1, 17, 189, 501);
+  add_cru(s2c, 2, 0, 456, 500);
+  add_cru(s2c, 2, 1, 457, 500);
+  add_cru(s2c, 2, 2, 458, 500);
+  add_cru(s2c, 2, 3, 459, 500);
+  add_cru(s2c, 2, 4, 460, 517);
+  add_cru(s2c, 2, 5, 461, 517);
+  add_cru(s2c, 2, 12, 400, 517);
+  add_cru(s2c, 2, 13, 401, 517);
+  add_cru(s2c, 2, 14, 402, 516);
+  add_cru(s2c, 2, 15, 403, 516);
+  add_cru(s2c, 2, 16, 404, 516);
+  add_cru(s2c, 2, 17, 405, 516);
+  add_cru(s2c, 2, 6, 368, 515);
+  add_cru(s2c, 2, 7, 369, 515);
+  add_cru(s2c, 2, 8, 370, 514);
 }

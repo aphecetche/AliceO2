@@ -11,16 +11,17 @@
 ///
 /// @author  Laurent Aphecetche
 
+#include "DumpBuffer.h"
+#include "Headers/RAWDataHeader.h"
+#include "MCHRawCommon/DataFormats.h"
+#include "MCHRawDecoder/Decoder.h"
+#include "MCHRawElecMap/Mapper.h"
 #include "boost/program_options.hpp"
-#include <iostream>
+#include <chrono>
+#include <fmt/format.h>
 #include <fstream>
 #include <gsl/span>
-#include <fmt/format.h>
-#include "MCHRawDecoder/Decoder.h"
-#include "Headers/RAWDataHeader.h"
-#include <chrono>
-#include "DumpBuffer.h"
-#include "MCHRawCommon/DataFormats.h"
+#include <iostream>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -35,20 +36,14 @@ using RDHv4 = o2::header::RAWDataHeaderV4;
 class DumpOptions
 {
  public:
-  DumpOptions(uint16_t solarOffset, unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
-    : mSolarOffset{solarOffset},
-      mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs},
+  DumpOptions(unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
+    : mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs},
       mShowRDHs{showRDHs},
       mJSON{jsonOutput} {}
 
   unsigned int maxNofRDHs() const
   {
     return mMaxNofRDHs;
-  }
-
-  uint16_t solarOffset() const
-  {
-    return mSolarOffset;
   }
 
   bool showRDHs() const
@@ -62,7 +57,6 @@ class DumpOptions
   }
 
  private:
-  uint16_t mSolarOffset;
   unsigned int mMaxNofRDHs;
   bool mShowRDHs;
   bool mJSON;
@@ -121,14 +115,24 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     ++ndigits;
   };
 
+  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+
   size_t nrdhs{0};
-  auto rdhHandler = [&](const RDH& rdh) {
+  auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
     nrdhs++;
     if (opt.showRDHs()) {
       std::cout << nrdhs << "--" << rdh << "\n";
     }
     auto r = rdh;
-    r.feeId = rdhLinkId(r) + opt.solarOffset(); // FIXME: get this from ElecMap : (cru,linkid)->solarid
+    auto cruId = r.cruID;
+    auto linkId = rdhLinkId(r);
+    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId));
+    if (!solar.has_value()) {
+      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{})\n",
+                               cruId, linkId);
+      return std::nullopt;
+    }
+    r.feeId = solar.value();
     return r;
   };
 
@@ -186,7 +190,6 @@ int main(int argc, char* argv[])
   po::variables_map vm;
   po::options_description generic("Generic options");
   unsigned int nrdhs{0};
-  uint16_t solarOffset{0};
   bool showRDHs{false};
   bool userLogic{false}; // default format is bareformat...
   bool chargeSum{false}; //... in sample mode
@@ -201,7 +204,6 @@ int main(int argc, char* argv[])
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
       ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format")
-      ("solarOffset,o",po::value<uint16_t>(&solarOffset),"offset to add to linkID to get a solarID")
       ;
   // clang-format on
 
@@ -216,7 +218,7 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  DumpOptions opt(solarOffset, nrdhs, showRDHs, jsonOutput);
+  DumpOptions opt(nrdhs, showRDHs, jsonOutput);
   std::map<std::string, Stat> statChannel;
 
   if (userLogic) {
