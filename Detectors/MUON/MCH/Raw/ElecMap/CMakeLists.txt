@@ -28,10 +28,15 @@ if(BUILD_TESTING)
         o2_add_test(elecmap-dummy
                 SOURCES src/testElectronicMapper.cxx
                 COMPONENT_NAME mch
-                LABELS "muon;mch;raw;long"
+                LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawElecMap)
         o2_add_test(dselecid
                 SOURCES src/testDsElecId.cxx
+                COMPONENT_NAME mch
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawElecMap)
+        o2_add_test(crulinkid
+                SOURCES src/testCruLinkId.cxx
                 COMPONENT_NAME mch
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawElecMap)
