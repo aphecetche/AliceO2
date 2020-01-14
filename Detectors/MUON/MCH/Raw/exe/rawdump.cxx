@@ -25,6 +25,8 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <optional>
+#include <cstdint>
 
 namespace po = boost::program_options;
 
@@ -36,11 +38,13 @@ using RDHv4 = o2::header::RAWDataHeaderV4;
 class DumpOptions
 {
  public:
-  DumpOptions(unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
-    : mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs},
-      mShowRDHs{showRDHs},
-      mJSON{jsonOutput} {}
+  DumpOptions(unsigned int deId, unsigned int maxNofRDHs, bool showRDHs, bool jsonOutput)
+    : mDeId{deId}, mMaxNofRDHs{maxNofRDHs == 0 ? std::numeric_limits<unsigned int>::max() : maxNofRDHs}, mShowRDHs{showRDHs}, mJSON{jsonOutput} {}
 
+  unsigned int deId() const
+  {
+    return mDeId;
+  }
   unsigned int maxNofRDHs() const
   {
     return mMaxNofRDHs;
@@ -56,10 +60,19 @@ class DumpOptions
     return mJSON;
   }
 
+  std::optional<uint16_t> cruId() const
+  {
+    return mCruId;
+  }
+
+  void cruId(uint16_t c) { mCruId = c; }
+
  private:
+  unsigned int mDeId;
   unsigned int mMaxNofRDHs;
   bool mShowRDHs;
   bool mJSON;
+  std::optional<uint16_t> mCruId{std::nullopt};
 };
 
 struct Stat {
@@ -125,11 +138,15 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     }
     auto r = rdh;
     auto cruId = r.cruID;
+    if (opt.cruId().has_value()) {
+      // force cruId to externally given value
+      cruId = opt.cruId().value();
+    }
     auto linkId = rdhLinkId(r);
-    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId));
+    auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
     if (!solar.has_value()) {
-      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{})\n",
-                               cruId, linkId);
+      std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
+                               cruId, linkId, opt.deId());
       return std::nullopt;
     }
     r.feeId = solar.value();
@@ -190,6 +207,7 @@ int main(int argc, char* argv[])
   po::variables_map vm;
   po::options_description generic("Generic options");
   unsigned int nrdhs{0};
+  unsigned int deId{0};
   bool showRDHs{false};
   bool userLogic{false}; // default format is bareformat...
   bool chargeSum{false}; //... in sample mode
@@ -198,12 +216,14 @@ int main(int argc, char* argv[])
   // clang-format off
   generic.add_options()
       ("help,h", "produce help message")
-      ("input-file,i", po::value<std::string>(&inputFile), "input file name")
+      ("input-file,i", po::value<std::string>(&inputFile)->required(), "input file name")
       ("nrdhs,n", po::value<unsigned int>(&nrdhs), "number of RDHs to go through")
       ("showRDHs,s",po::bool_switch(&showRDHs),"show RDHs")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
       ("chargeSum,c",po::bool_switch(&chargeSum),"charge sum format")
       ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format")
+      ("de,d",po::value<unsigned int>(&deId)->required(),"detection element id of the data to be decoded")
+      ("cru",po::value<uint16_t>(),"force cruId")
       ;
   // clang-format on
 
@@ -211,16 +231,25 @@ int main(int argc, char* argv[])
   cmdline.add(generic);
 
   po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
-  po::notify(vm);
 
   if (vm.count("help")) {
     std::cout << generic << "\n";
     return 2;
   }
 
-  DumpOptions opt(nrdhs, showRDHs, jsonOutput);
+  try {
+    po::notify(vm);
+  } catch (boost::program_options::error& e) {
+    std::cout << "Error: " << e.what() << "\n";
+    exit(1);
+  }
+
+  DumpOptions opt(deId, nrdhs, showRDHs, jsonOutput);
   std::map<std::string, Stat> statChannel;
 
+  if (vm.count("cru")) {
+    opt.cruId(vm["cru"].as<uint16_t>());
+  }
   if (userLogic) {
     if (chargeSum) {
       statChannel = rawdump<UserLogicFormat, ChargeSumMode, RDHv4>(inputFile, opt);
