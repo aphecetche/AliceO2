@@ -56,7 +56,7 @@ def gencode_insert_row_in_map(out,row):
     if row.ds_id_4:
          insert_in_map(row.ds_id_4,4)
 
-def gencode_do(df,df_cru,chamber):
+def gencode_do(df,df_cru,solar_map,chamber):
     """ Generate code for one chamber
 
 
@@ -68,23 +68,7 @@ def gencode_do(df,df_cru,chamber):
 
 
     out.write('''
-              #include <map>
-              #include <cstdint>
-              #include "MCHRawElecMap/DsElecId.h"
-              #include "MCHRawElecMap/DsDetId.h"
-              #include "MCHRawElecMap/CruLinkId.h"
-              using namespace o2::mch::raw;
-
-              namespace {
-              void add(std::map<uint16_t,uint32_t>& e2d, int deId, int dsId,
-              uint16_t solarId, uint8_t groupId, uint8_t index) {
-              e2d.emplace(encode(DsElecId(solarId,groupId,index)),encode(DsDetId(deId,dsId)));
-             }
-              void add_cru(std::map<uint16_t,uint32_t>& s2c, int cruId, int
-              linkId, uint16_t solarId) {
-              s2c.emplace(solarId,encode(CruLinkId(cruId,linkId)));
-             }
-             }
+              #include "CH.cxx"
               ''')
 
     out.write("void fillElec2Det{}(std::map<uint16_t,uint32_t>& e2d){{".format(chamber))
@@ -97,7 +81,8 @@ def gencode_do(df,df_cru,chamber):
     out.write("void fillSolar2CruLink{}(std::map<uint16_t, uint32_t>& s2c){{".format(chamber))
 
     for row in df_cru.itertuples():
-        out.write("add_cru(s2c,{},{},{});\n".format(row.cru_id,row.link_id,row.solar_uid))
+        if len(row.solar_id)>0:
+          out.write("add_cru(s2c,{},{},{},{});\n".format(row.cru_id,row.link_id,row.solar_id,solar_map[int(row.solar_id)]))
 
     out.write("}")
     gencode_close_generated(out)
@@ -121,7 +106,7 @@ def gs_read_sheet(credential_file,workbook,sheet_name):
 
     cols = np.array([0,1,3,4,5,6,7,8,9,10,11,12,13,14,15])
     df = pd.DataFrame(np.asarray(data)[:,cols], columns=["cru","fiber","crate","solar",
-                                      "solar_local_id","j","solar_uid","flat_cable_name",
+                                      "solar_local_id","j","solar_id","flat_cable_name",
                                       "length","de",
                                       "ds1","ds2","ds3","ds4","ds5"])
     return df.iloc[3:]
@@ -147,8 +132,9 @@ def gs_read_sheet_cru(credential_file,workbook,sheet_name):
 
     cols = np.array([0,1,2,3,4,5])
     df = pd.DataFrame(np.asarray(data)[:,cols],
-                      columns=["solar_uid","cru_id","link_id",
+                      columns=["solar_id","cru_id","link_id",
                                "dwp","cru_address_0","cru_address_1"])
+
     return df.iloc[1:]
 
 def excel_get_dataframe(filename,sheet):
@@ -183,6 +169,8 @@ def _simplify_dataframe(df):
    # from the input DataFrame (df)
    row_list = []
 
+   solar_map={}
+
    for row in df.itertuples():
        #print(row)
        crate = int(str(row.crate).strip('C '))
@@ -201,12 +189,14 @@ def _simplify_dataframe(df):
        d['ds_id_2'] = int(row.ds3) if pd.notna(row.ds3) and len(row.ds3)>0 else 0
        d['ds_id_3'] = int(row.ds4) if pd.notna(row.ds4) and len(row.ds4)>0 else 0
        d['ds_id_4'] = int(row.ds5) if pd.notna(row.ds5) and len(row.ds5)>0 else 0
+       solar_map[solar_id]= de_id
        row_list.append(d)
 
    # create the output DataFrame (sf) from the row_list dict
    sf = pd.DataFrame(row_list,dtype=np.int16)
+   print("solar_map",solar_map)
 
-   return sf
+   return sf,solar_map
 
 parser = argparse.ArgumentParser()
 
@@ -249,17 +239,16 @@ if args.excel_filename:
 
 if args.gs_name:
     df = df.append(gs_read_sheet(args.credentials,args.gs_name,args.sheet))
+    df,solar_map = _simplify_dataframe(df)
     df_cru= df_cru.append(gs_read_sheet_cru(args.credentials,args.gs_name,
                                        args.sheet+" CRU map"))
-    df_cru = df_cru[df_cru.solar_uid!=""]
 
-df = _simplify_dataframe(df)
 
 if args.verbose:
   print(df.to_string())
 
 if args.chamber:
-    gencode_do(df,df_cru,args.chamber)
+    gencode_do(df,df_cru,solar_map,args.chamber)
 
 if args.fecmapfile:
     s = df.to_string(

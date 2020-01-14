@@ -26,7 +26,7 @@ namespace o2::mch::raw::impl
 {
 template <typename T>
 std::function<std::optional<o2::mch::raw::DsDetId>(o2::mch::raw::DsElecId)>
-  mapperElec2Det(std::map<uint16_t, uint32_t> elec2det)
+  mapperElec2Det(const std::map<uint16_t, uint32_t>& elec2det)
 {
   return [elec2det](o2::mch::raw::DsElecId id) -> std::optional<o2::mch::raw::DsDetId> {
     auto it = elec2det.find(encode(id));
@@ -39,7 +39,7 @@ std::function<std::optional<o2::mch::raw::DsDetId>(o2::mch::raw::DsElecId)>
 
 template <typename T>
 std::function<std::optional<o2::mch::raw::DsElecId>(o2::mch::raw::DsDetId)>
-  mapperDet2Elec(std::map<uint32_t, uint16_t> det2elec)
+  mapperDet2Elec(const std::map<uint32_t, uint16_t>& det2elec)
 {
   return [det2elec](o2::mch::raw::DsDetId id) -> std::optional<o2::mch::raw::DsElecId> {
     auto it = det2elec.find(encode(id));
@@ -52,7 +52,7 @@ std::function<std::optional<o2::mch::raw::DsElecId>(o2::mch::raw::DsDetId)>
 
 template <typename T>
 std::function<std::optional<CruLinkId>(uint16_t)>
-  mapperSolar2CruLink(std::map<uint16_t, uint32_t> solar2cruLink)
+  mapperSolar2CruLink(const std::map<uint16_t, uint32_t>& solar2cruLink)
 {
   return [solar2cruLink](uint16_t solarId) -> std::optional<CruLinkId> {
     auto it = solar2cruLink.find(solarId);
@@ -65,7 +65,7 @@ std::function<std::optional<CruLinkId>(uint16_t)>
 
 template <typename T>
 std::function<std::optional<uint16_t>(CruLinkId)>
-  mapperCruLink2Solar(std::map<uint32_t, uint16_t> cruLink2solar)
+  mapperCruLink2Solar(const std::map<uint32_t, uint16_t>& cruLink2solar)
 {
   return [cruLink2solar](o2::mch::raw::CruLinkId id) -> std::optional<uint16_t> {
     auto it = cruLink2solar.find(encode(id));

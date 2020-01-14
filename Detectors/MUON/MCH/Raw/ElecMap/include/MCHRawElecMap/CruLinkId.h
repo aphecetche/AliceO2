@@ -20,13 +20,16 @@ class CruLinkId
 {
  public:
   CruLinkId(uint16_t cruId, uint8_t linkId);
+  CruLinkId(uint16_t cruId, uint8_t linkId, uint16_t deId);
 
   uint16_t cruId() const { return mCruId; }
+  uint16_t deId() const { return mDeId; }
   uint8_t linkId() const { return mLinkId; }
 
  private:
   uint16_t mCruId;
   uint8_t mLinkId;
+  uint16_t mDeId;
 };
 
 CruLinkId decodeCruLinkId(uint32_t code);

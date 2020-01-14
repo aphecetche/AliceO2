@@ -50,8 +50,6 @@
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/SampaCluster.h"
-#include "MCHRawElecMap/ElectronicMapperDummy.h"
-#include "MCHRawElecMap/ElectronicMapperGenerated.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "MCHRawEncoder/Encoder.h"
 #include "MCHRawEncoder/Paginator.h"

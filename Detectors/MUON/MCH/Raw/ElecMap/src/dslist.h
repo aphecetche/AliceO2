@@ -8,15 +8,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELECMAP_ELECTRONIC_MAPPER_GENERATED_H
-#define O2_MCH_RAW_ELECMAP_ELECTRONIC_MAPPER_GENERATED_H
+#ifndef O2_MCH_RAW_ELECMAP_DSLIST_H
+#define O2_MCH_RAW_ELECMAP_DSLIST_H
 
-#include "MCHRawElecMap/Mapper.h"
+#include <functional>
+#include <set>
 
-namespace o2::mch::raw
-{
-struct ElectronicMapperGenerated {
-};
-} // namespace o2::mch::raw
+std::function<std::set<int>(int deId)> createDualSampaMapper();
 
 #endif
