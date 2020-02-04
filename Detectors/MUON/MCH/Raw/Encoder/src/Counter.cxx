@@ -11,15 +11,15 @@
 #include "Counter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "Headers/RAWDataHeader.h"
-#include "LinkRange.h"
+#include "FeeIdRange.h"
 
 namespace o2::mch::raw
 {
 template <typename RDH>
 void setPacketCounter(gsl::span<uint8_t> buffer)
 {
-  auto linkRanges = getLinkRanges<RDH>(buffer);
-  for (auto lg : linkRanges) {
+  auto feeRanges = getFeeIdRanges<RDH>(buffer);
+  for (auto lg : feeRanges) {
     uint8_t packetCount{0};
     for (auto l : lg.second) {
       forEachRDH<RDH>(buffer.subspan(l.start, l.size), [&packetCount](RDH& rdh, auto size) {

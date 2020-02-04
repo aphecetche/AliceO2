@@ -17,7 +17,7 @@
 
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
-#include "LinkRange.h"
+#include "FeeIdRange.h"
 #include "Counter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include <array>
@@ -40,35 +40,35 @@ template <typename RDH>
 std::vector<uint8_t> createBuffer()
 {
   std::vector<uint8_t> buffer;
-  std::vector<uint8_t> links{1, 1, 1, 2, 2, 2};
+  std::vector<uint8_t> fees{1, 1, 1, 2, 2, 2};
 
-  for (auto linkId : links) {
+  for (auto feeId : fees) {
     auto rdh = createRDH<RDH>(
-      0, linkId, 0, 0, 0, 0);
+      0, feeId, 0, 0, 0, 0);
     appendRDH(buffer, rdh);
   }
   return buffer;
 }
 
 template <typename RDH>
-bool isPacketCounterContiguousPerLink(gsl::span<uint8_t> buffer)
+bool isPacketCounterContiguousPerfee(gsl::span<uint8_t> buffer)
 {
   std::map<int, uint8_t> counters;
   bool ok{true};
 
   forEachRDH<RDH>(buffer, [&counters, &ok](const RDH& rdh) {
-    auto linkId = rdhLinkId(rdh);
-    if (counters.find(linkId) == counters.end()) {
-      counters.emplace(linkId, 0);
+    auto feeId = rdhFeeId(rdh);
+    if (counters.find(feeId) == counters.end()) {
+      counters.emplace(feeId, 0);
       if (rdhPacketCounter(rdh) != 0) {
         ok = false;
       }
     } else {
-      int c = counters[linkId];
+      int c = counters[feeId];
       if (static_cast<int>(rdhPacketCounter(rdh)) != static_cast<int>(c + 1)) {
         ok = false;
       }
-      counters[linkId]++;
+      counters[feeId]++;
     }
   });
   return ok;
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestPacketCounter, T, testTypes)
 
   setPacketCounter<T>(buffer);
 
-  BOOST_CHECK_EQUAL(isPacketCounterContiguousPerLink<T>(buffer), true);
+  BOOST_CHECK_EQUAL(isPacketCounterContiguousPerfee<T>(buffer), true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

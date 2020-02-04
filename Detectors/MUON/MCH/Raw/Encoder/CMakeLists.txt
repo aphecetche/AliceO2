@@ -11,7 +11,7 @@
 o2_add_library(MCHRawEncoder
         SOURCES src/Encoder.cxx src/BitSet.cxx src/ElinkEncoder.cxx
         src/Paginator.cxx src/Counter.cxx
-        src/LinkRange.cxx src/Inserter.cxx
+        src/FeeIdRange.cxx src/Inserter.cxx
         src/DataBlock.cxx src/Normalizer.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap

@@ -82,7 +82,7 @@ size_t createSplitPages(DataBlock block, std::vector<uint8_t>& outBuffer,
   int inputPos{0};
   for (int i = 0; i < npages; i++) {
     auto len = std::min(payloadSize - inputPos, useableSize);
-    auto ri = createRDH<RDH>(block.header, pageSize, i + 1, len);
+    auto ri = createRDH<RDH>(block.header, pageSize, i, len);
     appendRDH<RDH>(outBuffer, ri);
     auto s = block.payload.subspan(inputPos, len);
     outBuffer.insert(outBuffer.end(), s.begin(), s.end());

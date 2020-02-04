@@ -26,7 +26,7 @@
 #include <boost/mpl/list.hpp>
 #include "CruBufferCreator.h"
 #include "Paginator.h"
-#include "LinkRange.h"
+#include "CommonConstants/Triggers.h"
 
 using namespace o2::mch::raw;
 
@@ -44,7 +44,7 @@ struct Common {
   Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer()),
              interactions{o2::InteractionTimeRecord{o2::InteractionRecord{0, 0}, 0}},
              testPoints{
-               //{8192, 8},
+               //                {8192, 8},
                {1024, 18},
                // {512, 31},
                // {128, 183}
@@ -56,39 +56,74 @@ struct Common {
   }
 } F;
 
-uint64_t orbitbc(uint32_t orbit, uint16_t bc)
-{
-  return static_cast<uint64_t>(orbit) | ((static_cast<uint64_t>(bc) << 32));
-}
-
 template <typename RDH>
 bool pageCountsMustBeIncreasingByOne(gsl::span<const uint8_t> pages)
 {
-  bool ok{true};
+
+  // pageCounts is a map (orbc -> (feeId,{pageCounts}))
+  // where orb is a combination of orbit and bc
+  // {pageCounts} is a vector of page counters
   std::map<uint64_t, std::map<int, std::vector<int>>> pageCounts;
   forEachRDH<RDH>(pages, [&pageCounts](const RDH& rdh) {
-    (pageCounts[orbitbc(rdhOrbit(rdh), rdhBunchCrossing(rdh))])[rdhFeeId(rdh)].emplace_back(rdhPageCounter(rdh));
+    uint64_t orbc =
+      static_cast<uint64_t>(rdhOrbit(rdh)) |
+      ((static_cast<uint64_t>(rdhBunchCrossing(rdh)) << 32));
+    (pageCounts[orbc])[rdhFeeId(rdh)].emplace_back(rdhPageCounter(rdh));
   });
 
+  bool ok{true};
+
+  // check that for each fee and each (orbit,bc)
+  // the vector of {pageCounts} goes from 1 to n,
+  // by increments of 1 (where n is the total number of pages
+  // required to store the payload for that fee)
   for (auto ob : pageCounts) {
     uint32_t orbit = static_cast<uint32_t>(ob.first & 0xFFFF);
     uint16_t bc = static_cast<uint16_t>((ob.first >> 32) & 0xFFFF);
-    std::cout << "OB " << orbit << " " << bc << "\n";
+    std::cout << "ORBIT " << orbit << " BC " << bc << "\n";
     for (auto p : ob.second) {
-      std::cout << "Link " << p.first << " : ";
-      for (auto pc : p.second) {
-        std::cout << pc << ",";
-      }
-      for (auto i = 0; i < p.second.size() - 1; i++) {
-        if (p.second[i] != p.second[i + 1] - 1) {
-          std::cout << "ERROR";
-          ok = false;
+      std::cout << "  FeeId " << p.first << "(" << p.second.size() << ") : ";
+      if (p.second.size() > 1) {
+        for (auto i = 0; i < p.second.size(); i++) {
+          std::cout << p.second[i] << ",";
+        }
+        for (auto i = 0; i < p.second.size() - 1; i++) {
+          if (p.second[i] != p.second[i + 1] - 1) {
+            std::cout << "ERROR";
+            ok = false;
+          }
         }
       }
       std::cout << "\n";
     }
   }
   return ok;
+}
+
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+
+/// Check that the RDHs corresponding to IR=ir have
+/// the TF bit of their triggerType set
+template <typename RDH>
+bool checkTimeFrameBitIsSet(gsl::span<const uint8_t> pages,
+                            const o2::InteractionRecord& ir)
+{
+  int nset{0};
+  int nir{0};
+  forEachRDH<RDH>(pages, [&nset, &nir, &ir](const RDH& rdh) {
+    std::cout << rdh << "\n";
+    if (rdhOrbit(rdh) == ir.orbit &&
+        rdhBunchCrossing(rdh) == ir.bc) {
+      nir++;
+    }
+    auto triggerType = rdhTriggerType(rdh);
+    if (triggerType & o2::trigger::TF) {
+      nset++;
+    }
+  });
+  bool irFound = (nir > 0);
+  bool allTFset = (nset == nir);
+  return irFound && allTFset;
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -110,7 +145,19 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckPageCounter, RDH, testTypes)
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
     o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
+    std::cout << "-- pageSize " << s.pageSize << "\n";
     bool ok = pageCountsMustBeIncreasingByOne<RDH>(pages);
+    BOOST_CHECK_EQUAL(ok, true);
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(FirstInteractionRecordMustHaveTFBitSet, RDH, testTypes)
+{
+  for (auto s : F.testPoints) {
+    std::vector<uint8_t> pages;
+    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
+    std::cout << "-- pageSize " << s.pageSize << "\n";
+    bool ok = checkTimeFrameBitIsSet<RDH>(pages, F.interactions[0]);
     BOOST_CHECK_EQUAL(ok, true);
   }
 }

@@ -32,8 +32,8 @@ std::ostream& operator<<(std::ostream& os, const RAWDataHeaderV4& rdh)
   os << fmt::format("offsetToNext       {:05d} memorySize    {:05d} blockLength    {:05d} {:s}\n", rdh.offsetToNext, rdh.memorySize, rdh.blockLength,
                     rdh.memorySize == sizeof(rdh) ? "EMPTY" : "");
 
-  os << fmt::format("triggerOrbit  {:010d} HB orbit {:010d}\n",
-                    rdh.triggerOrbit, rdh.heartbeatOrbit);
+  os << fmt::format("triggerOrbit  {:010d} HB orbit {:010d} feeId     {:10d}\n",
+                    rdh.triggerOrbit, rdh.heartbeatOrbit, rdh.feeId);
 
   os << fmt::format("triggerBC           {:04d} heartbeatBC    {:04d}\n",
                     rdh.triggerBC, rdh.heartbeatBC);

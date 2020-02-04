@@ -17,7 +17,7 @@
 
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
-#include "LinkRange.h"
+#include "FeeIdRange.h"
 #include "Inserter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include <array>
@@ -47,15 +47,15 @@ std::vector<o2::InteractionRecord> emptyHBs{
   {1, 99},
   {220, 220}};
 
-std::vector<int> linkIds{10, 12, 11, 5, 3};
+std::vector<int> feeIds{10, 12, 11, 5, 3};
 
 template <typename RDH>
 std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
   std::vector<uint8_t> buffer;
   for (auto ir : interactions) {
-    for (auto linkId : linkIds) {
-      auto rdh = createRDH<RDH>(0, linkId, linkId * 30, ir.orbit, ir.bc, 0);
+    for (auto feeId : feeIds) {
+      auto rdh = createRDH<RDH>(0, feeId, feeId * 30, ir.orbit, ir.bc, 0);
       appendRDH(buffer, rdh);
     }
   }
@@ -80,10 +80,10 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(arranger)
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionAllLinksMustHaveTheSameNumberOfRDHs, RDH, testTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionAllfeesMustHaveTheSameNumberOfRDHs, RDH, testTypes)
 {
   auto buffer = testBuffer<RDH>();
-  auto lr = getLinkRanges<RDH>(buffer);
+  auto lr = getFeeIdRanges<RDH>(buffer);
   bool ok{true};
   bool first{true};
   size_t refSize;
@@ -100,14 +100,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionAllLinksMustHaveTheSameNumberOfRDHs,
   BOOST_CHECK_EQUAL(ok, true);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionNumberOfRDHsMustBeNLinksTimesNHBs, RDH, testTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionNumberOfRDHsMustBeNfeesTimesNHBs, RDH, testTypes)
 {
   auto buffer = testBuffer<RDH>();
 
   int ntotal = countRDHs<RDH>(buffer);
 
   auto nofHBs = emptyHBs.size() + interactions.size();
-  auto expectedNofRDHs = nofHBs * linkIds.size();
+  auto expectedNofRDHs = nofHBs * feeIds.size();
 
   BOOST_CHECK_EQUAL(ntotal, expectedNofRDHs);
 }

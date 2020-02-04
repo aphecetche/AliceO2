@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ARRANGER_LINKRANGE_H
-#define O2_MCH_RAW_ARRANGER_LINKRANGE_H
+#ifndef O2_MCH_RAW_ARRANGER_FEEIDRANGE_H
+#define O2_MCH_RAW_ARRANGER_FEEIDRANGE_H
 
 #include <gsl/span>
 #include <cstdint>
@@ -18,19 +18,19 @@
 
 namespace o2::mch::raw
 {
-struct LinkRange {
+struct FeeIdRange {
   gsl::span<uint8_t>::size_type start;
   gsl::span<uint8_t>::size_type size;
 };
 
-// getLinkRanges return a map of (linkUID->vector<LinkRange>)
-// where LinkRange is a range of buffer's indices occupied by (rdh+payload)
-// of a given link
+// getFeeIdRanges return a map of (feeId->vector<FeeIdRange>)
+// where FeeIdRange is a range of buffer's indices occupied by (rdh+payload)
+// of a given feeId (aka (cru,link))
 //
 template <typename RDH>
-std::map<int, std::vector<LinkRange>> getLinkRanges(gsl::span<const uint8_t> buffer);
+std::map<int, std::vector<FeeIdRange>> getFeeIdRanges(gsl::span<const uint8_t> buffer);
 
-void dumpLinkRanges(const std::map<int, std::vector<LinkRange>>& linkRanges);
+void dumpFeeIdRanges(const std::map<int, std::vector<FeeIdRange>>& feeIdRanges);
 } // namespace o2::mch::raw
 
 #endif
