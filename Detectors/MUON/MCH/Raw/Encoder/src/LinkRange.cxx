@@ -17,12 +17,12 @@
 namespace o2::mch::raw
 {
 template <typename RDH>
-std::map<int, std::vector<LinkRange>> getLinkRanges(gsl::span<uint8_t> buffer)
+std::map<int, std::vector<LinkRange>> getLinkRanges(gsl::span<const uint8_t> buffer)
 {
   std::map<int, std::vector<LinkRange>> linkRanges;
-  constexpr auto rdhSize = static_cast<gsl::span<uint8_t>::size_type>(sizeof(RDH));
+  constexpr auto rdhSize = static_cast<gsl::span<const uint8_t>::size_type>(sizeof(RDH));
   auto bufSize = buffer.size();
-  o2::mch::raw::forEachRDH<RDH>(buffer, [&linkRanges, rdhSize, bufSize](const RDH& rdh, gsl::span<uint8_t>::size_type offset) {
+  o2::mch::raw::forEachRDH<RDH>(buffer, [&linkRanges, rdhSize, bufSize](const RDH& rdh, gsl::span<const uint8_t>::size_type offset) {
     uint32_t linkId = static_cast<uint32_t>(rdhLinkId(rdh)); // 0..23
     uint32_t linkUID = (static_cast<uint32_t>(rdhCruId(rdh)) << 16) | linkId;
     auto rsize = std::min(rdhSize + rdhPayloadSize(rdh), bufSize);
@@ -57,6 +57,6 @@ void dumpLinkRanges(const std::map<int, std::vector<LinkRange>>& linkRanges)
 
 // Provide only the specialization(s) we need
 
-template std::map<int, std::vector<LinkRange>> getLinkRanges<o2::header::RAWDataHeaderV4>(gsl::span<uint8_t> buffer);
+template std::map<int, std::vector<LinkRange>> getLinkRanges<o2::header::RAWDataHeaderV4>(gsl::span<const uint8_t> buffer);
 
 } // namespace o2::mch::raw

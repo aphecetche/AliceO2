@@ -107,14 +107,6 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
       continue;
     }
     int gbt = (word >> 59) & 0x1F;
-    //FIXME: do we want a check here ?
-    // given the gbt is just the link number (0..23) it would mean first
-    // converting to solarId to be able to get a meaningful comparison.
-    // this in turn means using the electronic mapping...
-    // if (gbt2solar != mSolarId) {
-    //   std::cout << fmt::format("warning : solarId {} != expected {} word={:08X}\n", gbt2solar, mSolarId, word);
-    // }
-
     uint16_t dsid = (word >> 53) & 0x3F;
     impl::assertIsInRange("dsid", dsid, 0, 39);
 

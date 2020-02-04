@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHRawEncoder/Counter.h"
+#include "Counter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "Headers/RAWDataHeader.h"
 #include "LinkRange.h"

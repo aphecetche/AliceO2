@@ -62,7 +62,7 @@ size_t createPaddedPage(DataBlock block,
                         uint8_t paddingByte)
 
 {
-  auto rdh = createRDH<RDH>(block.header, pageSize);
+  auto rdh = createRDH<RDH>(block.header, pageSize, 0, block.payload.size());
   appendRDH<RDH>(outBuffer, rdh);
   outBuffer.insert(outBuffer.end(), block.payload.begin(), block.payload.end());
   auto len = pageSize - block.payload.size() - sizeof(rdh);
@@ -147,7 +147,7 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
       stopPager(header, outBuffer, npages);
     }
     addedPages += npages;
-    inputPos += header.payloadSize;
+    inputPos += header.payloadSize + sizeof(header);
   }
   return addedPages;
 }

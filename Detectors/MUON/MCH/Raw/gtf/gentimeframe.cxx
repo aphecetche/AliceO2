@@ -46,8 +46,7 @@
 #include "Headers/RAWDataHeader.h"
 #include "MCHBase/Digit.h"
 #include "MCHMappingFactory/CreateSegmentation.h"
-#include "MCHRawEncoder/Counter.h"
-#include "MCHRawEncoder/Inserter.h"
+#include "MCHRawEncoder/Normalizer.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/SampaCluster.h"
@@ -116,33 +115,6 @@ void encodeDigits(gsl::span<o2::mch::Digit> digits,
   }
 }
 
-template <typename RDH>
-void assignTriggerTypes(std::vector<uint8_t>& buffer,
-                        gsl::span<o2::InteractionTimeRecord> interactions)
-{
-  // test function to assign some different triggers to different interactions
-  // FIXME: remove me
-  for (int i = 0; i < interactions.size(); i++) {
-
-    auto& col = interactions[i];
-
-    forEachRDH<RDH>(buffer, [i, &col](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
-      if (rdhOrbit(rdh) != col.orbit)
-        return;
-      if (rdhBunchCrossing(rdh) != col.bc)
-        return;
-      uint32_t tt{0};
-      if (i == 0) {
-        tt = o2::trigger::Cal;
-      }
-      if (i == 1) {
-        tt = o2::trigger::PhT;
-      }
-      rdhTriggerType(rdh, tt);
-    });
-  }
-}
-
 template <typename FORMAT, typename CHARGESUM>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
@@ -152,39 +124,12 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
   auto encoder = createEncoder<FORMAT, CHARGESUM>();
 
   for (int i = 0; i < interactions.size(); i++) {
-
     auto& col = interactions[i];
-
-    std::cout << fmt::format(">>> BEGIN INTERACTION {:4d} ", i)
-              << static_cast<o2::InteractionRecord>(col) << fmt::format(" {:4d} digits\n", digitsPerInteraction[i].size());
-
     encoder->startHeartbeatFrame(col.orbit, col.bc);
-
     encodeDigits<FORMAT, CHARGESUM>(digitsPerInteraction[i],
                                     encoder, det2elec, col.orbit, col.bc);
-
     encoder->moveToBuffer(buffer);
-
-    std::cout << fmt::format("<<< END INTERACTION {:4d} buffer size {}\n", i, buffer.size());
   }
-
-  //assignTriggerTypes(buffer, interactions);
-}
-
-template <typename RDH>
-void normalizeBuffer(gsl::span<const uint8_t> buffer,
-                     std::vector<uint8_t>& outBuffer,
-                     gsl::span<const o2::InteractionTimeRecord> interactions)
-{
-  o2::raw::HBFUtils hbfutils(interactions[0]);
-  std::vector<o2::InteractionRecord> emptyHBFs;
-  hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
-  insertEmptyHBs<RDH>(buffer, outBuffer, emptyHBFs);
-  setPacketCounter<RDH>(outBuffer);
-  forEachRDH<RDH>(outBuffer, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
-    o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
-    rdhTriggerType(rdh, rdhTriggerType(rdh) | hbfutils.triggerType(rec));
-  });
 }
 
 template <typename FORMAT,

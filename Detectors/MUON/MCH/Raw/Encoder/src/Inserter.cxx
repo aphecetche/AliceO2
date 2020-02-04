@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHRawEncoder/Inserter.h"
+#include "Inserter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "Headers/RAWDataHeader.h"
 #include <fmt/format.h>

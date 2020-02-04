@@ -18,7 +18,7 @@
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "LinkRange.h"
-#include "MCHRawEncoder/Inserter.h"
+#include "Inserter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include <array>
 #include <boost/mpl/list.hpp>

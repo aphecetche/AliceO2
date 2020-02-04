@@ -12,10 +12,11 @@ o2_add_library(MCHRawEncoder
         SOURCES src/Encoder.cxx src/BitSet.cxx src/ElinkEncoder.cxx
         src/Paginator.cxx src/Counter.cxx
         src/LinkRange.cxx src/Inserter.cxx
-        src/DataBlock.cxx
+        src/DataBlock.cxx src/Normalizer.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap
         O2::CommonDataFormat
+        O2::DetectorsRaw
         PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
 if(BUILD_TESTING)
@@ -34,7 +35,13 @@ if(BUILD_TESTING)
                 O2::MCHRawImplHelpers)
 
         o2_add_test(encoder
-                SOURCES src/testEncoder.cxx
+                SOURCES src/testEncoder.cxx src/CruBufferCreator.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
+
+        o2_add_test(normalizer
+                SOURCES src/testNormalizer.cxx src/CruBufferCreator.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)

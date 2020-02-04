@@ -8,29 +8,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ARRANGER_LINKRANGE_H
-#define O2_MCH_RAW_ARRANGER_LINKRANGE_H
+#ifndef O2_MCH_RAW_ENCODER_NORMALIZER_H
+#define O2_MCH_RAW_ENCODER_NORMALIZER_H
 
+#include <vector>
 #include <gsl/span>
 #include <cstdint>
-#include <vector>
-#include <map>
+#include "CommonDataFormat/InteractionRecord.h"
 
 namespace o2::mch::raw
 {
-struct LinkRange {
-  gsl::span<uint8_t>::size_type start;
-  gsl::span<uint8_t>::size_type size;
-};
-
-// getLinkRanges return a map of (linkUID->vector<LinkRange>)
-// where LinkRange is a range of buffer's indices occupied by (rdh+payload)
-// of a given link
-//
 template <typename RDH>
-std::map<int, std::vector<LinkRange>> getLinkRanges(gsl::span<const uint8_t> buffer);
-
-void dumpLinkRanges(const std::map<int, std::vector<LinkRange>>& linkRanges);
-} // namespace o2::mch::raw
+void normalizeBuffer(gsl::span<const uint8_t> buffer,
+                     std::vector<uint8_t>& outBuffer,
+                     gsl::span<const o2::InteractionTimeRecord> interactions,
+                     size_t pageSize = 8192,
+                     uint8_t paddingByte = 0x42);
+}
 
 #endif
