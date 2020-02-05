@@ -166,15 +166,24 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   std::vector<uint8_t> outBuffer;
   normalizeBuffer<RDH>(buffer, outBuffer, interactions);
 
+  auto solar2cru = createSolar2CruLinkMapper<ELECMAP>();
+
+  forEachRDH<RDH>(outBuffer, [&solar2cru](RDH& rdh, gsl::span<uint8_t>::size_type) {
+    // update the (cru,link) from the feeId
+    uint16_t solarId = rdhFeeId(rdh);
+    auto opt = solar2cru(solarId);
+    if (!opt.has_value()) {
+      std::cout << "ERROR : no (cru,link) mapping for solar " << solarId << "\n";
+    }
+    rdhCruId(rdh, opt.value().cruId());
+    rdhLinkId(rdh, opt.value().linkId());
+  });
+
   std::cout << "-------------------- SuperPaginating (to be written)\n";
   // FIXME: to be written...
   // superPaginate(buffer);
   outfile.write(reinterpret_cast<char*>(&outBuffer[0]), outBuffer.size());
   std::cout << fmt::format("output buffer is {} bytes ({:5.2f} MB)\n", outBuffer.size(), 1.0 * outBuffer.size() / 1024 / 1024);
-
-#if 1
-  showRDHs<RDH>(outBuffer);
-#endif
 
   auto n = countRDHs<RDH>(buffer);
 

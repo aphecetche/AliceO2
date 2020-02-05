@@ -26,6 +26,9 @@ template <typename RDH>
 uint16_t rdhCruId(const RDH& rdh);
 
 template <typename RDH>
+void rdhCruId(RDH& rdh, uint16_t cruId);
+
+template <typename RDH>
 uint8_t rdhLinkId(const RDH& rdh);
 
 template <typename RDH>

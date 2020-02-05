@@ -17,13 +17,13 @@ namespace o2::mch::raw
 template <>
 uint32_t rdhOrbit(const o2::header::RAWDataHeaderV4& rdh)
 {
-  return rdh.triggerOrbit; // or is it heartbeatOrbit ?
+  return rdh.heartbeatOrbit;
 }
 
 template <>
 void rdhOrbit(o2::header::RAWDataHeaderV4& rdh, uint32_t orbit)
 {
-  rdh.triggerOrbit = orbit;
+  rdh.heartbeatOrbit = orbit;
 }
 
 template <>
@@ -52,15 +52,21 @@ uint16_t rdhCruId(const o2::header::RAWDataHeaderV4& rdh)
 }
 
 template <>
+void rdhCruId(o2::header::RAWDataHeaderV4& rdh, uint16_t cruId)
+{
+  rdh.cruID = cruId;
+}
+
+template <>
 uint16_t rdhBunchCrossing(const o2::header::RAWDataHeaderV4& rdh)
 {
-  return static_cast<uint16_t>(rdh.triggerBC & 0xFFF);
+  return static_cast<uint16_t>(rdh.heartbeatBC & 0xFFF);
 }
 
 template <>
 void rdhBunchCrossing(o2::header::RAWDataHeaderV4& rdh, uint16_t bc)
 {
-  rdh.triggerBC = bc;
+  rdh.heartbeatBC = bc;
 }
 
 template <>

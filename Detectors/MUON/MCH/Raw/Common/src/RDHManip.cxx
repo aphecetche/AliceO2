@@ -32,11 +32,8 @@ std::ostream& operator<<(std::ostream& os, const RAWDataHeaderV4& rdh)
   os << fmt::format("offsetToNext       {:05d} memorySize    {:05d} blockLength    {:05d} {:s}\n", rdh.offsetToNext, rdh.memorySize, rdh.blockLength,
                     rdh.memorySize == sizeof(rdh) ? "EMPTY" : "");
 
-  os << fmt::format("triggerOrbit  {:010d} HB orbit {:010d} feeId     {:10d}\n",
-                    rdh.triggerOrbit, rdh.heartbeatOrbit, rdh.feeId);
-
-  os << fmt::format("triggerBC           {:04d} heartbeatBC    {:04d}\n",
-                    rdh.triggerBC, rdh.heartbeatBC);
+  os << fmt::format("heartbeatOrbit{:010d} heartbeatBC    {:04d}\n",
+                    rdh.heartbeatOrbit, rdh.heartbeatBC);
 
   os << fmt::format("stopBit                {:1d} pagesCounter    {:03d} packetCounter    {:03d} {:s}\n",
                     rdh.stop, rdh.pageCnt, rdh.packetCounter,
@@ -209,10 +206,8 @@ RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint16_t solarId, uint
   rdh.par = 0;           // FIXME: fill this ?
   rdh.stop = 0;
   rdh.pageCnt = 0;
-  rdh.triggerOrbit = orbit;
-  rdh.heartbeatOrbit = orbit; // FIXME: RDHv5 has only triggerOrbit ?
-  rdh.triggerBC = bunchCrossing;
-  rdh.heartbeatBC = bunchCrossing; // FIXME: RDHv5 has only triggerBC ?
+  rdh.heartbeatOrbit = orbit;
+  rdh.heartbeatBC = bunchCrossing;
 
   return rdh;
 }
