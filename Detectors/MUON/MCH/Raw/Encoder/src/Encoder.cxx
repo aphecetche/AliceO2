@@ -8,50 +8,94 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "MCHRawEncoder/Encoder.h"
+
+#include "Assertions.h"
 #include "BareElinkEncoder.h"
 #include "BareElinkEncoderMerger.h"
-#include "EncoderImpl.h"
-#include "MCHRawEncoder/Encoder.h"
 #include "UserLogicElinkEncoder.h"
 #include "UserLogicElinkEncoderMerger.h"
 #include <gsl/span>
+#include "MakeArray.h"
 
 namespace o2::mch::raw
 {
-namespace impl
+template <typename FORMAT, typename CHARGESUM>
+Encoder<FORMAT, CHARGESUM>::Encoder(bool forceNoPhase)
+  : mOrbit{},
+    mBunchCrossing{},
+    mBuffer{},
+    mGBTs{},
+    mFirstHBFrame{true},
+    mForceNoPhase{forceNoPhase}
 {
-// cannot partially specialize a function, so create a struct (which can
-// be specialized) and use it within the function below.
-
-template <typename FORMAT, typename CHARGESUM, bool forceNoPhase>
-struct EncoderCreator {
-  static std::unique_ptr<Encoder> _()
-  {
-    GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = forceNoPhase;
-    return std::make_unique<EncoderImpl<FORMAT, CHARGESUM>>();
-  }
-};
-} // namespace impl
-
-template <typename FORMAT, typename CHARGESUM, bool forceNoPhase>
-std::unique_ptr<Encoder> createEncoder()
-{
-  return impl::EncoderCreator<FORMAT, CHARGESUM, forceNoPhase>::_();
 }
-std::unique_ptr<Encoder> createEncoder();
 
-// define only the specializations we use
+template <typename FORMAT, typename CHARGESUM>
+void Encoder<FORMAT, CHARGESUM>::addChannelData(DsElecId dsId, uint8_t chId, const std::vector<SampaCluster>& data)
+{
+  auto solarId = dsId.solarId();
+  auto gbt = mGBTs.find(solarId);
+  if (gbt == mGBTs.end()) {
+    mGBTs.emplace(solarId, std::make_unique<GBTEncoder<FORMAT, CHARGESUM>>(solarId, mForceNoPhase));
+    gbt = mGBTs.find(solarId);
+  }
+  gbt->second->addChannelData(dsId.elinkGroupId(), dsId.elinkIndexInGroup(), chId, data);
+}
 
-template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, true>();
-template std::unique_ptr<Encoder> createEncoder<BareFormat, SampleMode, false>();
+template <typename FORMAT, typename CHARGESUM>
+void Encoder<FORMAT, CHARGESUM>::gbts2buffer(uint32_t orbit, uint16_t bunchCrossing)
+{
+  // append to our own buffer all the words buffers from all our gbts,
+  // prepending each one with a corresponding payload header
 
-template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, true>();
-template std::unique_ptr<Encoder> createEncoder<BareFormat, ChargeSumMode, false>();
+  for (auto& p : mGBTs) {
+    auto& gbt = p.second;
+    std::vector<uint8_t> gbtBuffer;
+    gbt->moveToBuffer(gbtBuffer);
+    if (gbtBuffer.empty()) {
+      continue;
+    }
+    assert(gbtBuffer.size() % 4 == 0);
+    DataBlockHeader header{orbit, bunchCrossing, gbt->id(), gbtBuffer.size()};
+    appendDataBlockHeader(mBuffer, header);
+    mBuffer.insert(mBuffer.end(), gbtBuffer.begin(), gbtBuffer.end());
+  }
+}
 
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, true>();
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, SampleMode, false>();
+template <typename FORMAT, typename CHARGESUM>
+size_t Encoder<FORMAT, CHARGESUM>::moveToBuffer(std::vector<uint8_t>& buffer)
+{
+  closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  buffer.insert(buffer.end(), mBuffer.begin(), mBuffer.end());
+  auto s = mBuffer.size();
+  mBuffer.clear();
+  return s;
+}
 
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, true>();
-template std::unique_ptr<Encoder> createEncoder<UserLogicFormat, ChargeSumMode, false>();
+template <typename FORMAT, typename CHARGESUM>
+void Encoder<FORMAT, CHARGESUM>::closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  gbts2buffer(orbit, bunchCrossing);
+}
+
+template <typename FORMAT, typename CHARGESUM>
+void Encoder<FORMAT, CHARGESUM>::startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing)
+{
+  impl::assertIsInRange("bunchCrossing", bunchCrossing, 0, 0xFFF);
+  // build a buffer with the _previous_ (orbit,bx)
+  if (!mFirstHBFrame) {
+    closeHeartbeatFrame(mOrbit, mBunchCrossing);
+  }
+  mFirstHBFrame = false;
+  // then save the (orbit,bx) for next time
+  mOrbit = orbit;
+  mBunchCrossing = bunchCrossing;
+}
+
+template class Encoder<UserLogicFormat, ChargeSumMode>;
+template class Encoder<BareFormat, ChargeSumMode>;
+template class Encoder<UserLogicFormat, SampleMode>;
+template class Encoder<BareFormat, SampleMode>;
 
 } // namespace o2::mch::raw

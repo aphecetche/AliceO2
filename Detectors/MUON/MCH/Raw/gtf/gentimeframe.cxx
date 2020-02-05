@@ -85,14 +85,12 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             std::function<std::optional<DsElecId>(DsDetId)> det2elec,
             std::vector<uint8_t>& buffer)
 {
-  auto encoder = createEncoder<FORMAT, CHARGESUM>();
+  auto encode = createDigitEncoder<FORMAT, CHARGESUM>(det2elec);
 
   for (int i = 0; i < interactions.size(); i++) {
     auto& col = interactions[i];
-    encoder->startHeartbeatFrame(col.orbit, col.bc);
-    encodeDigits<CHARGESUM>(digitsPerInteraction[i],
-                            encoder, det2elec, col.orbit, col.bc);
-    encoder->moveToBuffer(buffer);
+    encode(digitsPerInteraction[i],
+           buffer, col.orbit, col.bc);
   }
 }
 

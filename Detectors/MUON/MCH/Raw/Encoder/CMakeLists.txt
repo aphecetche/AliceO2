@@ -9,11 +9,17 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawEncoder
-        SOURCES src/Encoder.cxx src/BitSet.cxx src/ElinkEncoder.cxx
-        src/Paginator.cxx src/Counter.cxx
-        src/FeeIdRange.cxx src/Inserter.cxx
-        src/DataBlock.cxx src/Normalizer.cxx
+        SOURCES src/Encoder.cxx 
+        src/BitSet.cxx 
         src/CruLinkSetter.cxx
+        src/DataBlock.cxx 
+        src/ElinkEncoder.cxx
+        src/FeeIdRange.cxx 
+        src/Inserter.cxx
+        src/Normalizer.cxx
+        src/Paginator.cxx 
+        src/RDHPacketCounterSetter.cxx
+        src/RDHTriggerTypeSetter.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap
         O2::CommonDataFormat
@@ -65,8 +71,8 @@ if(BUILD_TESTING)
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
-        o2_add_test(counter
-                SOURCES src/testCounter.cxx
+        o2_add_test(rdh-set-packet-counter
+                SOURCES src/testRDHPacketCounterSetter.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder

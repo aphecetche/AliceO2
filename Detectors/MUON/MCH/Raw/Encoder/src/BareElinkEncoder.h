@@ -11,12 +11,12 @@
 #ifndef O2_MCH_RAW_BARE_ELINK_ENCODER_H
 #define O2_MCH_RAW_BARE_ELINK_ENCODER_H
 
-#include "ElinkEncoder.h"
 #include "Assertions.h"
 #include "BitSet.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawCommon/SampaHeader.h"
+#include "MCHRawEncoder/ElinkEncoder.h"
 #include "NofBits.h"
 #include <fmt/format.h>
 #include <fmt/printf.h>

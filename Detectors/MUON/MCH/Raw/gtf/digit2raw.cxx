@@ -25,19 +25,6 @@
 namespace po = boost::program_options;
 using namespace o2::mch::raw;
 
-template <typename FORMAT, typename CHARGESUM>
-std::unique_ptr<Encoder> encode(std::map<o2::InteractionRecord, std::vector<o2::mch::Digit>>& digitsPerIR)
-{
-  auto det2elec = createDet2ElecMapper<ElectronicMapperDummy>(deIdsForAllMCH);
-  auto encoder = createEncoder<FORMAT, CHARGESUM>();
-
-  for (auto dp : digitsPerIR) {
-    std::cout << dp.first << " : " << dp.second.size() << "\n";
-    encodeDigits<CHARGESUM>(dp.second, encoder, det2elec, dp.first.orbit, dp.first.bc);
-  }
-  return encoder;
-}
-
 int main(int argc, char* argv[])
 {
   po::options_description generic("options");
@@ -103,20 +90,27 @@ int main(int argc, char* argv[])
     }
   }
 
-  std::unique_ptr<Encoder> encoder;
+  auto det2elec = createDet2ElecMapper<ElectronicMapperDummy>(deIdsForAllMCH);
+  DigitEncoder encoder;
 
   if (userLogic) {
     if (chargeSum) {
-      encoder = encode<UserLogicFormat, ChargeSumMode>(digitsPerIR);
+      encoder = createDigitEncoder<UserLogicFormat, ChargeSumMode>(det2elec);
     } else {
-      encoder = encode<UserLogicFormat, SampleMode>(digitsPerIR);
+      encoder = createDigitEncoder<UserLogicFormat, SampleMode>(det2elec);
     }
   } else {
     if (chargeSum) {
-      encoder = encode<BareFormat, ChargeSumMode>(digitsPerIR);
+      encoder = createDigitEncoder<BareFormat, ChargeSumMode>(det2elec);
     } else {
-      encoder = encode<BareFormat, SampleMode>(digitsPerIR);
+      encoder = createDigitEncoder<BareFormat, SampleMode>(det2elec);
     }
+  }
+
+  std::vector<uint8_t> buffer;
+  for (auto p : digitsPerIR) {
+    auto& digits = p.second;
+    encoder(digits, buffer, p.first.orbit, p.first.bc);
   }
   return 0;
 }

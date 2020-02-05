@@ -23,7 +23,7 @@
 #include "RefBuffers.h"
 #include <boost/mpl/list.hpp>
 #include "MoveBuffer.h"
-#include "GBTEncoder.h"
+#include "MCHRawEncoder/GBTEncoder.h"
 #include "DumpBuffer.h"
 
 using namespace o2::mch::raw;
@@ -31,9 +31,8 @@ using namespace o2::mch::raw;
 template <typename FORMAT, typename MODE>
 std::vector<uint8_t> createGBTBuffer()
 {
-  GBTEncoder<FORMAT, MODE>::forceNoPhase = true;
   uint8_t gbtId{23};
-  GBTEncoder<FORMAT, MODE> enc(gbtId);
+  GBTEncoder<FORMAT, MODE> enc(gbtId, true);
   uint32_t bx(0);
   uint16_t ts(12);
   int elinkGroupId = 0;
@@ -90,8 +89,7 @@ float expectedSize<UserLogicFormat, ChargeSumMode>()
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(GBTEncoderAddFewChannels, T, testTypes)
 {
-  GBTEncoder<T, ChargeSumMode>::forceNoPhase = true;
-  GBTEncoder<T, ChargeSumMode> enc(0);
+  GBTEncoder<T, ChargeSumMode> enc(0, true);
   uint32_t bx(0);
   uint16_t ts(0);
   int elinkGroupId = 0;

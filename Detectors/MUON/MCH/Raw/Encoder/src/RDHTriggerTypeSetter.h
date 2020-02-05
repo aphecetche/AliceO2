@@ -8,14 +8,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <cstdint>
+#ifndef O2_MCH_RAW_ENCODER_RHD_TRIGGER_TYPE_SETTER_H
+#define O2_MCH_RAW_ENCODER_RHD_TRIGGER_TYPE_SETTER_H
 
-namespace o2::mch::raw::test
+#include <gsl/span>
+#include "CommonDataFormat/InteractionRecord.h"
+
+namespace o2::mch::raw
 {
-template <typename FORMAT, typename CHARGESUM>
-struct CruBufferCreator {
-  static std::vector<uint8_t> makeBuffer(int norbit = 1);
-};
-
-} // namespace o2::mch::raw::test
+template <typename RDH>
+void setTriggerType(gsl::span<uint8_t> pages,
+                    gsl::span<const InteractionRecord> interactions);
+}
+#endif

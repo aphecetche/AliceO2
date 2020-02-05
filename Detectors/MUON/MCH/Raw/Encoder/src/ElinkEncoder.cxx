@@ -8,8 +8,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "MCHRawEncoder/ElinkEncoder.h"
+
 #include "Assertions.h"
-#include "ElinkEncoder.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawCommon/SampaHeader.h"

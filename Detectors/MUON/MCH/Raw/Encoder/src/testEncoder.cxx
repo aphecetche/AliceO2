@@ -29,12 +29,6 @@
 
 using namespace o2::mch::raw;
 
-template <typename FORMAT>
-std::unique_ptr<Encoder> defaultEncoder()
-{
-  return createEncoder<FORMAT, SampleMode, true>();
-}
-
 typedef boost::mpl::list<BareFormat, UserLogicFormat> testTypes;
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -43,40 +37,40 @@ BOOST_AUTO_TEST_SUITE(encoder)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(StartHBFrameBunchCrossingMustBe12Bits, T, testTypes)
 {
-  auto encoder = defaultEncoder<T>();
-  BOOST_CHECK_THROW(encoder->startHeartbeatFrame(0, 1 << 12), std::invalid_argument);
-  BOOST_CHECK_NO_THROW(encoder->startHeartbeatFrame(0, 0xFFF));
+  Encoder<T, SampleMode> encoder(true);
+  BOOST_CHECK_THROW(encoder.startHeartbeatFrame(0, 1 << 12), std::invalid_argument);
+  BOOST_CHECK_NO_THROW(encoder.startHeartbeatFrame(0, 0xFFF));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(EmptyEncoderHasEmptyBufferIfPhaseIsZero, T, testTypes)
 {
   srand(time(nullptr));
-  auto encoder = defaultEncoder<T>();
-  encoder->startHeartbeatFrame(12345, 123);
+  Encoder<T, SampleMode> encoder(true);
+  encoder.startHeartbeatFrame(12345, 123);
   std::vector<uint8_t> buffer;
-  encoder->moveToBuffer(buffer);
+  encoder.moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase, T, testTypes)
 {
   srand(time(nullptr));
-  auto encoder = createEncoder<T, SampleMode, false>();
-  encoder->startHeartbeatFrame(12345, 123);
+  Encoder<T, SampleMode> encoder(false);
+  encoder.startHeartbeatFrame(12345, 123);
   std::vector<uint8_t> buffer;
-  encoder->moveToBuffer(buffer);
+  encoder.moveToBuffer(buffer);
   BOOST_CHECK_GE(buffer.size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZero, T, testTypes)
 {
   srand(time(nullptr));
-  auto encoder = defaultEncoder<T>();
-  encoder->startHeartbeatFrame(12345, 123);
-  encoder->startHeartbeatFrame(12345, 125);
-  encoder->startHeartbeatFrame(12345, 312);
+  Encoder<T, SampleMode> encoder(true);
+  encoder.startHeartbeatFrame(12345, 123);
+  encoder.startHeartbeatFrame(12345, 125);
+  encoder.startHeartbeatFrame(12345, 312);
   std::vector<uint8_t> buffer;
-  encoder->moveToBuffer(buffer);
+  encoder.moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
 

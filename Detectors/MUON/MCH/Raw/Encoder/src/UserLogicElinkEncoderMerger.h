@@ -12,6 +12,7 @@
 #define O2_MCH_RAW_ENCODER_USER_LOGIC_ENCODER_MERGER_H
 
 #include "UserLogicElinkEncoder.h"
+#include "MCHRawEncoder/ElinkEncoderMerger.h"
 #include "MCHRawCommon/DataFormats.h"
 #include <fmt/format.h>
 

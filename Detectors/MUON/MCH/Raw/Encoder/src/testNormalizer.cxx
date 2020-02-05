@@ -39,7 +39,7 @@ struct Common {
   constexpr static size_t pageSize = 128;
   constexpr static uint8_t paddingByte = 0x44;
   std::vector<uint8_t> buffer;
-  std::vector<o2::InteractionTimeRecord> interactions;
+  std::vector<o2::InteractionRecord> interactions;
   struct TestPoint {
     int pageSize, expectedNofRDHs;
   };
@@ -53,10 +53,10 @@ struct Common {
                {128, 282}}
   {
 
-    std::set<o2::InteractionTimeRecord> irs;
+    std::set<o2::InteractionRecord> irs;
     // get the IRs directly from the created buffer
     forEachDataBlockRef(buffer, [&irs](const DataBlockRef& ref) {
-      irs.emplace(o2::InteractionRecord{ref.block.header.bc, ref.block.header.orbit}, 0);
+      irs.emplace(o2::InteractionRecord{ref.block.header.bc, ref.block.header.orbit});
     });
     interactions.insert(interactions.end(), irs.begin(), irs.end());
   }

@@ -36,14 +36,9 @@ namespace
 {
 
 std::vector<o2::InteractionRecord> interactions{
-  o2::InteractionRecord{1, 100},
-  o2::InteractionRecord{2, 210},
-  o2::InteractionRecord{3, 360}};
-
-std::vector<o2::InteractionRecord> emptyHBs{
-  {1, 12},
-  {1, 99},
-  {220, 220}};
+  o2::InteractionRecord{100, 1},
+  o2::InteractionRecord{210, 2},
+  o2::InteractionRecord{360, 3}};
 
 std::vector<uint16_t> feeIds{10, 12, 11, 5, 3};
 
@@ -71,7 +66,7 @@ std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
   auto buffer = createBuffer(interactions);
 
   std::vector<uint8_t> outBuffer;
-  insertEmptyHBs(buffer, outBuffer, emptyHBs);
+  insertHBs(buffer, outBuffer, interactions);
   outBuffer.swap(buffer);
 
   return buffer;
@@ -120,7 +115,7 @@ BOOST_AUTO_TEST_CASE(NofRDHsMustBeNfeesTimesNHBs)
 
   int ntotal = countHeaders(buffer);
 
-  auto nofHBs = (2 + emptyHBs.size()) + interactions.size();
+  auto nofHBs = 4 + interactions.size();
   auto expectedNofHeaders = nofHBs * feeIds.size();
 
   BOOST_CHECK_EQUAL(ntotal, expectedNofHeaders);

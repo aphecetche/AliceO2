@@ -11,16 +11,16 @@
 #ifndef O2_MCH_RAW_USER_LOGIC_ELINK_ENCODER_H
 #define O2_MCH_RAW_USER_LOGIC_ELINK_ENCODER_H
 
-#include "ElinkEncoder.h"
 #include "Assertions.h"
+#include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawCommon/SampaHeader.h"
-#include "MCHRawCommon/DataFormats.h"
+#include "MCHRawEncoder/ElinkEncoder.h"
 #include "MoveBuffer.h"
 #include "NofBits.h"
 #include <cstdlib>
-#include <vector>
 #include <fmt/printf.h>
+#include <vector>
 
 namespace o2::mch::raw
 {

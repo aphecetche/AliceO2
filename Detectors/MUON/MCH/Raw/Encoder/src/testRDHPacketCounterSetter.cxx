@@ -18,7 +18,7 @@
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "FeeIdRange.h"
-#include "Counter.h"
+#include "RDHPacketCounterSetter.h"
 #include "MCHRawCommon/RDHManip.h"
 #include <array>
 #include <boost/mpl/list.hpp>
@@ -83,7 +83,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestPacketCounter, T, testTypes)
 {
   auto buffer = createBuffer<T>();
 
-  setPacketCounter<T>(buffer);
+  std::map<uint16_t, uint8_t> counts;
+  setPacketCounter<T>(buffer, counts);
 
   BOOST_CHECK_EQUAL(isPacketCounterContiguousPerfee<T>(buffer), true);
 }

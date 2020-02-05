@@ -24,41 +24,51 @@
 namespace o2::mch::raw
 {
 
-template <typename CHARGESUM>
-void encodeDigits(gsl::span<o2::mch::Digit> digits,
-                  std::unique_ptr<Encoder>& encoder,
-                  std::function<std::optional<DsElecId>(DsDetId)> det2elec,
-                  uint32_t orbit,
-                  uint16_t bc)
+using DigitEncoder = std::function<void(gsl::span<o2::mch::Digit> digits,
+                                        std::vector<uint8_t>& buffer,
+                                        uint32_t orbit,
+                                        uint16_t bc)>;
 
+// std::function<std::optional<DsElecId>(DsDetId)> det2elec,
+
+template <typename FORMAT, typename CHARGESUM>
+DigitEncoder createDigitEncoder(std::function<std::optional<DsElecId>(DsDetId)> det2elec)
 {
-  static int nadd{0};
+  Encoder<FORMAT, CHARGESUM> encoder;
+  return [&encoder, det2elec](gsl::span<o2::mch::Digit> digits,
+                              std::vector<uint8_t>& buffer,
+                              uint32_t orbit,
+                              uint16_t bc) {
+    static int nadd{0};
+    encoder.startHeartbeatFrame(orbit, bc);
 
-  for (auto d : digits) {
-    int deid = d.getDetID();
-    int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
-    DsDetId detId{deid, dsid};
-    auto dselocopt = det2elec(DsDetId(deid, dsid));
-    if (!dselocopt.has_value()) {
-      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
-      continue;
+    for (auto d : digits) {
+      int deid = d.getDetID();
+      int dsid = mapping::segmentation(deid).padDualSampaId(d.getPadID());
+      DsDetId detId{deid, dsid};
+      auto dselocopt = det2elec(DsDetId(deid, dsid));
+      if (!dselocopt.has_value()) {
+        std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
+        continue;
+      }
+      DsElecId elecId = dselocopt.value();
+      int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
+      uint16_t ts(static_cast<int>(d.getTimeStamp()) & 0x3FF);
+      int sampachid = dschid % 32;
+
+      auto clusters = createSampaClusters<CHARGESUM>(ts, d.getADC());
+
+      fmt::printf(
+        "nadd %6d deid %4d dsid %4d dschid %2d "
+        "solarId %3d groupId %2d elinkId %2d sampach %2d : %s\n",
+        nadd++, deid, dsid, dschid,
+        elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid,
+        asString(clusters[0]).c_str());
+
+      encoder.addChannelData(elecId, sampachid, clusters);
     }
-    DsElecId elecId = dselocopt.value();
-    int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
-    uint16_t ts(static_cast<int>(d.getTimeStamp()) & 0x3FF);
-    int sampachid = dschid % 32;
-
-    auto clusters = createSampaClusters<CHARGESUM>(ts, d.getADC());
-
-    fmt::printf(
-      "nadd %6d deid %4d dsid %4d dschid %2d "
-      "solarId %3d groupId %2d elinkId %2d sampach %2d : %s\n",
-      nadd++, deid, dsid, dschid,
-      elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid,
-      asString(clusters[0]).c_str());
-
-    encoder->addChannelData(elecId, sampachid, clusters);
-  }
+    encoder.moveToBuffer(buffer);
+  };
 }
 } // namespace o2::mch::raw
 #endif

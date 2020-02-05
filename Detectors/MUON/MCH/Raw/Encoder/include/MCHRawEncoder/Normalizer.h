@@ -15,6 +15,7 @@
 #include <gsl/span>
 #include <cstdint>
 #include "CommonDataFormat/InteractionRecord.h"
+#include <map>
 
 namespace o2::mch::raw
 {
@@ -37,9 +38,10 @@ namespace o2::mch::raw
 template <typename RDH>
 void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      std::vector<uint8_t>& outBuffer,
-                     gsl::span<const o2::InteractionTimeRecord> interactions,
+                     gsl::span<const o2::InteractionRecord> interactions,
                      size_t pageSize = 8192,
-                     uint8_t paddingByte = 0x42);
+                     uint8_t paddingByte = 0x42,
+                     std::map<uint16_t, uint8_t>* previousPacketCounts = nullptr);
 } // namespace o2::mch::raw
 
 #endif

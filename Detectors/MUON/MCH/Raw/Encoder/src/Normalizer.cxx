@@ -12,10 +12,10 @@
 
 #include "Paginator.h"
 #include "Inserter.h"
-#include "Counter.h"
+#include "RDHPacketCounterSetter.h"
+#include "RDHTriggerTypeSetter.h"
 #include "Headers/RAWDataHeader.h"
-#include "DetectorsRaw/HBFUtils.h"
-#include "MCHRawCommon/RDHManip.h"
+#include <iostream>
 
 namespace o2::mch::raw
 {
@@ -23,17 +23,12 @@ namespace o2::mch::raw
 template <typename RDH>
 void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      std::vector<uint8_t>& outBuffer,
-                     gsl::span<const o2::InteractionTimeRecord> interactions,
+                     gsl::span<const o2::InteractionRecord> interactions,
                      size_t pageSize,
-                     uint8_t paddingByte)
+                     uint8_t paddingByte,
+                     std::map<uint16_t, uint8_t>* previousPacketCounts)
 {
-
-  o2::raw::HBFUtils hbfutils(interactions[0]);
-  std::vector<o2::InteractionRecord> emptyHBFs;
-  hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
-  /// Insert empty HB headers in a buffer containing DataBlocks
-  /// (and not RDH,payload blocks)
-  insertEmptyHBs(buffer, outBuffer, emptyHBFs);
+  insertHBs(buffer, outBuffer, interactions);
 
   /// Turn the buffer into a real (RDH,payload) one
   /// There's one RDH at the start of each page
@@ -41,20 +36,23 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
   paginateBuffer<RDH>(outBuffer, pages, pageSize, paddingByte);
 
   /// Ensure the packet counter of each link is correct
-  setPacketCounter<RDH>(pages);
+  /// FIXME: pass the counts as a parameter to normalizeBuffer
+  if (previousPacketCounts) {
+    setPacketCounter<RDH>(pages, *previousPacketCounts);
+  } else {
+    std::map<uint16_t, uint8_t> counts;
+    setPacketCounter<RDH>(pages, counts);
+  }
 
-  /// Ensure the triggerType of each RDH is correctly set
-  forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
-    o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
-    rdhTriggerType(rdh, rdhTriggerType(rdh) | hbfutils.triggerType(rec));
-  });
+  setTriggerType<RDH>(pages, interactions);
 
   outBuffer.swap(pages);
 }
 
 template void normalizeBuffer<o2::header::RAWDataHeaderV4>(gsl::span<const uint8_t> buffer,
                                                            std::vector<uint8_t>& outBuffer,
-                                                           gsl::span<const o2::InteractionTimeRecord> interactions,
+                                                           gsl::span<const o2::InteractionRecord> interactions,
                                                            size_t pageSize,
-                                                           uint8_t paddingByte);
+                                                           uint8_t paddingByte,
+                                                           std::map<uint16_t, uint8_t>* previousPacketCounts);
 } // namespace o2::mch::raw

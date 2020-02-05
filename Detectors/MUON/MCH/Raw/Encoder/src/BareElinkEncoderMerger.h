@@ -11,8 +11,8 @@
 #ifndef O2_MCH_RAW_ENCODER_BARE_ELINK_ENCODER_MERGER_H
 #define O2_MCH_RAW_ENCODER_BARE_ELINK_ENCODER_MERGER_H
 
-#include "ElinkEncoder.h"
-#include "ElinkEncoderMerger.h"
+#include "MCHRawEncoder/ElinkEncoder.h"
+#include "MCHRawEncoder/ElinkEncoderMerger.h"
 #include "MCHRawCommon/DataFormats.h"
 #include <gsl/span>
 

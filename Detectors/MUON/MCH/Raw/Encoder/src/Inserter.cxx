@@ -14,6 +14,7 @@
 #include <iostream>
 #include "CommonConstants/Triggers.h"
 #include "MCHRawEncoder/DataBlock.h"
+#include "DetectorsRaw/HBFUtils.h"
 
 namespace o2::mch::raw
 {
@@ -42,9 +43,20 @@ void outputDataBlockRefs(gsl::span<const uint8_t> buffer, gsl::span<const DataBl
   }
 }
 
+// insertEmptyHBs will insert, for each link, empty DataBlockHeader
+// corresponding to the interaction records in emptyHBs array, at the proper
+// locations in the buffer
+//
+// That is, the buffer is supposed to contain only data for interaction records
+// where there was some data in the detector and this function will add empty
+// data (i.e. just DataBlockHeader) for all other heartbeats (defined in
+// emptyHBs array).
+//
+// Note that the input buffer is untouched : the original data it contains,
+// plus the empty HBs, will be appended to outBuffer instead
 void insertEmptyHBs(gsl::span<const uint8_t> buffer,
                     std::vector<uint8_t>& outBuffer,
-                    gsl::span<o2::InteractionRecord> emptyHBs)
+                    gsl::span<const o2::InteractionRecord> emptyHBs)
 {
   auto feeIds = getFeeIds(buffer);
   std::set<o2::InteractionRecord> allHBs(emptyHBs.begin(), emptyHBs.end());
@@ -86,4 +98,18 @@ void insertEmptyHBs(gsl::span<const uint8_t> buffer,
   // write all hbframes (empty or not) to outBuffer
   outputDataBlockRefs(buffer, dataBlockRefs, outBuffer);
 }
+
+void insertHBs(gsl::span<const uint8_t> buffer,
+               std::vector<uint8_t>& outBuffer,
+               gsl::span<const o2::InteractionRecord> interactions)
+{
+  if (interactions.size() < 2) {
+    return;
+  }
+  std::vector<o2::InteractionRecord> emptyHBFs;
+  o2::raw::HBFUtils hbfutils(interactions[0]);
+  hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
+  insertEmptyHBs(buffer, outBuffer, emptyHBFs);
+}
+
 } // namespace o2::mch::raw

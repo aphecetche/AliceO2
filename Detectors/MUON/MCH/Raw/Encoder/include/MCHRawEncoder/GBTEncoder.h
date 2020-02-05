@@ -43,7 +43,7 @@ class GBTEncoder
  public:
   /// Constructor.
   /// \param solarId the (unique) id of this GBT (aka Solar)
-  GBTEncoder(uint16_t solarId);
+  GBTEncoder(uint16_t solarId, bool forceNoPhase = false);
 
   /** @name Main interface.
     */
@@ -107,12 +107,9 @@ inline int phase(int i, bool forceNoPhase)
 }
 
 template <typename FORMAT, typename CHARGESUM>
-bool GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase = false;
-
-template <typename FORMAT, typename CHARGESUM>
-GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(uint16_t linkId)
+GBTEncoder<FORMAT, CHARGESUM>::GBTEncoder(uint16_t linkId, bool forceNoPhase)
   : mGbtId(linkId),
-    mElinks{impl::makeArray<40>([](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, phase(i, GBTEncoder<FORMAT, CHARGESUM>::forceNoPhase)); })},
+    mElinks{impl::makeArray<40>([forceNoPhase](size_t i) { return ElinkEncoder<FORMAT, CHARGESUM>(i, phase(i, forceNoPhase)); })},
     mGbtWords{},
     mElinkMerger{}
 {
