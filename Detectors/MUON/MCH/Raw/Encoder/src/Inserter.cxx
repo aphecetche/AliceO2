@@ -173,6 +173,10 @@ void insertEmptyHBs(gsl::span<const uint8_t> buffer,
     return a.ir < b.ir;
   });
 
+  // std::cout << "----HBREFS after sort\n";
+  // for (auto h : hbrefs) {
+  //   std::cout << h << "\n";
+  // }
   // write all hbframes (empty or not) to outBuffer
   outputHBRefs<RDH>(buffer, hbrefs, outBuffer);
 }

@@ -31,7 +31,7 @@ struct DataBlock {
   gsl::span<const uint8_t> payload;
 };
 
-void appendHeader(PayloadHeader header, std::vector<uint8_t>& outBuffer);
+void appendHeader(std::vector<uint8_t>& outBuffer, PayloadHeader header);
 
 int forEachDataBlock(gsl::span<const uint8_t> buffer,
                      std::function<void(DataBlock block)> f);

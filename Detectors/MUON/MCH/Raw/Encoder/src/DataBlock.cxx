@@ -13,7 +13,7 @@
 
 namespace o2::mch::raw
 {
-void appendHeader(PayloadHeader header, std::vector<uint8_t>& outBuffer)
+void appendHeader(std::vector<uint8_t>& outBuffer, PayloadHeader header)
 {
   gsl::span<uint8_t> ph(reinterpret_cast<uint8_t*>(&header), sizeof(ph));
   outBuffer.insert(outBuffer.end(), ph.begin(), ph.end());
@@ -25,14 +25,11 @@ int forEachDataBlock(gsl::span<const uint8_t> buffer,
   int index{0};
   int nheaders{0};
   PayloadHeader header;
-  while (index < buffer.size() - sizeof(PayloadHeader)) {
+  while (index < buffer.size()) {
     memcpy(&header, &buffer[index], sizeof(header));
     nheaders++;
     if (f) {
       f(DataBlock{header, buffer.subspan(index, header.payloadSize)});
-    }
-    if (header.payloadSize == 0) {
-      return -1;
     }
     index += header.payloadSize + sizeof(header);
   }

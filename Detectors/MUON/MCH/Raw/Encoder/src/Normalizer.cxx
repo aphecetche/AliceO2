@@ -26,7 +26,8 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      size_t pageSize,
                      uint8_t paddingByte)
 {
-  paginateBuffer<RDH>(buffer, outBuffer, pageSize, paddingByte);
+  std::vector<uint8_t> pages;
+  paginateBuffer<RDH>(buffer, pages, pageSize, paddingByte);
 
 #if 1
   o2::raw::HBFUtils hbfutils(interactions[0]);
@@ -37,7 +38,8 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
   for (auto ir : emptyHBFs) {
     std::cout << ir << "\n";
   }
-  insertEmptyHBs<RDH>(buffer, outBuffer, emptyHBFs);
+  //outBuffer.swap(pages);
+  insertEmptyHBs<RDH>(pages, outBuffer, emptyHBFs);
 
   setPacketCounter<RDH>(outBuffer);
 

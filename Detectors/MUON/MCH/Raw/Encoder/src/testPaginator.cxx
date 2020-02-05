@@ -33,15 +33,17 @@ using namespace o2::header;
 
 typedef boost::mpl::list<o2::header::RAWDataHeaderV4> testTypes;
 
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
-BOOST_AUTO_TEST_SUITE(arranger)
+BOOST_AUTO_TEST_SUITE(encoder)
 
 std::vector<uint8_t> createDataBlock(gsl::span<uint8_t> payload)
 {
   std::vector<uint8_t> outBuffer;
   PayloadHeader header{0, 0, 0, static_cast<uint16_t>(payload.size())};
-  appendHeader(header, outBuffer);
+  appendHeader(outBuffer, header);
   outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
   return outBuffer;
 }
@@ -119,6 +121,38 @@ BOOST_DATA_TEST_CASE(TestSplit,
   }
   BOOST_CHECK_EQUAL(n, data.size());
   BOOST_CHECK_EQUAL(ok, true);
+}
+
+BOOST_AUTO_TEST_CASE(CannotPaginateIfPageSizeIsSmallerThanRDHSize)
+{
+  std::vector<uint8_t> buffer;
+  std::vector<uint8_t> pages;
+  BOOST_CHECK_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, 24, 0xFF),
+                    std::invalid_argument);
+  BOOST_CHECK_NO_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, sizeof(RAWDataHeaderV4) + 8, 0xFF));
+}
+
+BOOST_DATA_TEST_CASE(PaginateEmptyPayloads,
+                     boost::unit_test::data::make({72, 8192}),
+                     pageSize)
+{
+  constexpr uint8_t paddingByte = 0x66;
+  std::vector<uint8_t> buffer;
+  std::array<uint16_t, 5> feeIds = {631, 729, 424, 12, 42};
+  for (auto feeId : feeIds) {
+    PayloadHeader header{12345, 678, feeId, 0};
+    appendHeader(buffer, header);
+  }
+  BOOST_REQUIRE_EQUAL(buffer.size(), feeIds.size() * sizeof(PayloadHeader));
+
+  std::vector<uint8_t> pages;
+  paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);
+  int expectedNofRDHs(feeIds.size() * 2); // 1 page + 1 stop page per link
+
+  BOOST_REQUIRE_EQUAL(pages.size(), expectedNofRDHs * pageSize);
+
+  int nrdhs = countRDHs<RAWDataHeaderV4>(pages);
+  BOOST_CHECK_EQUAL(nrdhs, expectedNofRDHs);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

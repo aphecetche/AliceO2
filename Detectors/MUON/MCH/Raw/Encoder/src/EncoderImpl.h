@@ -97,7 +97,7 @@ void EncoderImpl<FORMAT, CHARGESUM>::gbts2buffer(uint32_t orbit, uint16_t bunchC
     }
     assert(gbtBuffer.size() % 4 == 0);
     PayloadHeader header{orbit, bunchCrossing, gbt->id(), gbtBuffer.size()};
-    appendHeader(header, mBuffer);
+    appendHeader(mBuffer, header);
     mBuffer.insert(mBuffer.end(), gbtBuffer.begin(), gbtBuffer.end());
   }
 }

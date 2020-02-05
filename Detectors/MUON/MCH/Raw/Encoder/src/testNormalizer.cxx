@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckOrbitJumpsAreAnIntegerNumberOfFullOrbits, RDH
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
     o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
-    bool ok = checkOrbitJumpsAreFullOrbits<RDH>(pages);
+    bool ok = false; //checkOrbitJumpsAreFullOrbits<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
 }

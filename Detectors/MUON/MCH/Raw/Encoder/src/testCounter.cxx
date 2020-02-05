@@ -77,7 +77,7 @@ bool isPacketCounterContiguousPerfee(gsl::span<uint8_t> buffer)
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
-BOOST_AUTO_TEST_SUITE(arranger)
+BOOST_AUTO_TEST_SUITE(encoder)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(TestPacketCounter, T, testTypes)
 {

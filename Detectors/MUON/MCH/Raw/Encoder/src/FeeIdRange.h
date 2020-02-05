@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ARRANGER_FEEIDRANGE_H
-#define O2_MCH_RAW_ARRANGER_FEEIDRANGE_H
+#ifndef O2_MCH_RAW_ENCODER_FEEIDRANGE_H
+#define O2_MCH_RAW_ENCODER_FEEIDRANGE_H
 
 #include <gsl/span>
 #include <cstdint>

@@ -28,6 +28,8 @@
 #include <fstream>
 #include <gsl/span>
 #include <iostream>
+#include "Paginator.h"
+#include "MCHRawEncoder/DataBlock.h"
 
 using namespace o2::mch::raw;
 using namespace o2::header;
@@ -47,42 +49,41 @@ std::vector<o2::InteractionRecord> emptyHBs{
   {1, 99},
   {220, 220}};
 
-std::vector<int> feeIds{10, 12, 11, 5, 3};
+std::vector<uint16_t> feeIds{10, 12, 11, 5, 3};
 
-template <typename RDH>
 std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
   std::vector<uint8_t> buffer;
   for (auto ir : interactions) {
     for (auto feeId : feeIds) {
-      auto rdh = createRDH<RDH>(0, feeId, feeId * 30, ir.orbit, ir.bc, 0);
-      appendRDH(buffer, rdh);
+      PayloadHeader header{ir.orbit, ir.bc, feeId, 0};
+      appendHeader(buffer, header);
     }
   }
   return buffer;
 } // namespace
 
 template <typename RDH>
-std::vector<uint8_t> testBuffer()
+std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
-  auto buffer = createBuffer<RDH>(interactions);
+  auto buffer = createBuffer(interactions);
+  std::cout << "initial buffer size = " << buffer.size() << "\n";
+  std::vector<uint8_t> pages;
+  paginateBuffer<RDH>(buffer, pages, 80, 0xFF);
+
+  impl::dumpBuffer(pages);
 
   std::vector<uint8_t> outBuffer;
-
-  insertEmptyHBs<RDH>(buffer, outBuffer, emptyHBs);
+  insertEmptyHBs<RDH>(pages, outBuffer, emptyHBs);
 
   return outBuffer;
 }
 
 } // namespace
 
-BOOST_AUTO_TEST_SUITE(o2_mch_raw)
-
-BOOST_AUTO_TEST_SUITE(arranger)
-
-BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionAllfeesMustHaveTheSameNumberOfRDHs, RDH, testTypes)
+template <typename RDH>
+bool checkAllFeesHaveSameNumberOfRDHs(gsl::span<const uint8_t> buffer)
 {
-  auto buffer = testBuffer<RDH>();
   auto lr = getFeeIdRanges<RDH>(buffer);
   bool ok{true};
   bool first{true};
@@ -97,12 +98,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionAllfeesMustHaveTheSameNumberOfRDHs, 
       ok = false;
     }
   }
+  return ok;
+}
+
+BOOST_AUTO_TEST_SUITE(o2_mch_raw)
+
+BOOST_AUTO_TEST_SUITE(encoder)
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(AllfeesMustHaveTheSameNumberOfRDHs, RDH, testTypes)
+{
+  std::vector<o2::InteractionRecord> irs{
+    o2::InteractionRecord{1, 100}};
+  auto buffer = testBuffer<RDH>(irs);
+  bool ok = checkAllFeesHaveSameNumberOfRDHs<RDH>(buffer);
   BOOST_CHECK_EQUAL(ok, true);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(AfterInsertionNumberOfRDHsMustBeNfeesTimesNHBs, RDH, testTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(NofRDHsMustBeNfeesTimesNHBs, RDH, testTypes)
 {
-  auto buffer = testBuffer<RDH>();
+  auto buffer = testBuffer<RDH>(interactions);
 
   int ntotal = countRDHs<RDH>(buffer);
 

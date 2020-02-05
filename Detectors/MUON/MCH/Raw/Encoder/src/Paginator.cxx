@@ -98,6 +98,9 @@ template <typename RDH>
 DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
                                                uint8_t paddingByte)
 {
+  if (pageSize < sizeof(RDH)) {
+    throw std::invalid_argument("cannot split with pageSize below rdh size");
+  }
   return
     [pageSize, paddingByte](DataBlock block,
                             std::vector<uint8_t>& outBuffer) -> size_t {
@@ -114,6 +117,9 @@ template <typename RDH>
 StopPager<RDH> createStopPager(size_t pageSize,
                                uint8_t paddingByte)
 {
+  if (pageSize < sizeof(RDH)) {
+    throw std::invalid_argument("cannot split with pageSize below rdh size");
+  }
   return [pageSize, paddingByte](PayloadHeader header, std::vector<uint8_t>& outBuffer,
                                  uint16_t pageCount) {
     auto rdh = createRDH<RDH>(header, pageSize);
@@ -135,19 +141,26 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
   auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
   auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
 
+  constexpr auto headerSize = sizeof(PayloadHeader);
+
+  if (buffer.size() < headerSize) {
+    return 0;
+  }
+
   size_t inputPos{0};
   size_t addedPages{0};
 
-  while (inputPos < buffer.size() - sizeof(PayloadHeader)) {
+  while (inputPos < buffer.size()) {
     PayloadHeader header;
-    memcpy(&header, &buffer[inputPos], sizeof(PayloadHeader));
-    DataBlock block{header, buffer.subspan(inputPos + sizeof(header), header.payloadSize)};
+    memcpy(&header, &buffer[inputPos], headerSize);
+    inputPos += headerSize;
+    DataBlock block{header, buffer.subspan(inputPos, header.payloadSize)};
     auto npages = payloadSplitter(block, outBuffer);
     if (npages) {
       stopPager(header, outBuffer, npages);
     }
     addedPages += npages;
-    inputPos += header.payloadSize + sizeof(header);
+    inputPos += header.payloadSize;
   }
   return addedPages;
 }
