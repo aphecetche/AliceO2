@@ -60,6 +60,13 @@ std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
       appendHeader(buffer, header);
     }
   }
+  // add a few more to get an initial buffer with different
+  // number of links per orbit
+  appendHeader(buffer, PayloadHeader{interactions[0].orbit, interactions[0].bc, feeIds[0], 0});
+  if (interactions.size() > 1) {
+    appendHeader(buffer, PayloadHeader{interactions[1].orbit, interactions[1].bc, feeIds[1], 0});
+  }
+
   return buffer;
 } // namespace
 
@@ -74,7 +81,8 @@ std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
   impl::dumpBuffer(pages);
 
   std::vector<uint8_t> outBuffer;
-  insertEmptyHBs<RDH>(pages, outBuffer, emptyHBs);
+  outBuffer.swap(pages);
+  //insertEmptyHBs<RDH>(pages, outBuffer, emptyHBs);
 
   return outBuffer;
 }
@@ -92,7 +100,7 @@ bool checkAllFeesHaveSameNumberOfRDHs(gsl::span<const uint8_t> buffer)
   for (auto l : lr) {
     if (first) {
       refSize = l.second.size();
-      continue;
+      first = false;
     }
     if (l.second.size() != refSize) {
       ok = false;
