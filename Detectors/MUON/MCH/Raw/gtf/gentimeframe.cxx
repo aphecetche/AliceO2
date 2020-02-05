@@ -45,7 +45,6 @@
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHBase/Digit.h"
-#include "MCHMappingFactory/CreateSegmentation.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/SampaCluster.h"
@@ -64,6 +63,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include "DigitEncoder.h"
 
 using namespace o2::mch::mapping;
 using namespace o2::mch::raw;
@@ -80,43 +80,6 @@ std::vector<o2::InteractionTimeRecord> getCollisions(o2::steer::InteractionSampl
 }
 
 template <typename FORMAT, typename CHARGESUM>
-void encodeDigits(gsl::span<o2::mch::Digit> digits,
-                  std::unique_ptr<Encoder>& encoder,
-                  std::function<std::optional<DsElecId>(DsDetId)> det2elec,
-                  uint32_t orbit,
-                  uint16_t bc)
-
-{
-  static int nadd{0};
-
-  for (auto d : digits) {
-    int deid = d.getDetID();
-    int dsid = segmentation(deid).padDualSampaId(d.getPadID());
-    DsDetId detId{deid, dsid};
-    auto dselocopt = det2elec(DsDetId(deid, dsid));
-    if (!dselocopt.has_value()) {
-      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
-      continue;
-    }
-    DsElecId elecId = dselocopt.value();
-    int dschid = segmentation(deid).padDualSampaChannel(d.getPadID());
-    uint16_t ts(static_cast<int>(d.getTimeStamp()) & 0xFFFF);
-    int sampachid = dschid % 32;
-
-    auto clusters = createSampaClusters<CHARGESUM>(ts, d.getADC());
-
-    fmt::printf(
-      "nadd %6d deid %4d dsid %4d dschid %2d "
-      "solarId %3d groupId %2d elinkId %2d sampach %2d : %s\n",
-      nadd++, deid, dsid, dschid,
-      elecId.solarId(), elecId.elinkGroupId(), elecId.elinkId(), sampachid,
-      asString(clusters[0]).c_str());
-
-    encoder->addChannelData(elecId, sampachid, clusters);
-  }
-}
-
-template <typename FORMAT, typename CHARGESUM>
 void encode(gsl::span<o2::InteractionTimeRecord> interactions,
             gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
             std::function<std::optional<DsElecId>(DsDetId)> det2elec,
@@ -127,8 +90,8 @@ void encode(gsl::span<o2::InteractionTimeRecord> interactions,
   for (int i = 0; i < interactions.size(); i++) {
     auto& col = interactions[i];
     encoder->startHeartbeatFrame(col.orbit, col.bc);
-    encodeDigits<FORMAT, CHARGESUM>(digitsPerInteraction[i],
-                                    encoder, det2elec, col.orbit, col.bc);
+    encodeDigits<CHARGESUM>(digitsPerInteraction[i],
+                            encoder, det2elec, col.orbit, col.bc);
     encoder->moveToBuffer(buffer);
   }
 }

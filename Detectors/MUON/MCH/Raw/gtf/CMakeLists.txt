@@ -20,4 +20,14 @@ o2_add_executable(generate-timeframe
         fmt::fmt
         Boost::program_options)
 
-
+o2_add_executable(digit2raw
+        SOURCES digit2raw.cxx
+        COMPONENT_NAME mch
+        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
+        O2::Steer
+        O2::MCHSimulation
+        O2::MCHMappingFactory
+        O2::MCHRawImplHelpers
+        O2::DetectorsRaw
+        fmt::fmt
+        Boost::program_options)
