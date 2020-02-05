@@ -16,10 +16,8 @@
 #define BOOST_TEST_DYN_LINK
 
 #include "DumpBuffer.h"
-#include "Headers/RAWDataHeader.h"
 #include "FeeIdRange.h"
 #include "Inserter.h"
-#include "MCHRawCommon/RDHManip.h"
 #include <array>
 #include <boost/mpl/list.hpp>
 #include <boost/test/data/test_case.hpp>
@@ -33,8 +31,6 @@
 
 using namespace o2::mch::raw;
 using namespace o2::header;
-
-typedef boost::mpl::list<o2::header::RAWDataHeaderV4> testTypes;
 
 namespace
 {
@@ -56,82 +52,78 @@ std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
   std::vector<uint8_t> buffer;
   for (auto ir : interactions) {
     for (auto feeId : feeIds) {
-      PayloadHeader header{ir.orbit, ir.bc, feeId, 0};
-      appendHeader(buffer, header);
+      DataBlockHeader header{ir.orbit, ir.bc, feeId, 0};
+      appendDataBlockHeader(buffer, header);
     }
   }
   // add a few more to get an initial buffer with different
   // number of links per orbit
-  appendHeader(buffer, PayloadHeader{interactions[0].orbit, interactions[0].bc, feeIds[0], 0});
+  appendDataBlockHeader(buffer, DataBlockHeader{interactions[0].orbit, static_cast<uint16_t>(interactions[0].bc + static_cast<uint16_t>(10)), feeIds[0], 0});
   if (interactions.size() > 1) {
-    appendHeader(buffer, PayloadHeader{interactions[1].orbit, interactions[1].bc, feeIds[1], 0});
+    appendDataBlockHeader(buffer, DataBlockHeader{interactions[1].orbit, static_cast<uint16_t>(interactions[1].bc + static_cast<uint16_t>(20)), feeIds[1], 0});
   }
 
   return buffer;
 } // namespace
 
-template <typename RDH>
 std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
   auto buffer = createBuffer(interactions);
-  std::cout << "initial buffer size = " << buffer.size() << "\n";
-  std::vector<uint8_t> pages;
-  paginateBuffer<RDH>(buffer, pages, 80, 0xFF);
-
-  impl::dumpBuffer(pages);
 
   std::vector<uint8_t> outBuffer;
-  outBuffer.swap(pages);
-  //insertEmptyHBs<RDH>(pages, outBuffer, emptyHBs);
+  insertEmptyHBs(buffer, outBuffer, emptyHBs);
+  outBuffer.swap(buffer);
 
-  return outBuffer;
+  return buffer;
 }
 
 } // namespace
 
-template <typename RDH>
-bool checkAllFeesHaveSameNumberOfRDHs(gsl::span<const uint8_t> buffer)
+bool checkAllFeesHaveSameNumberOfHeaders(gsl::span<const uint8_t> buffer)
 {
-  auto lr = getFeeIdRanges<RDH>(buffer);
-  bool ok{true};
-  bool first{true};
-  size_t refSize;
+  std::map<uint16_t, std::vector<DataBlockRef>> headers;
 
-  for (auto l : lr) {
+  forEachDataBlockRef(buffer, [&headers](const DataBlockRef& ref) {
+    headers[ref.block.header.feeId].emplace_back(ref);
+  });
+
+  bool first{true};
+  int nref{0};
+
+  for (auto p : headers) {
     if (first) {
-      refSize = l.second.size();
+      nref = p.second.size();
       first = false;
-    }
-    if (l.second.size() != refSize) {
-      ok = false;
+    } else {
+      if (p.second.size() != nref) {
+        return false;
+      }
     }
   }
-  return ok;
+  return true;
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(AllfeesMustHaveTheSameNumberOfRDHs, RDH, testTypes)
+BOOST_AUTO_TEST_CASE(AllfeesMustHaveTheSameNumberOfHeaders)
 {
-  std::vector<o2::InteractionRecord> irs{
-    o2::InteractionRecord{1, 100}};
-  auto buffer = testBuffer<RDH>(irs);
-  bool ok = checkAllFeesHaveSameNumberOfRDHs<RDH>(buffer);
+  auto buffer = testBuffer(interactions);
+  bool ok = checkAllFeesHaveSameNumberOfHeaders(buffer);
   BOOST_CHECK_EQUAL(ok, true);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(NofRDHsMustBeNfeesTimesNHBs, RDH, testTypes)
+BOOST_AUTO_TEST_CASE(NofRDHsMustBeNfeesTimesNHBs)
 {
-  auto buffer = testBuffer<RDH>(interactions);
+  auto buffer = testBuffer(interactions);
 
-  int ntotal = countRDHs<RDH>(buffer);
+  int ntotal = countHeaders(buffer);
 
-  auto nofHBs = emptyHBs.size() + interactions.size();
-  auto expectedNofRDHs = nofHBs * feeIds.size();
+  auto nofHBs = (2 + emptyHBs.size()) + interactions.size();
+  auto expectedNofHeaders = nofHBs * feeIds.size();
 
-  BOOST_CHECK_EQUAL(ntotal, expectedNofRDHs);
+  BOOST_CHECK_EQUAL(ntotal, expectedNofHeaders);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

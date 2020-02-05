@@ -47,22 +47,18 @@ struct Common {
   Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(3)),
              interactions{},
              testPoints{
-               //{8192, 14},
-               {1024, 27},
-               //{512, 47},
-               //{128, 266}
-             }
+               {8192, 30},
+               {1024, 43},
+               {512, 63},
+               {128, 282}}
   {
 
     std::set<o2::InteractionTimeRecord> irs;
     // get the IRs directly from the created buffer
-    forEachDataBlock(buffer, [&irs](const DataBlock& block) {
-      irs.emplace(o2::InteractionRecord{block.header.bc, block.header.orbit}, 0);
+    forEachDataBlockRef(buffer, [&irs](const DataBlockRef& ref) {
+      irs.emplace(o2::InteractionRecord{ref.block.header.bc, ref.block.header.orbit}, 0);
     });
     interactions.insert(interactions.end(), irs.begin(), irs.end());
-    for (auto ir : interactions) {
-      std::cout << fmt::format("ORBIT {:6d} BC {:4d}\n", ir.orbit, ir.bc);
-    }
   }
 } F;
 
@@ -175,7 +171,6 @@ bool checkOrbitJumpsAreFullOrbits(gsl::span<uint8_t> pages)
         current = irs[i];
       }
     }
-    std::cout << fmt::format("ORBIT {:6d} BC {:4d} {}\n", irs[i].orbit, irs[i].bc, localok);
   }
   return ok;
 }
@@ -189,7 +184,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckOrbitJumpsAreAnIntegerNumberOfFullOrbits, RDH
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
     o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
-    bool ok = false; //checkOrbitJumpsAreFullOrbits<RDH>(pages);
+    bool ok = checkOrbitJumpsAreFullOrbits<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
 }

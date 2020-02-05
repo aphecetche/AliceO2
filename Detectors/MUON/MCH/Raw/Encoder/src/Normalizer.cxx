@@ -19,6 +19,7 @@
 
 namespace o2::mch::raw
 {
+
 template <typename RDH>
 void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      std::vector<uint8_t>& outBuffer,
@@ -26,28 +27,29 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      size_t pageSize,
                      uint8_t paddingByte)
 {
-  std::vector<uint8_t> pages;
-  paginateBuffer<RDH>(buffer, pages, pageSize, paddingByte);
 
-#if 1
   o2::raw::HBFUtils hbfutils(interactions[0]);
   std::vector<o2::InteractionRecord> emptyHBFs;
   hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
+  /// Insert empty HB headers in a buffer containing DataBlocks
+  /// (and not RDH,payload blocks)
+  insertEmptyHBs(buffer, outBuffer, emptyHBFs);
 
-  std::cout << "emptyHBFs\n";
-  for (auto ir : emptyHBFs) {
-    std::cout << ir << "\n";
-  }
-  //outBuffer.swap(pages);
-  insertEmptyHBs<RDH>(pages, outBuffer, emptyHBFs);
+  /// Turn the buffer into a real (RDH,payload) one
+  /// There's one RDH at the start of each page
+  std::vector<uint8_t> pages;
+  paginateBuffer<RDH>(outBuffer, pages, pageSize, paddingByte);
 
-  setPacketCounter<RDH>(outBuffer);
+  /// Ensure the packet counter of each link is correct
+  setPacketCounter<RDH>(pages);
 
-  forEachRDH<RDH>(outBuffer, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
+  /// Ensure the triggerType of each RDH is correctly set
+  forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
     o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
     rdhTriggerType(rdh, rdhTriggerType(rdh) | hbfutils.triggerType(rec));
   });
-#endif
+
+  outBuffer.swap(pages);
 }
 
 template void normalizeBuffer<o2::header::RAWDataHeaderV4>(gsl::span<const uint8_t> buffer,

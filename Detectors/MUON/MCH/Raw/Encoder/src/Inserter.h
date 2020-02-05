@@ -18,19 +18,18 @@
 
 namespace o2::mch::raw
 {
-// insertEmptyHBs will insert, for each link, empty RDHs corresponding
-// to the interaction records in emptyHBs array, at the proper locations
-// in the buffer
+// insertEmptyHBs will insert, for each link, empty DataBlockHeader
+// corresponding to the interaction records in emptyHBs array, at the proper
+// locations in the buffer
 //
-// That is, the buffer is supposed to contain only data for
-// interaction records where there was some data in the detector
-// and this function will add empty data (i.e. just RDHs) for
-// all other heartbeats (defined in emptyHBs array).
+// That is, the buffer is supposed to contain only data for interaction records
+// where there was some data in the detector and this function will add empty
+// data (i.e. just DataBlockHeader) for all other heartbeats (defined in
+// emptyHBs array).
 //
-// Note that the input buffer is untouched : the original data
-// it contains, plus the empty HBs, will be appended to outBuffer
-// instead
-template <typename RDH>
+// Note that the input buffer is untouched : the original data it contains,
+// plus the empty HBs, will be appended to outBuffer instead
+
 void insertEmptyHBs(gsl::span<const uint8_t> buffer,
                     std::vector<uint8_t>& outBuffer,
                     gsl::span<o2::InteractionRecord> emptyHBs);

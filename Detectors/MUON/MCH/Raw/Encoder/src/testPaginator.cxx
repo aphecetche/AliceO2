@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_SUITE(encoder)
 std::vector<uint8_t> createDataBlock(gsl::span<uint8_t> payload)
 {
   std::vector<uint8_t> outBuffer;
-  PayloadHeader header{0, 0, 0, static_cast<uint16_t>(payload.size())};
-  appendHeader(outBuffer, header);
+  DataBlockHeader header{0, 0, 0, static_cast<uint16_t>(payload.size())};
+  appendDataBlockHeader(outBuffer, header);
   outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
   return outBuffer;
 }
@@ -140,10 +140,10 @@ BOOST_DATA_TEST_CASE(PaginateEmptyPayloads,
   std::vector<uint8_t> buffer;
   std::array<uint16_t, 5> feeIds = {631, 729, 424, 12, 42};
   for (auto feeId : feeIds) {
-    PayloadHeader header{12345, 678, feeId, 0};
-    appendHeader(buffer, header);
+    DataBlockHeader header{12345, 678, feeId, 0};
+    appendDataBlockHeader(buffer, header);
   }
-  BOOST_REQUIRE_EQUAL(buffer.size(), feeIds.size() * sizeof(PayloadHeader));
+  BOOST_REQUIRE_EQUAL(buffer.size(), feeIds.size() * sizeof(DataBlockHeader));
 
   std::vector<uint8_t> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);

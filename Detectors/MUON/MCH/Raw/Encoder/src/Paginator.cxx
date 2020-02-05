@@ -20,7 +20,7 @@ extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4
 namespace o2::mch::raw
 {
 /// A DataBlockSplitter takes an input buffer containing one
-/// (PayloadHeader,Payload) block and creates an ouput buffer
+/// (DataBlockHeader,Payload) block and creates an ouput buffer
 /// with (rdh,payload) data block(s) of size pageSize,
 /// i.e. it splits the payloads in pieces of size pageSize
 ///
@@ -39,10 +39,10 @@ using DataBlockSplitter = std::function<size_t(DataBlock block, std::vector<uint
 ///
 /// @return the number of pages added to outBuffer
 template <typename RDH>
-using StopPager = std::function<void(PayloadHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount)>;
+using StopPager = std::function<void(DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount)>;
 
 template <typename RDH>
-RDH createRDH(const PayloadHeader& header,
+RDH createRDH(const DataBlockHeader& header,
               size_t pageSize, uint16_t pageCnt = 0, uint16_t len = 0)
 {
   RDH rdh;
@@ -120,7 +120,7 @@ StopPager<RDH> createStopPager(size_t pageSize,
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
-  return [pageSize, paddingByte](PayloadHeader header, std::vector<uint8_t>& outBuffer,
+  return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer,
                                  uint16_t pageCount) {
     auto rdh = createRDH<RDH>(header, pageSize);
     rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
@@ -141,7 +141,7 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
   auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
   auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
 
-  constexpr auto headerSize = sizeof(PayloadHeader);
+  constexpr auto headerSize = sizeof(DataBlockHeader);
 
   if (buffer.size() < headerSize) {
     return 0;
@@ -151,7 +151,7 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
   size_t addedPages{0};
 
   while (inputPos < buffer.size()) {
-    PayloadHeader header;
+    DataBlockHeader header;
     memcpy(&header, &buffer[inputPos], headerSize);
     inputPos += headerSize;
     DataBlock block{header, buffer.subspan(inputPos, header.payloadSize)};

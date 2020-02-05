@@ -16,10 +16,11 @@
 #include <gsl/span>
 #include <functional>
 #include <iostream>
+#include <optional>
 
 namespace o2::mch::raw
 {
-struct PayloadHeader {
+struct DataBlockHeader {
   uint32_t orbit;
   uint16_t bc;
   uint16_t feeId;
@@ -27,18 +28,31 @@ struct PayloadHeader {
 };
 
 struct DataBlock {
-  PayloadHeader header;
+  DataBlockHeader header;
   gsl::span<const uint8_t> payload;
+  uint64_t size() const
+  {
+    return sizeof(header) + payload.size();
+  }
 };
 
-void appendHeader(std::vector<uint8_t>& outBuffer, PayloadHeader header);
+struct DataBlockRef {
+  DataBlock block;
+  std::optional<uint64_t> offset;
+};
 
-int forEachDataBlock(gsl::span<const uint8_t> buffer,
-                     std::function<void(DataBlock block)> f);
+void appendDataBlockHeader(std::vector<uint8_t>& outBuffer, DataBlockHeader header);
+
+int forEachDataBlockRef(gsl::span<const uint8_t> buffer,
+                        std::function<void(DataBlockRef blockRef)> f);
 
 int countHeaders(gsl::span<uint8_t> buffer);
 
-std::ostream& operator<<(std::ostream& os, const PayloadHeader& header);
+std::ostream& operator<<(std::ostream& os, const DataBlockHeader& header);
+std::ostream& operator<<(std::ostream& os, const DataBlockRef& ref);
+std::ostream& operator<<(std::ostream& os, const DataBlock& block);
+
+bool operator<(const DataBlockHeader& a, const DataBlockHeader& b);
 } // namespace o2::mch::raw
 
 #endif
