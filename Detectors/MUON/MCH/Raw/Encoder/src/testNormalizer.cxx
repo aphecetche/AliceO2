@@ -27,8 +27,11 @@
 #include "CruBufferCreator.h"
 #include "Paginator.h"
 #include "CommonConstants/Triggers.h"
+#include "DetectorsRaw/HBFUtils.h"
 
 using namespace o2::mch::raw;
+
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
 typedef boost::mpl::list<o2::header::RAWDataHeaderV4> testTypes;
 
@@ -41,25 +44,54 @@ struct Common {
     int pageSize, expectedNofRDHs;
   };
   std::vector<TestPoint> testPoints;
-  Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer()),
-             interactions{o2::InteractionTimeRecord{o2::InteractionRecord{0, 0}, 0}},
+  Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(3)),
+             interactions{},
              testPoints{
-               //                {8192, 8},
-               {1024, 18},
-               // {512, 31},
-               // {128, 183}
+               //{8192, 14},
+               {1024, 27},
+               //{512, 47},
+               //{128, 266}
              }
   {
-    forEachDataBlock(buffer, [](const DataBlock& block) {
-      std::cout << block.header << "\n";
+
+    std::set<o2::InteractionTimeRecord> irs;
+    // get the IRs directly from the created buffer
+    forEachDataBlock(buffer, [&irs](const DataBlock& block) {
+      irs.emplace(o2::InteractionRecord{block.header.bc, block.header.orbit}, 0);
     });
+    interactions.insert(interactions.end(), irs.begin(), irs.end());
+    for (auto ir : interactions) {
+      std::cout << fmt::format("ORBIT {:6d} BC {:4d}\n", ir.orbit, ir.bc);
+    }
   }
 } F;
 
 template <typename RDH>
+bool packetCounterMustBeIncreasingByOne(gsl::span<const uint8_t> pages)
+{
+  // packetCounts is a map (feeId->{packetCounts})
+  std::map<uint16_t, std::vector<int>> packetCounts;
+  forEachRDH<RDH>(pages, [&packetCounts](const RDH& rdh) {
+    packetCounts[rdhFeeId(rdh)].emplace_back(rdhPacketCounter(rdh));
+  });
+  bool ok{true};
+  // check that for each feeId the packetcounter is increasing
+  // by one at each RDH.
+  for (auto pc : packetCounts) {
+    if (pc.second.size() > 1) {
+      for (auto i = 0; i < pc.second.size() - 1; i++) {
+        if (pc.second[i] != pc.second[i + 1] - 1) {
+          ok = false;
+        }
+      }
+    }
+  }
+  return ok;
+}
+
+template <typename RDH>
 bool pageCountsMustBeIncreasingByOne(gsl::span<const uint8_t> pages)
 {
-
   // pageCounts is a map (orbc -> (feeId,{pageCounts}))
   // where orb is a combination of orbit and bc
   // {pageCounts} is a vector of page counters
@@ -80,27 +112,18 @@ bool pageCountsMustBeIncreasingByOne(gsl::span<const uint8_t> pages)
   for (auto ob : pageCounts) {
     uint32_t orbit = static_cast<uint32_t>(ob.first & 0xFFFF);
     uint16_t bc = static_cast<uint16_t>((ob.first >> 32) & 0xFFFF);
-    std::cout << "ORBIT " << orbit << " BC " << bc << "\n";
     for (auto p : ob.second) {
-      std::cout << "  FeeId " << p.first << "(" << p.second.size() << ") : ";
       if (p.second.size() > 1) {
-        for (auto i = 0; i < p.second.size(); i++) {
-          std::cout << p.second[i] << ",";
-        }
         for (auto i = 0; i < p.second.size() - 1; i++) {
           if (p.second[i] != p.second[i + 1] - 1) {
-            std::cout << "ERROR";
             ok = false;
           }
         }
       }
-      std::cout << "\n";
     }
   }
   return ok;
 }
-
-extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 
 /// Check that the RDHs corresponding to IR=ir have
 /// the TF bit of their triggerType set
@@ -111,7 +134,6 @@ bool checkTimeFrameBitIsSet(gsl::span<const uint8_t> pages,
   int nset{0};
   int nir{0};
   forEachRDH<RDH>(pages, [&nset, &nir, &ir](const RDH& rdh) {
-    std::cout << rdh << "\n";
     if (rdhOrbit(rdh) == ir.orbit &&
         rdhBunchCrossing(rdh) == ir.bc) {
       nir++;
@@ -126,9 +148,51 @@ bool checkTimeFrameBitIsSet(gsl::span<const uint8_t> pages,
   return irFound && allTFset;
 }
 
+template <typename RDH>
+std::vector<o2::InteractionRecord> getInteractions(gsl::span<uint8_t> pages)
+{
+  std::set<o2::InteractionRecord> irs;
+  forEachRDH<RDH>(pages, [&irs](const RDH& rdh) {
+    irs.emplace(rdhBunchCrossing(rdh), rdhOrbit(rdh));
+  });
+  std::vector<o2::InteractionRecord> interactions(irs.begin(), irs.end());
+  return interactions;
+}
+
+template <typename RDH>
+bool checkOrbitJumpsAreFullOrbits(gsl::span<uint8_t> pages)
+{
+  bool ok{true};
+  auto irs = getInteractions<RDH>(pages);
+  auto current = irs[0];
+  for (auto i = 1; i < irs.size(); i++) {
+    bool localok{true};
+    if (irs[i].orbit != current.orbit) {
+      if (irs[i].bc != current.bc) {
+        localok = false;
+        ok = false;
+      } else {
+        current = irs[i];
+      }
+    }
+    std::cout << fmt::format("ORBIT {:6d} BC {:4d} {}\n", irs[i].orbit, irs[i].bc, localok);
+  }
+  return ok;
+}
+
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(CheckOrbitJumpsAreAnIntegerNumberOfFullOrbits, RDH, testTypes)
+{
+  for (auto s : F.testPoints) {
+    std::vector<uint8_t> pages;
+    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
+    bool ok = checkOrbitJumpsAreFullOrbits<RDH>(pages);
+    BOOST_CHECK_EQUAL(ok, true);
+  }
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(CheckNumberOfRDHs, RDH, testTypes)
 {
@@ -145,8 +209,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckPageCounter, RDH, testTypes)
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
     o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
-    std::cout << "-- pageSize " << s.pageSize << "\n";
     bool ok = pageCountsMustBeIncreasingByOne<RDH>(pages);
+    BOOST_CHECK_EQUAL(ok, true);
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(CheckPacketCounter, RDH, testTypes)
+{
+  for (auto s : F.testPoints) {
+    std::vector<uint8_t> pages;
+    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
+    bool ok = packetCounterMustBeIncreasingByOne<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
 }
@@ -156,7 +229,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(FirstInteractionRecordMustHaveTFBitSet, RDH, testT
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
     o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, F.interactions, s.pageSize, F.paddingByte);
-    std::cout << "-- pageSize " << s.pageSize << "\n";
     bool ok = checkTimeFrameBitIsSet<RDH>(pages, F.interactions[0]);
     BOOST_CHECK_EQUAL(ok, true);
   }

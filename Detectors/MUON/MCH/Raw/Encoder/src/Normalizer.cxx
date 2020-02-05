@@ -33,6 +33,10 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
   std::vector<o2::InteractionRecord> emptyHBFs;
   hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
 
+  std::cout << "emptyHBFs\n";
+  for (auto ir : emptyHBFs) {
+    std::cout << ir << "\n";
+  }
   insertEmptyHBs<RDH>(buffer, outBuffer, emptyHBFs);
 
   setPacketCounter<RDH>(outBuffer);

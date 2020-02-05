@@ -16,23 +16,22 @@
 namespace o2::mch::raw::test
 {
 
-std::vector<uint8_t> fillChargeSum(Encoder& encoder);
+std::vector<uint8_t> fillChargeSum(Encoder& encoder, int norbit);
 
 template <typename FORMAT, typename CHARGESUM>
 struct CruBufferCreator {
-
-  static std::vector<uint8_t> makeBuffer();
+  static std::vector<uint8_t> makeBuffer(int norbit = 1);
 };
 
 std::vector<uint8_t> fillChargeSum(Encoder& encoder);
 
 template <typename FORMAT>
 struct CruBufferCreator<FORMAT, ChargeSumMode> {
-  static std::vector<uint8_t> makeBuffer()
+  static std::vector<uint8_t> makeBuffer(int norbit = 1)
   {
     auto encoder = createEncoder<FORMAT, ChargeSumMode, true>();
 
-    return fillChargeSum(*(encoder.get()));
+    return fillChargeSum(*(encoder.get()), norbit);
   }
 };
 

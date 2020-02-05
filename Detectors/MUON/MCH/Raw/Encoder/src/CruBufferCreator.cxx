@@ -13,7 +13,7 @@
 namespace o2::mch::raw::test
 {
 
-std::vector<uint8_t> fillChargeSum(Encoder& encoder)
+std::vector<uint8_t> fillChargeSum(Encoder& encoder, int norbit)
 {
   uint16_t ts(0);
 
@@ -41,6 +41,21 @@ std::vector<uint8_t> fillChargeSum(Encoder& encoder)
   encoder.addChannelData(DsElecId{448, 6, 2}, 25, {SampaCluster(ts, 450)});
   encoder.addChannelData(DsElecId{448, 6, 2}, 26, {SampaCluster(ts, 460)});
   encoder.addChannelData(DsElecId{448, 6, 2}, 12, {SampaCluster(ts, 420)});
+
+  if (norbit > 1) {
+    encoder.startHeartbeatFrame(12346, 1492);
+    encoder.addChannelData(DsElecId{728, 1, 2}, 0, {SampaCluster(ts, 10)});
+    encoder.addChannelData(DsElecId{728, 1, 2}, 1, {SampaCluster(ts, 10)});
+    encoder.addChannelData(DsElecId{361, 0, 4}, 0, {SampaCluster(ts, 10)});
+    encoder.addChannelData(DsElecId{361, 0, 4}, 1, {SampaCluster(ts, 20)});
+    encoder.addChannelData(DsElecId{361, 0, 4}, 2, {SampaCluster(ts, 30)});
+    encoder.addChannelData(DsElecId{361, 0, 4}, 3, {SampaCluster(ts, 40)});
+  }
+
+  if (norbit > 2) {
+    encoder.startHeartbeatFrame(12347, 678);
+    encoder.addChannelData(DsElecId{448, 6, 2}, 12, {SampaCluster(ts, 420)});
+  }
 
   std::vector<uint8_t> buffer;
   encoder.moveToBuffer(buffer);
