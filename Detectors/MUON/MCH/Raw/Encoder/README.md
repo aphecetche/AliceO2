@@ -13,12 +13,14 @@ Generation of MCH raw data buffers is a two stage process : first we
 The Encoder is mainly about building *payloads*. How those payloads are ordered
 in memory is not the Encoder business. This choice has been made to minimize
 the dependency of the Encoder code on the RawDataHeader itself. To that end the
-Encoder is producing data buffers consisting of (header,payload) blocks, where
-header is *not* a RDH but a simpler (an non versioned) struct. Contrary to
-(RDH,payload) blocks, the payload can be any size (in RDH the size is limited
-to 65536 bytes).
+Encoder is producing data buffers consisting of [(header,payload)
+blocks](/include/MCHRawEncoder/DataBlock.h), where header is *not* a RDH but a
+simpler (and non versioned) struct. Contrary to (RDH,payload) blocks, the
+payload can be any size (while in RDH the size is limited to 65536 bytes). The
+part of the detector that a payload block reference is identified through a
+unique `feeId` field which is the `solarId` in MCH case.
 
-IMethods are then provided to massage the (header,payload) buffers to produce
+Methods are then provided to massage the (header,payload) buffers to produce
  realistic (RDH,payload) buffers that closely ressemble real raw data.
 
 ## createEncoder&lt;FORMAT,CHARGESUM>
@@ -62,5 +64,14 @@ vector<uint8_t> raw;
 o2::mch::raw::normalizeBuffer(buffer,raw,interactions);
 ```
 
-Now `raw` vector should contain a perfectly valid MCH raw data buffer, 
-consisting of (RDH,payload) blocks.
+Now `raw` vector should contain an almost valid MCH raw data buffer, consisting
+of (RDH,payload) blocks. There is one last step, which is to assign a "valid"
+(cruId,linkId) to each RDH, i.e. to go from `feeId` (that was transported to
+the RDH from the `DataBlockHeader`) to a (cruId,linkId) pair.
+
+```.cpp
+auto solar2cru = createSolar2CruLinkMapper<SomeElecMapType>();
+assignCruLink(buffer, solar2cru);
+```
+
+where `SomeElecMapType` is one of the electronic mapping supported types.

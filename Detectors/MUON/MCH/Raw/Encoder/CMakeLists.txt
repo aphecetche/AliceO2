@@ -13,6 +13,7 @@ o2_add_library(MCHRawEncoder
         src/Paginator.cxx src/Counter.cxx
         src/FeeIdRange.cxx src/Inserter.cxx
         src/DataBlock.cxx src/Normalizer.cxx
+        src/CruLinkSetter.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap
         O2::CommonDataFormat

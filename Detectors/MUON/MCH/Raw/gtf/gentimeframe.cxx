@@ -46,12 +46,13 @@
 #include "Headers/RAWDataHeader.h"
 #include "MCHBase/Digit.h"
 #include "MCHMappingFactory/CreateSegmentation.h"
-#include "MCHRawEncoder/Normalizer.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawElecMap/Mapper.h"
+#include "MCHRawEncoder/CruLinkSetter.h"
 #include "MCHRawEncoder/Encoder.h"
+#include "MCHRawEncoder/Normalizer.h"
 #include "Steer/InteractionSampler.h"
 #include "gtfGenerateDigits.h"
 #include <array>
@@ -167,17 +168,7 @@ void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
   normalizeBuffer<RDH>(buffer, outBuffer, interactions);
 
   auto solar2cru = createSolar2CruLinkMapper<ELECMAP>();
-
-  forEachRDH<RDH>(outBuffer, [&solar2cru](RDH& rdh, gsl::span<uint8_t>::size_type) {
-    // update the (cru,link) from the feeId
-    uint16_t solarId = rdhFeeId(rdh);
-    auto opt = solar2cru(solarId);
-    if (!opt.has_value()) {
-      std::cout << "ERROR : no (cru,link) mapping for solar " << solarId << "\n";
-    }
-    rdhCruId(rdh, opt.value().cruId());
-    rdhLinkId(rdh, opt.value().linkId());
-  });
+  assignCruLink<RDH>(outBuffer, solar2cru);
 
   std::cout << "-------------------- SuperPaginating (to be written)\n";
   // FIXME: to be written...
