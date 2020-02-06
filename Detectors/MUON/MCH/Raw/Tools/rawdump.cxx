@@ -132,7 +132,8 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     ++ndigits;
   };
 
-  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+  //auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
+  auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperDummy>();
 
   size_t nrdhs{0};
   auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {

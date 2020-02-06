@@ -11,6 +11,7 @@
 #include "gtfGenerateDigits.h"
 #include <random>
 #include "MCHMappingFactory/CreateSegmentation.h"
+#include "Steer/InteractionSampler.h"
 
 // generate n digits randomly distributed over the detection elements
 // whose ids are within the deids span
@@ -37,31 +38,29 @@ std::vector<o2::mch::Digit> makeNRandomDigits(int n, gsl::span<int> deids, gsl::
   return digits;
 }
 
-std::vector<std::vector<o2::mch::Digit>> generateFixedDigits(int nofEvents, gsl::span<int> deids)
+std::vector<o2::mch::Digit> generateFixedDigits(gsl::span<int> deids)
 {
-  std::vector<std::vector<o2::mch::Digit>> digitsPerEvent;
-  digitsPerEvent.reserve(nofEvents); // one vector of digits per event
+  std::vector<o2::mch::Digit> digits;
 
-  for (auto i = 0; i < nofEvents; i++) {
-    std::vector<o2::mch::Digit> digits;
-    for (auto deid : deids) {
-      int n = deid % 100 + 1;
-      for (auto j = 0; j < n; j++) {
-        int padid = j;
-        double adc = ((j * 2) << 10 | (j * 2));
-        double time = 987;
-        digits.emplace_back(time, deid, padid, adc);
-      }
+  for (auto deid : deids) {
+    int n = deid % 100 + 1;
+    for (auto j = 0; j < n; j++) {
+      int padid = j;
+      double adc = ((j * 2) << 10 | (j * 2));
+      double time = 987;
+      digits.emplace_back(time, deid, padid, adc);
     }
-    digitsPerEvent.push_back(digits);
   }
-  return digitsPerEvent;
+  return digits;
 }
 
-std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl::span<int> deids, float occupancy)
+/// generate fake digits
+/// each DE gets n digits (where n = (DEID%100)+1), with padids ranging
+/// from 0 to n-1
+/// each digit has a fixed time of 987 and an adc value = padid*2 << 10 | padid*2
+std::vector<o2::mch::Digit> generateRandomDigits(gsl::span<int> deids, float occupancy)
 {
-  std::vector<std::vector<o2::mch::Digit>> digitsPerEvent;
-  digitsPerEvent.reserve(nofEvents); // one vector of digits per event
+  std::vector<o2::mch::Digit> digits;
   // std::random_device rd;
   // std::mt19937 gen(rd());
   std::mt19937 gen(1234);
@@ -76,13 +75,37 @@ std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl
 
   std::poisson_distribution<> dis(static_cast<int>(occupancy * totalPads));
 
-  for (auto i = 0; i < nofEvents; i++) {
-    // draw n from mu
-    int n = static_cast<int>(dis(gen));
-    // generate n random digits
-    auto digits = makeNRandomDigits(n, deids, gsl::make_span(nofPads));
-    // add those n digits into this event
-    digitsPerEvent.push_back(digits);
+  // draw n from mu
+  int n = static_cast<int>(dis(gen));
+  // generate n random digits
+  return makeNRandomDigits(n, deids, gsl::make_span(nofPads));
+}
+
+std::vector<o2::InteractionTimeRecord> getCollisions(int nofCollisions)
+{
+  o2::steer::InteractionSampler sampler; // default sampler with default filling scheme, rate of 50 kHz
+  //sampler.setInteractionRate(50000);
+  std::vector<o2::InteractionTimeRecord> records;
+  records.reserve(nofCollisions);
+  sampler.init();
+  sampler.generateCollisionTimes(records);
+  return records;
+}
+
+std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> generateDigits(
+  int nofInteractionsPerTimeFrame,
+  bool fixed)
+{
+  constexpr float occupancy = 1E-3;
+
+  std::vector<o2::InteractionTimeRecord> interactions = getCollisions(nofInteractionsPerTimeFrame);
+
+  //auto deIds = deIdsOfCH5L; //deIdsForAllMCH
+  std::array<int, 2> deIds = {500, 501};
+  std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> digitsPerIR;
+
+  for (auto ir : interactions) {
+    digitsPerIR[ir] = (fixed ? generateFixedDigits(deIds) : generateRandomDigits(deIds, occupancy));
   }
-  return digitsPerEvent;
+  return digitsPerIR;
 }

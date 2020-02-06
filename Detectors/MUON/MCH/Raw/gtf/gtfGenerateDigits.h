@@ -14,13 +14,12 @@
 #include <vector>
 #include <gsl/span>
 #include "MCHBase/Digit.h"
+#include <map>
+#include "CommonDataFormat/InteractionRecord.h"
+#include "MCHBase/Digit.h"
 
-std::vector<std::vector<o2::mch::Digit>> generateRandomDigits(int nofEvents, gsl::span<int> deids, float occupancy);
-
-/// generate fake digits
-/// each DE gets n digits (where n = (DEID%100)+1), with padids ranging
-/// from 0 to n-1
-/// each digit has a fixed time of 987 and an adc value = padid*2 << 10 | padid*2
-std::vector<std::vector<o2::mch::Digit>> generateFixedDigits(int nofEvents, gsl::span<int> deids);
+std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> generateDigits(
+  int nofInteractionsPerTimeFrame,
+  bool fixed = false);
 
 #endif

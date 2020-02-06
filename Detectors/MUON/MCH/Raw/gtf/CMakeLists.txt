@@ -9,7 +9,7 @@
 # submit itself to any jurisdiction.
 
 o2_add_executable(generate-timeframe
-        SOURCES gentimeframe.cxx gtfGenerateDigits.cxx
+        SOURCES gentimeframe.cxx gtfGenerateDigits.cxx Digit2RawConverter.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
         O2::Steer
@@ -21,7 +21,7 @@ o2_add_executable(generate-timeframe
         Boost::program_options)
 
 o2_add_executable(digit2raw
-        SOURCES digit2raw.cxx
+        SOURCES digit2raw.cxx Digit2RawConverter.cxx
         COMPONENT_NAME mch
         PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
         O2::Steer

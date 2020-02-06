@@ -14,8 +14,10 @@ o2_add_library(MCHRawEncoder
         src/FeeIdRange.cxx src/Inserter.cxx
         src/DataBlock.cxx src/Normalizer.cxx
         src/CruLinkSetter.cxx
+        src/DigitEncoder.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
         O2::MCHRawElecMap
+        O2::MCHBase
         O2::CommonDataFormat
         O2::DetectorsRaw
         PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)

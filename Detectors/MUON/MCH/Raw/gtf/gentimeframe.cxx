@@ -40,125 +40,35 @@
 //
 //
 
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DetectorsRaw/HBFUtils.h"
-#include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHBase/Digit.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawCommon/RDHManip.h"
-#include "MCHRawCommon/SampaCluster.h"
 #include "MCHRawElecMap/Mapper.h"
-#include "MCHRawEncoder/CruLinkSetter.h"
-#include "MCHRawEncoder/Encoder.h"
-#include "MCHRawEncoder/Normalizer.h"
-#include "Steer/InteractionSampler.h"
-#include "gtfGenerateDigits.h"
+#include "MCHRawEncoder/DigitEncoder.h"
 #include <array>
+#include "gtfGenerateDigits.h"
 #include <boost/program_options.hpp>
-#include <fmt/format.h>
-#include <fmt/printf.h>
 #include <fstream>
 #include <gsl/span>
-#include <iostream>
-#include <map>
-#include <vector>
-#include "DigitEncoder.h"
+#include "Digit2RawConverter.h"
 
-using namespace o2::mch::mapping;
 using namespace o2::mch::raw;
 namespace po = boost::program_options;
-
-std::vector<o2::InteractionTimeRecord> getCollisions(o2::steer::InteractionSampler& sampler,
-                                                     int nofCollisions)
-{
-  std::vector<o2::InteractionTimeRecord> records;
-  records.reserve(nofCollisions);
-  sampler.init();
-  sampler.generateCollisionTimes(records);
-  return records;
-}
-
-template <typename FORMAT, typename CHARGESUM>
-void encode(gsl::span<o2::InteractionTimeRecord> interactions,
-            gsl::span<std::vector<o2::mch::Digit>> digitsPerInteraction,
-            std::function<std::optional<DsElecId>(DsDetId)> det2elec,
-            std::vector<uint8_t>& buffer)
-{
-  auto encoder = createEncoder<FORMAT, CHARGESUM>();
-
-  for (int i = 0; i < interactions.size(); i++) {
-    auto& col = interactions[i];
-    encoder->startHeartbeatFrame(col.orbit, col.bc);
-    encodeDigits<CHARGESUM>(digitsPerInteraction[i],
-                            encoder, det2elec, col.orbit, col.bc);
-    encoder->moveToBuffer(buffer);
-  }
-}
-
-template <typename FORMAT,
-          typename CHARGESUM,
-          typename RDH,
-          typename ELECMAP = ElectronicMapperGenerated>
-void gentimeframe(std::ostream& outfile, const int nofInteractionsPerTimeFrame)
-{
-  std::cout << __PRETTY_FUNCTION__ << "\n";
-  o2::steer::InteractionSampler sampler; // default sampler with default filling scheme, rate of 50 kHz
-  sampler.setInteractionRate(1000);
-  //sampler.setInteractionRate(4000000);
-
-  constexpr float occupancy = 1E-3;
-
-  std::vector<o2::InteractionTimeRecord> interactions = getCollisions(sampler, nofInteractionsPerTimeFrame);
-
-  //auto deIds = deIdsOfCH5L; //deIdsForAllMCH
-  std::array<int, 2> deIds = {500, 501};
-
-  // one vector of digits per interaction
-  // std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateDigits(interactions.capacity(), deids, occupancy);
-  std::vector<std::vector<o2::mch::Digit>> digitsPerInteraction = generateFixedDigits(interactions.capacity(), deIds);
-
-  std::vector<uint8_t> buffer;
-  encode<FORMAT, CHARGESUM>(interactions, digitsPerInteraction,
-                            createDet2ElecMapper<ELECMAP>(deIds),
-                            buffer);
-
-  if (buffer.empty()) {
-    std::cout << "Something went wrong : got an empty buffer\n";
-    return;
-  }
-  std::vector<uint8_t> outBuffer;
-  normalizeBuffer<RDH>(buffer, outBuffer, interactions);
-
-  auto solar2cru = createSolar2CruLinkMapper<ELECMAP>();
-  assignCruLink<RDH>(outBuffer, solar2cru);
-
-  std::cout << "-------------------- SuperPaginating (to be written)\n";
-  // FIXME: to be written...
-  // superPaginate(buffer);
-  outfile.write(reinterpret_cast<char*>(&outBuffer[0]), outBuffer.size());
-  std::cout << fmt::format("output buffer is {} bytes ({:5.2f} MB)\n", outBuffer.size(), 1.0 * outBuffer.size() / 1024 / 1024);
-
-  auto n = countRDHs<RDH>(buffer);
-
-  std::cout << "n=" << n << " collisions=" << interactions.size() << "\n";
-}
 
 int main(int argc, char* argv[])
 {
   po::options_description generic("options");
   bool userLogic{false};
-  bool chargeSum{false};
   bool dummyElecMap{false};
   std::string filename;
   po::variables_map vm;
-  int nofInteractionsPerTimeFrame{1000};
+  int nofInteractionsPerTimeFrame{50000};
 
   // clang-format off
   generic.add_options()
       ("help,h", "produce help message")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
-      ("chargesum,c",po::bool_switch(&chargeSum),"charge sum mode")
       ("dummyElecMap,d",po::bool_switch(&dummyElecMap),"use a dummy electronic mapping (for testing only)")
       ("outfile,o",po::value<std::string>(&filename)->required(),"output filename")
       ("nintpertf,n",po::value<int>(&nofInteractionsPerTimeFrame),"number of interactions per timeframe")
@@ -186,36 +96,15 @@ int main(int argc, char* argv[])
 
   std::ofstream outfile(filename);
 
-  if (dummyElecMap) {
-    if (userLogic) {
-      if (chargeSum) {
-        gentimeframe<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
-      } else {
-        gentimeframe<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
-      }
-    }
-    if (!userLogic) {
-      if (chargeSum) {
-        gentimeframe<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
-      } else {
-        gentimeframe<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, ElectronicMapperDummy>(outfile, nofInteractionsPerTimeFrame);
-      }
-    }
-  } else {
-    if (userLogic) {
-      if (chargeSum) {
-        gentimeframe<UserLogicFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
-      } else {
-        gentimeframe<UserLogicFormat, SampleMode, o2::header::RAWDataHeaderV4, ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
-      }
-    }
-    if (!userLogic) {
-      if (chargeSum) {
-        gentimeframe<BareFormat, ChargeSumMode, o2::header::RAWDataHeaderV4, ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
-      } else {
-        gentimeframe<BareFormat, SampleMode, o2::header::RAWDataHeaderV4, ElectronicMapperGenerated>(outfile, nofInteractionsPerTimeFrame);
-      }
-    }
-  }
+  std::array<int, 2> deIds = {500, 501};
+  auto det2elec = (dummyElecMap ? createDet2ElecMapper<ElectronicMapperDummy>(deIds) : createDet2ElecMapper<ElectronicMapperGenerated>(deIds));
+
+  auto encoder = createDigitEncoder(userLogic, det2elec);
+
+  auto solar2cru = (dummyElecMap ? createSolar2CruLinkMapper<ElectronicMapperDummy>() : createSolar2CruLinkMapper<ElectronicMapperGenerated>());
+
+  auto digits = generateDigits(nofInteractionsPerTimeFrame, true);
+  digit2raw<o2::header::RAWDataHeaderV4>(digits, encoder, solar2cru, outfile);
+
   return 0;
 }

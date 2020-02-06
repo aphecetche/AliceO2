@@ -27,7 +27,6 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      size_t pageSize,
                      uint8_t paddingByte)
 {
-
   o2::raw::HBFUtils hbfutils(interactions[0]);
   std::vector<o2::InteractionRecord> emptyHBFs;
   hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);

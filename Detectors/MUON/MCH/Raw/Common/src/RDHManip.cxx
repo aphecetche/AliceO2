@@ -32,8 +32,8 @@ std::ostream& operator<<(std::ostream& os, const RAWDataHeaderV4& rdh)
   os << fmt::format("offsetToNext       {:05d} memorySize    {:05d} blockLength    {:05d} {:s}\n", rdh.offsetToNext, rdh.memorySize, rdh.blockLength,
                     rdh.memorySize == sizeof(rdh) ? "EMPTY" : "");
 
-  os << fmt::format("heartbeatOrbit{:010d} heartbeatBC    {:04d}\n",
-                    rdh.heartbeatOrbit, rdh.heartbeatBC);
+  os << fmt::format("heartbeatOrbit{:010d} heartbeatBC    {:04d} feeId         {:6d}\n",
+                    rdh.heartbeatOrbit, rdh.heartbeatBC, rdh.feeId);
 
   os << fmt::format("stopBit                {:1d} pagesCounter    {:03d} packetCounter    {:03d} {:s}\n",
                     rdh.stop, rdh.pageCnt, rdh.packetCounter,
