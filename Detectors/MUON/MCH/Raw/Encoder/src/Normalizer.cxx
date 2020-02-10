@@ -16,6 +16,17 @@
 #include "Headers/RAWDataHeader.h"
 #include "DetectorsRaw/HBFUtils.h"
 #include "MCHRawCommon/RDHManip.h"
+#include <fmt/format.h>
+#include "MCHRawEncoder/DataBlock.h"
+
+namespace
+{
+void showSize(const char* msg, gsl::span<const uint8_t> buffer)
+{
+  std::cout << msg << fmt::format(" buffer size is {} bytes ({:5.2f} MB)\n", buffer.size(), 1.0 * buffer.size() / 1024 / 1024);
+}
+
+} // namespace
 
 namespace o2::mch::raw
 {

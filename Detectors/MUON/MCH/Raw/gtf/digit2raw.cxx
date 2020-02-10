@@ -28,6 +28,14 @@
 namespace po = boost::program_options;
 using namespace o2::mch::raw;
 
+std::ostream& operator<<(std::ostream& os, const o2::mch::Digit& d)
+{
+  os << fmt::format("DE {:4d} PADUID {:8d} ADC {:6d} TS {:g}",
+                    d.getDetID(), d.getPadID(), d.getADC(),
+                    d.getTimeStamp());
+  return os;
+}
+
 int main(int argc, char* argv[])
 {
   po::options_description generic("options");
@@ -35,7 +43,6 @@ int main(int argc, char* argv[])
   bool dummyElecMap{false};
   std::string input;
   std::string output;
-  int maxdigits{std::numeric_limits<int>::max()};
   po::variables_map vm;
 
   // clang-format off
@@ -45,7 +52,6 @@ int main(int argc, char* argv[])
       ("dummyElecMap,d",po::bool_switch(&dummyElecMap),"use a dummy electronic mapping (for testing only)")
       ("outfile,o",po::value<std::string>(&output)->required(),"output filename")
       ("infile,i",po::value<std::string>(&input)->required(),"input file name")
-      ("nmax,n",po::value<int>(&maxdigits),"max number of digits")
       ;
   // clang-format on
 
@@ -80,38 +86,48 @@ int main(int argc, char* argv[])
 
   // builds a list of digit per interaction record
   std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> digitsPerIR;
-  int n{0};
   for (auto d : (*digits)) {
     o2::InteractionTimeRecord ir(d.getTimeStamp());
+    // if (ir.orbit != 232) {
+    //   continue;
+    // }
     digitsPerIR[ir].push_back(d);
-    n++;
-    if (n > maxdigits) {
-      break;
-    }
   }
 
   // rescale the timetamp of each digit to be relative to BC
   // FIXME
+  int n{0};
+  int ndigits{0};
+  std::set<uint16_t> orbits;
   for (auto p : digitsPerIR) {
-    std::cout << fmt::format("ORBIT {:6d} BC {:4d} nofDigits {:5d}\n",
-                             p.first.orbit, p.first.bc, p.second.size());
-    for (auto& d : p.second) {
-      d = o2::mch::Digit(0, d.getDetID(), d.getPadID(), d.getADC());
-    }
+
+    auto h = fmt::format("{:4}/{:4d} ORBIT {:6d} BC {:4d} nofDigits {:5d} TS {:g}", n, digitsPerIR.size(),
+                         p.first.orbit, p.first.bc, p.second.size(),
+                         p.first.bc2ns());
+    orbits.insert(p.first.orbit);
+    std::cout << h << "\n";
+    ndigits += p.second.size();
+    // for (auto& d : p.second) {
+    //   auto ts = static_cast<int>(std::abs(d.getTimeStamp() - p.first.bc2ns()));
+    //   d = o2::mch::Digit(ts, d.getDetID(), d.getPadID(), d.getADC());
+    //   std::cout << h << " " << d << "\n";
+    // }
+    n++;
   }
 
-  std::cout << n << "\n";
-  //auto det2elec = createDet2ElecMapper<ElectronicMapperGenerated>(deIdsOfCH5L /*deIdsForAllMCH*/);
-  //auto solar2cru = createSolar2CruLinkMapper<ElectronicGenerated>();
-
-  auto det2elec = createDet2ElecMapper<ElectronicMapperDummy>(deIdsForAllMCH);
-  auto solar2cru = createSolar2CruLinkMapper<ElectronicMapperDummy>();
+  std::cout << "n=" << n << "\n";
+  std::cout << fmt::format("{:6d} digits {:4d} orbits {:6d} bcs\n",
+                           ndigits, orbits.size(), digitsPerIR.size());
+  if (dummyElecMap) {
+    std::cout << "WARNING: using dummy electronic mapping\n";
+  }
+  auto det2elec = (dummyElecMap ? createDet2ElecMapper<ElectronicMapperDummy>(deIdsForAllMCH) : createDet2ElecMapper<ElectronicMapperGenerated>(deIdsOfCH5L /*deIdsForAllMCH*/));
+  auto solar2cru = (dummyElecMap ? createSolar2CruLinkMapper<ElectronicMapperDummy>() : createSolar2CruLinkMapper<ElectronicMapperGenerated>());
 
   DigitEncoder encoder = createDigitEncoder(userLogic, det2elec);
 
   std::ofstream out(output);
 
   digit2raw<o2::header::RAWDataHeaderV4>(digitsPerIR, encoder, solar2cru, out);
-
   return 0;
 }
