@@ -29,7 +29,16 @@ std::set<uint16_t> getFeeIds(gsl::span<const uint8_t> buffer)
   return feeIds;
 }
 
-void outputDataBlockRefs(gsl::span<const uint8_t> buffer, gsl::span<const DataBlockRef> dataBlockRefs,
+class DataBlockRefComp
+{
+ public:
+  bool operator()(const DataBlockRef& a, const DataBlockRef& b) const
+  {
+    return a.block.header < b.block.header;
+  }
+};
+
+void outputDataBlockRefs(gsl::span<const uint8_t> buffer, const std::set<DataBlockRef, DataBlockRefComp>& dataBlockRefs,
                          std::vector<uint8_t>& outBuffer)
 {
   for (auto dataBlockRef : dataBlockRefs) {
@@ -49,13 +58,13 @@ void insertEmptyHBs(gsl::span<const uint8_t> buffer,
   auto feeIds = getFeeIds(buffer);
   std::set<o2::InteractionRecord> allHBs(emptyHBs.begin(), emptyHBs.end());
 
-  std::vector<DataBlockRef> dataBlockRefs;
+  std::set<DataBlockRef, DataBlockRefComp> dataBlockRefs;
 
   // get the list of (orbit,bc,feeId) triplets that are present
   // in the input buffer
   forEachDataBlockRef(
     buffer, [&dataBlockRefs, &feeIds, &allHBs](const DataBlockRef& ref) {
-      dataBlockRefs.emplace_back(ref);
+      dataBlockRefs.insert(ref);
       allHBs.emplace(ref.block.header.bc, ref.block.header.orbit);
     });
 
@@ -63,25 +72,12 @@ void insertEmptyHBs(gsl::span<const uint8_t> buffer,
   // we need to have in the output buffer
   // (taking into account those already there plus the ones
   // from the emptyHBs list)
-  for (auto hb : allHBs) {
-    for (auto feeId : feeIds) {
-      auto alreadyThere = std::find_if(dataBlockRefs.begin(),
-                                       dataBlockRefs.end(), [hb, feeId](const DataBlockRef& h) {
-                                         return h.block.header.bc == hb.bc &&
-                                                h.block.header.orbit == hb.orbit &&
-                                                h.block.header.feeId == feeId;
-                                       });
-      if (alreadyThere == dataBlockRefs.end()) {
-        DataBlockHeader header{hb.orbit, hb.bc, feeId};
-        dataBlockRefs.emplace_back(DataBlockRef{DataBlock{header, {}}});
-      }
+  for (auto& hb : allHBs) {
+    for (auto& feeId : feeIds) {
+      DataBlockHeader header{hb.orbit, hb.bc, feeId};
+      dataBlockRefs.insert(DataBlockRef{DataBlock{header, {}}});
     }
   }
-
-  // sort by feeId and by (orbit,bc)
-  std::sort(dataBlockRefs.begin(), dataBlockRefs.end(), [](const DataBlockRef& a, const DataBlockRef& b) {
-    return (a.block.header < b.block.header);
-  });
 
   // write all hbframes (empty or not) to outBuffer
   outputDataBlockRefs(buffer, dataBlockRefs, outBuffer);

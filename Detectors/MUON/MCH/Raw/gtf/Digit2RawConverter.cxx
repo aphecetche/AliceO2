@@ -64,9 +64,9 @@ void digit2raw(
     out.write(reinterpret_cast<char*>(&outBuffer[0]), outBuffer.size());
     totalSize += buffer.size();
     n++;
-    if (n > 10) {
-      break;
-    }
+    // if (n > 100) {
+    //   break;
+    // }
   }
 
   std::cout << " collisions=" << interactions.size();
