@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestPadding, RDH, testTypes)
 
 BOOST_DATA_TEST_CASE(TestSplit,
                      boost::unit_test::data::make({12, 48, 400, 16320}) *
-                       boost::unit_test::data::make({128, 512, 8192}),
+                       boost::unit_test::data::make({0, 128, 512, 8192}),
                      ndata, pageSize)
 {
   constexpr uint8_t paddingByte = 0x55;
@@ -96,8 +96,11 @@ BOOST_DATA_TEST_CASE(TestSplit,
   }
 
   std::vector<uint8_t> pages;
-  int npages = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
-  int nstop = 1;
+  int npages = 1;
+  if (pageSize > 0) {
+    npages = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
+  }
+  int nstop = (pageSize > 0) ? 1 : 0;
   int nexpected = npages + nstop;
   auto buffer = createDataBlock(data);
   int nsplit = paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);

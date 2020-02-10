@@ -98,6 +98,22 @@ template <typename RDH>
 DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
                                                uint8_t paddingByte)
 {
+  if (pageSize == 0) {
+    return [](DataBlock block, std::vector<uint8_t>& outBuffer) {
+      // do not paginate, just add a RDH (assuming payload is small enough
+      // to fit in 2<<15 - 64)
+      auto len = block.header.payloadSize;
+      static constexpr uint64_t sizeLimit = 65472;
+      if (len > sizeLimit) {
+        throw std::invalid_argument("Payload too big to fit into an unsplit page...\n");
+      }
+      auto ri = createRDH<RDH>(block.header, block.header.payloadSize + sizeof(RDH), 0, len);
+      appendRDH<RDH>(outBuffer, ri);
+      auto s = block.payload.subspan(0, len);
+      outBuffer.insert(outBuffer.end(), s.begin(), s.end());
+      return 1;
+    };
+  }
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
@@ -117,11 +133,16 @@ template <typename RDH>
 StopPager<RDH> createStopPager(size_t pageSize,
                                uint8_t paddingByte)
 {
+  if (pageSize == 0) {
+    return [](DataBlockHeader, std::vector<uint8_t>&, uint16_t) {
+      // do nothing
+      return 0;
+    };
+  }
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
-  return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer,
-                                 uint16_t pageCount) {
+  return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount) {
     auto rdh = createRDH<RDH>(header, pageSize);
     rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
     rdhMemorySize(rdh, sizeof(rdh));
