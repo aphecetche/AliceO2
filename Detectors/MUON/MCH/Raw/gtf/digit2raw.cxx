@@ -24,9 +24,24 @@
 #include "Digit2RawConverter.h"
 #include "Headers/RAWDataHeader.h"
 #include <limits>
+#include "DetectorsRaw/HBFUtils.h"
 
 namespace po = boost::program_options;
 using namespace o2::mch::raw;
+
+namespace
+{
+std::string asString(const o2::InteractionRecord& ir)
+{
+  return fmt::format("ORB {:6d} BC {:4d}",
+                     ir.orbit, ir.bc);
+}
+
+std::string asString(const o2::InteractionTimeRecord& ir)
+{
+  return asString(static_cast<o2::InteractionRecord>(ir));
+}
+} // namespace
 
 std::ostream& operator<<(std::ostream& os, const o2::mch::Digit& d)
 {
@@ -84,14 +99,40 @@ int main(int argc, char* argv[])
   digitBranch->Print();
   digitBranch->GetEntry(0);
 
-  // builds a list of digit per interaction record
-  std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> digitsPerIR;
+  o2::raw::HBFUtils hbfutils;
+
+  // get the first and last IRs used
+  // (could be easier to find out if we had a ROFRecord of some sort)
+  uint32_t firstOrbit = std::numeric_limits<uint32_t>::max();
+  uint32_t lastOrbit = 0;
+
   for (auto d : (*digits)) {
     o2::InteractionTimeRecord ir(d.getTimeStamp());
-    // if (ir.orbit != 232) {
-    //   continue;
-    // }
-    digitsPerIR[ir].push_back(d);
+    firstOrbit = std::min(firstOrbit, ir.orbit);
+    lastOrbit = std::max(lastOrbit, ir.orbit);
+  }
+
+  // builds a list of digits per HBF
+  std::map<o2::InteractionRecord, std::vector<o2::mch::Digit>> digitsPerIR;
+
+  // start with empty HBFs
+  uint16_t bc{0};
+  double ts{0};
+
+  for (auto orbit = firstOrbit; orbit <= lastOrbit; orbit++) {
+    o2::InteractionTimeRecord ir(o2::InteractionRecord{bc, orbit}, ts);
+    digitsPerIR[ir] = {};
+  }
+
+  // now add actual digits to the relevant HBFs
+  for (auto d : (*digits)) {
+    o2::InteractionTimeRecord ir(d.getTimeStamp());
+    // get the closest (previous) HBF from this IR
+    // and assign the digits to that one
+    auto hbf = hbfutils.getIRHBF(hbfutils.getHBF(ir));
+    // std::cout << fmt::format("IR {} HBF {}\n",
+    //                          asString(ir), asString(hbf));
+    digitsPerIR[hbf].push_back(d);
   }
 
   // rescale the timetamp of each digit to be relative to BC
@@ -115,7 +156,6 @@ int main(int argc, char* argv[])
     n++;
   }
 
-  std::cout << "n=" << n << "\n";
   std::cout << fmt::format("{:6d} digits {:4d} orbits {:6d} bcs\n",
                            ndigits, orbits.size(), digitsPerIR.size());
   if (dummyElecMap) {

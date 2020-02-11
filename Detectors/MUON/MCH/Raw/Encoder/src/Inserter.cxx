@@ -18,17 +18,6 @@
 namespace o2::mch::raw
 {
 
-/// Get the list of feeId referenced in the DataBlockHeaders of the buffer
-std::set<uint16_t> getFeeIds(gsl::span<const uint8_t> buffer)
-{
-  std::set<uint16_t> feeIds;
-  forEachDataBlockRef(
-    buffer, [&feeIds](const DataBlockRef& ref) {
-      feeIds.emplace(ref.block.header.feeId);
-    });
-  return feeIds;
-}
-
 class DataBlockRefComp
 {
  public:
@@ -51,28 +40,27 @@ void outputDataBlockRefs(gsl::span<const uint8_t> buffer, const std::set<DataBlo
   }
 }
 
-void insertEmptyHBs(gsl::span<const uint8_t> buffer,
-                    std::vector<uint8_t>& outBuffer,
-                    gsl::span<o2::InteractionRecord> emptyHBs)
+// @return the first orbit in the buffer
+uint32_t equalizeHBFPerFeeId(gsl::span<const uint8_t> buffer,
+                             std::vector<uint8_t>& outBuffer)
 {
-  auto feeIds = getFeeIds(buffer);
-  std::set<o2::InteractionRecord> allHBs(emptyHBs.begin(), emptyHBs.end());
+  std::set<uint16_t> feeIds;
+  std::set<o2::InteractionRecord> hbfs;
 
   std::set<DataBlockRef, DataBlockRefComp> dataBlockRefs;
 
   // get the list of (orbit,bc,feeId) triplets that are present
   // in the input buffer
   forEachDataBlockRef(
-    buffer, [&dataBlockRefs, &feeIds, &allHBs](const DataBlockRef& ref) {
+    buffer, [&dataBlockRefs, &feeIds, &hbfs](const DataBlockRef& ref) {
       dataBlockRefs.insert(ref);
-      allHBs.emplace(ref.block.header.bc, ref.block.header.orbit);
+      feeIds.insert(ref.block.header.feeId);
+      hbfs.insert(o2::InteractionRecord{ref.block.header.bc, ref.block.header.orbit});
     });
 
   // compute the list of all the (orbit,bc,feeId) triplets
   // we need to have in the output buffer
-  // (taking into account those already there plus the ones
-  // from the emptyHBs list)
-  for (auto& hb : allHBs) {
+  for (auto& hb : hbfs) {
     for (auto& feeId : feeIds) {
       DataBlockHeader header{hb.orbit, hb.bc, feeId};
       dataBlockRefs.insert(DataBlockRef{DataBlock{header, {}}});
@@ -81,5 +69,7 @@ void insertEmptyHBs(gsl::span<const uint8_t> buffer,
 
   // write all hbframes (empty or not) to outBuffer
   outputDataBlockRefs(buffer, dataBlockRefs, outBuffer);
+
+  return hbfs.begin()->orbit;
 }
 } // namespace o2::mch::raw

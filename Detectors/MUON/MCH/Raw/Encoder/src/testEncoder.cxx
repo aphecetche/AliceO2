@@ -105,8 +105,7 @@ int estimateSize();
 template <>
 int estimateSize<BareFormat>()
 {
-  return estimateBareSize(1, 0) +
-         estimateBareSize(2, 3) +
+  return estimateBareSize(1, 4) +
          estimateBareSize(1, 4) +
          estimateBareSize(1, 6);
 }
@@ -124,7 +123,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckNumberOfPayloadHeaders, T, testTypes)
 {
   auto buffer = test::CruBufferCreator<T, ChargeSumMode>::makeBuffer();
   int nheaders = o2::mch::raw::countHeaders(buffer);
-  BOOST_CHECK_EQUAL(nheaders, 4);
+  BOOST_CHECK_EQUAL(nheaders, 3);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(CheckSize, T, testTypes)

@@ -18,7 +18,7 @@
 #include "CommonDataFormat/InteractionRecord.h"
 #include "MCHBase/Digit.h"
 
-std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> generateDigits(
+std::map<o2::InteractionRecord, std::vector<o2::mch::Digit>> generateDigits(
   int nofInteractionsPerTimeFrame,
   bool fixed = false);
 

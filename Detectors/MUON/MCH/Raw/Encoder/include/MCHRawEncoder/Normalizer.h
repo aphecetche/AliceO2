@@ -37,7 +37,6 @@ namespace o2::mch::raw
 template <typename RDH>
 void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      std::vector<uint8_t>& outBuffer,
-                     gsl::span<const o2::InteractionTimeRecord> interactions,
                      size_t pageSize = 8192,
                      uint8_t paddingByte = 0x42);
 } // namespace o2::mch::raw

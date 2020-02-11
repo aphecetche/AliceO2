@@ -23,7 +23,7 @@
 namespace o2::mch::raw
 {
 template <typename RDH>
-void digit2raw(const std::map<o2::InteractionTimeRecord,
+void digit2raw(const std::map<o2::InteractionRecord,
                               std::vector<o2::mch::Digit>>& digitsPerIR,
                DigitEncoder encoder,
                std::function<std::optional<CruLinkId>(uint16_t)> solar2cru,

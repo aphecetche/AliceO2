@@ -92,7 +92,7 @@ std::vector<o2::InteractionTimeRecord> getCollisions(int nofCollisions)
   return records;
 }
 
-std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> generateDigits(
+std::map<o2::InteractionRecord, std::vector<o2::mch::Digit>> generateDigits(
   int nofInteractionsPerTimeFrame,
   bool fixed)
 {
@@ -102,10 +102,10 @@ std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> generateDigits(
 
   //auto deIds = deIdsOfCH5L; //deIdsForAllMCH
   std::array<int, 2> deIds = {500, 501};
-  std::map<o2::InteractionTimeRecord, std::vector<o2::mch::Digit>> digitsPerIR;
+  std::map<o2::InteractionRecord, std::vector<o2::mch::Digit>> digitsPerIR;
 
   for (auto ir : interactions) {
-    digitsPerIR[ir] = (fixed ? generateFixedDigits(deIds) : generateRandomDigits(deIds, occupancy));
+    digitsPerIR[static_cast<o2::InteractionRecord>(ir)] = (fixed ? generateFixedDigits(deIds) : generateRandomDigits(deIds, occupancy));
   }
   return digitsPerIR;
 }

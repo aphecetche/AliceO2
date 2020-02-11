@@ -34,16 +34,11 @@ namespace o2::mch::raw
 template <typename RDH>
 void normalizeBuffer(gsl::span<const uint8_t> buffer,
                      std::vector<uint8_t>& outBuffer,
-                     gsl::span<const o2::InteractionTimeRecord> interactions,
                      size_t pageSize,
                      uint8_t paddingByte)
 {
-  o2::raw::HBFUtils hbfutils(interactions[0]);
-  std::vector<o2::InteractionRecord> emptyHBFs;
-  hbfutils.fillHBIRvector(emptyHBFs, interactions[0], interactions[interactions.size() - 1]);
-  /// Insert empty HB headers in a buffer containing DataBlocks
-  /// (and not RDH,payload blocks)
-  insertEmptyHBs(buffer, outBuffer, emptyHBFs);
+  /// ensure all feeIds have the same number of HBF
+  equalizeHBFPerFeeId(buffer, outBuffer);
 
   /// Turn the buffer into a real (RDH,payload) one
   /// There's one RDH at the start of each page
@@ -53,6 +48,12 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
   /// Ensure the packet counter of each link is correct
   setPacketCounter<RDH>(pages);
 
+  gsl::span<uint8_t> header(&pages[0], sizeof(RDH));
+  auto rdh = createRDH<RDH>(header);
+  o2::InteractionRecord firstIR{rdhBunchCrossing(rdh),
+                                rdhOrbit(rdh)};
+
+  o2::raw::HBFUtils hbfutils(firstIR);
   /// Ensure the triggerType of each RDH is correctly set
   forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
     o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
@@ -64,7 +65,6 @@ void normalizeBuffer(gsl::span<const uint8_t> buffer,
 
 template void normalizeBuffer<o2::header::RAWDataHeaderV4>(gsl::span<const uint8_t> buffer,
                                                            std::vector<uint8_t>& outBuffer,
-                                                           gsl::span<const o2::InteractionTimeRecord> interactions,
                                                            size_t pageSize,
                                                            uint8_t paddingByte);
 } // namespace o2::mch::raw

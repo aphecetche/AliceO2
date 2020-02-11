@@ -82,6 +82,7 @@ static_assert(sizeof(HeartbeatHeader) == 8, "Heartbeat header must be 64bit");
 
 struct HeartbeatTrailer {
   union {
+
     // the complete 64 bit trailer word, initialize with blockType 5 and size 1
     uint64_t trailerWord = 0x5100000000000000;
     struct {
