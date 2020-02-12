@@ -105,10 +105,10 @@ void digit2raw(
   std::cout << "\n";
 }
 
-template void o2::mch::raw::digit2raw<o2::header::RAWDataHeaderV4>(
+template void digit2raw<o2::header::RAWDataHeaderV4>(
   const std::map<o2::InteractionRecord,
-                 std::vector<o2::mch::Digit>>& digitsPerIR,
-  DigitEncoder encoder,
-  std::function<std::optional<CruLinkId>(uint16_t)> solar2cru,
-  std::ostream& out);
+                 std::vector<o2::mch::Digit>>&,
+  DigitEncoder,
+  std::function<std::optional<CruLinkId>(uint16_t)>,
+  std::ostream&);
 } // namespace o2::mch::raw

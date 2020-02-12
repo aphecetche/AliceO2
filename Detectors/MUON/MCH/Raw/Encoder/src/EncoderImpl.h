@@ -28,6 +28,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <cassert>
 
 namespace o2::mch::raw
 {
