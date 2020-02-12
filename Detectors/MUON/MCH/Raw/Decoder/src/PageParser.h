@@ -15,7 +15,12 @@
 #include "MCHRawDecoder/RawDataHeaderHandler.h"
 #include "PayloadDecoder.h"
 #include "CommonConstants/Triggers.h"
+#include "Headers/RAWDataHeader.h"
 
+namespace o2::header
+{
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 namespace
 {
 bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
@@ -59,7 +64,7 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
   size_t index{0};
   uint64_t nbytes{0};
 
-  while ((index + nofRDHWords) < buffer.size()) {
+  while ((index + nofRDHWords) <= buffer.size()) {
     originalRDH = createRDH<RDH>(buffer.subspan(index, nofRDHWords));
     if (!isValid(originalRDH)) {
       std::cout << "Got an invalid RDH\n";

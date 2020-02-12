@@ -13,6 +13,7 @@
 
 #include <gsl/span>
 #include <cstdint>
+#include <map>
 
 namespace o2::mch::raw
 {
@@ -21,7 +22,8 @@ namespace o2::mch::raw
 // by one for each new RDH this link has seen (modulo 255 as the
 // packetCounter is only 8 bits)
 template <typename RDH>
-void setPacketCounter(gsl::span<uint8_t> buffer);
+void setPacketCounter(gsl::span<uint8_t> buffer,
+                      std::map<uint16_t, uint8_t>& initialCounters);
 
 } // namespace o2::mch::raw
 

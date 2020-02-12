@@ -134,15 +134,21 @@ StopPager<RDH> createStopPager(size_t pageSize,
                                uint8_t paddingByte)
 {
   if (pageSize == 0) {
-    return [](DataBlockHeader, std::vector<uint8_t>&, uint16_t) {
-      // do nothing
-      return 0;
+    return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount) {
+      // append RDH with no payload, stop bit is set
+      auto rdh = createRDH<RDH>(header, sizeof(RDH));
+      rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
+      rdhMemorySize(rdh, sizeof(rdh));
+      rdhStop(rdh, 1);
+      appendRDH<RDH>(outBuffer, rdh);
     };
   }
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
   return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount) {
+    // append RDH with padding payload to fill up a page
+    // stop bit is set
     auto rdh = createRDH<RDH>(header, pageSize);
     rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
     rdhMemorySize(rdh, sizeof(rdh));

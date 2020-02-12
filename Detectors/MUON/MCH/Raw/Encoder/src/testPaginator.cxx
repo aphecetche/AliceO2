@@ -100,7 +100,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
   if (pageSize > 0) {
     npages = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
   }
-  int nstop = (pageSize > 0) ? 1 : 0;
+  int nstop = 1;
   int nexpected = npages + nstop;
   auto buffer = createDataBlock(data);
   int nsplit = paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);

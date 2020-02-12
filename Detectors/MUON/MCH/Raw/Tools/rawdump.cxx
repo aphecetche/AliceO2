@@ -30,7 +30,10 @@
 
 namespace po = boost::program_options;
 
+namespace o2::header
+{
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 
 using namespace o2::mch::raw;
 using RDHv4 = o2::header::RAWDataHeaderV4;

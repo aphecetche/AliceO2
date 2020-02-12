@@ -16,11 +16,13 @@
 namespace o2::mch::raw
 {
 template <typename RDH>
-void setPacketCounter(gsl::span<uint8_t> buffer)
+void setPacketCounter(gsl::span<uint8_t> buffer,
+                      std::map<uint16_t, uint8_t>& initialCounters)
 {
   auto feeRanges = getFeeIdRanges<RDH>(buffer);
   for (auto lg : feeRanges) {
-    uint8_t packetCount{0};
+    uint16_t feeId = lg.first;
+    uint8_t& packetCount = initialCounters[feeId];
     for (auto l : lg.second) {
       forEachRDH<RDH>(buffer.subspan(l.start, l.size), [&packetCount](RDH& rdh, auto size) {
         rdhPacketCounter(rdh, packetCount);
@@ -31,6 +33,6 @@ void setPacketCounter(gsl::span<uint8_t> buffer)
 }
 
 // Provide only the specialization(s) we need
-template void setPacketCounter<o2::header::RAWDataHeaderV4>(gsl::span<uint8_t> buffer);
+template void setPacketCounter<o2::header::RAWDataHeaderV4>(gsl::span<uint8_t> buffer, std::map<uint16_t, uint8_t>& initialCounters);
 
 } // namespace o2::mch::raw

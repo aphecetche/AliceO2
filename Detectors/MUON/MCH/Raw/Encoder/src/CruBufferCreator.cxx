@@ -20,9 +20,6 @@ std::vector<uint8_t> fillChargeSum(Encoder& encoder, int norbit)
 
   encoder.startHeartbeatFrame(12345, bc);
 
-  encoder.addChannelData(DsElecId{728, 1, 2}, 0, {SampaCluster(ts, 10)});
-  encoder.addChannelData(DsElecId{728, 1, 2}, 1, {SampaCluster(ts, 10)});
-
   encoder.addChannelData(DsElecId{728, 1, 0}, 3, {SampaCluster(ts, 13)});
   encoder.addChannelData(DsElecId{728, 1, 0}, 13, {SampaCluster(ts, 133)});
   encoder.addChannelData(DsElecId{728, 1, 0}, 23, {SampaCluster(ts, 163)});

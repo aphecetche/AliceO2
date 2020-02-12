@@ -48,10 +48,10 @@ struct Common {
   Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(3)),
              interactions{},
              testPoints{
-               {8192, 30},
-               {1024, 43},
-               {512, 63},
-               {128, 282}}
+               {8192, 18},
+               {1024, 30},
+               {512, 50},
+               {128, 262}}
   {
 
     std::set<o2::InteractionTimeRecord> irs;
@@ -185,7 +185,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckOrbitJumpsAreAnIntegerNumberOfFullOrbits, RDH
 {
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
-    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, s.pageSize, F.paddingByte);
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages);
     bool ok = checkOrbitJumpsAreFullOrbits<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
@@ -195,7 +196,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckNumberOfRDHs, RDH, testTypes)
 {
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
-    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, s.pageSize, F.paddingByte);
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages);
     auto nrdhs = o2::mch::raw::countRDHs<RDH>(pages);
     BOOST_CHECK_EQUAL(nrdhs, s.expectedNofRDHs);
   }
@@ -205,7 +207,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckPageCounter, RDH, testTypes)
 {
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
-    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, s.pageSize, F.paddingByte);
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages);
     bool ok = pageCountsMustBeIncreasingByOne<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
@@ -215,7 +218,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckPacketCounter, RDH, testTypes)
 {
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
-    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, s.pageSize, F.paddingByte);
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages);
     bool ok = packetCounterMustBeIncreasingByOne<RDH>(pages);
     BOOST_CHECK_EQUAL(ok, true);
   }
@@ -225,10 +229,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(FirstInteractionRecordMustHaveTFBitSet, RDH, testT
 {
   for (auto s : F.testPoints) {
     std::vector<uint8_t> pages;
-    o2::mch::raw::normalizeBuffer<RDH>(F.buffer, pages, s.pageSize, F.paddingByte);
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages);
     bool ok = checkTimeFrameBitIsSet<RDH>(pages, F.firstIR);
     BOOST_CHECK_EQUAL(ok, true);
   }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(NormalizerOnEmptyBufferGetAtLeastOnePage, RDH, testTypes)
+{
+  std::vector<uint8_t> buffer;
+  std::vector<uint8_t> pages;
+  o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR);
+  normalizer.normalize(F.buffer, pages);
+  BOOST_REQUIRE_GE(pages.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

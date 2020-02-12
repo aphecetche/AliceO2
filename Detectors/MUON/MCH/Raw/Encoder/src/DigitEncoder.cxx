@@ -43,9 +43,6 @@ DigitEncoder createDigitEncoder(std::function<std::optional<DsElecId>(DsDetId)> 
         continue;
       }
       DsElecId elecId = dselocopt.value();
-      if (elecId.solarId() != 96) {
-        continue;
-      }
       int dschid = mapping::segmentation(deid).padDualSampaChannel(d.getPadID());
       uint16_t ts(static_cast<int>(d.getTimeStamp()) & 0x3FF); // FIXME: add a warning if timestamp is not in range
       int sampachid = dschid % 32;

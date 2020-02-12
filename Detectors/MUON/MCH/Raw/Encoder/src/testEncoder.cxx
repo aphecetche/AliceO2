@@ -105,7 +105,8 @@ int estimateSize();
 template <>
 int estimateSize<BareFormat>()
 {
-  return estimateBareSize(1, 4) +
+
+  return estimateBareSize(1, 3) +
          estimateBareSize(1, 4) +
          estimateBareSize(1, 6);
 }
@@ -113,8 +114,7 @@ int estimateSize<BareFormat>()
 template <>
 int estimateSize<UserLogicFormat>()
 {
-  return estimateUserLogicSize(2, 1) +
-         estimateUserLogicSize(1, 5) +
+  return estimateUserLogicSize(1, 3) +
          estimateUserLogicSize(1, 4) +
          estimateUserLogicSize(1, 6);
 }

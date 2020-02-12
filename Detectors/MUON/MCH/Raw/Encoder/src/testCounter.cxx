@@ -83,7 +83,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestPacketCounter, T, testTypes)
 {
   auto buffer = createBuffer<T>();
 
-  setPacketCounter<T>(buffer);
+  std::map<uint16_t, uint8_t> initialCounters{};
+  setPacketCounter<T>(buffer, initialCounters);
 
   BOOST_CHECK_EQUAL(isPacketCounterContiguousPerfee<T>(buffer), true);
 }

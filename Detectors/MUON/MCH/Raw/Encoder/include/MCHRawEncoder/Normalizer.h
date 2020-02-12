@@ -14,12 +14,12 @@
 #include <vector>
 #include <gsl/span>
 #include <cstdint>
+#include <map>
 #include "CommonDataFormat/InteractionRecord.h"
 
 namespace o2::mch::raw
 {
-
-/// normalizeBuffer converts a buffer containing DataBlocks
+/// BufferNormalizer converts a buffer containing DataBlocks
 /// (i.e. mch-specific (header,payload) blocks
 /// corresponding to just the interactions in interactions array
 /// into a "real" raw data buffer that :
@@ -34,11 +34,25 @@ namespace o2::mch::raw
 /// (this last point is not strictly necessary but might help
 /// distinguish quickly a simulated buffer wrt a real one)
 ///
+
 template <typename RDH>
-void normalizeBuffer(gsl::span<const uint8_t> buffer,
-                     std::vector<uint8_t>& outBuffer,
-                     size_t pageSize = 8192,
-                     uint8_t paddingByte = 0x42);
+class BufferNormalizer
+{
+ public:
+  BufferNormalizer(o2::InteractionRecord firstIR,
+                   uint16_t pageSize = 8192,
+                   uint8_t paddingByte = 0x42);
+
+  void normalize(gsl::span<const uint8_t> buffer,
+                 std::vector<uint8_t>& outBuffer);
+
+ private:
+  o2::InteractionRecord mFirstIR;
+  uint16_t mPageSize;
+  uint8_t mPaddingByte;
+  std::map<uint16_t, uint8_t> mFeeIdPacketCounters;
+};
+
 } // namespace o2::mch::raw
 
 #endif

@@ -17,9 +17,9 @@
 #include <string>
 #include "CommonConstants/Triggers.h"
 
-using namespace o2::header;
-
-std::ostream& operator<<(std::ostream& os, const RAWDataHeaderV4& rdh)
+namespace o2::header
+{
+std::ostream& operator<<(std::ostream& os, const o2::header::RAWDataHeaderV4& rdh)
 {
   os << fmt::format("version              {:03d} headerSize      {:03d} triggerType {:08x} {:s}\n",
                     rdh.version,
@@ -41,6 +41,10 @@ std::ostream& operator<<(std::ostream& os, const RAWDataHeaderV4& rdh)
 
   return os;
 }
+
+} // namespace o2::header
+
+using namespace o2::header;
 
 namespace o2::mch::raw
 {

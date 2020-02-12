@@ -19,6 +19,10 @@
 #include <fstream>
 #include "DetectorsRaw/HBFUtils.h"
 
+namespace o2::header
+{
+extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 namespace o2::mch::raw
 {
 void showSize(const char* msg, uint64_t size)
@@ -26,17 +30,29 @@ void showSize(const char* msg, uint64_t size)
   std::cout << msg << fmt::format(" buffer size is {} bytes ({:5.2f} MB)\n", size, 1.0 * size / 1024 / 1024);
 }
 
-#if 0
-void writeIRs(gsl::span<o2::InteractionRecord> irs,
-              const char* filename)
+void assertBufferIsNonEmpty(std::vector<uint8_t>& buffer,
+                            const o2::InteractionRecord& ir, uint16_t feeId)
 {
-  std::ofstream os(filename);
-  for (auto ir : irs) {
-    os << ir << "\n";
-  }
-  os.close();
+  appendDataBlockHeader(buffer, DataBlockHeader{ir.orbit, ir.bc, feeId, 0});
 }
-#endif
+
+uint16_t getOneFeeId(DigitEncoder encoder)
+{
+  // use the encoder to get a valid feeid. any feeid will do.
+
+  // create a vector of one single fake digit from first pad of DE 100
+  std::vector<o2::mch::Digit> digits{o2::mch::Digit(0, 100, 0, 0)};
+  // encode that single digit vector
+  std::vector<uint8_t> buffer;
+  encoder(digits, buffer, 0, 0);
+  if (buffer.empty()) {
+    throw std::logic_error("buffer should not be empty at this stage");
+  }
+  // extract feeId from the first header on the encoded buffer
+  DataBlockHeader header;
+  memcpy(&header, &buffer[0], sizeof(header));
+  return header.feeId;
+}
 
 template <typename RDH>
 void digit2raw(
@@ -52,22 +68,29 @@ void digit2raw(
 
   int n{0};
 
+  o2::InteractionRecord firstIR = digitsPerIR.begin()->first;
+  const uint16_t defaultFeeId = getOneFeeId(encoder);
+
+  const uint16_t pageSize{0};
+
+  BufferNormalizer<RDH> normalizer(firstIR, pageSize);
+
   for (auto p : digitsPerIR) {
     auto& currentIR = p.first;
+    std::cout << "AAA " << currentIR << "\n";
     auto& digits = p.second;
     buffer.clear();
     encoder(digits, buffer, currentIR.orbit, currentIR.bc);
     showSize("after encoder", buffer.size());
 
+    // even if no digit we must have a non-empty buffer
+    // for each HBF... create a "fake" one
+    assertBufferIsNonEmpty(buffer, currentIR, defaultFeeId);
+
     outBuffer.clear();
-    size_t pageSize{0};
-    normalizeBuffer<RDH>(buffer, outBuffer, pageSize);
+    normalizer.normalize(buffer, outBuffer);
     showSize("after normalizeBuffer", outBuffer.size());
 
-    forEachRDH<RDH>(outBuffer, [](const RDH& rdh) {
-      std::cout << fmt::format("ORB {:6d} BC {:4d}\n",
-                               rdhOrbit(rdh), rdhBunchCrossing(rdh));
-    });
     assignCruLink<RDH>(outBuffer, solar2cru);
 
     std::cout << "-------------------- SuperPaginating (to be written)\n";
@@ -76,16 +99,13 @@ void digit2raw(
     out.write(reinterpret_cast<char*>(&outBuffer[0]), outBuffer.size());
     totalSize += outBuffer.size();
     n++;
-    // if (n > 100) {
-    //   break;
-    // }
   }
 
   showSize(" totalSize", totalSize);
   std::cout << "\n";
 }
 
-template void digit2raw<o2::header::RAWDataHeaderV4>(
+template void o2::mch::raw::digit2raw<o2::header::RAWDataHeaderV4>(
   const std::map<o2::InteractionRecord,
                  std::vector<o2::mch::Digit>>& digitsPerIR,
   DigitEncoder encoder,
