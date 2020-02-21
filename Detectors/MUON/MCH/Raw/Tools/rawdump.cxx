@@ -144,6 +144,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     }
     auto linkId = rdhLinkId(r);
     auto solar = cruLink2solar(o2::mch::raw::CruLinkId(cruId, linkId, opt.deId()));
+    solar = 860;
     if (!solar.has_value()) {
       std::cout << fmt::format("ERROR - Could not get solarUID from CRU,LINK=({},{},{})\n",
                                cruId, linkId, opt.deId());
