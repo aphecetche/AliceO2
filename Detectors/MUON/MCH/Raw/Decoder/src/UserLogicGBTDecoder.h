@@ -106,18 +106,11 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
     if (word == 0xFEEDDEEDFEEDDEED) {
       continue;
     }
-    int gbt = (word >> 59) & 0x1F;
-    if (gbt != mSolarId) {
-      std::cout << fmt::format("warning : solarId {} != expected {} word={:08X}\n", gbt, mSolarId, word);
-      // throw std::invalid_argument(fmt::format("gbt {} != expected {} word={:X}\n", gbt, mGbtId, word));
-    }
 
     uint16_t dsid = (word >> 53) & 0x3F;
     impl::assertIsInRange("dsid", dsid, 0, 39);
 
-    // the remaining 50 bits are passed to the ElinkDecoder
-    uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);
-    mElinkDecoders.at(dsid).append(data);
+    mElinkDecoders.at(dsid).append(word);
     n += 8;
   }
   return n;
