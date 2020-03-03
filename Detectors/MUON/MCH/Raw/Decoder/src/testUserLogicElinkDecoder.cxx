@@ -134,7 +134,7 @@ void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint6
 {
   std::vector<uint8_t> b8;
   impl::copyBuffer(b64, b8);
-  impl::dumpBuffer(b8);
+  impl::dumpBuffer<o2::mch::raw::UserLogicFormat>(b8);
   for (auto b : b64) {
     dec.append(b);
   }

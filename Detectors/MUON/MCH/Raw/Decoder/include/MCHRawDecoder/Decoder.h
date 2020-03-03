@@ -16,6 +16,7 @@
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include "MCHRawDecoder/RawDataHeaderHandler.h"
 #include <iostream>
+#include <string>
 
 namespace o2
 {
@@ -29,6 +30,8 @@ struct DecoderStat {
   uint64_t nofOrbitJumps{0};
   uint64_t nofOrbitSeen{0};
   uint64_t nofBytesUsed{0};
+  bool parseError{false};
+  std::string parseErrorMessage{""};
 };
 
 std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat);

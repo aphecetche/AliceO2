@@ -22,13 +22,24 @@
 #include <fmt/format.h>
 #include <memory>
 #include "MCHRawElecMap/DsElecId.h"
+#include <array>
 
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
 using namespace msm::front;
 using namespace msm::front::euml; // for Not_ operator
 
-//#define ULDEBUG
+// for debugging purposes only
+// uncomment this line to get a very verbose output
+#define ULDEBUG
+
+template <typename FSM>
+
+std::ostream& debugHeader(FSM& fsm)
+{
+  std::cout << "--ULDEBUG--" << fsm.dsId << "--";
+  return std::cout;
+}
 
 namespace o2::mch::raw
 {
@@ -49,14 +60,16 @@ struct NamedState : public msm::front::state<> {
   NamedState(const char* name_) : name{name_} {}
 #ifdef ULDEBUG
   template <class Event, class FSM>
-  void on_entry(const Event&, const FSM&)
+  void on_entry(const Event&, const FSM& fsm)
   {
-    std::cout << "--> " << name << "\n";
+    debugHeader(fsm)
+      << "--> " << name << "\n";
   }
   template <class Event, class FSM>
-  void on_exit(const Event&, const FSM&)
+  void on_exit(const Event&, const FSM& fsm)
   {
-    std::cout << name << "--> \n";
+    debugHeader(fsm)
+      << name << "--> \n";
   }
 #endif
   std::string name;
@@ -89,6 +102,9 @@ struct isSync {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     return (evt.data == sampaSyncWord);
+#ifdef ULDEBUG
+    debugHeader(fsm) << fmt::format("isSync {}\n", (evt.data == sampaSyncWord));
+#endif
   }
 };
 
@@ -97,7 +113,7 @@ struct moreWordsToRead {
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
 #ifdef ULDEBUG
-    std::cout << fmt::format("moreWordsToRead {} n10 {}\n", (fsm.nof10BitWords > 0), fsm.nof10BitWords);
+    debugHeader(fsm) << fmt::format("moreWordsToRead {} n10 {}\n", (fsm.nof10BitWords > 0), fsm.nof10BitWords);
 #endif
     return fsm.nof10BitWords > 0;
   }
@@ -109,7 +125,7 @@ struct moreDataAvailable {
   {
     bool rv = (fsm.maskIndex < fsm.masks.size());
 #ifdef ULDEBUG
-    std::cout << fmt::format("moreDataAvailable {} maskIndex {}\n", rv, fsm.maskIndex);
+    debugHeader(fsm) << fmt::format("moreDataAvailable {} maskIndex {}\n", rv, fsm.maskIndex);
 #endif
     return rv;
   }
@@ -121,7 +137,19 @@ struct moreSampleToRead {
   {
     bool rv = (fsm.clusterSize > 0);
 #ifdef ULDEBUG
-    std::cout << fmt::format("moreSampleToRead {} clustersize {}\n", rv, fsm.clusterSize);
+    debugHeader(fsm) << fmt::format("moreSampleToRead {} clustersize {}\n", rv, fsm.clusterSize);
+#endif
+    return rv;
+  }
+};
+
+struct headerIsComplete {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    bool rv = (fsm.headerParts.size() == 5);
+#ifdef ULDEBUG
+    debugHeader(fsm) << fmt::format("headerIsComplete {}\n", rv);
 #endif
     return rv;
   }
@@ -134,6 +162,7 @@ struct foundSync {
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     fsm.nofSync++;
+    fsm.maskIndex = fsm.masks.size();
   }
 };
 
@@ -150,7 +179,8 @@ struct readSize<SampleMode> {
   {
     fsm.clusterSize = fsm.pop10();
 #ifdef ULDEBUG
-    std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
+    debugHeader(fsm)
+      << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
 #endif
   }
 };
@@ -162,7 +192,8 @@ struct readSize<ChargeSumMode> {
   {
     fsm.clusterSize = 2 * fsm.pop10();
 #ifdef ULDEBUG
-    std::cout << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
+    debugHeader(fsm)
+      << " -> size=" << fsm.clusterSize << " maskIndex=" << fsm.maskIndex << "\n";
 #endif
   }
 };
@@ -173,7 +204,8 @@ struct readTime {
   {
     fsm.clusterTime = fsm.pop10();
 #ifdef ULDEBUG
-    std::cout << " -> time=" << fsm.clusterTime << " maskIndex=" << fsm.maskIndex << "\n";
+    debugHeader(fsm)
+      << " -> time=" << fsm.clusterTime << " maskIndex=" << fsm.maskIndex << "\n";
 #endif
   }
 };
@@ -210,13 +242,42 @@ struct readHeader {
   template <class EVT, class FSM, class SourceState, class TargetState>
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    fsm.sampaHeader = SampaHeader(fsm.data);
-    fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
+    auto a = fsm.pop10();
+    fsm.addHeaderPart(a);
 #ifdef ULDEBUG
-    std::cout << fmt::format(">>>>> readHeader {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex)
-              << fsm.sampaHeader << "\n";
+    debugHeader(fsm)
+      << fmt::format(">>>>> readHeader {:08X}", a);
+    for (auto h : fsm.headerParts) {
+      std::cout << fmt::format("{:4d} ", h);
+    }
+    std::cout << "\n";
 #endif
-    fsm.maskIndex = fsm.masks.size();
+  }
+};
+
+struct completeHeader {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    uint64_t header{0};
+    for (auto i = 0; i < fsm.headerParts.size(); i++) {
+      uint64_t a = (static_cast<uint64_t>(fsm.headerParts[i]) << (10 * i));
+      header += a;
+      debugHeader(fsm)
+        << fmt::format(">>>>> completeHeader {:2d} = {:013X} + {:013X}\n", i, a, header);
+    }
+
+    fsm.sampaHeader = SampaHeader(header);
+    fsm.nof10BitWords = fsm.sampaHeader.nof10BitWords();
+
+#ifdef ULDEBUG
+    debugHeader(fsm)
+      << fmt::format(">>>>> completeHeader {:013X}\n", header)
+      << "\n"
+      << fsm.sampaHeader << "\n";
+#endif
+
+    fsm.headerParts.clear();
   }
 };
 
@@ -227,7 +288,12 @@ struct setData {
     fsm.data = evt.data;
     fsm.maskIndex = 0;
 #ifdef ULDEBUG
-    std::cout << fmt::format(">>>>> setData {:08X} maskIndex {}\n", fsm.data, fsm.maskIndex);
+    debugHeader(fsm)
+      << fmt::format(">>>>> setData {:08X} maskIndex {} 10bits=", fsm.data, fsm.maskIndex);
+    for (int i = 0; i < fsm.masks.size(); i++) {
+      std::cout << fmt::format("{:2d} ", fsm.data10(fsm.data, i));
+    }
+    std::cout << "\n";
 #endif
   }
 };
@@ -242,9 +308,15 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   //   Start            Event         Next               Action            Guard
   Row< WaitingSync   , NewData , WaitingHeader , foundSync             , isSync                  >,
 
-  Row< WaitingHeader , NewData , WaitingSize , ActionSequence_<
-                                               mpl::vector<setData,
-                                               readHeader>>            , Not_<isSync>            >,
+  Row< WaitingHeader , NewData , WaitingHeader , ActionSequence_<
+                                                 mpl::vector<setData>> , Not_<isSync>            >,
+
+
+  Row< WaitingHeader,  none    , WaitingHeader , readHeader            , And_<moreDataAvailable,
+                                                                              Not_<headerIsComplete>> >,
+  Row< WaitingHeader,  none    , WaitingSize   , completeHeader        , headerIsComplete>,
+
+
   Row< WaitingSize   , NewData , WaitingSize   , setData               , And_<moreWordsToRead,
                                                                            Not_<moreDataAvailable>> >,
   Row< WaitingSize   , none    , WaitingTime   , readSize<CHARGESUM>   , And_<moreDataAvailable,
@@ -267,11 +339,11 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   uint16_t data10(uint64_t value, size_t index) const
   {
     if (index < 0 || index >= masks.size()) {
-      std::cout << fmt::format("index {} is out of range\n", index);
+      std::cout << "-- ULDEBUG -- " << fmt::format("index {} is out of range\n", index);
       return 0;
     }
     uint64_t m = masks[index];
-    return static_cast<uint16_t>(((value & m) >> (masks.size() - 1 - index) * 10) & 0x3FF);
+    return static_cast<uint16_t>((value & m) >> (index * 10) & 0x3FF);
   }
   uint8_t channelNumber(const SampaHeader& sh)
   {
@@ -287,7 +359,8 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   void addSample(uint16_t sample)
   {
 #ifdef ULDEBUG
-    std::cout << "sample = " << sample << "\n";
+    debugHeader(*this)
+      << "sample = " << sample << "\n";
 #endif
     samples.emplace_back(sample);
     if (clusterSize == 0) {
@@ -298,12 +371,19 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
       samples.clear();
     }
   }
+
+  void addHeaderPart(uint16_t a)
+  {
+    headerParts.emplace_back(a);
+  }
+
   void addChargeSum(uint16_t b, uint16_t a)
   {
     // a cluster is ready, send it
     uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
 #ifdef ULDEBUG
-    std::cout << "chargeSum = " << q << "\n";
+    debugHeader(*this)
+      << "chargeSum = " << q << "\n";
 #endif
     channelHandler(dsId,
                    channelNumber(sampaHeader),
@@ -312,15 +392,16 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
 
   // Replaces the default no-transition response.
   template <class FSM, class Event>
-  void no_transition(Event const& e, FSM&, int state)
+  void no_transition(Event const& e, FSM& fsm, int state)
   {
-    std::cout << "no transition from state " << state
-              << " on event " << typeid(e).name() << std::endl;
+    debugHeader(*this)
+      << "no transition from state " << state
+      << " on event " << typeid(e).name() << std::endl;
   }
 
   // masks used to access groups of 10 bits in a 50 bits range
-  std::array<uint64_t, 5>
-    masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
+  const std::array<uint64_t, 5> masks = {0x3FF, 0xFFC00, 0x3FF00000, 0xFFC0000000, 0x3FF0000000000};
+  // const std::array<uint64_t, 5> masks = {0x3FF0000000000, 0xFFC0000000, 0x3FF00000, 0xFFC00, 0x3FF};
   DsElecId dsId{0, 0, 0};
   uint16_t nof10BitWords{0};
   uint16_t clusterSize{0};
@@ -329,6 +410,7 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   size_t maskIndex{0};
   size_t nofSync{0};
   std::vector<uint16_t> samples;
+  std::vector<uint16_t> headerParts;
   SampaHeader sampaHeader;
   SampaChannelHandler channelHandler;
 };
@@ -342,14 +424,16 @@ class UserLogicElinkDecoder
   {
     mFSM.dsId = dsId;
     mFSM.channelHandler = sampaChannelHandler;
+    mFSM.headerParts.reserve(5);
   }
 
   void append(uint64_t data)
   {
+    uint64_t data50 = data & FIFTYBITSATONE;
 #ifdef ULDEBUG
-    std::cout << fmt::format("******************************* append {:8X}\n", data);
+    debugHeader(mFSM) << fmt::format("append({:016X})->50bits={:013X}\n", data, data50);
 #endif
-    mFSM.process_event(NewData(data));
+    mFSM.process_event(NewData(data50));
   }
 
  private:

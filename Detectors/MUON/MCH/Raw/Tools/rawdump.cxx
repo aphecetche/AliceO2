@@ -137,6 +137,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
       std::cout << nrdhs << "--" << rdh << "\n";
     }
     auto r = rdh;
+#if 0
     auto cruId = r.cruID;
     if (opt.cruId().has_value()) {
       // force cruId to externally given value
@@ -150,6 +151,8 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
       return std::nullopt;
     }
     r.feeId = solar.value();
+#endif
+    r.feeId = 860;
     return r;
   };
 

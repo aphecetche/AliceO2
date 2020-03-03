@@ -55,11 +55,13 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<uint8_t> buffer)
   size_t index{0};
   uint64_t nbytes{0};
 
+  mStats.parseError = false;
+
   while ((index + nofRDHWords) < buffer.size()) {
     originalRDH = createRDH<RDH>(buffer.subspan(index, nofRDHWords));
     if (!isValid(originalRDH)) {
-      std::cout << "Got an invalid RDH\n";
-      impl::dumpBuffer(buffer.subspan(index, nofRDHWords));
+      mStats.parseErrorMessage = "Got an invalid RDH";
+      mStats.parseError = true;
       return mStats;
     }
     if (hasOrbitJump(rdhOrbit(originalRDH), mOrbit)) {
