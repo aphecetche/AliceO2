@@ -28,6 +28,9 @@
 #include <optional>
 #include <cstdint>
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
 namespace po = boost::program_options;
 
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
@@ -158,13 +161,19 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 
   o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
 
-  std::vector<std::chrono::microseconds> timers;
-
   size_t npages{0};
   DecoderStat decStat;
+  // std::chrono::duration<double> timer;
+  // auto start = std::chrono::high_resolution_clock::now();
+  // auto end = std::chrono::high_resolution_clock::now();
+  // std::chrono::duration<double> seconds = end - start;
+  // timer += seconds;
+  // std::cout << "timer " << timer.count() << "\n";
+  uint64_t bytesRead{0};
 
-  while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize)) {
+  while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize) && in.gcount() == pageSize) {
     npages++;
+    bytesRead += in.gcount();
     decStat = decode(sbuffer);
   }
 
@@ -172,6 +181,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
     std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
     std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
     std::cout << decStat << "\n";
+    std::cout << fmt::format("byte usage {:7.2f} %\n", 100.0 * decStat.nofBytesUsed / bytesRead);
   }
   return statChannel;
 }
