@@ -11,17 +11,11 @@
 #ifndef O2_MCH_RAW_PAYLOAD_DECODER_H
 #define O2_MCH_RAW_PAYLOAD_DECODER_H
 
-#include "BareGBTDecoder.h"
-#include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawDecoder/Decoder.h"
-#include "MakeArray.h"
-#include "PayloadDecoder.h"
-#include "UserLogicGBTDecoder.h"
+#include <map>
 #include <cstdlib>
-#include <fmt/format.h>
 #include <gsl/span>
-#include <iostream>
 
 namespace o2
 {

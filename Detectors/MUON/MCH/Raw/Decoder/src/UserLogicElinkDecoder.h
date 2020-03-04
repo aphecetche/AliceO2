@@ -31,13 +31,13 @@ using namespace msm::front::euml; // for Not_ operator
 
 // for debugging purposes only
 // uncomment this line to get a very verbose output
-#define ULDEBUG
+// #define ULDEBUG
 
 template <typename FSM>
 
 std::ostream& debugHeader(FSM& fsm)
 {
-  std::cout << "--ULDEBUG--" << fsm.dsId << "--";
+  std::cout << "--ULDEBUG--" << asString(fsm.dsId) << "--";
   return std::cout;
 }
 
@@ -163,6 +163,7 @@ struct foundSync {
   {
     fsm.nofSync++;
     fsm.maskIndex = fsm.masks.size();
+    fsm.headerParts.clear();
   }
 };
 
@@ -261,10 +262,7 @@ struct completeHeader {
   {
     uint64_t header{0};
     for (auto i = 0; i < fsm.headerParts.size(); i++) {
-      uint64_t a = (static_cast<uint64_t>(fsm.headerParts[i]) << (10 * i));
-      header += a;
-      debugHeader(fsm)
-        << fmt::format(">>>>> completeHeader {:2d} = {:013X} + {:013X}\n", i, a, header);
+      header += (static_cast<uint64_t>(fsm.headerParts[i]) << (10 * i));
     }
 
     fsm.sampaHeader = SampaHeader(header);
@@ -308,8 +306,9 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
   //   Start            Event         Next               Action            Guard
   Row< WaitingSync   , NewData , WaitingHeader , foundSync             , isSync                  >,
 
-  Row< WaitingHeader , NewData , WaitingHeader , ActionSequence_<
-                                                 mpl::vector<setData>> , Not_<isSync>            >,
+  Row< WaitingHeader , NewData , WaitingHeader , setData               , Not_<isSync>            >,
+
+  Row< WaitingHeader , NewData , WaitingHeader , foundSync             , isSync                 >,
 
 
   Row< WaitingHeader,  none    , WaitingHeader , readHeader            , And_<moreDataAvailable,
@@ -363,11 +362,16 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
       << "sample = " << sample << "\n";
 #endif
     samples.emplace_back(sample);
+
     if (clusterSize == 0) {
       // a cluster is ready, send it
-      channelHandler(dsId,
-                     channelNumber(sampaHeader),
-                     SampaCluster(clusterTime, samples));
+#ifdef ULDEBUG
+      std::stringstream s;
+      s << SampaCluster(clusterTime, samples);
+      debugHeader(*this) << fmt::format(" calling channelHandler for {} ch {} = {}\n",
+                                        asString(dsId), channelNumber(sampaHeader), s.str());
+#endif
+      channelHandler(dsId, channelNumber(sampaHeader), SampaCluster(clusterTime, samples));
       samples.clear();
     }
   }
