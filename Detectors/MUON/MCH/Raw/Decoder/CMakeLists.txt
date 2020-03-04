@@ -9,7 +9,7 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawDecoder
-               SOURCES src/Decoder.cxx
+               SOURCES src/Decoder.cxx src/BareDecoder.cxx src/UserLogicDecoder.cxx
                PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHRawElecMap
                PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 

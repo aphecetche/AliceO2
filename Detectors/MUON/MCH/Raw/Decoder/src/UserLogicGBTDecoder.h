@@ -74,7 +74,15 @@ UserLogicGBTDecoder<CHARGESUM>::UserLogicGBTDecoder(uint16_t solarId,
   : mSolarId{solarId},
     mElinkDecoders{
       impl::makeArray<40>([=](size_t i) {
-        return UserLogicElinkDecoder<CHARGESUM>(DsElecId{solarId, static_cast<uint8_t>(i / 8), static_cast<uint8_t>(i % 5)}, sampaChannelHandler);
+        auto group = o2::mch::raw::groupFromElinkId(i);
+        auto index = o2::mch::raw::indexFromElinkId(i);
+        if (!group.has_value()) {
+          throw std::invalid_argument("groupFromElinkId invalid");
+        }
+        if (!index.has_value()) {
+          throw std::invalid_argument("indexFromElinkId invalid");
+        }
+        return UserLogicElinkDecoder<CHARGESUM>(DsElecId{solarId, group.value(), index.value()}, sampaChannelHandler);
       })} // namespace o2::mch::raw
     ,
     mNofGbtWordsSeens{0}
@@ -108,9 +116,14 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
     }
 
     uint16_t dsid = (word >> 53) & 0x3F;
+    uint16_t linkid = (word >> 59) & 0x1F;
+
+    //    std::cout << fmt::format("GBT {} append word={:016X} dsid={:d}\n", mSolarId, word, dsid);
     impl::assertIsInRange("dsid", dsid, 0, 39);
 
-    mElinkDecoders.at(dsid).append(word);
+    if (linkid == 0 && (dsid == 2 || dsid == 5)) {
+      mElinkDecoders.at(dsid).append(word);
+    }
     n += 8;
   }
   return n;
