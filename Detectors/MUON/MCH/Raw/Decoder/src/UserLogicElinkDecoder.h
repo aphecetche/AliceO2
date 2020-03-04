@@ -301,6 +301,9 @@ struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGE
 
   typedef WaitingSync initial_state;
 
+  typedef int no_message_queue;
+  typedef int no_exception_thrown;
+
   struct transition_table : mpl::vector<
                               // clang-format off
   //   Start            Event         Next               Action            Guard
