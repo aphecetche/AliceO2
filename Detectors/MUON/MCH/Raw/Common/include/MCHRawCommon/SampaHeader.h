@@ -128,6 +128,9 @@ constexpr uint64_t sampaSyncWord{0x1555540f00113};
 /// The 50-bits Sampa SYNC word.
 SampaHeader sampaSync();
 
+/// Return channel number (0..63)
+uint8_t channelNumber64(const SampaHeader& sh);
+
 /// packetTypeName returns a string representation of the given packet type.
 std::string packetTypeName(SampaPacketType pkt);
 

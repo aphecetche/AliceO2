@@ -17,7 +17,6 @@
 #include "MCHRawDecoder/Decoder.h"
 #include "MCHRawElecMap/Mapper.h"
 #include "boost/program_options.hpp"
-#include <chrono>
 #include <fmt/format.h>
 #include <fstream>
 #include <gsl/span>
@@ -163,12 +162,6 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 
   size_t npages{0};
   DecoderStat decStat;
-  // std::chrono::duration<double> timer;
-  // auto start = std::chrono::high_resolution_clock::now();
-  // auto end = std::chrono::high_resolution_clock::now();
-  // std::chrono::duration<double> seconds = end - start;
-  // timer += seconds;
-  // std::cout << "timer " << timer.count() << "\n";
   uint64_t bytesRead{0};
 
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize) && in.gcount() == pageSize) {
