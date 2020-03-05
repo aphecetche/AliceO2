@@ -611,6 +611,11 @@ int computeHeaderParity4(uint64_t no)
   no &= ~(one << 6); // reset bit 6
   return computeParity(no);
 }
+
+uint8_t channelNumber64(const SampaHeader& sh)
+{
+  return sh.channelAddress() + (sh.chipAddress() % 2) * 32;
+}
 } // namespace raw
 } // namespace mch
 } // namespace o2
