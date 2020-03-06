@@ -13,8 +13,9 @@
 
 #include <iostream>
 #include "MCHRawElecMap/DsElecId.h"
+#include <fmt/format.h>
 
-namespace o2::mch::raw
+namespace o2::mch::raw::ul
 {
 // uncomment this line to get a very verbose output
 // and include it before the
@@ -24,10 +25,10 @@ namespace o2::mch::raw
 template <typename FSM>
 std::ostream& debugHeader(FSM& fsm)
 {
-  std::cout << "--ULDEBUG--" << asString(fsm.dsId) << "--";
+  std::cout << fmt::format("{}--ULDEBUG--{:s}---------{:4d}--", reinterpret_cast<const void*>(&fsm), asString(fsm.dsId()), fsm.instance);
   return std::cout;
 }
 
-} // namespace o2::mch::raw
+} // namespace o2::mch::raw::ul
 
 #endif

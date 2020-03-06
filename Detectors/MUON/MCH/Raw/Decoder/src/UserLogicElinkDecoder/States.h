@@ -14,11 +14,12 @@
 #include <boost/msm/front/state_machine_def.hpp>
 #include <string>
 #include "Debug.h"
+#include "Events.h"
 
 namespace msm = boost::msm;
 using namespace msm::front;
 
-namespace o2::mch::raw
+namespace o2::mch::raw::ul
 {
 struct NamedState : public msm::front::state<> {
   NamedState(const char* name_) : name{name_} {}
@@ -59,14 +60,6 @@ struct WaitingSample : public NamedState {
   WaitingSample() : NamedState("WaitingSample") {}
 };
 
-struct AllOk : public NamedState {
-  AllOk() : NamedState("AllOk") {}
-};
-// struct ErrorMode : public interrupt_state<Never> {
-struct ErrorMode : public NamedState {
-  ErrorMode() : NamedState("ErrorMode") {}
-};
-
-} // namespace o2::mch::raw
+} // namespace o2::mch::raw::ul
 
 #endif
