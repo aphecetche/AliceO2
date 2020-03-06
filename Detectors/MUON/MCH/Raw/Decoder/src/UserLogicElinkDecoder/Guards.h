@@ -14,7 +14,7 @@
 #include "MCHRawCommon/SampaHeader.h"
 #include "Debug.h"
 
-namespace o2::mch::raw
+namespace o2::mch::raw::ul
 {
 // Guards
 
@@ -33,10 +33,7 @@ struct moreWordsToRead {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-#ifdef ULDEBUG
-    debugHeader(fsm) << fmt::format("moreWordsToRead {} n10 {}\n", (fsm.nof10BitWords > 0), fsm.nof10BitWords);
-#endif
-    return fsm.nof10BitWords > 0;
+    return fsm.moreWordsToRead();
   }
 };
 
@@ -44,11 +41,7 @@ struct moreDataAvailable {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    bool rv = (fsm.maskIndex < fsm.masks.size());
-#ifdef ULDEBUG
-    debugHeader(fsm) << fmt::format("moreDataAvailable {} maskIndex {}\n", rv, fsm.maskIndex);
-#endif
-    return rv;
+    return fsm.moreDataAvailable();
   }
 };
 
@@ -56,11 +49,7 @@ struct moreSampleToRead {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    bool rv = (fsm.clusterSize > 0);
-#ifdef ULDEBUG
-    debugHeader(fsm) << fmt::format("moreSampleToRead {} clustersize {}\n", rv, fsm.clusterSize);
-#endif
-    return rv;
+    return fsm.moreSampleToRead();
   }
 };
 
@@ -68,13 +57,9 @@ struct headerIsComplete {
   template <class EVT, class FSM, class SourceState, class TargetState>
   bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
-    bool rv = (fsm.headerParts.size() == 5);
-#ifdef ULDEBUG
-    debugHeader(fsm) << fmt::format("headerIsComplete {}\n", rv);
-#endif
-    return rv;
+    return fsm.headerIsComplete();
   }
 };
-} // namespace o2::mch::raw
+} // namespace o2::mch::raw::ul
 
 #endif

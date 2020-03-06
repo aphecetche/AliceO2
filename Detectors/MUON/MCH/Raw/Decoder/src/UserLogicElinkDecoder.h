@@ -19,8 +19,9 @@
 #include "MCHRawElecMap/DsElecId.h"
 #include "UserLogicElinkDecoder/Actions.h"
 #include "UserLogicElinkDecoder/Guards.h"
-#include "UserLogicElinkDecoder/NormalDecodingStateMachine.h"
+#include "UserLogicElinkDecoder/Decoder.h"
 #include "UserLogicElinkDecoder/States.h"
+#include "UserLogicElinkDecoder/Events.h"
 #include <algorithm>
 #include <array>
 #include <boost/msm/back/state_machine.hpp>
@@ -36,50 +37,110 @@ using namespace msm::front;
 namespace o2::mch::raw
 {
 
-template <typename CHARGESUM>
-struct StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGESUM>> {
+struct ErrorMode : public ul::NamedState {
+  ErrorMode() : ul::NamedState("ErrorMode") {}
+};
 
-  using Normal = msm::back::state_machine<NormalDecodingStateMachine_<CHARGESUM>>;
+struct ErrorFound {
+  ErrorFound(const std::string& msg) : message{msg} {}
+  std::string message;
+};
+
+struct reportError {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    static int n{0};
+    std::cout << fmt::format("Oh My ERROR {:4d} {}\n", n, evt.message);
+  }
+};
+
+struct Never {
+  template <class EVT, class FSM, class SourceState, class TargetState>
+  bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
+  {
+    return false;
+  }
+};
+
+template <typename CHARGESUM>
+class StateMachine_ : public msm::front::state_machine_def<StateMachine_<CHARGESUM>>
+{
+ public:
+  using Normal = msm::back::state_machine<ul::Decoder_<CHARGESUM>>;
 
   using initial_state = Normal;
 
   struct transition_table : mpl::vector<
-                              //  Start      Event       Next       Action   Guard
-                              Row<Normal, ErrorFound, ErrorMode, none, none>,
-                              Row<ErrorMode, NewData, Normal, none, none>> {
+                              Row<Normal, ErrorFound, ErrorMode, reportError, none>,
+                              Row<ErrorMode, ul::NewData, Normal, none, Never>> {
   };
 
-  // StateMachine_(DsElecId _dsId, SampaChannelHandler channelHandler) : dsId{_dsId}
-  // {
-  //   //Normal(msm::back::states_ << WaitingSync(), _dsId, channelHandler);
-  //   //player p( back::states_ << state_1 << ... << state_n , boost::ref(data),3);
-  // }
-  //DsElecId dsId;
+  StateMachine_(DsElecId dsId) : mDsId{dsId}
+  {
+    instance++;
+  }
+
+  DsElecId dsId() const { return mDsId; }
+
+  // Replaces the default no-transition response.
+  template <class FSM, class Event>
+  void no_transition(Event const& e, FSM&, int state)
+  {
+    std::cout << "no transition from state " << state
+              << " on event " << typeid(e).name() << std::endl;
+  }
+
+ private:
+  DsElecId mDsId;
+
+ public:
+  static int instance;
 };
+
+template <typename CHARGESUM>
+int StateMachine_<CHARGESUM>::instance{0};
 
 template <typename CHARGESUM>
 class UserLogicElinkDecoder
 {
  public:
   UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
-  //  : mFSM(dsId, sampaChannelHandler)
+    : mFSM(dsId)
   {
-    mFSM.dsId = dsId;
-    mFSM.channelHandler = sampaChannelHandler;
+    // The line below might require some explanation...
+    //
+    // First, you must realize that there are _two_ state machines
+    // involved here. The first (mFSM) one is just the "steering" one,
+    // handling the transition from normal mode to error mode.
+    // The second one, the Normal state machine, is the real worker which
+    // handles the decoding when everything feels right. It is a state
+    // machine but also a state of its parent state machine (mFSM).
+    //
+    // So the line below calls the init() method of the Normal sub state machine
+    // The init sets the dual sampa id, the sampa channel handler and
+    // a special function that be will called (with a single string argument)
+    // by the Normal sub state machine when there is an error.
+    // In turn, _this_ (mFSM) state machine triggers an ErrorFound event,
+    // which transition from the Normal state to the ErrorMode state.
+    //
+    mFSM.template get_state<typename StateMachine_<CHARGESUM>::Normal&>().init(dsId, sampaChannelHandler,
+                                                                               [this](std::string errorMessage) { this->mFSM.process_event(ErrorFound(errorMessage)); });
   }
 
   void append(uint64_t data)
   {
+    constexpr uint64_t FIFTYBITSATONE = 0x3FFFFFFFFFFFF;
     uint64_t data50 = data & FIFTYBITSATONE;
-    // #ifdef ULDEBUG
-    //     debugHeader(mFSM) << fmt::format("append({:016X})->50bits={:013X}\n", data, data50);
-    // #endif
-    mFSM.process_event(NewData(data50));
+#ifdef ULDEBUG
+    std::cout << fmt::format("{}--ULDEBUG--{:s}--(TOP)--{:4d}--append({:016X})->50bits={:013X}\n", reinterpret_cast<const void*>(&mFSM), asString(mFSM.dsId()),
+                             mFSM.instance, data, data50);
+#endif
+    mFSM.process_event(ul::NewData(data50));
   }
 
  private:
-  // msm::back::state_machine<StateMachine_<CHARGESUM>> mFSM;
-  msm::back::state_machine<NormalDecodingStateMachine_<CHARGESUM>> mFSM;
+  msm::back::state_machine<StateMachine_<CHARGESUM>> mFSM;
 };
 
 } // namespace o2::mch::raw

@@ -14,23 +14,13 @@
 #include <cstdlib>
 #include <string>
 
-namespace o2::mch::raw
+namespace o2::mch::raw::ul
 {
-// Events
-constexpr uint64_t FIFTYBITSATONE = 0x3FFFFFFFFFFFF;
 
 struct NewData {
-  NewData(uint64_t d) : data{d & FIFTYBITSATONE} {}
+  NewData(uint64_t d50) : data{d50} {}
   uint64_t data;
 };
 
-struct Never {
-};
-
-struct ErrorFound {
-  ErrorFound(const std::string& msg) : message{msg} {}
-  std::string message;
-};
-
-} // namespace o2::mch::raw
+} // namespace o2::mch::raw::ul
 #endif
