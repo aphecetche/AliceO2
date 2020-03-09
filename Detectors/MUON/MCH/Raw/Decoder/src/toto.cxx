@@ -209,4 +209,6 @@ int main()
   ys.process_event(ev3());
   std::cout << "> Send ev2()" << std::endl;
   ys.process_event(ev2());
+
+  auto b = ys;
 }
