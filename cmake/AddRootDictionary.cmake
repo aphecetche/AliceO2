@@ -127,6 +127,28 @@ function(add_root_dictionary target)
 
   set(includeDirs $<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>)
 
+  get_property(libs TARGET ${target} PROPERTY INTERFACE_LINK_LIBRARIES)
+  if(NOT ROOT::RIO IN_LIST libs)
+    # add ROOT::IO if not already there as a target that has a Root dictionary
+    # has to depend on ... Root
+    target_link_libraries(${target} PUBLIC ROOT::RIO)
+  endif()
+
+  # foreach(l IN LISTS libs)
+  #         string(REGEX MATCH "^${PROJECT_NAME}::" local ${l})
+  #         if(local)
+  #                 get_property(t TARGET ${l} PROPERTY TYPE)
+  #                 if(t STREQUAL "SHARED_LIBRARY")
+  #                         get_property(srcs TARGET ${l} PROPERTY SOURCES)
+  #                         string(REGEX MATCH "G__${PROJECT_NAME}" has_dictionary ${srcs})
+  #                         if (has_dictionary)
+  #                                 message(STATUS "TARGET ${target} depends on ${l} which has a dictionary")
+  #                         endif()
+  #                 endif()
+  #         endif()
+  # endforeach()
+  #
+
   # add a custom command to generate the dictionary using rootcling
   # cmake-format: off
   add_custom_command(
@@ -149,13 +171,6 @@ function(add_root_dictionary target)
 
   # add dictionary source to the target sources
   target_sources(${target} PRIVATE ${dictionaryFile})
-
-  get_property(libs TARGET ${target} PROPERTY INTERFACE_LINK_LIBRARIES)
-  if(NOT ROOT::RIO IN_LIST libs)
-    # add ROOT::IO if not already there as a target that has a Root dictionary
-    # has to depend on ... Root
-    target_link_libraries(${target} PUBLIC ROOT::RIO)
-  endif()
 
   # Get the list of include directories that will be required to compile the
   # dictionary itself and add them as private include directories
