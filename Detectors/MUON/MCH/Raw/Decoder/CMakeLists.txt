@@ -15,8 +15,7 @@ o2_add_library(MCHRawDecoder
 
 o2_add_executable(toto
         COMPONENT_NAME mch
-        SOURCES src/toto.cxx
-        PUBLIC_LINK_LIBRARIES Boost::boost)
+        SOURCES src/toto.cxx)
 
 if(BUILD_TESTING)
         o2_add_test(decoder
