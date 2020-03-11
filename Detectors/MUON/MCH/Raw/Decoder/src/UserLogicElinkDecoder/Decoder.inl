@@ -12,18 +12,25 @@ namespace o2::mch::raw::ul
 {
 
 template <typename CHARGESUM>
+Decoder_<CHARGESUM>::Decoder_(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
+  : mDsId{dsId},
+    mSampaChannelHandler{sampaChannelHandler}
+{
+}
+
+template <typename CHARGESUM>
 void Decoder_<CHARGESUM>::decrementClusterSize()
 {
   --mClusterSize;
 }
 
 template <typename CHARGESUM>
-void Decoder_<CHARGESUM>::setClusterSize(uint16_t value)
+std::string Decoder_<CHARGESUM>::setClusterSize(uint16_t value)
 {
   mClusterSize = value;
   int checkSize = mClusterSize + 2 - mSampaHeader.nof10BitWords();
+  std::string checkSizeMsg("");
 #ifdef ULDEBUG
-  std::string checkSizeMsg("cluster size matches nof10bitwords");
   if (checkSize < 0) {
     checkSizeMsg = "cluster size smaller than nof10BitWords";
   } else if (checkSize > 0) {
@@ -40,8 +47,8 @@ void Decoder_<CHARGESUM>::setClusterSize(uint16_t value)
       checkSizeMsg = "cluster size bigger than nof10BitWords !!!";
     }
     std::cout << "RETURNING " << checkSizeMsg << "\n";
-    mErrorHandler(checkSizeMsg);
   }
+  return checkSizeMsg;
 }
 
 template <typename CHARGESUM>
@@ -162,15 +169,6 @@ void Decoder_<CHARGESUM>::addChargeSum(uint16_t b, uint16_t a)
   mSampaChannelHandler(mDsId,
                        channelNumber64(mSampaHeader),
                        SampaCluster(mClusterTime, q));
-}
-
-template <typename CHARGESUM>
-void Decoder_<CHARGESUM>::init(DsElecId dsId, SampaChannelHandler sampaChannelHandler,
-                               std::function<void(std::string)> errorHandler)
-{
-  mDsId = dsId;
-  mSampaChannelHandler = sampaChannelHandler;
-  mErrorHandler = errorHandler;
 }
 
 template <typename CHARGESUM>

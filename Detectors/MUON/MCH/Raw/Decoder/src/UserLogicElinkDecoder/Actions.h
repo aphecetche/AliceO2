@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fmt/format.h>
 #include "MCHRawCommon/DataFormats.h"
+#include "Events.h"
 
 namespace o2::mch::raw::ul
 {
@@ -39,7 +40,10 @@ struct readSize<SampleMode> {
   void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
   {
     auto value = fsm.pop10();
-    fsm.setClusterSize(value);
+    auto msg = fsm.setClusterSize(value);
+    if (!msg.empty()) {
+      fsm.process_event(RecoverableError(msg));
+    }
   }
 };
 

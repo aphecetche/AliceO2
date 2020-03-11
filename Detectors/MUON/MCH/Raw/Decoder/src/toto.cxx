@@ -1,214 +1,101 @@
+#include "sml.hpp"
+
+#include <cassert>
 #include <iostream>
-#include <boost/msm/back/state_machine.hpp>
+#include <string>
+#include <typeinfo>
 
-#include <boost/msm/front/state_machine_def.hpp>
-#include <boost/msm/front/functor_row.hpp>
-#include <boost/static_assert.hpp>
+namespace sml = boost::sml;
 
-namespace msm = boost::msm;
-namespace msmf = boost::msm::front;
-namespace mpl = boost::mpl;
-
-// ----- Events
-struct ev1 {
+struct e1 {
 };
-struct ev2 {
+struct e2 {
 };
-struct ev3 {
+struct e3 {
 };
-struct stop {
-};
-struct recover {
+struct e4 {
 };
 
-// ----- State machine
-struct YourSystem_ : msmf::state_machine_def<YourSystem_> {
-  struct Normal_ : msmf::state_machine_def<Normal_> {
+struct guard {
+  bool operator()() const { return true; }
+} guard;
 
-    std::function<void()> func;
+struct action {
+  void operator()() {}
+} action;
 
-    void setCallback(std::function<void()> f)
-    {
-      func = f;
-    }
-
-    template <class Event, class Fsm>
-    void on_entry(Event const&, Fsm&) const
-    {
-      std::cout << "Normal::on_entry()" << std::endl;
-    }
-    template <class Event, class Fsm>
-    void on_exit(Event const&, Fsm&) const
-    {
-      std::cout << "Normal::on_exit()" << std::endl;
-    }
-
-    struct Idle : msmf::state<> {
-      template <class Event, class Fsm>
-      void on_entry(Event const&, Fsm&) const
-      {
-        std::cout << "Idle::on_entry()" << std::endl;
-      }
-      template <class Event, class Fsm>
-      void on_exit(Event const&, Fsm&) const
-      {
-        std::cout << "Idle::on_exit()" << std::endl;
-      }
-    };
-
-    struct Work : msmf::state<> {
-      template <class Event, class Fsm>
-      void on_entry(Event const&, Fsm&) const
-      {
-        std::cout << "Work::on_entry()" << std::endl;
-      }
-      template <class Event, class Fsm>
-      void on_exit(Event const&, Fsm&) const
-      {
-        std::cout << "Work::on_exit()" << std::endl;
-      }
-    };
-
-    struct InternalWork : msmf::state<> {
-      template <class Event, class Fsm>
-      void on_entry(Event const&, Fsm&) const
-      {
-        std::cout << "InternalWork::on_entry()" << std::endl;
-      }
-      template <class Event, class Fsm>
-      void on_exit(Event const&, Fsm&) const
-      {
-        std::cout << "InternalWork::on_exit()" << std::endl;
-      }
-    };
-
-    struct AllOk : msmf::state<> {
-      template <class Event, class Fsm>
-      void on_entry(Event const&, Fsm&) const
-      {
-        std::cout << "AllOk::on_entry()" << std::endl;
-      }
-      template <class Event, class Fsm>
-      void on_exit(Event const&, Fsm&) const
-      {
-        std::cout << "AllOk::on_exit()" << std::endl;
-      }
-    };
-
-    struct Crash {
-      template <class EVT, class FSM, class SourceState, class TargetState>
-      void operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-      {
-        fsm.func();
-      }
-    };
-
-    struct guard1 {
-      template <class EVT, class FSM, class SourceState, class TargetState>
-      bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-      {
-        std::cout << "guard1 : Idle->Work ?\n";
-        return true;
-      }
-    };
-    struct guard2 {
-      template <class EVT, class FSM, class SourceState, class TargetState>
-      bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-      {
-        std::cout << "guard2 : Work->InternalWork ?\n";
-        return true;
-      }
-    };
-    struct guard3 {
-      template <class EVT, class FSM, class SourceState, class TargetState>
-      bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-      {
-        std::cout << "guard3 : InternalWork->AllOk ?\n";
-        return true;
-      }
-    };
-    struct guard4 {
-      template <class EVT, class FSM, class SourceState, class TargetState>
-      bool operator()(const EVT& evt, FSM& fsm, SourceState& src, TargetState& tgt)
-      {
-        std::cout << "guard4 : AllOK->Idle ?\n";
-        return true;
-      }
-    };
-
-    // Set initial state
-    typedef mpl::vector<Idle> initial_state;
-    // Transition table
-    struct transition_table : mpl::vector<
-                                //          Start      Event   Next       Action      Guard
-                                msmf::Row<Idle, ev1, Work, msmf::none, guard1>,
-                                msmf::Row<Work, msmf::none, InternalWork, msmf::none, guard2>,
-                                msmf::Row<InternalWork, ev2, AllOk, Crash, guard3>,
-                                msmf::Row<AllOk, ev3, Idle, msmf::none, guard4>> {
-    };
-  };
-  struct EmergencyStopped : msmf::state<> {
-    template <class Event, class Fsm>
-    void on_entry(Event const&, Fsm&) const
-    {
-      std::cout << "EmergencyStopped::on_entry()" << std::endl;
-    }
-    template <class Event, class Fsm>
-    void on_exit(Event const&, Fsm&) const
-    {
-      std::cout << "EmergencyStopped::on_exit()" << std::endl;
-    }
-  };
-
-  typedef msm::back::state_machine<Normal_> Normal;
-
-  // Set initial state
-  typedef Normal initial_state;
-  // Transition table
-  struct transition_table : mpl::vector<
-                              // clang-format off
-                              //        Start             Event     Next               Action      Guard
-                              msmf::Row<Normal          , stop    , EmergencyStopped  , msmf::none, msmf::none>,
-                              msmf::Row<EmergencyStopped, recover , Normal, msmf::none, msmf::none>> {
+struct plant_uml {
+  auto operator()() const noexcept
+  {
+    using namespace sml;
+    // clang-format off
+    return make_transition_table(
+       *"idle"_s + event<e1> = "s1"_s
+      , "s1"_s + event<e2> [ guard ] / action = "s2"_s
+      , "s2"_s + event<e3> [ guard ] = "s1"_s
+      , "s2"_s + event<e4> / action = X
+    );
     // clang-format on
-  };
+  }
 };
 
-// Pick a back-end
-typedef msm::back::state_machine<YourSystem_> Ys;
+template <class T>
+void dump_transition() noexcept
+{
+  auto src_state = std::string{sml::aux::string<typename T::src_state>{}.c_str()};
+  auto dst_state = std::string{sml::aux::string<typename T::dst_state>{}.c_str()};
+  if (dst_state == "X") {
+    dst_state = "[*]";
+  }
+
+  if (T::initial) {
+    std::cout << "[*] --> " << src_state << std::endl;
+  }
+
+  std::cout << src_state << " --> " << dst_state;
+
+  const auto has_event = !sml::aux::is_same<typename T::event, sml::anonymous>::value;
+  const auto has_guard = !sml::aux::is_same<typename T::guard, sml::front::always>::value;
+  const auto has_action = !sml::aux::is_same<typename T::action, sml::front::none>::value;
+
+  if (has_event || has_guard || has_action) {
+    std::cout << " :";
+  }
+
+  if (has_event) {
+    std::cout << " " << boost::sml::aux::get_type_name<typename T::event>();
+  }
+
+  if (has_guard) {
+    std::cout << " [" << boost::sml::aux::get_type_name<typename T::guard::type>() << "]";
+  }
+
+  if (has_action) {
+    std::cout << " / " << boost::sml::aux::get_type_name<typename T::action::type>();
+  }
+
+  std::cout << std::endl;
+}
+
+template <template <class...> class T, class... Ts>
+void dump_transitions(const T<Ts...>&) noexcept
+{
+  int _[]{0, (dump_transition<Ts>(), 0)...};
+  (void)_;
+}
+
+template <class SM>
+void dump(const SM&) noexcept
+{
+  std::cout << "@startuml" << std::endl
+            << std::endl;
+  dump_transitions(typename SM::transitions{});
+  std::cout << std::endl
+            << "@enduml" << std::endl;
+}
 
 int main()
 {
-  Ys ys;
-  ys.start();
-
-  ys.get_state<YourSystem_::Normal&>().setCallback([&ys]() { std::cout << "callback called !\n"; ys.process_event(stop()); });
-
-  std::cout << "> Send ev1()" << std::endl;
-  ys.process_event(ev1());
-  std::cout << "> Send ev2()" << std::endl;
-  ys.process_event(ev2());
-
-  // std::cout << "> Send stop()" << std::endl;
-  // ys.process_event(stop());
-  // std::cout << "> Send recover()" << std::endl;
-  // ys.process_event(recover());
-  std::cout << "> Send ev1()" << std::endl;
-  ys.process_event(ev1());
-  std::cout << "> Send ev3()" << std::endl;
-  ys.process_event(ev3());
-  std::cout << "> Send ev2()" << std::endl;
-  ys.process_event(ev2());
-
-  std::cout << "now ! > Send recover()" << std::endl;
-  ys.process_event(recover());
-
-  std::cout << "> Send ev1()" << std::endl;
-  ys.process_event(ev1());
-  std::cout << "> Send ev3()" << std::endl;
-  ys.process_event(ev3());
-  std::cout << "> Send ev2()" << std::endl;
-  ys.process_event(ev2());
-
-  auto b = ys;
+  sml::sm<plant_uml> sm;
+  dump(sm);
 }

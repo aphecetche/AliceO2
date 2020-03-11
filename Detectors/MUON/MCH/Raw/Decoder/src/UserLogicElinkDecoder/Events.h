@@ -22,5 +22,10 @@ struct NewData {
   uint64_t data;
 };
 
+struct RecoverableError {
+  RecoverableError(std::string msg) : errorMessage{msg} {}
+  std::string errorMessage;
+};
+
 } // namespace o2::mch::raw::ul
 #endif

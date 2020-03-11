@@ -60,6 +60,14 @@ struct WaitingSample : public NamedState {
   WaitingSample() : NamedState("WaitingSample") {}
 };
 
+struct AllOk : public NamedState {
+  AllOk() : NamedState("AllOk") {}
+};
+
+struct Stopped : public NamedState {
+  Stopped() : NamedState("Stopped") {}
+};
+
 } // namespace o2::mch::raw::ul
 
 #endif

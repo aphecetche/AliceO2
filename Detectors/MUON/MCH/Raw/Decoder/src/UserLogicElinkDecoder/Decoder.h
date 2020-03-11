@@ -27,6 +27,11 @@ namespace mpl = boost::mpl;
 using namespace msm::front;
 using namespace msm::front::euml; // for Not_ operator
 
+// for debugging states
+#include <boost/msm/back/tools.hpp>
+#include <boost/msm/back/metafunctions.hpp>
+#include <boost/mpl/for_each.hpp>
+
 namespace o2::mch::raw::ul
 {
 template <typename CHARGESUM>
@@ -35,23 +40,28 @@ struct TransitionTable : mpl::vector<
   //
   // Source State      Event        Destination State   Action                  Guard
   //---------------------------------------------------------------------------------------------------------------------------------------------
-  Row< WaitingSync   , NewData    , WaitingHeader     , reset                 , isSync                                         >,
+  Row< WaitingSync   , NewData          , WaitingHeader     , reset                 , isSync                                         >,
+  //---------------------------------------------------------------------------------------------------------------------------------
+  Row< WaitingHeader , NewData          , WaitingHeader     , reset                 , isSync                                         >,
+  Row< WaitingHeader , NewData          , WaitingHeader     , setData               , Not_<isSync>                                   >,
+  Row< WaitingHeader,  none             , WaitingHeader     , readHeader            , And_<moreDataAvailable,Not_<headerIsComplete>> >,
+  Row< WaitingHeader,  none             , WaitingSize       , completeHeader        , headerIsComplete                               >,
+  //---------------------------------------------------------------------------------------------------------------------------------
+  Row< WaitingSize   , NewData          , WaitingSize       , setData               , And_<moreWordsToRead,Not_<moreDataAvailable>>  >,
+  Row< WaitingSize   , none             , WaitingTime       , readSize<CHARGESUM>   , And_<moreDataAvailable,moreWordsToRead>        >,
+  //---------------------------------------------------------------------------------------------------------------------------------
+  Row< WaitingTime   , NewData          , WaitingTime       , setData               , And_<moreWordsToRead,Not_<moreDataAvailable>>  >,
+  Row< WaitingTime   , none             , WaitingSample     , readTime              , And_<moreSampleToRead,moreDataAvailable>       >,
+  //---------------------------------------------------------------------------------------------------------------------------------
+  Row< WaitingSample , NewData          , WaitingSample     , setData               , moreSampleToRead                               >,
+  Row< WaitingSample , none             , WaitingHeader     , none                  , Not_<moreSampleToRead>                         >,
+  Row< WaitingSample , none             , WaitingSample     , readSample<CHARGESUM> , And_<moreDataAvailable,moreSampleToRead>       >,
+  Row< WaitingSample , none             , WaitingSize       , none                  , And_<moreWordsToRead,Not_<moreSampleToRead>>   >,
   //---------------------------------------------------------------------------------------------------------------------------
-  Row< WaitingHeader , NewData    , WaitingHeader     , reset                 , isSync                                         >,
-  Row< WaitingHeader , NewData    , WaitingHeader     , setData               , Not_<isSync>                                   >,
-  Row< WaitingHeader,  none       , WaitingHeader     , readHeader            , And_<moreDataAvailable,Not_<headerIsComplete>> >,
-  Row< WaitingHeader,  none       , WaitingSize       , completeHeader        , headerIsComplete                               >,
+  Row< Stopped       , NewData          , WaitingSync       , none                  , none                                           >,
   //---------------------------------------------------------------------------------------------------------------------------
-  Row< WaitingSize   , NewData    , WaitingSize       , setData               , And_<moreWordsToRead,Not_<moreDataAvailable>>  >,
-  Row< WaitingSize   , none       , WaitingTime       , readSize<CHARGESUM>   , And_<moreDataAvailable,moreWordsToRead>        >,
-  //---------------------------------------------------------------------------------------------------------------------------
-  Row< WaitingTime   , NewData    , WaitingTime       , setData               , And_<moreWordsToRead,Not_<moreDataAvailable>>  >,
-  Row< WaitingTime   , none       , WaitingSample     , readTime              , And_<moreSampleToRead,moreDataAvailable>       >,
-  //---------------------------------------------------------------------------------------------------------------------------
-  Row< WaitingSample , NewData    , WaitingSample     , setData               , moreSampleToRead                               >,
-  Row< WaitingSample , none       , WaitingHeader     , none                  , Not_<moreSampleToRead>                         >,
-  Row< WaitingSample , none       , WaitingSample     , readSample<CHARGESUM> , And_<moreDataAvailable,moreSampleToRead>       >,
-  Row< WaitingSample , none       , WaitingSize       , none                  , And_<moreWordsToRead,Not_<moreSampleToRead>>   >
+  Row< AllOk         , RecoverableError , Stopped           , none                  , none                                           >,
+  Row< Stopped       , NewData          , AllOk             , none                  , none                                           >
   //---------------------------------------------------------------------------------------------------------------------------------------------
                            // clang-format on
                            > {
@@ -66,14 +76,10 @@ class Decoder_ : public msm::front::state_machine_def<Decoder_<CHARGESUM>>
 {
 
  public:
-  using initial_state = WaitingSync;
+  using initial_state = mpl::vector<AllOk, WaitingSync>;
   using transition_table = TransitionTable<CHARGESUM>;
 
-  // Note the usage of an init method instead of a constructor because AFAIK
-  // MSM requires submachines to be default constructible...
-  void init(DsElecId mDsId,
-            SampaChannelHandler sampaChannelHandler,
-            std::function<void(std::string)> errorHandler);
+  Decoder_(DsElecId mDsId, SampaChannelHandler sampaChannelHandler);
 
   bool headerIsComplete() const;
   bool moreDataAvailable() const;
@@ -87,7 +93,7 @@ class Decoder_ : public msm::front::state_machine_def<Decoder_<CHARGESUM>>
   void completeHeader();
   void decrementClusterSize();
   void reset();
-  void setClusterSize(uint16_t value);
+  std::string setClusterSize(uint16_t value);
   void setClusterTime(uint16_t value);
   void setData(uint64_t data);
 
@@ -95,12 +101,17 @@ class Decoder_ : public msm::front::state_machine_def<Decoder_<CHARGESUM>>
   template <class FSM, class Event>
   void no_transition(Event const& e, FSM&, int state)
   {
-    std::cout << "no transition from state " << state
-              << " on event " << typeid(e).name() << std::endl;
+    typedef typename boost::msm::back::recursive_get_transition_table<FSM>::type recursive_stt;
+    typedef typename boost::msm::back::generate_state_set<recursive_stt>::type all_states;
+    std::string stateName;
+    boost::mpl::for_each<all_states, boost::msm::wrap<boost::mpl::placeholders::_1>>(boost::msm::back::get_state_name<recursive_stt>(stateName, state));
+    std::cout << "(Decoder.h) no transition from state " << boost::core::demangle(stateName.c_str())
+              << " on event " << boost::core::demangle(typeid(e).name()) << std::endl;
   }
 
 #ifdef ULDEBUG
-  DsElecId dsId() const;
+  DsElecId
+    dsId() const;
 #endif
 
   Decoder_()
@@ -124,8 +135,7 @@ class Decoder_ : public msm::front::state_machine_def<Decoder_<CHARGESUM>>
   std::vector<uint16_t> mHeaderParts;
   SampaHeader mSampaHeader;
   SampaChannelHandler mSampaChannelHandler;
-  std::function<void(std::string)> mErrorHandler;
-}; // namespace o2::mch::raw
+}; // namespace o2::mch::raw::ul
 
 template <typename CHARGESUM>
 int Decoder_<CHARGESUM>::instance{0};
