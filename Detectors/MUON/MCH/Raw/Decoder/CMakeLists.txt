@@ -9,13 +9,14 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawDecoder
-        SOURCES src/Decoder.cxx src/BareDecoder.cxx src/UserLogicDecoder.cxx
+        SOURCES src/Decoder.cxx src/BareDecoder.cxx src/UserLogicDecoder.cxx src/DecoderState.cxx
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHRawElecMap
         PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
 o2_add_executable(toto
         COMPONENT_NAME mch
-        SOURCES src/toto.cxx)
+        SOURCES src/toto.cxx
+        PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
 
 if(BUILD_TESTING)
         o2_add_test(decoder
