@@ -25,6 +25,7 @@
 #include "MoveBuffer.h"
 #include "DumpBuffer.h"
 #include "MCHRawCommon/DataFormats.h"
+#include "MCHRawDecoder/SampaChannelHandler.h"
 
 using namespace o2::mch::raw;
 
