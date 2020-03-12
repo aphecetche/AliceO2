@@ -16,7 +16,7 @@
 #include "StateMachine.h"
 #include "Debug.h"
 
-#ifdef ULDEBUG
+#ifdef SMLDEBUG
 #include "StateMachineLogger.h"
 #endif
 
@@ -29,7 +29,7 @@ class UserLogicElinkDecoder
  public:
   UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
     : mDecoderState{dsId, sampaChannelHandler},
-#ifdef ULDEBUG
+#ifdef SMLDEBUG
       mLogger{},
       mStateMachine
   {
@@ -46,6 +46,14 @@ class UserLogicElinkDecoder
 
   void append(uint64_t data)
   {
+#ifdef ULDEBUG
+    std::cout << fmt::format("--ULDEBUG--{:s}--", asString(mDecoderState.dsId()));
+    std::cout << fmt::format("append data=0X{:8X} ({})\n", data, data);
+#endif
+    if (data == 0) {
+      mStateMachine.process_event(RecoverableError("toto error"));
+      return;
+    }
     constexpr uint64_t FIFTYBITSATONE = 0x3FFFFFFFFFFFF;
     uint64_t data50 = data & FIFTYBITSATONE;
     mStateMachine.process_event(NewData(data50));
@@ -53,6 +61,7 @@ class UserLogicElinkDecoder
 
   void status()
   {
+    std::cout << __PRETTY_FUNCTION__ << "\n";
     mStateMachine.visit_current_states([](auto state) {
       std::cout << "state=" << state.c_str() << std::endl;
     });
@@ -61,7 +70,7 @@ class UserLogicElinkDecoder
 
  private:
   DecoderState mDecoderState;
-#ifdef ULDEBUG
+#ifdef SMLDEBUG
   Logger mLogger;
   boost::sml::sm<StateMachine<CHARGESUM>, boost::sml::logger<Logger>> mStateMachine;
 #else

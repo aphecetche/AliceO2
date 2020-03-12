@@ -9,8 +9,8 @@
 // or submit itself to any jurisdiction.
 
 #include "DecoderState.h"
-#include "Debug.h"
 #include <sstream>
+#include "Debug.h"
 
 namespace o2::mch::raw
 {
@@ -31,6 +31,16 @@ std::ostream& DecoderState::debugHeader() const
   return std::cout;
 }
 
+bool DecoderState::hasError() const
+{
+  return mErrorMessage.has_value();
+}
+
+std::string DecoderState::errorMessage() const
+{
+  return hasError() ? mErrorMessage.value() : "";
+}
+
 void DecoderState::decrementClusterSize()
 {
   --mClusterSize;
@@ -40,25 +50,19 @@ void DecoderState::setClusterSize(uint16_t value)
 {
   mClusterSize = value;
   int checkSize = mClusterSize + 2 - mSampaHeader.nof10BitWords();
-  std::string checkSizeMsg{};
-#ifdef ULDEBUG
-  if (checkSize < 0) {
-    checkSizeMsg = "cluster size smaller than nof10BitWords";
-  } else if (checkSize > 0) {
-    checkSizeMsg = "cluster size bigger than nof10BitWords !!!";
-  }
-  debugHeader() << " -> size=" << mClusterSize << " maskIndex=" << mMaskIndex
-                << " nof10BitWords=" << mSampaHeader.nof10BitWords()
-                << " " << checkSizeMsg << "\n";
-#endif
+  mErrorMessage = std::nullopt;
   if (checkSize) {
     if (checkSize < 0) {
-      checkSizeMsg = "cluster size smaller than nof10BitWords";
+      mErrorMessage = "cluster size smaller than nof10BitWords";
     } else if (checkSize > 0) {
-      checkSizeMsg = "cluster size bigger than nof10BitWords !!!";
+      mErrorMessage = "cluster size bigger than nof10BitWords !!!";
     }
-    std::cout << "RETURNING " << checkSizeMsg << "\n";
   }
+#ifdef ULDEBUG
+  debugHeader() << " -> size=" << mClusterSize << " maskIndex=" << mMaskIndex
+                << " nof10BitWords=" << mSampaHeader.nof10BitWords()
+                << " " << (hasError() ? "ERROR:" : "") << errorMessage() << "\n";
+#endif
 }
 
 void DecoderState::setClusterTime(uint16_t value)
@@ -78,6 +82,7 @@ void DecoderState::reset()
   mHeaderParts.clear();
   mClusterSize = 0;
   mNof10BitWords = 0;
+  mErrorMessage = std::nullopt;
 }
 
 void DecoderState::setData(uint64_t data)
@@ -215,7 +220,21 @@ bool DecoderState::moreWordsToRead() const
 
 std::ostream& operator<<(std::ostream& os, const DecoderState& ds)
 {
-  os << fmt::format("DecoderState data={:08X}\n", ds.mData);
+  os << fmt::format("DecoderState {} data=0X{:08X} n10={:4d} csize={:4d} ctime={:4d} maskIndex={:4d} ",
+                    asString(ds.dsId()), ds.mData,
+                    ds.mNof10BitWords, ds.mClusterSize, ds.mClusterTime, ds.mMaskIndex);
+  os << fmt::format("header({})= ", ds.mHeaderParts.size());
+  for (auto h : ds.mHeaderParts) {
+    os << fmt::format("{:4d} ", h);
+  }
+  os << fmt::format("samples({})= ", ds.mSamples.size());
+  for (auto s : ds.mSamples) {
+    os << fmt::format("{:4d} ", s);
+  }
+
+  if (ds.hasError()) {
+    os << " ERROR:" << ds.errorMessage();
+  }
   return os;
 }
 

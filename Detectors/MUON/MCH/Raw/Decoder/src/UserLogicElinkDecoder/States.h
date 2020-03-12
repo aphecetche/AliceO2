@@ -13,7 +13,6 @@
 
 #include <boost/msm/front/state_machine_def.hpp>
 #include <string>
-#include "Debug.h"
 #include "Events.h"
 
 namespace msm = boost::msm;

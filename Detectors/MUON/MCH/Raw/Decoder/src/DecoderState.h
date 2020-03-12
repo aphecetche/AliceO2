@@ -18,6 +18,7 @@
 #include "MCHRawElecMap/DsElecId.h"
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 
 namespace o2::mch::raw
 {
@@ -42,6 +43,9 @@ class DecoderState
   void setClusterTime(uint16_t value);
   void setData(uint64_t data);
 
+  bool hasError() const;
+  std::string errorMessage() const;
+
   DsElecId dsId() const;
 
   friend std::ostream& operator<<(std::ostream&, const DecoderState&);
@@ -62,6 +66,7 @@ class DecoderState
   std::vector<uint16_t> mHeaderParts;
   SampaHeader mSampaHeader;
   SampaChannelHandler mSampaChannelHandler;
+  std::optional<std::string> mErrorMessage{std::nullopt};
 };
 
 } // namespace o2::mch::raw
