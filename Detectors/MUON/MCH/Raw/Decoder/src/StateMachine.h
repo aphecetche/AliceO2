@@ -14,6 +14,8 @@
 #include "smlLog.h"
 #include "DecoderState.h"
 #include "MCHRawCommon/DataFormats.h"
+#include <boost/core/demangle.hpp>
+#include "Debug.h"
 
 namespace sml = boost::sml;
 using namespace sml;
@@ -25,11 +27,16 @@ namespace o2::mch::raw
 /// Events
 
 struct RecoverableError {
+  RecoverableError(const std::string& msg = "") : errorMessage{msg} {}
+  std::string errorMessage;
 };
 
 struct NewData {
-  NewData(uint64_t d50) : data{d50} {}
+  NewData(uint64_t d50 = 0) : data{d50} {}
   uint64_t data;
+};
+
+struct Never {
 };
 
 /// Actions
@@ -53,6 +60,30 @@ const auto reset = [](DecoderState& ds) {
 
 const auto setData = [](DecoderState& ds, auto event) {
   ds.setData(event.data);
+};
+
+template <typename CHARGESUM>
+struct readSample;
+
+template <>
+struct readSample<ChargeSumMode> {
+  void operator()(DecoderState& ds)
+  {
+    ds.decrementClusterSize();
+    ds.decrementClusterSize();
+    auto b = ds.pop10();
+    auto a = ds.pop10();
+    ds.addChargeSum(b, a);
+  }
+};
+
+template <>
+struct readSample<SampleMode> {
+  void operator()(DecoderState& ds)
+  {
+    ds.decrementClusterSize();
+    ds.addSample(ds.pop10());
+  }
 };
 
 template <typename CHARGESUM>
@@ -81,6 +112,23 @@ const auto readTime = [](DecoderState& ds) {
   ds.setClusterTime(value);
 };
 
+struct testAction {
+  template <typename TEvent, typename TSM, typename TDeps, typename TSubs>
+  void operator()(const TEvent& event, TSM& sm, TDeps& deps, TSubs& subs)
+  {
+    std::cout << "event=" << boost::core::demangle(typeid(event).name()) << "\n";
+    std::cout << "sm=" << boost::core::demangle(typeid(sm).name()) << "\n";
+    std::cout << "deps=" << boost::core::demangle(typeid(deps).name()) << "\n";
+    const auto& ds = sml::aux::get<o2::mch::raw::DecoderState&>(deps);
+    std::cout << "ds=" << boost::core::demangle(typeid(ds).name()) << "\n";
+    std::cout << "subs=" << boost::core::demangle(typeid(subs).name()) << "\n";
+    if (ds.hasError()) {
+      std::cout << "HAS ERROR\n";
+    }
+    exit(1);
+  }
+};
+
 /// Guards
 
 const auto isSync = [](auto event) {
@@ -104,6 +152,10 @@ const auto headerIsComplete = [](const DecoderState& ds) {
   return ds.headerIsComplete();
 };
 
+const auto hasError = [](const DecoderState& ds) {
+  return ds.hasError();
+};
+
 template <typename CHARGESUM>
 struct StateMachine {
 
@@ -117,7 +169,6 @@ struct StateMachine {
       auto WaitingSize = state<class WaitingSize>;
       auto WaitingTime = state<class WaitingTime>;
       auto WaitingSample = state<class WaitingSample>;
-
       return make_transition_table(
         // clang-format off
       * WaitingSync + event<NewData> [ isSync ] / reset = WaitingHeader,
@@ -131,12 +182,13 @@ struct StateMachine {
       WaitingSize [ moreDataAvailable and moreWordsToRead ] / readSize<CHARGESUM>{} = WaitingTime,
       //-----------------------------------------------------------------------------------------
       WaitingTime + event<NewData> [ moreWordsToRead and not moreDataAvailable ] / setData = WaitingTime,
-      WaitingTime [ moreSampleToRead and moreDataAvailable ] / readTime = WaitingSample
+      WaitingTime [ moreSampleToRead and moreDataAvailable ] / readTime = WaitingSample,
       //-----------------------------------------------------------------------------------------
-//   Row< WaitingSample , NewData    , WaitingSample     , setData               , moreSampleToRead                               >,
-//   Row< WaitingSample , none       , WaitingHeader     , none                  , Not_<moreSampleToRead>                         >,
-//   Row< WaitingSample , none       , WaitingSample     , readSample<CHARGESUM> , And_<moreDataAvailable,moreSampleToRead>       >,
-//   Row< WaitingSample , none       , WaitingSize       , none                  , And_<moreWordsToRead,Not_<moreSampleToRead>>   >
+      WaitingSample + event<NewData> [ moreSampleToRead ] / setData = WaitingSample,
+      WaitingSample [ not moreSampleToRead ] = WaitingHeader,
+      WaitingSample [ moreDataAvailable and moreSampleToRead ] / readSample<CHARGESUM>{} =  WaitingSample,
+      WaitingSample [ moreWordsToRead and not moreSampleToRead ] = WaitingSize
+      //-----------------------------------------------------------------------------------------
       );
       // clang-format on
     }
@@ -146,8 +198,8 @@ struct StateMachine {
   {
     return make_transition_table(
       // clang-format off
-                * state<Normal<CHARGESUM>> + event<RecoverableError> / show = "Errored"_s,
-                "Errored"_s + event<NewData> = state<Normal<CHARGESUM>>
+                * state<Normal<CHARGESUM>> + event<RecoverableError> = "Errored"_s,
+                "Errored"_s + event<NewData> / testAction{} = state<Normal<CHARGESUM>>
       // clang-format on
     );
   }
