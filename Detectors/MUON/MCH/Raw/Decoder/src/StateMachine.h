@@ -131,6 +131,18 @@ struct testAction {
 
 /// Guards
 
+// struct isSync {
+//   template <typename TEvent, typename TSM, typename TDeps, typename TSubs>
+//   bool operator()(const TEvent& event, TSM& sm, TDeps& deps, TSubs& subs)
+//   // template <typename TEvent>
+//   // bool operator()(TEvent& event)
+//   {
+//     constexpr uint64_t sampaSyncWord{0x1555540f00113};
+//     return event.data == sampaSyncWord;
+//   }
+// };
+//
+
 const auto isSync = [](auto event) {
   constexpr uint64_t sampaSyncWord{0x1555540f00113};
   return event.data == sampaSyncWord;
@@ -150,10 +162,6 @@ const auto moreSampleToRead = [](const DecoderState& ds) {
 
 const auto headerIsComplete = [](const DecoderState& ds) {
   return ds.headerIsComplete();
-};
-
-const auto hasError = [](const DecoderState& ds) {
-  return ds.hasError();
 };
 
 template <typename CHARGESUM>
@@ -185,7 +193,7 @@ struct StateMachine {
       WaitingTime [ moreSampleToRead and moreDataAvailable ] / readTime = WaitingSample,
       //-----------------------------------------------------------------------------------------
       WaitingSample + event<NewData> [ moreSampleToRead ] / setData = WaitingSample,
-      WaitingSample [ not moreSampleToRead ] = WaitingHeader,
+      WaitingSample [ not moreSampleToRead and not moreWordsToRead ] = WaitingHeader,
       WaitingSample [ moreDataAvailable and moreSampleToRead ] / readSample<CHARGESUM>{} =  WaitingSample,
       WaitingSample [ moreWordsToRead and not moreSampleToRead ] = WaitingSize
       //-----------------------------------------------------------------------------------------

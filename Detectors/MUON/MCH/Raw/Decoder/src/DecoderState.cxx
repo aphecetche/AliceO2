@@ -51,19 +51,18 @@ void DecoderState::setClusterSize(uint16_t value)
   mClusterSize = value;
   int checkSize = mClusterSize + 2 - mSampaHeader.nof10BitWords();
   mErrorMessage = std::nullopt;
-  if (checkSize) {
-    if (checkSize < 0) {
-      mErrorMessage = "cluster size smaller than nof10BitWords";
-    } else if (checkSize > 0) {
-      mErrorMessage = "cluster size bigger than nof10BitWords !!!";
-    }
+  if (mClusterSize == 0) {
+    mErrorMessage = "cluster size is zero";
+  }
+  if (checkSize > 0) {
+    mErrorMessage = "cluster size bigger than nof10BitWords";
   }
 #ifdef ULDEBUG
   debugHeader() << " -> size=" << mClusterSize << " maskIndex=" << mMaskIndex
                 << " nof10BitWords=" << mSampaHeader.nof10BitWords()
                 << " " << (hasError() ? "ERROR:" : "") << errorMessage() << "\n";
 #endif
-}
+} // namespace o2::mch::raw
 
 void DecoderState::setClusterTime(uint16_t value)
 {
