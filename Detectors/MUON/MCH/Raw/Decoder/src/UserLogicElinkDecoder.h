@@ -16,6 +16,8 @@
 #include "StateMachine.h"
 #include "Debug.h"
 
+//#define SMLDEBUG
+
 #ifdef SMLDEBUG
 #include "StateMachineLogger.h"
 #endif

@@ -29,6 +29,9 @@
 
 using namespace o2::mch::raw;
 
+using uint10_t = uint16_t;
+using uint50_t = uint64_t;
+
 SampaChannelHandler handlePacket(std::string& result)
 {
   return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
@@ -42,24 +45,6 @@ SampaChannelHandler handlePacket(std::string& result)
     }
     result += "\n";
   };
-}
-
-BOOST_AUTO_TEST_SUITE(o2_mch_raw)
-
-BOOST_AUTO_TEST_SUITE(userlogicdsdecoder)
-
-uint64_t build64(uint16_t a10, uint16_t b10 = 0, uint16_t c10 = 0, uint16_t d10 = 0, uint16_t e10 = 0)
-{
-  impl::assertIsInRange("a10", a10, 0, 1023);
-  impl::assertIsInRange("b10", a10, 0, 1023);
-  impl::assertIsInRange("c10", a10, 0, 1023);
-  impl::assertIsInRange("d10", a10, 0, 1023);
-  impl::assertIsInRange("e10", a10, 0, 1023);
-  return (static_cast<uint64_t>(a10) << 40) |
-         (static_cast<uint64_t>(b10) << 30) |
-         (static_cast<uint64_t>(c10) << 20) |
-         (static_cast<uint64_t>(d10) << 10) |
-         (static_cast<uint64_t>(e10));
 }
 
 SampaHeader createHeader(std::vector<SampaCluster> clusters)
@@ -76,58 +61,78 @@ SampaHeader createHeader(std::vector<SampaCluster> clusters)
   return sh;
 }
 
-void append(uint64_t prefix, std::vector<uint64_t>& buffer, uint8_t& index, uint64_t& word, int data)
+uint64_t build64(uint16_t a10, uint16_t b10 = 0, uint16_t c10 = 0, uint16_t d10 = 0, uint16_t e10 = 0)
 {
-  word |= static_cast<uint64_t>(data) << (index * 10);
-  if (index == 0) {
-    buffer.emplace_back(prefix | word);
-    index = 4;
-    word = 0;
-  } else {
-    --index;
+  impl::assertIsInRange("a10", a10, 0, 1023);
+  impl::assertIsInRange("b10", a10, 0, 1023);
+  impl::assertIsInRange("c10", a10, 0, 1023);
+  impl::assertIsInRange("d10", a10, 0, 1023);
+  impl::assertIsInRange("e10", a10, 0, 1023);
+  return (static_cast<uint64_t>(a10) << 40) |
+         (static_cast<uint64_t>(b10) << 30) |
+         (static_cast<uint64_t>(c10) << 20) |
+         (static_cast<uint64_t>(d10) << 10) |
+         (static_cast<uint64_t>(e10));
+}
+
+std::vector<uint64_t> b10to64(std::vector<uint10_t> b10, uint16_t prefix14)
+{
+  uint64_t prefix = prefix14;
+  prefix <<= 50;
+  std::vector<uint64_t> b64;
+  while (b10.size() % 5) {
+    b10.emplace_back(0);
   }
+  for (auto i = 0; i < b10.size(); i += 5) {
+    //uint64_t v = build64(b10[i], b10[i + 1], b10[i + 2], b10[i + 3], b10[i + 4]);
+    uint64_t v = build64(b10[i + 4], b10[i + 3], b10[i + 2], b10[i + 1], b10[i + 0]);
+    b64.emplace_back(v | prefix);
+  }
+  return b64;
 }
 
 void bufferizeClusters(const std::vector<SampaCluster>& clusters,
-                       std::vector<uint64_t>& b64,
-                       const uint64_t prefix = 0)
+                       std::vector<uint10_t>& b10)
 {
-  uint64_t word{0};
-  uint8_t index{4};
   for (auto& c : clusters) {
     std::cout << "c=" << c << "\n";
-    append(prefix, b64, index, word, c.nofSamples());
-    append(prefix, b64, index, word, c.timestamp);
+    b10.emplace_back(c.nofSamples());
+    b10.emplace_back(c.timestamp);
     if (c.isClusterSum()) {
-      append(prefix, b64, index, word, c.chargeSum & 0x3FF);
-      append(prefix, b64, index, word, (c.chargeSum & 0xFFC00) >> 10);
+      b10.emplace_back(c.chargeSum & 0x3FF);
+      b10.emplace_back((c.chargeSum & 0xFFC00) >> 10);
     } else {
       for (auto& s : c.samples) {
-        append(prefix, b64, index, word, s);
+        b10.emplace_back(s);
       }
     }
   }
-  while (index != 4) {
-    append(prefix, b64, index, word, 0);
-  }
 }
 
-std::vector<uint64_t> createBuffer(const std::vector<SampaCluster>& clusters,
+void append(std::vector<uint10_t>& b10, uint50_t value)
+{
+  b10.emplace_back((value & 0x3FF));
+  b10.emplace_back((value & 0xFFC00) >> 10);
+  b10.emplace_back((value & 0x3FF00000) >> 20);
+  b10.emplace_back((value & 0xFFC0000000) >> 30);
+  b10.emplace_back((value & 0x3FF0000000000) >> 40);
+}
+
+std::vector<uint10_t> createBuffer(const std::vector<SampaCluster>& clusters,
                                    uint8_t chip,
                                    uint8_t ch,
-                                   uint64_t prefix,
                                    bool sync)
 {
   auto sh = createHeader(clusters);
   sh.chipAddress(chip);
   sh.channelAddress(ch);
-  std::vector<uint64_t> b64;
+  std::vector<uint10_t> b10;
   if (sync) {
-    b64.emplace_back(sampaSyncWord | prefix);
+    append(b10, sampaSyncWord);
   }
-  b64.emplace_back(sh.uint64() | prefix);
-  bufferizeClusters(clusters, b64, prefix);
-  return b64;
+  append(b10, sh.uint64());
+  bufferizeClusters(clusters, b10);
+  return b10;
 }
 
 template <typename CHARGESUM>
@@ -146,12 +151,11 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
                        const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   std::string results;
-  uint64_t prefix{22}; // 14-bits value.
+  uint16_t prefix{22}; // 14-bits value.
   // exact value not relevant as long as it is non-zero.
   // Idea being to populate bits 50-63 with some data to ensure
   // the decoder is only using the lower 50 bits to get the sync and
   // header values, for instance.
-  prefix <<= 50;
   bool sync{true};
   uint16_t dummySolarId{0};
   uint8_t dummyGroup{0};
@@ -160,14 +164,19 @@ std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
   uint8_t index = (chip - (ch > 32)) / 2;
   DsElecId dsId{dummySolarId, dummyGroup, index};
   UserLogicElinkDecoder<CHARGESUM> dec(dsId, handlePacket(results));
-  auto b64 = createBuffer(clustersFirstChannel, chip, ch, prefix, sync);
+  auto b10 = createBuffer(clustersFirstChannel, chip, ch, sync);
   if (clustersSecondChannel.size()) {
-    auto b64_2 = createBuffer(clustersSecondChannel, chip, ch / 2, prefix, !sync);
-    std::copy(b64_2.begin(), b64_2.end(), std::back_inserter(b64));
+    auto b10_2 = createBuffer(clustersSecondChannel, chip, ch / 2, !sync);
+    std::copy(b10_2.begin(), b10_2.end(), std::back_inserter(b10));
   }
+  auto b64 = b10to64(b10, prefix);
   decodeBuffer(dec, b64);
   return results;
 }
+
+BOOST_AUTO_TEST_SUITE(o2_mch_raw)
+
+BOOST_AUTO_TEST_SUITE(userlogicdsdecoder)
 
 BOOST_AUTO_TEST_CASE(SampleModeSimplest)
 {
