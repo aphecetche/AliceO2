@@ -29,6 +29,7 @@ template <typename CHARGESUM>
 class UserLogicElinkDecoder
 {
  public:
+  UserLogicElinkDecoder() = delete;
   UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
     : mDecoderState{dsId, sampaChannelHandler},
 #ifdef SMLDEBUG
