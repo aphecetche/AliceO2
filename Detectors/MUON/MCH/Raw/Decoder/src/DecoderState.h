@@ -65,7 +65,11 @@ class DecoderState
   std::vector<uint16_t> mSamples;
   std::vector<uint16_t> mHeaderParts;
   SampaHeader mSampaHeader;
+
+ public:
   SampaChannelHandler mSampaChannelHandler;
+
+ private:
   std::optional<std::string> mErrorMessage{std::nullopt};
 };
 

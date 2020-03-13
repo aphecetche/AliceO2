@@ -130,7 +130,9 @@ void DecoderState::addSample(uint16_t sample)
     debugHeader() << fmt::format(" calling channelHandler for {} ch {} = {}\n",
                                  asString(mDsId), channelNumber64(mSampaHeader), s.str());
 #endif
+    std::cout << "HERE!\n";
     mSampaChannelHandler(mDsId, channelNumber64(mSampaHeader), SampaCluster(mClusterTime, mSamples));
+    std::cout << "THERE!\n";
     mSamples.clear();
   }
 }
@@ -230,6 +232,7 @@ std::ostream& operator<<(std::ostream& os, const DecoderState& ds)
   for (auto s : ds.mSamples) {
     os << fmt::format("{:4d} ", s);
   }
+  os << " handler=" << (ds.mSampaChannelHandler ? "valid" : "empty") << " ";
 
   if (ds.hasError()) {
     os << " ERROR:" << ds.errorMessage();

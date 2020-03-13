@@ -26,8 +26,10 @@
 #include "DumpBuffer.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
+#include "MCHRawDecoder/Decoder.h"
 
 using namespace o2::mch::raw;
+using o2::header::RAWDataHeaderV4;
 
 using uint10_t = uint16_t;
 using uint50_t = uint64_t;
@@ -47,7 +49,7 @@ SampaChannelHandler handlePacket(std::string& result)
   };
 }
 
-SampaHeader createHeader(std::vector<SampaCluster> clusters)
+SampaHeader createHeader(const std::vector<SampaCluster>& clusters)
 {
   uint16_t n10{0};
   for (auto c : clusters) {
@@ -91,8 +93,7 @@ std::vector<uint64_t> b10to64(std::vector<uint10_t> b10, uint16_t prefix14)
   return b64;
 }
 
-void bufferizeClusters(const std::vector<SampaCluster>& clusters,
-                       std::vector<uint10_t>& b10)
+void bufferizeClusters(const std::vector<SampaCluster>& clusters, std::vector<uint10_t>& b10)
 {
   for (auto& c : clusters) {
     std::cout << "c=" << c << "\n";
@@ -118,10 +119,10 @@ void append(std::vector<uint10_t>& b10, uint50_t value)
   b10.emplace_back((value & 0x3FF0000000000) >> 40);
 }
 
-std::vector<uint10_t> createBuffer(const std::vector<SampaCluster>& clusters,
-                                   uint8_t chip,
-                                   uint8_t ch,
-                                   bool sync)
+std::vector<uint10_t> createBuffer10(const std::vector<SampaCluster>& clusters,
+                                     uint8_t chip,
+                                     uint8_t ch,
+                                     bool sync)
 {
   auto sh = createHeader(clusters);
   sh.chipAddress(chip);
@@ -146,32 +147,72 @@ void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint6
   }
 }
 
-template <typename CHARGESUM>
-std::string testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
-                       const std::vector<SampaCluster>& clustersSecondChannel = {})
+constexpr uint8_t chip = 5;
+constexpr uint8_t ch = 31;
+
+std::vector<uint10_t> createBuffer10(const std::vector<SampaCluster>& clustersFirstChannel,
+                                     const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
-  std::string results;
+  bool sync{true};
+  auto b10 = createBuffer10(clustersFirstChannel, chip, ch, sync);
+  if (clustersSecondChannel.size()) {
+    auto b10_2 = createBuffer10(clustersSecondChannel, chip, ch / 2, !sync);
+    std::copy(b10_2.begin(), b10_2.end(), std::back_inserter(b10));
+  }
+  return b10;
+}
+
+template <typename CHARGESUM>
+std::string testPayloadDecode(const std::vector<SampaCluster>& clustersFirstChannel,
+                              const std::vector<SampaCluster>& clustersSecondChannel = {})
+{
+  auto b10 = createBuffer10(clustersFirstChannel, clustersSecondChannel);
   uint16_t prefix{22}; // 14-bits value.
   // exact value not relevant as long as it is non-zero.
   // Idea being to populate bits 50-63 with some data to ensure
   // the decoder is only using the lower 50 bits to get the sync and
   // header values, for instance.
-  bool sync{true};
+  auto b64 = b10to64(b10, prefix);
+
+  std::string results;
+
   uint16_t dummySolarId{0};
   uint8_t dummyGroup{0};
-  uint8_t chip = 5;
-  uint8_t ch = 31;
   uint8_t index = (chip - (ch > 32)) / 2;
   DsElecId dsId{dummySolarId, dummyGroup, index};
   UserLogicElinkDecoder<CHARGESUM> dec(dsId, handlePacket(results));
-  auto b10 = createBuffer(clustersFirstChannel, chip, ch, sync);
-  if (clustersSecondChannel.size()) {
-    auto b10_2 = createBuffer(clustersSecondChannel, chip, ch / 2, !sync);
-    std::copy(b10_2.begin(), b10_2.end(), std::back_inserter(b10));
-  }
-  auto b64 = b10to64(b10, prefix);
   decodeBuffer(dec, b64);
   return results;
+}
+
+template <typename CHARGESUM>
+void testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
+                const std::vector<SampaCluster>& clustersSecondChannel = {})
+{
+  auto b10 = createBuffer10(clustersFirstChannel, clustersSecondChannel);
+  uint16_t prefix{22};
+  auto b64 = b10to64(b10, prefix);
+
+  std::vector<uint8_t> b8;
+  impl::copyBuffer(b64, b8);
+
+  std::vector<uint8_t> buffer;
+  auto rdh = createRDH<RAWDataHeaderV4>(0, 0, 0, 12, 34, b8.size());
+  appendRDH(buffer, rdh);
+  buffer.insert(buffer.end(), b8.begin(), b8.end());
+
+  const auto handleRDH = [](const RAWDataHeaderV4& rdh) -> std::optional<RAWDataHeaderV4> {
+    return rdh;
+  };
+
+  const auto handlePacket = [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+    std::cout << fmt::format("testDecode:{}-{}\n", asString(dsId), asString(sc));
+  };
+
+  auto decoder = createDecoder<UserLogicFormat, CHARGESUM, RAWDataHeaderV4>(handleRDH,
+                                                                            handlePacket);
+
+  decoder(buffer);
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -183,8 +224,17 @@ BOOST_AUTO_TEST_CASE(SampleModeSimplest)
   // only one channel with one very small cluster
   // fitting within one 64-bits word
   SampaCluster cl(345, {123, 456});
-  auto r = testDecode<SampleMode>({cl});
+  auto r = testPayloadDecode<SampleMode>({cl});
   BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123-456\n");
+}
+
+BOOST_AUTO_TEST_CASE(DecodeSampleModeSimplest)
+{
+  // only one channel with one very small cluster
+  // fitting within one 64-bits word
+  SampaCluster cl(345, {123, 456});
+  testDecode<SampleMode>({cl});
+  BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_CASE(SampleModeSimple)
@@ -192,7 +242,7 @@ BOOST_AUTO_TEST_CASE(SampleModeSimple)
   // only one channel with one cluster, but the cluster
   // spans 2 64-bits words.
   SampaCluster cl(345, {123, 456, 789, 901, 902});
-  auto r = testDecode<SampleMode>({cl});
+  auto r = testPayloadDecode<SampleMode>({cl});
   BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123-456-789-901-902\n");
 }
 
@@ -201,7 +251,7 @@ BOOST_AUTO_TEST_CASE(SampleModeTwoChannels)
   // 2 channels with one cluster
   SampaCluster cl(345, {123, 456, 789, 901, 902});
   SampaCluster cl2(346, {1001, 1002, 1003, 1004, 1005, 1006, 1007});
-  auto r = testDecode<SampleMode>({cl}, {cl2});
+  auto r = testPayloadDecode<SampleMode>({cl}, {cl2});
   BOOST_CHECK_EQUAL(r,
                     "S0-J0-DS2-ch-63-ts-345-q-123-456-789-901-902\n"
                     "S0-J0-DS2-ch-47-ts-346-q-1001-1002-1003-1004-1005-1006-1007\n");
@@ -212,7 +262,7 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
   // only one channel with one cluster
   // (hence fitting within one 64 bits word)
   SampaCluster cl(345, 123456);
-  auto r = testDecode<ChargeSumMode>({cl});
+  auto r = testPayloadDecode<ChargeSumMode>({cl});
   BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123456\n");
 }
 
@@ -222,7 +272,7 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeSimple)
   // (hence spanning 2 64-bits words)
   SampaCluster cl1(345, 123456);
   SampaCluster cl2(346, 789012);
-  auto r = testDecode<ChargeSumMode>({cl1, cl2});
+  auto r = testPayloadDecode<ChargeSumMode>({cl1, cl2});
   BOOST_CHECK_EQUAL(r,
                     "S0-J0-DS2-ch-63-ts-345-q-123456\n"
                     "S0-J0-DS2-ch-63-ts-346-q-789012\n");
@@ -235,12 +285,33 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
   SampaCluster cl2(346, 789012);
   SampaCluster cl3(347, 1357);
   SampaCluster cl4(348, 791);
-  auto r = testDecode<ChargeSumMode>({cl1, cl2}, {cl3, cl4});
+  auto r = testPayloadDecode<ChargeSumMode>({cl1, cl2}, {cl3, cl4});
   BOOST_CHECK_EQUAL(r,
                     "S0-J0-DS2-ch-63-ts-345-q-123456\n"
                     "S0-J0-DS2-ch-63-ts-346-q-789012\n"
                     "S0-J0-DS2-ch-47-ts-347-q-1357\n"
                     "S0-J0-DS2-ch-47-ts-348-q-791\n");
+}
+
+BOOST_AUTO_TEST_CASE(TestRecoverableError)
+{
+  const auto channelHandler = [](o2::mch::raw::DsElecId dsId,
+                                 uint8_t channel,
+                                 o2::mch::raw::SampaCluster) {
+    std::cout << "channelHandler called !\n";
+  };
+
+  constexpr uint64_t sampaSyncWord{0x1555540f00113};
+
+  o2::mch::raw::UserLogicElinkDecoder<SampleMode> ds{DsElecId{0, 0, 2}, channelHandler};
+
+  ds.append(sampaSyncWord);
+  ds.append(0x1722e9f00327d);
+  ds.append(1);
+  ds.append(2);
+
+  ds.status();
+  BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

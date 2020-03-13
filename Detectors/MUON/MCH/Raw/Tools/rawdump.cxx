@@ -26,9 +26,8 @@
 #include <rapidjson/writer.h>
 #include <optional>
 #include <cstdint>
-
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <map>
+#include <string>
 
 namespace po = boost::program_options;
 
@@ -77,11 +76,12 @@ class DumpOptions
   std::optional<uint16_t> mCruId{std::nullopt};
 };
 
-struct Stat {
+struct ChannelStat {
   double mean{0};
   double rms{0};
   double q{0};
   int n{0};
+
   void incr(int v)
   {
     n++;
@@ -92,13 +92,13 @@ struct Stat {
   }
 };
 
-std::ostream& operator<<(std::ostream& os, const Stat& s)
+std::ostream& operator<<(std::ostream& os, const ChannelStat& s)
 {
   os << fmt::format("MEAN {:7.3f} RMS {:7.3f} NSAMPLES {:5d} ", s.mean, s.rms, s.n);
   return os;
 }
 template <typename FORMAT, typename CHARGESUM, typename RDH>
-std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
+std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
 {
   std::ifstream in(input.c_str(), std::ios::binary);
   if (!in.good()) {
@@ -114,26 +114,28 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
 
   std::map<std::string, int> uniqueDS;
   std::map<std::string, int> uniqueChannel;
-  std::map<std::string, Stat> statChannel;
+  std::map<std::string, ChannelStat> statChannel;
 
-  memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&ndigits, &uniqueDS, &uniqueChannel, &statChannel](DsElecId dsId,
-                                                                            uint8_t channel, o2::mch::raw::SampaCluster sc) {
+  //memset(&buffer[0], 0, buffer.size());
+  auto channelHandler = [&](DsElecId dsId,
+                            uint8_t channel, o2::mch::raw::SampaCluster sc) {
     auto s = asString(dsId);
     uniqueDS[s]++;
     auto ch = fmt::format("{}-CH{}", s, channel);
     uniqueChannel[ch]++;
-    auto& stat = statChannel[ch];
-    for (auto d = 0; d < sc.nofSamples(); d++) {
-      stat.incr(sc.samples[d]);
-    }
+    std::cout << "ch=" << ch << std::endl;
+    //  auto chanstat = statChannel.find(ch);
+    // auto stat = statChannel[ch];
+    // for (auto d = 0; d < sc.nofSamples(); d++) {
+    //   stat.incr(sc.samples[d]);
+    // }
     ++ndigits;
   };
 
   auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
 
   size_t nrdhs{0};
-  auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
+  const auto rdhHandler = [&](const RDH& rdh) -> std::optional<RDH> {
     nrdhs++;
     if (opt.showRDHs()) {
       std::cout << nrdhs << "--" << rdh << "\n";
@@ -179,7 +181,7 @@ std::map<std::string, Stat> rawdump(std::string input, DumpOptions opt)
   return statChannel;
 }
 
-void output(const std::map<std::string, Stat>& channels)
+void output(const std::map<std::string, ChannelStat>& channels)
 {
   rapidjson::StringBuffer buffer;
   rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -250,7 +252,7 @@ int main(int argc, char* argv[])
   }
 
   DumpOptions opt(deId, nrdhs, showRDHs, jsonOutput);
-  std::map<std::string, Stat> statChannel;
+  std::map<std::string, ChannelStat> statChannel;
 
   if (vm.count("cru")) {
     opt.cruId(vm["cru"].as<uint16_t>());

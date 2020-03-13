@@ -12,6 +12,7 @@
 #include "MCHRawCommon/DataFormats.h"
 #include "Assertions.h"
 #include <fmt/format.h>
+#include <sstream>
 
 namespace o2
 {
@@ -80,6 +81,13 @@ std::ostream& operator<<(std::ostream& os, const SampaCluster& sc)
     os << "]";
   }
   return os;
+}
+
+std::string asString(const SampaCluster& sc)
+{
+  std::stringstream s;
+  s << sc;
+  return s.str();
 }
 
 } // namespace raw
