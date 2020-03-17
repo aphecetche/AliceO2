@@ -77,16 +77,27 @@ uint64_t build64(uint16_t a10, uint16_t b10 = 0, uint16_t c10 = 0, uint16_t d10 
          (static_cast<uint64_t>(e10));
 }
 
+void dumpb10(const std::vector<uint10_t>& b10)
+{
+  for (auto i = 0; i < b10.size(); i++) {
+    if (i % 5 == 0) {
+      std::cout << "\nB10";
+    }
+    std::cout << fmt::format("{:4d} ", b10[i]);
+  }
+  std::cout << "\n";
+}
+
 std::vector<uint64_t> b10to64(std::vector<uint10_t> b10, uint16_t prefix14)
 {
   uint64_t prefix = prefix14;
   prefix <<= 50;
   std::vector<uint64_t> b64;
+
   while (b10.size() % 5) {
     b10.emplace_back(0);
   }
   for (auto i = 0; i < b10.size(); i += 5) {
-    //uint64_t v = build64(b10[i], b10[i + 1], b10[i + 2], b10[i + 3], b10[i + 4]);
     uint64_t v = build64(b10[i + 4], b10[i + 3], b10[i + 2], b10[i + 1], b10[i + 0]);
     b64.emplace_back(v | prefix);
   }
@@ -156,8 +167,10 @@ std::vector<uint10_t> createBuffer10(const std::vector<SampaCluster>& clustersFi
   bool sync{true};
   auto b10 = createBuffer10(clustersFirstChannel, chip, ch, sync);
   if (clustersSecondChannel.size()) {
-    auto b10_2 = createBuffer10(clustersSecondChannel, chip, ch / 2, !sync);
-    std::copy(b10_2.begin(), b10_2.end(), std::back_inserter(b10));
+    auto chip2 = chip;
+    auto ch2 = ch / 2;
+    auto b10_2 = createBuffer10(clustersSecondChannel, chip2, ch2, !sync);
+    b10.insert(b10.end(), b10_2.begin(), b10_2.end());
   }
   return b10;
 }
@@ -293,26 +306,26 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
                     "S0-J0-DS2-ch-47-ts-348-q-791\n");
 }
 
-BOOST_AUTO_TEST_CASE(TestRecoverableError)
-{
-  const auto channelHandler = [](o2::mch::raw::DsElecId dsId,
-                                 uint8_t channel,
-                                 o2::mch::raw::SampaCluster) {
-    std::cout << "channelHandler called !\n";
-  };
-
-  constexpr uint64_t sampaSyncWord{0x1555540f00113};
-
-  o2::mch::raw::UserLogicElinkDecoder<SampleMode> ds{DsElecId{0, 0, 2}, channelHandler};
-
-  ds.append(sampaSyncWord);
-  ds.append(0x1722e9f00327d);
-  ds.append(1);
-  ds.append(2);
-
-  ds.status();
-  BOOST_CHECK(true);
-}
+// BOOST_AUTO_TEST_CASE(TestRecoverableError)
+// {
+//   const auto channelHandler = [](o2::mch::raw::DsElecId dsId,
+//                                  uint8_t channel,
+//                                  o2::mch::raw::SampaCluster) {
+//     std::cout << "channelHandler called !\n";
+//   };
+//
+//   constexpr uint64_t sampaSyncWord{0x1555540f00113};
+//
+//   o2::mch::raw::UserLogicElinkDecoder<SampleMode> ds{DsElecId{0, 0, 2}, channelHandler};
+//
+//   ds.append(sampaSyncWord);
+//   ds.append(0x1722e9f00327d);
+//   ds.append(1);
+//   ds.append(2);
+//
+//   ds.status();
+//   BOOST_CHECK(true);
+// }
 
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

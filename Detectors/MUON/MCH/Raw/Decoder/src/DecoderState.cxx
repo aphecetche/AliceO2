@@ -11,6 +11,7 @@
 #include "DecoderState.h"
 #include <sstream>
 #include "Debug.h"
+#include "MCHRawCommon/DataFormats.h"
 
 namespace o2::mch::raw
 {
@@ -18,6 +19,10 @@ namespace o2::mch::raw
 DecoderState::DecoderState(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
   : mDsId{dsId}, mSampaChannelHandler{sampaChannelHandler}
 {
+  if (!mSampaChannelHandler) {
+    throw std::invalid_argument("sampaChannelHandler is empty");
+  }
+  std::cout << this << " DecoderState ctor " << (*this) << std::endl;
 }
 
 DsElecId DecoderState::dsId() const
@@ -88,22 +93,20 @@ void DecoderState::setData(uint64_t data)
 {
   mData = data;
   mMaskIndex = 0;
+  mToto++;
 #ifdef ULDEBUG
   debugHeader() << fmt::format(">>>>> setData {:08X} maskIndex {} 10bits=", mData, mMaskIndex);
   for (int i = 0; i < mMasks.size(); i++) {
     std::cout << fmt::format("{:2d} ", data10(mData, i));
   }
-  std::cout << "\n";
+  std::cout << "\n"
+            << (*this) << "\n";
 #endif
 }
 
 uint16_t DecoderState::data10(uint64_t value, size_t index) const
 {
-  if (index < 0 || index >= mMasks.size()) {
-    std::cout << "-- ULDEBUG -- " << fmt::format("index {} is out of range\n", index);
-    return 0;
-  }
-  uint64_t m = mMasks[index];
+  uint64_t m = mMasks.at(index);
   return static_cast<uint16_t>((value & m) >> (index * 10) & 0x3FF);
 }
 
@@ -115,7 +118,25 @@ uint16_t DecoderState::pop10()
   return rv;
 }
 
-void DecoderState::addSample(uint16_t sample)
+void DecoderState::operator()(DsElecId dsId, uint8_t channel, SampaCluster sc) const
+{
+  mSampaChannelHandler(dsId, channel, sc);
+}
+
+void DecoderState::sendCluster(const SampaCluster& sc) const
+{
+#ifdef ULDEBUG
+  std::stringstream s;
+  s << sc;
+  debugHeader() << fmt::format(" calling channelHandler for {} ch {} = {}\n",
+                               asString(mDsId), channelNumber64(mSampaHeader), s.str());
+  debugHeader() << (*this) << "\n";
+#endif
+  mSampaChannelHandler(mDsId, channelNumber64(mSampaHeader), sc);
+}
+
+template <>
+void DecoderState::addSample<SampleMode>(uint16_t sample)
 {
 #ifdef ULDEBUG
   debugHeader() << "sample = " << sample << "\n";
@@ -123,16 +144,27 @@ void DecoderState::addSample(uint16_t sample)
   mSamples.emplace_back(sample);
 
   if (mClusterSize == 0) {
-    // a mCluster is ready, send it
+    SampaCluster sc(mClusterTime, mSamples);
+    sendCluster(sc);
+    mSamples.clear();
+  }
+}
+
+template <>
+void DecoderState::addSample<ChargeSumMode>(uint16_t sample)
+{
 #ifdef ULDEBUG
-    std::stringstream s;
-    s << SampaCluster(mClusterTime, mSamples);
-    debugHeader() << fmt::format(" calling channelHandler for {} ch {} = {}\n",
-                                 asString(mDsId), channelNumber64(mSampaHeader), s.str());
+  debugHeader() << "charge sum part = " << sample << "\n";
 #endif
-    std::cout << "HERE!\n";
-    mSampaChannelHandler(mDsId, channelNumber64(mSampaHeader), SampaCluster(mClusterTime, mSamples));
-    std::cout << "THERE!\n";
+  mSamples.emplace_back(sample);
+
+  if (mClusterSize == 0) {
+    if (mSamples.size() != 2) {
+      throw std::invalid_argument(fmt::format("expected sample size to be 2 but it is {}", mSamples.size()));
+    }
+    uint32_t q = (((static_cast<uint32_t>(mSamples[1]) & 0x3FF) << 10) | (static_cast<uint32_t>(mSamples[0]) & 0x3FF));
+    SampaCluster sc(mClusterTime, q);
+    sendCluster(sc);
     mSamples.clear();
   }
 }
@@ -170,18 +202,19 @@ void DecoderState::addHeaderPart(uint16_t a)
 #endif
 }
 
-void DecoderState::addChargeSum(uint16_t b, uint16_t a)
-{
-  // a mCluster is ready, send it
-  uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
-#ifdef ULDEBUG
-  debugHeader()
-    << "chargeSum = " << q << "\n";
-#endif
-  mSampaChannelHandler(mDsId,
-                       channelNumber64(mSampaHeader),
-                       SampaCluster(mClusterTime, q));
-}
+// void DecoderState::addChargeSum(uint16_t b, uint16_t a)
+// {
+//   // a mCluster is ready, send it
+//   uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
+// #ifdef ULDEBUG
+//   debugHeader()
+//     << "chargeSum = " << q << "\n";
+// #endif
+//   mSampaChannelHandler(mDsId,
+//                        channelNumber64(mSampaHeader),
+//                        SampaCluster(mClusterTime, q));
+// }
+//
 
 bool DecoderState::moreDataAvailable() const
 {
@@ -221,9 +254,7 @@ bool DecoderState::moreWordsToRead() const
 
 std::ostream& operator<<(std::ostream& os, const DecoderState& ds)
 {
-  os << fmt::format("DecoderState {} data=0X{:08X} n10={:4d} csize={:4d} ctime={:4d} maskIndex={:4d} ",
-                    asString(ds.dsId()), ds.mData,
-                    ds.mNof10BitWords, ds.mClusterSize, ds.mClusterTime, ds.mMaskIndex);
+  os << &ds << fmt::format(" DecoderState {} data=0X{:08X} n10={:4d} csize={:4d} ctime={:4d} maskIndex={:4d} ", asString(ds.dsId()), ds.mData, ds.mNof10BitWords, ds.mClusterSize, ds.mClusterTime, ds.mMaskIndex);
   os << fmt::format("header({})= ", ds.mHeaderParts.size());
   for (auto h : ds.mHeaderParts) {
     os << fmt::format("{:4d} ", h);
@@ -237,6 +268,7 @@ std::ostream& operator<<(std::ostream& os, const DecoderState& ds)
   if (ds.hasError()) {
     os << " ERROR:" << ds.errorMessage();
   }
+  os << " toto=" << ds.mToto;
   return os;
 }
 

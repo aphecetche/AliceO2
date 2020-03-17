@@ -97,6 +97,31 @@ std::ostream& operator<<(std::ostream& os, const ChannelStat& s)
   os << fmt::format("MEAN {:7.3f} RMS {:7.3f} NSAMPLES {:5d} ", s.mean, s.rms, s.n);
   return os;
 }
+
+struct DumperChannelHandler {
+
+  size_t ndigits{0};
+
+  std::map<std::string, int> uniqueDS{};
+  std::map<std::string, int> uniqueChannel{};
+  std::map<std::string, ChannelStat> statChannel{};
+
+  void operator()(DsElecId dsId, uint8_t channel, o2::mch::raw::SampaCluster sc)
+  {
+    auto s = asString(dsId);
+    uniqueDS[s]++;
+    auto ch = fmt::format("{}-CH{}", s, channel);
+    uniqueChannel[ch]++;
+    std::cout << "ch=" << ch << std::endl;
+    auto chanstat = statChannel.find(ch);
+    auto stat = statChannel[ch];
+    for (auto d = 0; d < sc.nofSamples(); d++) {
+      stat.incr(sc.samples[d]);
+    }
+    ++ndigits;
+  }
+};
+
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
 {
@@ -110,27 +135,7 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
   std::array<uint8_t, pageSize> buffer;
   gsl::span<uint8_t> sbuffer(buffer);
 
-  size_t ndigits{0};
-
-  std::map<std::string, int> uniqueDS;
-  std::map<std::string, int> uniqueChannel;
-  std::map<std::string, ChannelStat> statChannel;
-
-  //memset(&buffer[0], 0, buffer.size());
-  auto channelHandler = [&](DsElecId dsId,
-                            uint8_t channel, o2::mch::raw::SampaCluster sc) {
-    auto s = asString(dsId);
-    uniqueDS[s]++;
-    auto ch = fmt::format("{}-CH{}", s, channel);
-    uniqueChannel[ch]++;
-    std::cout << "ch=" << ch << std::endl;
-    //  auto chanstat = statChannel.find(ch);
-    // auto stat = statChannel[ch];
-    // for (auto d = 0; d < sc.nofSamples(); d++) {
-    //   stat.incr(sc.samples[d]);
-    // }
-    ++ndigits;
-  };
+  memset(&buffer[0], 0, buffer.size());
 
   auto cruLink2solar = o2::mch::raw::createCruLink2SolarMapper<ElectronicMapperGenerated>();
 
@@ -160,6 +165,8 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
     return r;
   };
 
+  DumperChannelHandler channelHandler;
+
   o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
 
   size_t npages{0};
@@ -173,12 +180,12 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
   }
 
   if (!opt.json()) {
-    std::cout << ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
-    std::cout << "#unique DS=" << uniqueDS.size() << " #unique Channel=" << uniqueChannel.size() << "\n";
+    std::cout << channelHandler.ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
+    std::cout << "#unique DS=" << channelHandler.uniqueDS.size() << " #unique Channel=" << channelHandler.uniqueChannel.size() << "\n";
     std::cout << decStat << "\n";
     std::cout << fmt::format("byte usage {:7.2f} %\n", 100.0 * decStat.nofBytesUsed / bytesRead);
   }
-  return statChannel;
+  return channelHandler.statChannel;
 }
 
 void output(const std::map<std::string, ChannelStat>& channels)
