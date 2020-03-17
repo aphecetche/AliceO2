@@ -22,7 +22,6 @@ DecoderState::DecoderState(DsElecId dsId, SampaChannelHandler sampaChannelHandle
   if (!mSampaChannelHandler) {
     throw std::invalid_argument("sampaChannelHandler is empty");
   }
-  std::cout << this << " DecoderState ctor " << (*this) << std::endl;
 }
 
 DsElecId DecoderState::dsId() const
@@ -54,11 +53,11 @@ void DecoderState::decrementClusterSize()
 void DecoderState::setClusterSize(uint16_t value)
 {
   mClusterSize = value;
-  int checkSize = mClusterSize + 2 - mSampaHeader.nof10BitWords();
   mErrorMessage = std::nullopt;
   if (mClusterSize == 0) {
     mErrorMessage = "cluster size is zero";
   }
+  int checkSize = mClusterSize + 2 - mSampaHeader.nof10BitWords();
   if (checkSize > 0) {
     mErrorMessage = "cluster size bigger than nof10BitWords";
   }
@@ -93,14 +92,12 @@ void DecoderState::setData(uint64_t data)
 {
   mData = data;
   mMaskIndex = 0;
-  mToto++;
 #ifdef ULDEBUG
   debugHeader() << fmt::format(">>>>> setData {:08X} maskIndex {} 10bits=", mData, mMaskIndex);
   for (int i = 0; i < mMasks.size(); i++) {
     std::cout << fmt::format("{:2d} ", data10(mData, i));
   }
-  std::cout << "\n"
-            << (*this) << "\n";
+  std::cout << "\n";
 #endif
 }
 
@@ -202,20 +199,6 @@ void DecoderState::addHeaderPart(uint16_t a)
 #endif
 }
 
-// void DecoderState::addChargeSum(uint16_t b, uint16_t a)
-// {
-//   // a mCluster is ready, send it
-//   uint32_t q = (((static_cast<uint32_t>(a) & 0x3FF) << 10) | (static_cast<uint32_t>(b) & 0x3FF));
-// #ifdef ULDEBUG
-//   debugHeader()
-//     << "chargeSum = " << q << "\n";
-// #endif
-//   mSampaChannelHandler(mDsId,
-//                        channelNumber64(mSampaHeader),
-//                        SampaCluster(mClusterTime, q));
-// }
-//
-
 bool DecoderState::moreDataAvailable() const
 {
   bool rv = mMaskIndex < mMasks.size();
@@ -268,7 +251,6 @@ std::ostream& operator<<(std::ostream& os, const DecoderState& ds)
   if (ds.hasError()) {
     os << " ERROR:" << ds.errorMessage();
   }
-  os << " toto=" << ds.mToto;
   return os;
 }
 

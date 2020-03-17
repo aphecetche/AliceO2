@@ -54,11 +54,10 @@ struct StateMachine {
 
   struct Normal {
 
-    explicit Normal(DecoderState& decoderState) : ds{decoderState}
-    {
-      std::cout << "Normal ds=" << ds << "\n";
-    }
+    explicit Normal(DecoderState& decoderState) : ds{decoderState} {}
+
     DecoderState& ds;
+    const uint64_t sampaSyncWord{0x1555540f00113};
 
     auto operator()() const
     {
@@ -71,14 +70,10 @@ struct StateMachine {
       // guards
 
       const auto isSync = [this](auto event) {
-        std::cout << "isSync ds=" << this->ds << "\n";
-        constexpr uint64_t sampaSyncWord{0x1555540f00113};
         return event.data == sampaSyncWord;
       };
 
       const auto moreWordsToRead = [this]() {
-        std::cout << "guard: moreWordsToRead\n";
-        std::cout << ds << "\n";
         return ds.moreWordsToRead();
       };
 
@@ -106,8 +101,6 @@ struct StateMachine {
       };
 
       const auto setData = [this](auto event) {
-        std::cout << "action: setData\n";
-        std::cout << ds << "\n";
         ds.setData(event.data);
       };
 

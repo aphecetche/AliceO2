@@ -72,7 +72,6 @@ class DecoderState
   SampaChannelHandler mSampaChannelHandler;
   SampaHeader mSampaHeader;
   std::optional<std::string> mErrorMessage{std::nullopt};
-  int mToto{0};
 };
 
 } // namespace o2::mch::raw

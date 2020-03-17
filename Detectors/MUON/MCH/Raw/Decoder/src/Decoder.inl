@@ -32,10 +32,6 @@ class DecoderImpl
   DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
     : mPageParser(rdhHandler, PAYLOADDECODER(channelHandler))
   {
-    static int i{0};
-    channelHandler(DsElecId{0, 0, 0}, 0, SampaCluster{0, 0});
-    std::cout << "CALLCRASH in pageParser i=" << i << "\n";
-    i++;
   }
 
   DecoderStat operator()(gsl::span<uint8_t> buffer)
