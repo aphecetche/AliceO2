@@ -18,19 +18,39 @@ namespace o2::mch::raw
 {
 
 template <typename FORMAT, typename CHARGESUM>
-struct GBTDecoderTrait {
-  using type = void;
+struct GBTDecoderTrait;
+
+namespace impl
+{
+template <typename FORMAT, typename CHARGESUM, typename RDH>
+class DecoderImpl
+{
+  using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
+  using PAYLOADDECODER = PayloadDecoder<RDH, GBTDecoder>;
+
+ public:
+  DecoderImpl(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
+    : mPageParser(rdhHandler, PAYLOADDECODER(channelHandler))
+  {
+    static int i{0};
+    channelHandler(DsElecId{0, 0, 0}, 0, SampaCluster{0, 0});
+    std::cout << "CALLCRASH in pageParser i=" << i << "\n";
+    i++;
+  }
+
+  DecoderStat operator()(gsl::span<uint8_t> buffer)
+  {
+    return mPageParser.parse(buffer);
+  }
+
+  PageParser<RDH, PAYLOADDECODER> mPageParser;
 };
+} // namespace impl
 
 template <typename FORMAT, typename CHARGESUM, typename RDH>
 Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler, SampaChannelHandler channelHandler)
 {
-  using GBTDecoder = typename GBTDecoderTrait<FORMAT, CHARGESUM>::type;
-  using PAYLOADDECODER = PayloadDecoder<RDH, GBTDecoder>;
-  return [rdhHandler, channelHandler](gsl::span<uint8_t> buffer) -> DecoderStat {
-    /* static */ PageParser<RDH, PAYLOADDECODER> mPageParser(rdhHandler, PAYLOADDECODER(channelHandler));
-    return mPageParser.parse(buffer);
-  };
+  return impl::DecoderImpl<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
 }
 
 } // namespace o2::mch::raw

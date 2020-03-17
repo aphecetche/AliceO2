@@ -16,12 +16,6 @@
 #include "StateMachine.h"
 #include "Debug.h"
 
-//#define SMLDEBUG
-
-#ifdef SMLDEBUG
-#include "StateMachineLogger.h"
-#endif
-
 namespace o2::mch::raw
 {
 
@@ -32,25 +26,14 @@ class UserLogicElinkDecoder
   UserLogicElinkDecoder() = delete;
   UserLogicElinkDecoder(DsElecId dsId, SampaChannelHandler sampaChannelHandler)
     : mDecoderState{dsId, sampaChannelHandler},
-#ifdef SMLDEBUG
-      mLogger{},
-      mStateMachine
-  {
-    mLogger, mDecoderState
-  }
-#else
-      mStateMachine
-  {
-    mDecoderState
-  }
-#endif
+      mStateMachine{typename StateMachine<CHARGESUM>::Normal{mDecoderState}}
   {
   }
 
   void append(uint64_t data)
   {
 #ifdef ULDEBUG
-    std::cout << fmt::format("--ULDEBUG--{:s}--", asString(mDecoderState.dsId()));
+    //  std::cout << fmt::format("--ULDEBUG--{:s}--", asString(mDecoderState.dsId()));
     std::cout << fmt::format("append data=0X{:8X} ({})\n", data, data);
 #endif
     if (data == 0) {
@@ -68,17 +51,11 @@ class UserLogicElinkDecoder
     mStateMachine.visit_current_states([](auto state) {
       std::cout << "state=" << state.c_str() << std::endl;
     });
-    std::cout << "decoder state=" << mDecoderState << "\n";
   }
 
  private:
   DecoderState mDecoderState;
-#ifdef SMLDEBUG
-  Logger mLogger;
-  boost::sml::sm<StateMachine<CHARGESUM>, boost::sml::logger<Logger>> mStateMachine;
-#else
   boost::sml::sm<StateMachine<CHARGESUM>> mStateMachine;
-#endif
 };
 
 } // namespace o2::mch::raw

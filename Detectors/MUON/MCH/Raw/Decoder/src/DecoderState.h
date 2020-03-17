@@ -25,6 +25,7 @@ namespace o2::mch::raw
 class DecoderState
 {
  public:
+  DecoderState() = delete;
   DecoderState(DsElecId dsId, SampaChannelHandler sampaChannelHandler);
 
   bool headerIsComplete() const;
@@ -33,8 +34,9 @@ class DecoderState
   bool moreWordsToRead() const;
   uint16_t data10(uint64_t value, size_t index) const;
   uint16_t pop10();
-  void addChargeSum(uint16_t b, uint16_t a);
+  //void addChargeSum(uint16_t b, uint16_t a);
   void addHeaderPart(uint16_t a);
+  template <typename CHARGESUM>
   void addSample(uint16_t sample);
   void completeHeader();
   void decrementClusterSize();
@@ -50,8 +52,11 @@ class DecoderState
 
   friend std::ostream& operator<<(std::ostream&, const DecoderState&);
 
+  void operator()(DsElecId dsId, uint8_t channel, SampaCluster sc) const;
+
  private:
   std::ostream& debugHeader() const;
+  void sendCluster(const SampaCluster& sc) const;
 
  private:
   // mMasks used to access groups of 10 bits in a 50 bits range
@@ -64,13 +69,10 @@ class DecoderState
   size_t mMaskIndex{0};
   std::vector<uint16_t> mSamples;
   std::vector<uint16_t> mHeaderParts;
-  SampaHeader mSampaHeader;
-
- public:
   SampaChannelHandler mSampaChannelHandler;
-
- private:
+  SampaHeader mSampaHeader;
   std::optional<std::string> mErrorMessage{std::nullopt};
+  int mToto{0};
 };
 
 } // namespace o2::mch::raw

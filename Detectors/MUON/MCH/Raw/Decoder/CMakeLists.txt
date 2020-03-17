@@ -13,6 +13,11 @@ o2_add_library(MCHRawDecoder
         PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHRawElecMap
         PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
+o2_add_executable(toto
+        SOURCES src/toto.cxx
+        COMPONENT_NAME mch
+        PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder)
+
 if(BUILD_TESTING)
         o2_add_test(decoder
                 SOURCES src/testDecoder.cxx
