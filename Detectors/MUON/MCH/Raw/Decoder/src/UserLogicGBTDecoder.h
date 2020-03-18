@@ -97,34 +97,25 @@ size_t UserLogicGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
   }
   size_t n{0};
 
-  for (size_t i = 0; i < buffer.size(); i += 8) {
+  gsl::span<uint64_t> b64(reinterpret_cast<uint64_t*>(&buffer[0]), buffer.size() / 8);
 
-    uint64_t word = (static_cast<uint64_t>(buffer[i + 0])) |
-                    (static_cast<uint64_t>(buffer[i + 1]) << 8) |
-                    (static_cast<uint64_t>(buffer[i + 2]) << 16) |
-                    (static_cast<uint64_t>(buffer[i + 3]) << 24) |
-                    (static_cast<uint64_t>(buffer[i + 4]) << 32) |
-                    (static_cast<uint64_t>(buffer[i + 5]) << 40) |
-                    (static_cast<uint64_t>(buffer[i + 6]) << 48) |
-                    (static_cast<uint64_t>(buffer[i + 7]) << 56);
+  for (uint64_t word : b64) {
 
-    if (word == 0) {
-      continue;
-    }
-    if (word == 0xFEEDDEEDFEEDDEED) {
+    if (word == 0 ||
+        word == 0xFEEDDEEDFEEDDEED) {
       continue;
     }
 
-    uint16_t dsid = (word >> 53) & 0x3F;
-    uint16_t linkid = (word >> 59) & 0x1F;
+    uint16_t dsid = static_cast<uint16_t>((word >> 53) & 0x3F);
+    uint16_t linkid = static_cast<uint16_t>((word >> 59) & 0x1F);
 
     //    std::cout << fmt::format("GBT {} append word={:016X} dsid={:d}\n", mSolarId, word, dsid);
-    impl::assertIsInRange("dsid", dsid, 0, 39);
+    // impl::assertIsInRange("dsid", dsid, 0, 39);
 
     if (linkid == 0 && (dsid == 2 || dsid == 5)) {
-      mElinkDecoders.at(dsid).append(word);
+      mElinkDecoders[dsid].append(word);
+      n += 8;
     }
-    n += 8;
   }
   return n;
 }

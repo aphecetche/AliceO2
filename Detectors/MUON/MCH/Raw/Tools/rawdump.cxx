@@ -154,7 +154,8 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
       counters.uniqueDS[s]++;
       auto ch = fmt::format("{}-CH{}", s, channel);
       counters.uniqueChannel[ch]++;
-      auto chanstat = counters.statChannel[ch];
+      //       std::cout << ch << " " << sc << "\n";
+      auto& chanstat = counters.statChannel[ch];
       for (auto d = 0; d < sc.nofSamples(); d++) {
         chanstat.incr(sc.samples[d]);
       }
@@ -178,6 +179,10 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
     std::cout << "#unique DS=" << counters.uniqueDS.size() << " #unique Channel=" << counters.uniqueChannel.size() << "\n";
     std::cout << decStat << "\n";
     std::cout << fmt::format("byte usage {:7.2f} %\n", 100.0 * decStat.nofBytesUsed / bytesRead);
+
+    // for (auto c : counters.statChannel) {
+    //   std::cout << c.first << "->" << c.second << "\n";
+    // }
   }
 
   return counters.statChannel;

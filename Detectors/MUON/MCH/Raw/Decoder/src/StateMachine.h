@@ -119,7 +119,7 @@ struct StateMachine {
       };
 
       const auto readSize = [this]() {
-        auto factor = DataFormatSizeFactor<CHARGESUM>::value;
+        const auto factor = DataFormatSizeFactor<CHARGESUM>::value;
         auto value = factor * ds.pop10();
         ds.setClusterSize(value);
       };

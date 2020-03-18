@@ -36,12 +36,8 @@ class UserLogicElinkDecoder
     //  std::cout << fmt::format("--ULDEBUG--{:s}--", asString(mDecoderState.dsId()));
     std::cout << fmt::format("append data=0X{:8X} ({})\n", data, data);
 #endif
-    if (data == 0) {
-      mStateMachine.process_event(RecoverableError("toto error"));
-      return;
-    }
     constexpr uint64_t FIFTYBITSATONE = 0x3FFFFFFFFFFFF;
-    uint64_t data50 = data & FIFTYBITSATONE;
+    const uint64_t data50 = data & FIFTYBITSATONE;
     mStateMachine.process_event(NewData(data50));
   }
 
@@ -55,7 +51,10 @@ class UserLogicElinkDecoder
 
  private:
   DecoderState mDecoderState;
-  boost::sml::sm<StateMachine<CHARGESUM>> mStateMachine;
+  boost::sml::sm<StateMachine<CHARGESUM>, sml::dispatch<sml::back::policies::jump_table>> mStateMachine;
+  // boost::sml::sm<StateMachine<CHARGESUM>, sml::dispatch<sml::back::policies::switch_stm>> mStateMachine;
+  // boost::sml::sm<StateMachine<CHARGESUM>, sml::dispatch<sml::back::policies::branch_stm>> mStateMachine;
+  //  boost::sml::sm<StateMachine<CHARGESUM>, sml::dispatch<sml::back::policies::fold_expr>> mStateMachine;
 };
 
 } // namespace o2::mch::raw
