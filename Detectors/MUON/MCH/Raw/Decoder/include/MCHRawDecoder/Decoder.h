@@ -14,7 +14,6 @@
 #include <cstdlib>
 #include <gsl/span>
 #include "MCHRawDecoder/SampaChannelHandler.h"
-#include "MCHRawDecoder/RawDataHeaderHandler.h"
 #include <iostream>
 #include <string>
 
@@ -26,21 +25,9 @@ namespace mch
 namespace raw
 {
 
-struct DecoderStat {
-  uint64_t nofOrbitJumps{0};
-  uint64_t nofOrbitSeen{0};
-  uint64_t nofBytesUsed{0};
-  bool parseError{false};
-  std::string parseErrorMessage{""};
-};
+using Decoder = std::function<void(gsl::span<uint8_t> buffer)>;
 
-std::ostream& operator<<(std::ostream& out, const DecoderStat& decStat);
-
-using Decoder = std::function<DecoderStat(gsl::span<uint8_t> buffer)>;
-
-template <typename FORMAT, typename CHARGESUM, typename RDH>
-Decoder createDecoder(RawDataHeaderHandler<RDH> rdhHandler,
-                      SampaChannelHandler channelHandler);
+Decoder createDecoder(gsl::span<uint8_t> rdhBuffer, SampaChannelHandler channelHandler);
 
 } // namespace raw
 } // namespace mch

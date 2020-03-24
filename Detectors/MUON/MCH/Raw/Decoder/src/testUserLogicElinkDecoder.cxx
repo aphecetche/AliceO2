@@ -27,6 +27,8 @@
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
 #include "MCHRawDecoder/Decoder.h"
+#include "PageDecoder.h"
+#include "UserLogicEndpointDecoder.h"
 
 using namespace o2::mch::raw;
 using o2::header::RAWDataHeaderV4;
@@ -214,16 +216,11 @@ void testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
   appendRDH(buffer, rdh);
   buffer.insert(buffer.end(), b8.begin(), b8.end());
 
-  const auto handleRDH = [](const RAWDataHeaderV4& rdh) -> std::optional<RAWDataHeaderV4> {
-    return rdh;
-  };
-
   const auto handlePacket = [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
     std::cout << fmt::format("testDecode:{}-{}\n", asString(dsId), asString(sc));
   };
 
-  auto decoder = createDecoder<UserLogicFormat, CHARGESUM, RAWDataHeaderV4>(handleRDH,
-                                                                            handlePacket);
+  PageDecoder<RAWDataHeaderV4, UserLogicFormat, UserLogicEndpointDecoder<CHARGESUM>> decoder(handlePacket);
 
   decoder(buffer);
 }

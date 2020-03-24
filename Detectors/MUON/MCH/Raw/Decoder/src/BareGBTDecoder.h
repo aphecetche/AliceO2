@@ -21,6 +21,7 @@
 #include "Assertions.h"
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
+#include "PayloadDecoder.h"
 
 namespace o2
 {
@@ -34,7 +35,7 @@ namespace raw
 /// It's one GBT = one Solar.
 
 template <typename CHARGESUM>
-class BareGBTDecoder
+class BareGBTDecoder : public PayloadDecoder<BareGBTDecoder<CHARGESUM>>
 {
  public:
   static constexpr uint8_t baseSize{128};
@@ -75,6 +76,7 @@ class BareGBTDecoder
   int mSolarId;
   std::array<BareElinkDecoder<CHARGESUM>, 40> mElinks;
   int mNofGbtWordsSeens;
+  uint32_t mOrbit;
 };
 
 using namespace boost::multiprecision;
@@ -82,7 +84,8 @@ using namespace boost::multiprecision;
 template <typename CHARGESUM>
 BareGBTDecoder<CHARGESUM>::BareGBTDecoder(uint16_t solarId,
                                           SampaChannelHandler sampaChannelHandler)
-  : mSolarId{solarId},
+  : PayloadDecoder<BareGBTDecoder<CHARGESUM>>(sampaChannelHandler),
+    mSolarId{solarId},
     mElinks{impl::makeArray<40>([=](uint8_t i) { return BareElinkDecoder<CHARGESUM>(DsElecId{solarId, static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, sampaChannelHandler); })},
     mNofGbtWordsSeens{0}
 {

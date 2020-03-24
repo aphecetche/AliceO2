@@ -22,18 +22,12 @@
 #include "Headers/RAWDataHeader.h"
 #include "RefBuffers.h"
 #include "BareGBTDecoder.h"
+#include "PageDecoder.h"
 
 using namespace o2::mch::raw;
 using o2::header::RAWDataHeaderV4;
 
 std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
-
-std::optional<RAWDataHeaderV4> handleRDH(const RAWDataHeaderV4& rdh)
-{
-  // std::cout << std::string(80, '-') << "\n";
-  // std::cout << rdh << "\n";
-  return rdh;
-}
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
@@ -48,14 +42,11 @@ BOOST_AUTO_TEST_SUITE(decoder)
 
 BOOST_AUTO_TEST_CASE(Test0)
 {
-  RawDataHeaderHandler<RAWDataHeaderV4> rh;
   SampaChannelHandler ch;
+  PageDecoder<RAWDataHeaderV4, BareFormat, BareGBTDecoder<ChargeSumMode>> d1(ch);
 
-  auto d = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(rh, ch);
-
-  createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, ch);
-  createDecoder<BareFormat, SampleMode, RAWDataHeaderV4>(
-    handleRDH, [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
+  PageDecoder<RAWDataHeaderV4, BareFormat, BareGBTDecoder<ChargeSumMode>> d2(
+    [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
     });
 }
 
@@ -112,7 +103,7 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
 
   };
 
-  auto decode = createDecoder<BareFormat, ChargeSumMode, RAWDataHeaderV4>(handleRDH, handlePacketStoreAsVec(result));
+  auto decode = createDecoder(testBuffer, handlePacketStoreAsVec(result));
   decode(testBuffer);
 
   BOOST_CHECK_EQUAL(result.size(), expected.size());

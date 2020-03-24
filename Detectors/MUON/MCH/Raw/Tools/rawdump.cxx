@@ -162,23 +162,25 @@ std::map<std::string, ChannelStat> rawdump(std::string input, DumpOptions opt)
       counters.ndigits++;
     };
 
-  o2::mch::raw::Decoder decode = o2::mch::raw::createDecoder<FORMAT, CHARGESUM, RDH>(rdhHandler, channelHandler);
+  o2::mch::raw::Decoder decode = nullptr;
 
   size_t npages{0};
-  DecoderStat decStat;
   uint64_t bytesRead{0};
 
   while (npages < opt.maxNofRDHs() && in.read(reinterpret_cast<char*>(&buffer[0]), pageSize) && in.gcount() == pageSize) {
     npages++;
     bytesRead += in.gcount();
-    decStat = decode(sbuffer);
+    if (!decode) {
+      decode = createDecoder(buffer, channelHandler);
+    }
+    decode(sbuffer);
   }
 
   if (!opt.json()) {
     std::cout << counters.ndigits << " digits seen - " << nrdhs << " RDHs seen - " << npages << " npages read\n";
     std::cout << "#unique DS=" << counters.uniqueDS.size() << " #unique Channel=" << counters.uniqueChannel.size() << "\n";
-    std::cout << decStat << "\n";
-    std::cout << fmt::format("byte usage {:7.2f} %\n", 100.0 * decStat.nofBytesUsed / bytesRead);
+    // std::cout << decStat << "\n";
+    // std::cout << fmt::format("byte usage {:7.2f} %\n", 100.0 * decStat.nofBytesUsed / bytesRead);
 
     // for (auto c : counters.statChannel) {
     //   std::cout << c.first << "->" << c.second << "\n";
