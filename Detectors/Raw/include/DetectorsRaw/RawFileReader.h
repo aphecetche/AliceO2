@@ -25,6 +25,7 @@
 #include "Headers/RAWDataHeader.h"
 #include "Headers/DataHeader.h"
 #include "DetectorsRaw/HBFUtils.h"
+#include <iostream>
 
 namespace o2
 {
@@ -81,12 +82,13 @@ class RawFileReader
            StartHB = 0x1 << 1,
            StartSP = 0x1 << 2,
            EndHB = 0x1 << 3 };
-    size_t offset = 0;    // where data of the block starts
-    uint32_t size = 0;    // block size
-    uint32_t tfID = 0;    // tf counter (from 0)
-    uint32_t orbit = 0;   // orbit starting the block
-    uint16_t fileID = 0;  // file id where the block is located
-    uint8_t flags = 0;    // different flags
+    size_t offset = 0; // where data of the block starts
+    //uint32_t size = 0;   // block size
+    uint64_t size = 0;   // block size
+    uint32_t tfID = 0;   // tf counter (from 0)
+    uint32_t orbit = 0;  // orbit starting the block
+    uint16_t fileID = 0; // file id where the block is located
+    uint8_t flags = 0;   // different flags
     LinkBlock() = default;
     LinkBlock(int fid, size_t offs) : offset(offs), fileID(fid) {}
     void setFlag(uint8_t fl, bool v = true)
@@ -102,8 +104,8 @@ class RawFileReader
 
   //=====================================================================================
   struct LinkData {
-    RDH rdhl;             // RDH with the running info of the last RDH seen
-    LinkSpec_t spec = 0;  // Link subspec augmented by its origin
+    RDH rdhl;                  // RDH with the running info of the last RDH seen
+    LinkSpec_t spec = 0;       // Link subspec augmented by its origin
     LinkSubSpec_t subspec = 0; // subspec according to DataDistribution
     uint32_t nTimeFrames = 0;
     uint32_t nHBFrames = 0;
@@ -123,7 +125,7 @@ class RawFileReader
     LinkData() = default;
     LinkData(const o2::header::RAWDataHeaderV4& rdh, const RawFileReader* r);
     LinkData(const o2::header::RAWDataHeaderV5& rdh, const RawFileReader* r);
-    bool preprocessCRUPage(const RDH& rdh, bool newSPage);
+    bool preprocessCRUPage(const RDH& rdh, bool newSPage, int fileIndex, uint64_t posInFile);
     size_t getLargestSuperPage() const;
     size_t getLargestTF() const;
     size_t getNextHBFSize() const;
@@ -192,7 +194,7 @@ class RawFileReader
   static InputsMap parseInput(const std::string& confUri);
 
  private:
-  int getLinkLocalID(const RDH& rdh, o2::header::DataOrigin orig);
+  int getLinkLocalID(const RDH& rdh, o2::header::DataOrigin orig, int fileIndex);
   bool preprocessFile(int ifl);
   static LinkSpec_t createSpec(o2::header::DataOrigin orig, LinkSubSpec_t ss) { return (LinkSpec_t(orig) << 32) | ss; }
 
@@ -215,15 +217,12 @@ class RawFileReader
   uint32_t mOrbitMax = 0;                           // highest orbit seen by any link
   int mNominalSPageSize = 0x1 << 20;                // expected super-page size in B
   int mNominalHBFperTF = 256;                       // expected N HBF per TF
-  int mCurrentFileID = 0;                           // current file being processed
-  long int mPosInFile = 0;                          // current position in the file
   bool mMultiLinkFile = false;                      // was > than 1 link seen in the file?
   uint32_t mCheckErrors = 0;                        // mask for errors to check
   int mVerbosity = 0;
 
   ClassDefNV(RawFileReader, 1);
 };
-
 
 } // namespace raw
 } // namespace o2

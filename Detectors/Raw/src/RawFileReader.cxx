@@ -24,6 +24,7 @@
 #include "Framework/Logger.h"
 
 #include <Common/Configuration.h>
+#include <chrono>
 
 using namespace o2::raw;
 namespace o2h = o2::header;
@@ -194,11 +195,15 @@ size_t RawFileReader::LinkData::getLargestTF() const
 }
 
 //_____________________________________________________________________
-bool RawFileReader::LinkData::preprocessCRUPage(const RDH& rdh, bool newSPage)
+bool RawFileReader::LinkData::preprocessCRUPage(const RDH& rdh, bool newSPage, int fileIndex, uint64_t posInFile)
 {
   // account RDH in statistics
   bool ok = true;
   bool newTF = false, newHB = false;
+
+  if (rdh.triggerType & o2::trigger::TF) {
+    HBFUtils::printRDH(rdh);
+  }
 
   if (rdh.feeId != rdhl.feeId) { // make sure links with different FEEID were not assigned same subspec
     LOGF(ERROR, "Same SubSpec is found for %s with different RDH.feeId", describe());
@@ -289,7 +294,7 @@ bool RawFileReader::LinkData::preprocessCRUPage(const RDH& rdh, bool newSPage)
   }
 
   if (newTF || newSPage || newHB) {
-    auto& bl = blocks.emplace_back(reader->mCurrentFileID, reader->mPosInFile);
+    auto& bl = blocks.emplace_back(fileIndex, posInFile);
     if (newTF) {
       nTimeFrames++;
       bl.setFlag(LinkBlock::StartTF);
@@ -317,7 +322,7 @@ bool RawFileReader::LinkData::preprocessCRUPage(const RDH& rdh, bool newSPage)
   rdhl = rdh;
   nCRUPages++;
   if (!ok) {
-    LOG(ERROR) << " ^^^Problem(s) was encountered at offset " << reader->mPosInFile << " of file " << reader->mCurrentFileID;
+    LOG(ERROR) << " ^^^Problem(s) was encountered at offset " << posInFile << " of file " << fileIndex;
     HBFUtils::printRDH(rdh);
   } else if (reader->mVerbosity > 1) {
     if (reader->mVerbosity > 2) {
@@ -341,7 +346,7 @@ RawFileReader::RawFileReader(const std::string& config, int verbosity) : mVerbos
 }
 
 //_____________________________________________________________________
-int RawFileReader::getLinkLocalID(const RDH& rdh, const o2::header::DataOrigin orig)
+int RawFileReader::getLinkLocalID(const RDH& rdh, const o2::header::DataOrigin orig, int fileIndex)
 {
   // get id of the link subspec. in the parser (create entry if new)
   LinkSubSpec_t subspec = HBFUtils::getSubSpec(rdh);
@@ -352,67 +357,103 @@ int RawFileReader::getLinkLocalID(const RDH& rdh, const o2::header::DataOrigin o
     mLinkEntries[spec] = n;
     auto& lnk = mLinksData.emplace_back(rdh, this);
     lnk.subspec = subspec;
-    lnk.origin = mDataSpecs[mCurrentFileID].first;
-    lnk.description = mDataSpecs[mCurrentFileID].second;
+    lnk.origin = mDataSpecs[fileIndex].first;
+    lnk.description = mDataSpecs[fileIndex].second;
     lnk.spec = spec;
     return n;
   }
   return entryMap->second;
 }
 
-//_____________________________________________________________________
-bool RawFileReader::preprocessFile(int ifl)
+template <typename RDH>
+bool foreachRDH2(FILE* fl, std::function<void(const RDH& rdh, uint64_t posInFile)> func)
 {
-  // preprocess file, check RDH data, build statistics
-  FILE* fl = mFiles[ifl];
-  mCurrentFileID = ifl;
+  int readBytes = sizeof(RDH);
   RDH rdh;
+  uint64_t posInFile{0};
+  size_t nr{0};
+
+  while ((nr = fread(&rdh, 1, readBytes, fl))) {
+    if (nr < readBytes) {
+      LOG(ERROR) << "EOF was unexpected, only " << nr << " bytes were read for RDH";
+      return false;
+    }
+    if (!HBFUtils::checkRDH(rdh)) {
+      return false;
+    }
+    func(rdh, posInFile);
+    posInFile += rdh.offsetToNext;
+    if (fseek(fl, posInFile, SEEK_SET)) {
+      break;
+    }
+  }
+  return true;
+}
+
+template <typename RDH>
+bool foreachRDH(FILE* fl, std::function<void(const RDH& rdh, uint64_t posInFile)> func)
+{
+  RDH rdh;
+  uint64_t posInFile{0};
+  constexpr int PAGESIZE{8192};
+  constexpr int NPAGES{1};
+  std::array<std::byte, PAGESIZE * NPAGES> dummy;
+
+  while ((NPAGES == fread(&dummy, PAGESIZE, NPAGES, fl))) {
+    for (auto i = 0; i < NPAGES; i++) {
+      std::memcpy(&rdh, &dummy[PAGESIZE * i], sizeof(rdh));
+      if (!HBFUtils::checkRDH(rdh)) {
+        return false;
+      }
+      func(rdh, posInFile);
+      posInFile += PAGESIZE;
+    }
+  }
+  return true;
+}
+
+//_____________________________________________________________________
+bool RawFileReader::preprocessFile(int fileIndex)
+{
+  auto start = std::chrono::system_clock::now();
+  // preprocess file, check RDH data, build statistics
+  FILE* fl = mFiles[fileIndex];
 
   LinkSpec_t specPrev = 0xffffffffffffffff;
   int lIDPrev = -1;
   mMultiLinkFile = false;
   rewind(fl);
-  long int nr = 0;
-  mPosInFile = 0;
   int nRDHread = 0;
-  bool ok = true;
-  int readBytes = sizeof(RDH);
-  while ((nr = fread(&rdh, 1, readBytes, fl))) {
-    if (nr < readBytes) {
-      LOG(ERROR) << "EOF was unexpected, only " << nr << " bytes were read for RDH";
-      ok = false;
-      break;
-    }
-    if (!(ok = HBFUtils::checkRDH(rdh))) {
-      break;
-    }
+
+  auto dataOrigin = mDataSpecs[fileIndex].first;
+
+  bool ok = foreachRDH<RDH>(fl, [&](const RDH& rdh, uint64_t posInFile) {
     nRDHread++;
-    LinkSpec_t spec = createSpec(mDataSpecs[mCurrentFileID].first, HBFUtils::getSubSpec(rdh));
+    LinkSpec_t spec = createSpec(dataOrigin, HBFUtils::getSubSpec(rdh));
     int lID = lIDPrev;
     if (spec != specPrev) { // link has changed
       specPrev = spec;
       if (lIDPrev != -1) {
         mMultiLinkFile = true;
       }
-      lID = getLinkLocalID(rdh, mDataSpecs[mCurrentFileID].first);
+      lID = getLinkLocalID(rdh, dataOrigin, fileIndex);
     }
     bool newSPage = lID != lIDPrev;
-    mLinksData[lID].preprocessCRUPage(rdh, newSPage);
+    mLinksData[lID].preprocessCRUPage(rdh, newSPage, fileIndex, posInFile);
     //
-    mPosInFile += rdh.offsetToNext;
-    if (fseek(fl, mPosInFile, SEEK_SET)) {
-      break;
-    }
     lIDPrev = lID;
-  }
-  mPosInFile = ftell(fl);
+  });
+
+  auto posInFile = ftell(fl);
   if (lIDPrev != -1) { // close last block
     auto& lastBlock = mLinksData[lIDPrev].blocks.back();
-    lastBlock.size = mPosInFile - lastBlock.offset;
+    lastBlock.size = posInFile - lastBlock.offset;
   }
 
-  LOGF(INFO, "File %3d : %9li bytes scanned, %6d RDH read for %4d links from %s",
-       mCurrentFileID, mPosInFile, nRDHread, int(mLinkEntries.size()), mFileNames[mCurrentFileID]);
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  LOGF(INFO, "File %3d : %9li bytes scanned, %6d RDH read for %4d links from %s in %7.2f seconds",
+       fileIndex, posInFile, nRDHread, int(mLinkEntries.size()), mFileNames[fileIndex], elapsed_seconds.count());
   return ok;
 }
 
@@ -440,7 +481,6 @@ void RawFileReader::clear()
   mFiles.clear();
   mFileNames.clear();
 
-  mCurrentFileID = 0;
   mMultiLinkFile = false;
   mInitDone = false;
 }
