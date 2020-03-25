@@ -34,8 +34,6 @@ SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samp
     chargeSum(0),
     samples(samples.begin(), samples.end())
 {
-#if 0
-#ifndef NDEBUG
   if (samples.empty()) {
     throw std::invalid_argument("cannot add data with no sample");
   }
@@ -43,8 +41,6 @@ SampaCluster::SampaCluster(uint16_t timestamp, const std::vector<uint16_t>& samp
     impl::assertIsInRange(fmt::format("samples[{}]", i), samples[i], 0, 0x3FF);
   }
   std::cout << "SampaCluster ctor\n";
-#endif
-#endif
 }
 
 uint16_t SampaCluster::nofSamples() const

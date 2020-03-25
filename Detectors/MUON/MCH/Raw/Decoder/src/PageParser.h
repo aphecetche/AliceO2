@@ -8,16 +8,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_TEST_REF_BUFFERS_H
-#define O2_MCH_RAW_TEST_REF_BUFFERS_H
+#ifndef O2_MCH_RAW_DECODER_PAGE_PARSER_H
+#define O2_MCH_RAW_DECODER_PAGE_PARSER_H
 
-#include <cstddef>
-#include <gsl/span>
+#include "MCHRawDecoder/PageDecoder.h"
 
-template <typename DataFormat, typename Mode>
-extern gsl::span<const std::byte> REF_BUFFER_GBT();
-
-template <typename DataFormat, typename Mode>
-extern gsl::span<const std::byte> REF_BUFFER_CRU();
-
-#endif
+} // namespace o2::mch::raw

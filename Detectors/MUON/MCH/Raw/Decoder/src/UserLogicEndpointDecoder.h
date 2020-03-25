@@ -50,7 +50,7 @@ class UserLogicEndpointDecoder : public PayloadDecoder<UserLogicEndpointDecoder<
     *
     * @return the number of bytes used in the bytes span
     */
-  size_t append(gsl::span<uint8_t> bytes);
+  size_t append(Payload bytes);
   ///@}
 
   /** @name Methods for testing
@@ -86,7 +86,7 @@ UserLogicEndpointDecoder<CHARGESUM>::UserLogicEndpointDecoder(uint16_t linkId,
 }
 
 template <typename CHARGESUM>
-size_t UserLogicEndpointDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
+size_t UserLogicEndpointDecoder<CHARGESUM>::append(Payload buffer)
 {
   if (buffer.size() % 8) {
     throw std::invalid_argument("buffer size should be a multiple of 8");
@@ -94,7 +94,6 @@ size_t UserLogicEndpointDecoder<CHARGESUM>::append(gsl::span<uint8_t> buffer)
   size_t n{0};
 
   for (size_t i = 0; i < buffer.size(); i += 8) {
-
     uint64_t word = (static_cast<uint64_t>(buffer[i + 0])) |
                     (static_cast<uint64_t>(buffer[i + 1]) << 8) |
                     (static_cast<uint64_t>(buffer[i + 2]) << 16) |

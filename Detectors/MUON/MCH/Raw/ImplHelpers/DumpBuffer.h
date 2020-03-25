@@ -39,7 +39,7 @@ void dumpByteBuffer(gsl::span<T> buffer)
   std::cout << "\n";
 }
 
-uint64_t b8to64(gsl::span<uint8_t> buffer, size_t i)
+uint64_t b8to64(gsl::span<const std::byte> buffer, size_t i)
 {
   return (static_cast<uint64_t>(buffer[i + 0])) |
          (static_cast<uint64_t>(buffer[i + 1]) << 8) |
@@ -51,23 +51,23 @@ uint64_t b8to64(gsl::span<uint8_t> buffer, size_t i)
          (static_cast<uint64_t>(buffer[i + 7]) << 56);
 }
 
-void append(std::vector<uint8_t>& buffer, uint64_t w)
+void append(std::vector<std::byte>& buffer, uint64_t w)
 {
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00000000000000FF))));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x000000000000FF00)) >> 8));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x0000000000FF0000)) >> 16));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00000000FF000000)) >> 24));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x000000FF00000000)) >> 32));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x0000FF0000000000)) >> 40));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0x00FF000000000000)) >> 48));
-  buffer.emplace_back(static_cast<uint8_t>((w & UINT64_C(0xFF00000000000000)) >> 56));
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x00000000000000FF)))});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x000000000000FF00)) >> 8)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x0000000000FF0000)) >> 16)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x00000000FF000000)) >> 24)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x000000FF00000000)) >> 32)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x0000FF0000000000)) >> 40)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x00FF000000000000)) >> 48)});
+  buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0xFF00000000000000)) >> 56)});
 }
 
 template <typename FORMAT>
-void dumpBuffer(gsl::span<uint8_t> buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max());
+void dumpBuffer(gsl::span<const std::byte> buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max());
 
 template <>
-void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<uint8_t> buffer, std::ostream& out, size_t maxbytes)
+void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<const std::byte> buffer, std::ostream& out, size_t maxbytes)
 {
   int i{0};
   int inRDH{0};
@@ -120,7 +120,7 @@ void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<uint8_t> buffer, std::ostrea
 }
 
 template <>
-void dumpBuffer<o2::mch::raw::UserLogicFormat>(gsl::span<uint8_t> buffer, std::ostream& out, size_t maxbytes)
+void dumpBuffer<o2::mch::raw::UserLogicFormat>(gsl::span<const std::byte> buffer, std::ostream& out, size_t maxbytes)
 {
   int i{0};
   int inRDH{0};
@@ -182,7 +182,7 @@ void dumpBuffer<o2::mch::raw::UserLogicFormat>(gsl::span<uint8_t> buffer, std::o
 template <typename FORMAT>
 void dumpBuffer(const std::vector<uint64_t>& buffer, std::ostream& out = std::cout, size_t maxbytes = std::numeric_limits<size_t>::max())
 {
-  std::vector<uint8_t> b8;
+  std::vector<std::byte> b8;
   for (auto w : buffer) {
     append(b8, w);
   }

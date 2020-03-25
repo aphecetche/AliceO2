@@ -27,18 +27,6 @@
 namespace o2::mch::raw
 {
 
-// enum decode_state_t
-// {
-//   DECODE_STATE_UNKNOWN,
-//   DECODE_STATE_SYNC_FOUND,
-//   DECODE_STATE_HEADER_FOUND,
-//   DECODE_STATE_CSIZE_FOUND,
-//   DECODE_STATE_CTIME_FOUND,
-//   DECODE_STATE_SAMPLE_FOUND,
-//   DECODE_STATE_PACKET_END
-// };
-//
-
 /// @brief Main element of the MCH Bare Raw Data Format decoder.
 ///
 /// A UserLogicElinkDecoder manages the bit stream for one Elink.
@@ -181,7 +169,9 @@ void UserLogicElinkDecoder<CHARGESUM>::append10Bits(uint16_t data)
   mBitBuffer += static_cast<uint64_t>(data) << mMask;
   mMask += 10;
 
-  //std::cout << fmt::format("[append10Bits] data={:08X} bitBuffer={:08X} mask={} checkpoint={}\n", data, mBitBuffer, mMask, mCheckpoint);
+  if (verbose) {
+    std::cout << fmt::format("[append10Bits] data={:08X} bitBuffer={:08X} mask={} checkpoint={}\n", data, mBitBuffer, mMask, mCheckpoint);
+  }
   if (mMask == mCheckpoint) {
     process();
   }
@@ -193,25 +183,19 @@ void UserLogicElinkDecoder<CHARGESUM>::append(uint64_t data)
   int nch = (data >> 53) & 0x7FF;
   int link_id = (data >> 59) & 0x1F;
   int ds_id = (data >> 53) & 0x3F;
-  //if(link_id != 1) continue;
   int is_incomplete = (data >> 52) & 0x1;
   int err_code = (data >> 50) & 0x3;
 
-  append10Bits(data & 0x3FF);
-  if (mState == State::LookingForHeader && is_incomplete)
-    return;
-  append10Bits((data >> 10) & 0x3FF);
-  if (mState == State::LookingForHeader && is_incomplete)
-    return;
-  append10Bits((data >> 20) & 0x3FF);
-  if (mState == State::LookingForHeader && is_incomplete)
-    return;
-  append10Bits((data >> 30) & 0x3FF);
-  if (mState == State::LookingForHeader && is_incomplete)
-    return;
-  append10Bits((data >> 40) & 0x3FF);
-  if (mState == State::LookingForHeader && is_incomplete)
-    return;
+  if (verbose) {
+    std::cout << fmt::format("[append (64 bits)] data={:016X} nch={:d} link={:d} ds={:d} incomplete={:d} err={:d}\n", data, nch, link_id, ds_id, is_incomplete, err_code);
+  }
+
+  for (auto i = 0; i < 50; i += 10) {
+    append10Bits((data >> i) & 0x3FF);
+    // FIXME: what is this is_incomplete bit ?
+    // if (mState == State::LookingForHeader && is_incomplete)
+    //   return;
+  }
 }
 
 template <typename CHARGESUM>

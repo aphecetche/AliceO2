@@ -12,7 +12,8 @@
 #define O2_MCH_RAW_PAYLOAD_DECODER_H
 
 #include "Headers/RAWDataHeader.h"
-#include "MCHRawDecoder/Decoder.h"
+#include "MCHRawDecoder/SampaChannelHandler.h"
+#include "MCHRawDecoder/PageDecoder.h"
 #include <map>
 #include <cstdlib>
 #include <gsl/span>
@@ -28,6 +29,8 @@ bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
   return std::abs(static_cast<long int>(orb1 - orb2)) > 1;
 }
 
+using Payload = Page;
+
 /// @brief Decoder for MCH  Raw Data Format.
 
 template <typename T>
@@ -41,7 +44,7 @@ class PayloadDecoder
 
   /// decode the buffer (=payload only)
   /// \return the number of bytes used from the buffer
-  size_t process(uint32_t orbit, gsl::span<uint8_t> buffer);
+  size_t process(uint32_t orbit, Payload payload);
 
  private:
   uint32_t mOrbit;
@@ -55,7 +58,7 @@ PayloadDecoder<T>::PayloadDecoder(SampaChannelHandler channelHandler)
 }
 
 template <typename T>
-size_t PayloadDecoder<T>::process(uint32_t orbit, gsl::span<uint8_t> payload)
+size_t PayloadDecoder<T>::process(uint32_t orbit, Payload payload)
 {
   if (hasOrbitJump(orbit, mOrbit)) {
     static_cast<T*>(this)->reset();

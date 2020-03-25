@@ -12,15 +12,15 @@
 #include <array>
 #include "MCHRawCommon/DataFormats.h"
 
-extern std::array<uint8_t, 11628> REF_BUFFER_CRU_BARE_CHARGESUM;
+extern std::array<const uint8_t, 11628> REF_BUFFER_CRU_BARE_CHARGESUM;
 
 template <>
-std::vector<uint8_t> REF_BUFFER_CRU<o2::mch::raw::BareFormat, o2::mch::raw::ChargeSumMode>()
+gsl::span<const std::byte> REF_BUFFER_CRU<o2::mch::raw::BareFormat, o2::mch::raw::ChargeSumMode>()
 {
-  return std::vector<uint8_t>(REF_BUFFER_CRU_BARE_CHARGESUM.begin(), REF_BUFFER_CRU_BARE_CHARGESUM.end());
+  return gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(&REF_BUFFER_CRU_BARE_CHARGESUM[0]), REF_BUFFER_CRU_BARE_CHARGESUM.size());
 }
 
-std::array<uint8_t, 11628> REF_BUFFER_CRU_BARE_CHARGESUM = {
+std::array<const uint8_t, 11628> REF_BUFFER_CRU_BARE_CHARGESUM = {
   // clang-format off
 0x04, 0x40, 0x60, 0x04, 0xD8, 0x02, 0x00, 0x00, 0xA0, 0x04, 0xA0, 0x04, 
 0x00, 0x00, 0x03, 0x00, 0x39, 0x30, 0x00, 0x00, 0x39, 0x30, 0x00, 0x00, 

@@ -26,8 +26,6 @@
 #include "DumpBuffer.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawDecoder/SampaChannelHandler.h"
-#include "MCHRawDecoder/Decoder.h"
-#include "PageDecoder.h"
 #include "UserLogicEndpointDecoder.h"
 
 using namespace o2::mch::raw;
@@ -152,7 +150,7 @@ std::vector<uint10_t> createBuffer10(const std::vector<SampaCluster>& clusters,
 template <typename CHARGESUM>
 void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint64_t>& b64)
 {
-  std::vector<uint8_t> b8;
+  std::vector<std::byte> b8;
   impl::copyBuffer(b64, b8);
   impl::dumpBuffer<o2::mch::raw::UserLogicFormat>(b8);
   for (auto b : b64) {
@@ -208,11 +206,12 @@ void testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
   uint16_t prefix{22};
   auto b64 = b10to64(b10, prefix);
 
-  std::vector<uint8_t> b8;
+  std::vector<std::byte> b8;
   impl::copyBuffer(b64, b8);
 
-  std::vector<uint8_t> buffer;
-  auto rdh = createRDH<RAWDataHeaderV4>(0, 0, 0, 12, 34, b8.size());
+  std::vector<std::byte> buffer;
+  uint8_t linkIDforUL = 15; // must be 15
+  auto rdh = createRDH<RAWDataHeaderV4>(0, linkIDforUL, 0, 12, 34, b8.size());
   appendRDH(buffer, rdh);
   buffer.insert(buffer.end(), b8.begin(), b8.end());
 
@@ -220,9 +219,9 @@ void testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
     std::cout << fmt::format("testDecode:{}-{}\n", asString(dsId), asString(sc));
   };
 
-  PageDecoder<RAWDataHeaderV4, UserLogicFormat, UserLogicEndpointDecoder<CHARGESUM>> decoder(handlePacket);
-
-  decoder(buffer);
+  gsl::span<const std::byte> page(reinterpret_cast<const std::byte*>(buffer.data()), buffer.size());
+  auto decoder = createPageDecoder(page, handlePacket);
+  decoder(page);
 }
 
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
@@ -306,7 +305,7 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
 // BOOST_AUTO_TEST_CASE(TestRecoverableError)
 // {
 //   const auto channelHandler = [](o2::mch::raw::DsElecId dsId,
-//                                  uint8_t channel,
+//                                  std::byte channel,
 //                                  o2::mch::raw::SampaCluster) {
 //     std::cout << "channelHandler called !\n";
 //   };

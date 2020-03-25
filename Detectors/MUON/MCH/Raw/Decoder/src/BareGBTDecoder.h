@@ -57,7 +57,7 @@ class BareGBTDecoder : public PayloadDecoder<BareGBTDecoder<CHARGESUM>>
     * 
     * @return the number of bytes that have been used from bytes span
     */
-  size_t append(gsl::span<uint8_t> bytes);
+  size_t append(Payload bytes);
   ///@}
 
   /** @name Methods for testing
@@ -92,7 +92,7 @@ BareGBTDecoder<CHARGESUM>::BareGBTDecoder(uint16_t solarId,
 }
 
 template <typename CHARGESUM>
-size_t BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
+size_t BareGBTDecoder<CHARGESUM>::append(Payload bytes)
 {
   if (bytes.size() % 16 != 0) {
     throw std::invalid_argument("can only bytes by group of 16 (i.e. 128 bits)");
@@ -102,10 +102,11 @@ size_t BareGBTDecoder<CHARGESUM>::append(gsl::span<uint8_t> bytes)
     ++mNofGbtWordsSeens;
     int elinkIndex = 0;
     for (auto b : bytes.subspan(j, 10)) {
-      mElinks[elinkIndex++].append(b & 2, b & 1);
-      mElinks[elinkIndex++].append(b & 8, b & 4);
-      mElinks[elinkIndex++].append(b & 32, b & 16);
-      mElinks[elinkIndex++].append(b & 128, b & 64);
+      const uint8_t b8 = std::to_integer<uint8_t>(b);
+      mElinks[elinkIndex++].append(b8 & 2, b8 & 1);
+      mElinks[elinkIndex++].append(b8 & 8, b8 & 4);
+      mElinks[elinkIndex++].append(b8 & 32, b8 & 16);
+      mElinks[elinkIndex++].append(b8 & 128, b8 & 64);
     }
     n += 10;
   }
