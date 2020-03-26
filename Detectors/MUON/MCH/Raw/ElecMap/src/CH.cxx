@@ -12,7 +12,7 @@
 #include <cstdint>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include <stdexcept>
 #include <fmt/format.h>
 #include <iostream>
@@ -25,18 +25,19 @@ void add(std::map<uint16_t, uint32_t>& e2d, int deId, int dsId,
 {
   e2d.emplace(encode(o2::mch::raw::DsElecId(solarId, groupId, index)), encode(o2::mch::raw::DsDetId(deId, dsId)));
 }
-void add_cru(std::map<uint16_t, uint32_t>& s2c, int cruId, int linkId, uint16_t solarId, uint16_t deId)
+
+void add_cru(std::map<uint16_t, uint32_t>& s2f, int feeId, int linkId, uint16_t solarId)
 {
-  auto code = encode(o2::mch::raw::CruLinkId(cruId, linkId, deId));
+  auto code = encode(o2::mch::raw::FeeLinkId(feeId, linkId));
   // ensure we don't have duplicated codes in the map
 
-  // std::cout << fmt::format("CRU {:4d} LINK {:2d} SOLAR {:4d} DE {:4d} CODE {:8d}\n",
-  //                          cruId, linkId, solarId, deId, code);
+  // std::cout << fmt::format("FEE {:4d} LINK {:2d} SOLAR {:4d} CODE {:8d}\n",
+  //                          feeId, linkId, solarId, code);
 
-  if (std::find_if(begin(s2c), end(s2c), [code](const auto& v) { return v.second == code; }) != end(s2c)) {
-    throw std::logic_error(fmt::format("Seems cru,link,deId=({},{},{}) is already referenced in the map !",
-                                       cruId, linkId, deId));
+  if (std::find_if(begin(s2f), end(s2f), [code](const auto& v) { return v.second == code; }) != end(s2f)) {
+    throw std::logic_error(fmt::format("Seems feeid,link=({},{}) (solarId={}) is already referenced in the map !",
+                                       feeId, linkId, solarId));
   }
-  s2c.emplace(solarId, code);
+  s2f.emplace(solarId, code);
 }
 } // namespace

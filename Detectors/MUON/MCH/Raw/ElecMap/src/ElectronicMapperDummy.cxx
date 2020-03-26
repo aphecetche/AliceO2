@@ -13,7 +13,7 @@
 #include <fmt/format.h>
 #include "MCHRawElecMap/DsElecId.h"
 #include "MCHRawElecMap/DsDetId.h"
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include "ElectronicMapperImplHelper.h"
 #include "dslist.h"
 
@@ -65,7 +65,7 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   return e2d;
 }
 
-std::map<uint32_t, uint16_t> buildCruLinkId2SolarIdMap()
+std::map<uint32_t, uint16_t> buildFeeLinkId2SolarIdMap()
 {
   std::map<uint32_t, uint16_t> c2s;
 
@@ -81,14 +81,14 @@ std::map<uint32_t, uint16_t> buildCruLinkId2SolarIdMap()
         solarId++;
         auto cruId = solarId / 24;
         auto linkId = solarId - cruId * 24;
-        c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;
+        c2s[encode(o2::mch::raw::FeeLinkId(cruId, linkId))] = solarId;
       }
       n++;
     };
   };
   auto cruId = solarId / 24;
   auto linkId = solarId - cruId * 24;
-  c2s[encode(o2::mch::raw::CruLinkId(cruId, linkId))] = solarId;
+  c2s[encode(o2::mch::raw::FeeLinkId(cruId, linkId))] = solarId;
   return c2s;
 }
 } // namespace
@@ -119,22 +119,22 @@ std::function<std::optional<DsElecId>(DsDetId)>
 }
 
 template <>
-std::function<std::optional<uint16_t>(CruLinkId)>
-  createCruLink2SolarMapper<ElectronicMapperDummy>()
+std::function<std::optional<uint16_t>(FeeLinkId)>
+  createFeeLink2SolarMapper<ElectronicMapperDummy>()
 {
-  auto c2s = buildCruLinkId2SolarIdMap();
-  return impl::mapperCruLink2Solar<ElectronicMapperDummy>(c2s);
+  auto c2s = buildFeeLinkId2SolarIdMap();
+  return impl::mapperFeeLink2Solar<ElectronicMapperDummy>(c2s);
 }
 
 template <>
-std::function<std::optional<CruLinkId>(uint16_t)>
-  createSolar2CruLinkMapper<ElectronicMapperDummy>()
+std::function<std::optional<FeeLinkId>(uint16_t)>
+  createSolar2FeeLinkMapper<ElectronicMapperDummy>()
 {
   std::map<uint16_t, uint32_t> s2c;
-  auto c2s = buildCruLinkId2SolarIdMap();
+  auto c2s = buildFeeLinkId2SolarIdMap();
   for (auto p : c2s) {
     s2c[p.second] = p.first;
   }
-  return impl::mapperSolar2CruLink<ElectronicMapperDummy>(s2c);
+  return impl::mapperSolar2FeeLink<ElectronicMapperDummy>(s2c);
 }
 } // namespace o2::mch::raw

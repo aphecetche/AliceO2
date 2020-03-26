@@ -18,7 +18,7 @@
 #include <cstdint>
 #include "MCHRawElecMap/DsDetId.h"
 #include "MCHRawElecMap/DsElecId.h"
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include <fmt/format.h>
 #include <array>
 #include <gsl/span>
@@ -31,7 +31,7 @@ extern std::array<int, 156> deIdsForAllMCH;
 /**@name Mapper templates.
 
   Those creator functions return functions that can do the mapping to/from 
-  DsElecId to DsDetId and to/from CruLinkId to solarId.
+  DsElecId to DsDetId and to/from FeeLinkId to solarId.
     */
 ///@{
 
@@ -53,13 +53,13 @@ std::function<std::optional<DsElecId>(DsDetId id)> createDet2ElecMapper()
   return createDet2ElecMapper<T>(deIdsForAllMCH);
 }
 
-/// From (cruId,linkId) to solarId
+/// From (feeId,linkId) to solarId
 template <typename T>
-std::function<std::optional<uint16_t>(CruLinkId id)> createCruLink2SolarMapper();
+std::function<std::optional<uint16_t>(FeeLinkId id)> createFeeLink2SolarMapper();
 
-/// From solarId to (cruId,linkId)
+/// From solarId to (feeId,linkId)
 template <typename T>
-std::function<std::optional<CruLinkId>(uint16_t solarId)> createSolar2CruLinkMapper();
+std::function<std::optional<FeeLinkId>(uint16_t solarId)> createSolar2FeeLinkMapper();
 ///@}
 
 /**@name Actual mapper types.

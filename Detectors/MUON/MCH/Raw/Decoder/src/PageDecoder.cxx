@@ -14,6 +14,8 @@
 #include "MCHRawCommon/RDHManip.h"
 #include "MCHRawDecoder/PageDecoder.h"
 #include "UserLogicEndpointDecoder.h"
+#include "MCHRawElecMap/Mapper.h"
+
 #include <iostream>
 
 namespace o2::mch::raw
@@ -21,48 +23,72 @@ namespace o2::mch::raw
 
 namespace impl
 {
-template <typename FORMAT>
-uint16_t cru2id(uint32_t cruLinkId)
-{
-  return 0;
-}
-
 uint16_t CRUID_MASK = 0xFF;
 uint16_t CHARGESUM_MASK = 0x100;
 
-template <typename RDH, typename FORMAT, typename PAYLOADDECODER>
+template <typename FORMAT, typename CHARGESUM>
+struct PayloadDecoderImpl {
+
+  using type = struct {
+    void process(uint32_t, gsl::span<const std::byte>);
+  };
+
+  type operator()(const FeeLinkId& feeLinkId, SampaChannelHandler sampaChannelHandler);
+};
+
+template <typename CHARGESUM>
+struct PayloadDecoderImpl<UserLogicFormat, CHARGESUM> {
+  using type = UserLogicEndpointDecoder<CHARGESUM>;
+
+  type operator()(const FeeLinkId& feeLinkId, SampaChannelHandler sampaChannelHandler)
+  {
+    auto fee2solar = createFeeLink2SolarMapper<ElectronicMapperGenerated>();
+    return std::move(UserLogicEndpointDecoder<CHARGESUM>(feeLinkId.feeId(), fee2solar, sampaChannelHandler));
+  }
+};
+
+template <typename CHARGESUM>
+struct PayloadDecoderImpl<BareFormat, CHARGESUM> {
+  using type = BareGBTDecoder<CHARGESUM>;
+
+  type operator()(const FeeLinkId& feeLinkId, SampaChannelHandler sampaChannelHandler)
+  {
+    auto fee2solar = createFeeLink2SolarMapper<ElectronicMapperGenerated>();
+    auto solarId = fee2solar(feeLinkId);
+    if (!solarId.has_value()) {
+      throw std::logic_error(fmt::format("could not get solarId from feelinkid={}\n", feeLinkId));
+    }
+    return std::move(BareGBTDecoder<CHARGESUM>(solarId.value(), sampaChannelHandler));
+  }
+};
+
+template <typename RDH, typename FORMAT, typename CHARGESUM>
 class PageDecoderImpl
 {
- private:
  public:
   PageDecoderImpl(SampaChannelHandler sampaChannelHandler) : mSampaChannelHandler{sampaChannelHandler}
   {
-    std::cout << __PRETTY_FUNCTION__ << "\n";
   }
 
   void operator()(Page page)
   {
     auto rdh = createRDH<RDH>(page);
-    int cruId = rdh.feeId & CRUID_MASK;
-    int linkId = rdh.linkID;
-    uint32_t orbit = rdhOrbit(rdh);
+    FeeLinkId feeLinkId(rdhFeeId(rdh) & CRUID_MASK, rdhLinkId(rdh));
 
-    uint32_t cruLinkId = rdh.feeId; // FIXME o2::mch::raw::encode(CruLinkId(cruId, linkId));
-
-    auto p = mPayloadDecoders.find(cruLinkId);
+    auto p = mPayloadDecoders.find(feeLinkId);
 
     if (p == mPayloadDecoders.end()) {
-      auto decoderID = cru2id<FORMAT>(cruLinkId);
-      mPayloadDecoders.emplace(cruLinkId, PAYLOADDECODER(decoderID, mSampaChannelHandler));
-      p = mPayloadDecoders.find(cruLinkId);
+      mPayloadDecoders.emplace(feeLinkId, PayloadDecoderImpl<FORMAT, CHARGESUM>()(feeLinkId, mSampaChannelHandler));
+      p = mPayloadDecoders.find(feeLinkId);
     }
 
+    uint32_t orbit = rdhOrbit(rdh);
     p->second.process(orbit, page.subspan(sizeof(rdh), rdhPayloadSize(rdh)));
   }
 
  private:
   SampaChannelHandler mSampaChannelHandler;
-  std::map<uint32_t, PAYLOADDECODER> mPayloadDecoders;
+  std::map<FeeLinkId, typename PayloadDecoderImpl<FORMAT, CHARGESUM>::type> mPayloadDecoders;
 };
 
 template <typename RDH>
@@ -101,15 +127,15 @@ PageDecoder createPageDecoder(RawBuffer rdhBuffer, SampaChannelHandler channelHa
   if (isValid(rdh)) {
     if (rdhLinkId(rdh) == 15) {
       if (rdhFeeId(rdh) & impl::CHARGESUM_MASK) {
-        return impl::PageDecoderImpl<V4, UserLogicFormat, UserLogicEndpointDecoder<ChargeSumMode>>(channelHandler);
+        return impl::PageDecoderImpl<V4, UserLogicFormat, ChargeSumMode>(channelHandler);
       } else {
-        return impl::PageDecoderImpl<V4, UserLogicFormat, UserLogicEndpointDecoder<SampleMode>>(channelHandler);
+        return impl::PageDecoderImpl<V4, UserLogicFormat, SampleMode>(channelHandler);
       }
     } else {
       if (rdhFeeId(rdh) & impl::CHARGESUM_MASK) {
-        return impl::PageDecoderImpl<V4, BareFormat, BareGBTDecoder<SampleMode>>(channelHandler);
+        return impl::PageDecoderImpl<V4, BareFormat, SampleMode>(channelHandler);
       } else {
-        return impl::PageDecoderImpl<V4, BareFormat, BareGBTDecoder<ChargeSumMode>>(channelHandler);
+        return impl::PageDecoderImpl<V4, BareFormat, ChargeSumMode>(channelHandler);
       }
     }
   }

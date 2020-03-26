@@ -21,7 +21,7 @@
 #include "Assertions.h"
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include "PayloadDecoder.h"
 
 namespace o2::mch::raw
@@ -39,7 +39,9 @@ class UserLogicEndpointDecoder : public PayloadDecoder<UserLogicEndpointDecoder<
   /// Constructor.
   /// \param linkId
   /// \param sampaChannelHandler the callable that will handle each SampaCluster
-  UserLogicEndpointDecoder(uint16_t linkId, SampaChannelHandler sampaChannelHandler);
+  UserLogicEndpointDecoder(uint16_t feeId,
+                           std::function<std::optional<uint16_t>(FeeLinkId id)> fee2SolarMapper,
+                           SampaChannelHandler sampaChannelHandler);
 
   /** @name Main interface 
     */
@@ -63,8 +65,8 @@ class UserLogicEndpointDecoder : public PayloadDecoder<UserLogicEndpointDecoder<
   ///@}
 
  private:
-  int mLinkId;
-  int mCruId;
+  uint16_t mFeeId;
+  std::function<std::optional<uint16_t>(FeeLinkId id)> mFee2SolarMapper;
   SampaChannelHandler mChannelHandler;
   std::map<uint16_t, std::array<UserLogicElinkDecoder<CHARGESUM>, 40>> mElinkDecoders;
   int mNofGbtWordsSeens;
@@ -74,15 +76,15 @@ using namespace o2::mch::raw;
 using namespace boost::multiprecision;
 
 template <typename CHARGESUM>
-UserLogicEndpointDecoder<CHARGESUM>::UserLogicEndpointDecoder(uint16_t linkId,
+UserLogicEndpointDecoder<CHARGESUM>::UserLogicEndpointDecoder(uint16_t feeId,
+                                                              std::function<std::optional<uint16_t>(FeeLinkId id)> fee2SolarMapper,
                                                               SampaChannelHandler sampaChannelHandler)
   : PayloadDecoder<UserLogicEndpointDecoder<CHARGESUM>>(sampaChannelHandler),
-    mLinkId{linkId},
+    mFeeId{feeId},
+    mFee2SolarMapper{fee2SolarMapper},
     mChannelHandler(sampaChannelHandler),
     mNofGbtWordsSeens{0}
 {
-  auto c = decodeCruLinkId(linkId);
-  mCruId = c.cruId();
 }
 
 template <typename CHARGESUM>
@@ -117,16 +119,21 @@ size_t UserLogicEndpointDecoder<CHARGESUM>::append(Payload buffer)
       // throw std::invalid_argument(fmt::format("gbt {} != expected {} word={:X}\n", gbt, mGbtId, word));
     }
 
-    // Compute the CRU link ID
-    uint16_t lid = encode(CruLinkId(mCruId, gbt));
-
     // Get the corresponding decoders array, or allocate it if not existing yet
     auto d = mElinkDecoders.find(gbt);
     if (d == mElinkDecoders.end()) {
-      throw std::logic_error("FIXME: get DsElecId proper here !!!");
+
+      // Compute the (feeId, linkId) pair...
+      FeeLinkId feeLinkId(mFeeId, gbt);
+
+      // ... and get the solar from it
+      auto solarId = mFee2SolarMapper(feeLinkId);
+      if (!solarId.has_value()) {
+        throw std::logic_error(fmt::format("Could not get solarId from feeLinkId={}\n", asString(feeLinkId)));
+      }
       mElinkDecoders.emplace(static_cast<uint16_t>(gbt),
                              impl::makeArray<40>([=](size_t i) {
-                               return UserLogicElinkDecoder<CHARGESUM>(DsElecId{lid, static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, mChannelHandler);
+                               return UserLogicElinkDecoder<CHARGESUM>(DsElecId{solarId.value(), static_cast<uint8_t>(i / 5), static_cast<uint8_t>(i % 5)}, mChannelHandler);
                              }));
       d = mElinkDecoders.find(gbt);
     }
@@ -134,7 +141,7 @@ size_t UserLogicEndpointDecoder<CHARGESUM>::append(Payload buffer)
     uint16_t dsid = (word >> 53) & 0x3F;
     impl::assertIsInRange("dsid", dsid, 0, 39);
 
-    //std::cout << fmt::format("CRU={} linkId={} DS={} word={:08X}\n", mCruId, gbt, dsid, word);
+    //std::cout << fmt::format("CRU={} linkId={} DS={} word={:08X}\n", mFeeId, gbt, dsid, word);
 
     // the remaining 50 bits are passed to the ElinkDecoder
     uint64_t data = word & UINT64_C(0x003FFFFFFFFFFFFF);

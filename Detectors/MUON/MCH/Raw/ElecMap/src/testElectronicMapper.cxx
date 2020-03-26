@@ -363,19 +363,19 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckNumberOfSolarsPerDetectionElement, T, realTyp
   BOOST_CHECK_EQUAL(getSolarUIDs<T>(1019).size(), 0);
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(AllSolarsMustGetACruLink, T, realTypes)
+BOOST_AUTO_TEST_CASE_TEMPLATE(AllSolarsMustGetAFeeLink, T, realTypes)
 {
   std::set<uint16_t> solarIds = getSolarUIDs<T>();
-  auto solar2cruLink = o2::mch::raw::createSolar2CruLinkMapper<T>();
+  auto solar2feeLink = o2::mch::raw::createSolar2FeeLinkMapper<T>();
   int nbad{0};
   for (auto s : solarIds) {
-    auto p = solar2cruLink(s);
+    auto p = solar2feeLink(s);
     if (!p.has_value()) {
       ++nbad;
     }
     // std::cout << fmt::format("SOLAR {:4d} ", s);
     // if (p.has_value()) {
-    //   std::cout << fmt::format("CRU {:4d} LINK {:1d}\n", p->cruId(), p->linkId());
+    //   std::cout << fmt::format("CRU {:4d} LINK {:1d}\n", p->feeId(), p->linkId());
     // } else {
     //   std::cout << " NO DATA\n";
     // }

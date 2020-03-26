@@ -134,6 +134,31 @@ class UserLogicElinkDecoder
 
 constexpr int SAMPA_HEADERSIZE = 50;
 
+constexpr bool isIncomplete(uint64_t data)
+{
+  return data & 0x10000000000000;
+}
+
+constexpr uint8_t channelNumber(uint64_t data)
+{
+  return static_cast<uint8_t>((data >> 53) & 0x7FF);
+}
+
+constexpr uint8_t linkId(uint64_t data)
+{
+  return static_cast<uint8_t>((data >> 59) & 0x1F);
+}
+
+constexpr uint8_t dsId(uint64_t data)
+{
+  return static_cast<uint8_t>((data >> 53) & 0x3F);
+}
+
+constexpr uint8_t errorCode(uint64_t data)
+{
+  return static_cast<uint8_t>((data >> 50) & 0x3);
+}
+
 //FIXME: probably needs the GBT id as well here ?
 template <typename CHARGESUM>
 UserLogicElinkDecoder<CHARGESUM>::UserLogicElinkDecoder(DsElecId dsId,
@@ -180,21 +205,26 @@ void UserLogicElinkDecoder<CHARGESUM>::append10Bits(uint16_t data)
 template <typename CHARGESUM>
 void UserLogicElinkDecoder<CHARGESUM>::append(uint64_t data)
 {
-  int nch = (data >> 53) & 0x7FF;
-  int link_id = (data >> 59) & 0x1F;
-  int ds_id = (data >> 53) & 0x3F;
-  int is_incomplete = (data >> 52) & 0x1;
-  int err_code = (data >> 50) & 0x3;
 
   if (verbose) {
-    std::cout << fmt::format("[append (64 bits)] data={:016X} nch={:d} link={:d} ds={:d} incomplete={:d} err={:d}\n", data, nch, link_id, ds_id, is_incomplete, err_code);
+    bool is_incomplete = ((data >> 52) & 0x1) == 0x1;
+    int nch = (data >> 53) & 0x7FF;
+    int link_id = (data >> 59) & 0x1F;
+    int ds_id = (data >> 53) & 0x3F;
+    int err_code = (data >> 50) & 0x3;
+    std::cout << fmt::format("[append (64 bits)] data={:016X} nch={:d} link={:d} ds={:d} incomplete={} err={:d}\n", data, nch, link_id, ds_id, is_incomplete, err_code);
+    std::cout << fmt::format("[append (64 bits)] data={:016X} nch={:d} link={:d} ds={:d} incomplete={} err={:d}\n", data, channelNumber(data), linkId(data), dsId(data), isIncomplete(data), errorCode(data));
   }
 
   for (auto i = 0; i < 50; i += 10) {
+
     append10Bits((data >> i) & 0x3FF);
-    // FIXME: what is this is_incomplete bit ?
-    // if (mState == State::LookingForHeader && is_incomplete)
-    //   return;
+
+    if (mState == State::LookingForHeader && isIncomplete(data)) {
+      // go back to findSync
+      reset();
+      break;
+    }
   }
 }
 

@@ -186,7 +186,7 @@ RAWDataHeaderV4 createRDH(gsl::span<const std::byte> buffer)
 }
 
 template <>
-RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint16_t solarId, uint32_t orbit, uint16_t bunchCrossing,
+RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint16_t feeId, uint32_t orbit, uint16_t bunchCrossing,
                           uint16_t payloadSize)
 {
   RAWDataHeaderV4 rdh;
@@ -199,7 +199,7 @@ RAWDataHeaderV4 createRDH(uint16_t cruId, uint8_t linkId, uint16_t solarId, uint
 
   rdh.cruID = cruId;
   rdhLinkId(rdh, linkId);
-  rdh.feeId = solarId;
+  rdh.feeId = feeId;
   rdh.priority = 0;
   rdh.blockLength = memorySize - sizeof(rdh); // FIXME: the blockLength disappears in RDHv5 ?
   rdh.memorySize = memorySize;

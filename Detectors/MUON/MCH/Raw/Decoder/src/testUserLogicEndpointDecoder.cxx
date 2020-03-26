@@ -158,17 +158,23 @@ void decodeBuffer(UserLogicElinkDecoder<CHARGESUM>& dec, const std::vector<uint6
   }
 }
 
-constexpr uint8_t chip = 5;
-constexpr uint8_t ch = 31;
+constexpr uint8_t CHIP = 5;
+constexpr uint8_t CHANNEL = 31;
+constexpr uint16_t PREFIX = 24;
+// exact value not relevant as long as it is non-zero,
+// and is not setting the error bits that are used (for the moment only bit 52)
+// Idea being to populate bits 50-63 with some data to ensure
+// the decoder is only using the lower 50 bits to get the sync and
+// header values, for instance.
 
 std::vector<uint10_t> createBuffer10(const std::vector<SampaCluster>& clustersFirstChannel,
                                      const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   bool sync{true};
-  auto b10 = createBuffer10(clustersFirstChannel, chip, ch, sync);
+  auto b10 = createBuffer10(clustersFirstChannel, CHIP, CHANNEL, sync);
   if (clustersSecondChannel.size()) {
-    auto chip2 = chip;
-    auto ch2 = ch / 2;
+    auto chip2 = CHIP;
+    auto ch2 = CHANNEL / 2;
     auto b10_2 = createBuffer10(clustersSecondChannel, chip2, ch2, !sync);
     b10.insert(b10.end(), b10_2.begin(), b10_2.end());
   }
@@ -180,18 +186,13 @@ std::string testPayloadDecode(const std::vector<SampaCluster>& clustersFirstChan
                               const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   auto b10 = createBuffer10(clustersFirstChannel, clustersSecondChannel);
-  uint16_t prefix{22}; // 14-bits value.
-  // exact value not relevant as long as it is non-zero.
-  // Idea being to populate bits 50-63 with some data to ensure
-  // the decoder is only using the lower 50 bits to get the sync and
-  // header values, for instance.
-  auto b64 = b10to64(b10, prefix);
+  auto b64 = b10to64(b10, PREFIX);
 
   std::string results;
 
   uint16_t dummySolarId{0};
   uint8_t dummyGroup{0};
-  uint8_t index = (chip - (ch > 32)) / 2;
+  uint8_t index = (CHIP - (CHANNEL > 32)) / 2;
   DsElecId dsId{dummySolarId, dummyGroup, index};
   UserLogicElinkDecoder<CHARGESUM> dec(dsId, handlePacket(results));
   decodeBuffer(dec, b64);
@@ -203,21 +204,23 @@ void testDecode(const std::vector<SampaCluster>& clustersFirstChannel,
                 const std::vector<SampaCluster>& clustersSecondChannel = {})
 {
   auto b10 = createBuffer10(clustersFirstChannel, clustersSecondChannel);
-  uint16_t prefix{22};
-  auto b64 = b10to64(b10, prefix);
+  auto b64 = b10to64(b10, PREFIX);
 
   std::vector<std::byte> b8;
   impl::copyBuffer(b64, b8);
 
   std::vector<std::byte> buffer;
   uint8_t linkIDforUL = 15; // must be 15
-  auto rdh = createRDH<RAWDataHeaderV4>(0, linkIDforUL, 0, 12, 34, b8.size());
+  uint16_t feeId = 18;
+  uint16_t cruId = feeId / 2;
+  auto rdh = createRDH<RAWDataHeaderV4>(cruId, linkIDforUL, feeId, 12, 34, b8.size());
   appendRDH(buffer, rdh);
   buffer.insert(buffer.end(), b8.begin(), b8.end());
-
   const auto handlePacket = [](DsElecId dsId, uint8_t channel, SampaCluster sc) {
     std::cout << fmt::format("testDecode:{}-{}\n", asString(dsId), asString(sc));
   };
+
+  impl::dumpBuffer<o2::mch::raw::UserLogicFormat>(buffer);
 
   gsl::span<const std::byte> page(reinterpret_cast<const std::byte*>(buffer.data()), buffer.size());
   auto decoder = createPageDecoder(page, handlePacket);
@@ -235,15 +238,6 @@ BOOST_AUTO_TEST_CASE(SampleModeSimplest)
   SampaCluster cl(345, {123, 456});
   auto r = testPayloadDecode<SampleMode>({cl});
   BOOST_CHECK_EQUAL(r, "S0-J0-DS2-ch-63-ts-345-q-123-456\n");
-}
-
-BOOST_AUTO_TEST_CASE(DecodeSampleModeSimplest)
-{
-  // only one channel with one very small cluster
-  // fitting within one 64-bits word
-  SampaCluster cl(345, {123, 456});
-  testDecode<SampleMode>({cl});
-  BOOST_CHECK(true);
 }
 
 BOOST_AUTO_TEST_CASE(SampleModeSimple)
@@ -302,26 +296,14 @@ BOOST_AUTO_TEST_CASE(ChargeSumModeTwoChannels)
                     "S0-J0-DS2-ch-47-ts-348-q-791\n");
 }
 
-// BOOST_AUTO_TEST_CASE(TestRecoverableError)
-// {
-//   const auto channelHandler = [](o2::mch::raw::DsElecId dsId,
-//                                  std::byte channel,
-//                                  o2::mch::raw::SampaCluster) {
-//     std::cout << "channelHandler called !\n";
-//   };
-//
-//   constexpr uint64_t sampaSyncWord{0x1555540f00113};
-//
-//   o2::mch::raw::UserLogicElinkDecoder<SampleMode> ds{DsElecId{0, 0, 2}, channelHandler};
-//
-//   ds.append(sampaSyncWord);
-//   ds.append(0x1722e9f00327d);
-//   ds.append(1);
-//   ds.append(2);
-//
-//   ds.status();
-//   BOOST_CHECK(true);
-// }
+BOOST_AUTO_TEST_CASE(DecodeSampleModeSimplest)
+{
+  // only one channel with one very small cluster
+  // fitting within one 64-bits word
+  SampaCluster cl(345, {123, 456});
+  testDecode<SampleMode>({cl});
+  BOOST_CHECK(true);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

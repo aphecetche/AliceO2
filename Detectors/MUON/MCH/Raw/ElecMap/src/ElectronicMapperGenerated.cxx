@@ -23,12 +23,12 @@ extern void fillElec2DetCH6L(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH7R(std::map<uint16_t, uint32_t>& e2d);
 extern void fillElec2DetCH7L(std::map<uint16_t, uint32_t>& e2d);
 
-extern void fillSolar2CruLinkCH5R(std::map<uint16_t, uint32_t>& s2c);
-extern void fillSolar2CruLinkCH5L(std::map<uint16_t, uint32_t>& s2c);
-extern void fillSolar2CruLinkCH6R(std::map<uint16_t, uint32_t>& s2c);
-extern void fillSolar2CruLinkCH6L(std::map<uint16_t, uint32_t>& s2c);
-extern void fillSolar2CruLinkCH7R(std::map<uint16_t, uint32_t>& s2c);
-extern void fillSolar2CruLinkCH7L(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH5R(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH5L(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH6R(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH6L(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH7R(std::map<uint16_t, uint32_t>& s2c);
+extern void fillSolar2FeeLinkCH7L(std::map<uint16_t, uint32_t>& s2c);
 
 namespace
 {
@@ -66,15 +66,15 @@ std::map<uint16_t, uint32_t> buildDsElecId2DsDetIdMap(gsl::span<int> deIds)
   return filter(e2d, deIds);
 }
 
-std::map<uint16_t, uint32_t> buildSolarId2CruLinkIdMap()
+std::map<uint16_t, uint32_t> buildSolarId2FeeLinkIdMap()
 {
   std::map<uint16_t, uint32_t> s2c;
-  fillSolar2CruLinkCH5R(s2c);
-  fillSolar2CruLinkCH5L(s2c);
-  fillSolar2CruLinkCH6R(s2c);
-  fillSolar2CruLinkCH6L(s2c);
-  fillSolar2CruLinkCH7R(s2c);
-  fillSolar2CruLinkCH7L(s2c);
+  fillSolar2FeeLinkCH5R(s2c);
+  fillSolar2FeeLinkCH5L(s2c);
+  fillSolar2FeeLinkCH6R(s2c);
+  fillSolar2FeeLinkCH6L(s2c);
+  fillSolar2FeeLinkCH7R(s2c);
+  fillSolar2FeeLinkCH7L(s2c);
   return s2c;
 }
 
@@ -105,23 +105,23 @@ std::function<std::optional<DsElecId>(DsDetId)>
 }
 
 template <>
-std::function<std::optional<CruLinkId>(uint16_t)>
-  createSolar2CruLinkMapper<ElectronicMapperGenerated>()
+std::function<std::optional<FeeLinkId>(uint16_t)>
+  createSolar2FeeLinkMapper<ElectronicMapperGenerated>()
 {
-  std::map<uint16_t, uint32_t> solarId2CruLinkId = buildSolarId2CruLinkIdMap();
-  return impl::mapperSolar2CruLink<ElectronicMapperGenerated>(solarId2CruLinkId);
+  std::map<uint16_t, uint32_t> solarId2FeeLinkId = buildSolarId2FeeLinkIdMap();
+  return impl::mapperSolar2FeeLink<ElectronicMapperGenerated>(solarId2FeeLinkId);
 }
 
 template <>
-std::function<std::optional<uint16_t>(CruLinkId)>
-  createCruLink2SolarMapper<ElectronicMapperGenerated>()
+std::function<std::optional<uint16_t>(FeeLinkId)>
+  createFeeLink2SolarMapper<ElectronicMapperGenerated>()
 {
-  std::map<uint16_t, uint32_t> solarId2CruLinkId = buildSolarId2CruLinkIdMap();
-  std::map<uint32_t, uint16_t> cruLinkId2SolarId;
-  for (auto p : solarId2CruLinkId) {
-    cruLinkId2SolarId[p.second] = p.first;
+  std::map<uint16_t, uint32_t> solarId2FeeLinkId = buildSolarId2FeeLinkIdMap();
+  std::map<uint32_t, uint16_t> feeLinkId2SolarId;
+  for (auto p : solarId2FeeLinkId) {
+    feeLinkId2SolarId[p.second] = p.first;
   }
-  return impl::mapperCruLink2Solar<ElectronicMapperGenerated>(cruLinkId2SolarId);
+  return impl::mapperFeeLink2Solar<ElectronicMapperGenerated>(feeLinkId2SolarId);
 }
 
 } // namespace o2::mch::raw

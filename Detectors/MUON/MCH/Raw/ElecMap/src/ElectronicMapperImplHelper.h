@@ -13,7 +13,7 @@
 
 #include "MCHRawElecMap/DsDetId.h"
 #include "MCHRawElecMap/DsElecId.h"
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include <functional>
 #include <optional>
 #include <map>
@@ -51,23 +51,23 @@ std::function<std::optional<o2::mch::raw::DsElecId>(o2::mch::raw::DsDetId)>
 }
 
 template <typename T>
-std::function<std::optional<CruLinkId>(uint16_t)>
-  mapperSolar2CruLink(const std::map<uint16_t, uint32_t>& solar2cruLink)
+std::function<std::optional<FeeLinkId>(uint16_t)>
+  mapperSolar2FeeLink(const std::map<uint16_t, uint32_t>& solar2cruLink)
 {
-  return [solar2cruLink](uint16_t solarId) -> std::optional<CruLinkId> {
+  return [solar2cruLink](uint16_t solarId) -> std::optional<FeeLinkId> {
     auto it = solar2cruLink.find(solarId);
     if (it == solar2cruLink.end()) {
       return std::nullopt;
     }
-    return decodeCruLinkId(it->second);
+    return decodeFeeLinkId(it->second);
   };
 }
 
 template <typename T>
-std::function<std::optional<uint16_t>(CruLinkId)>
-  mapperCruLink2Solar(const std::map<uint32_t, uint16_t>& cruLink2solar)
+std::function<std::optional<uint16_t>(FeeLinkId)>
+  mapperFeeLink2Solar(const std::map<uint32_t, uint16_t>& cruLink2solar)
 {
-  return [cruLink2solar](o2::mch::raw::CruLinkId id) -> std::optional<uint16_t> {
+  return [cruLink2solar](o2::mch::raw::FeeLinkId id) -> std::optional<uint16_t> {
     auto it = cruLink2solar.find(encode(id));
     if (it == cruLink2solar.end()) {
       return std::nullopt;
