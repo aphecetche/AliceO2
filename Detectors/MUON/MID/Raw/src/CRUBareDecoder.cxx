@@ -45,6 +45,7 @@ void CRUBareDecoder::process(gsl::span<const uint8_t> bytes)
 
   mHandler.setBuffer(bytes);
   while (mHandler.nextNonEmptyHBF()) {
+    // TODO: UNCOMMENT
     uint16_t feeId = mCrateFeeIdMapper.getFeeId(mHandler.getRDH()->linkID, mHandler.getRDH()->endPointID, mHandler.getRDH()->cruID);
     mGBTDecoders[feeId].process(mHandler.getPayload(), *mHandler.getRDH());
     size_t firstEntry = mData.size();
