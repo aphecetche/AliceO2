@@ -27,8 +27,8 @@ class DataBlockRefComp
   }
 };
 
-void outputDataBlockRefs(gsl::span<const uint8_t> buffer, const std::set<DataBlockRef, DataBlockRefComp>& dataBlockRefs,
-                         std::vector<uint8_t>& outBuffer)
+void outputDataBlockRefs(gsl::span<const std::byte> buffer, const std::set<DataBlockRef, DataBlockRefComp>& dataBlockRefs,
+                         std::vector<std::byte>& outBuffer)
 {
   for (auto dataBlockRef : dataBlockRefs) {
     if (dataBlockRef.offset.has_value()) {
@@ -41,8 +41,8 @@ void outputDataBlockRefs(gsl::span<const uint8_t> buffer, const std::set<DataBlo
 }
 
 // @return the first orbit in the buffer
-uint32_t equalizeHBFPerFeeId(gsl::span<const uint8_t> buffer,
-                             std::vector<uint8_t>& outBuffer,
+uint32_t equalizeHBFPerFeeId(gsl::span<const std::byte> buffer,
+                             std::vector<std::byte>& outBuffer,
                              const std::set<uint16_t>& feeIds,
                              o2::InteractionRecord currentIR)
 {

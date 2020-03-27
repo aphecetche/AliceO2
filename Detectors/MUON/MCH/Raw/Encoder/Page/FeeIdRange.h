@@ -28,7 +28,7 @@ struct FeeIdRange {
 // of a given feeId (aka (cru,link))
 //
 template <typename RDH>
-std::map<int, std::vector<FeeIdRange>> getFeeIdRanges(gsl::span<const uint8_t> buffer);
+std::map<int, std::vector<FeeIdRange>> getFeeIdRanges(gsl::span<const std::byte> buffer);
 
 void dumpFeeIdRanges(const std::map<int, std::vector<FeeIdRange>>& feeIdRanges);
 } // namespace o2::mch::raw

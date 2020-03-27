@@ -8,32 +8,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ELINK_ENCODER_H
-#define O2_MCH_RAW_ELINK_ENCODER_H
+#ifndef O2_MCH_RAW_ENCODER_INSERTER_H
+#define O2_MCH_RAW_ENCODER_INSERTER_H
 
-#include <vector>
-#include <cstdint>
 #include <gsl/span>
+#include <cstdint>
+#include <vector>
+#include "CommonDataFormat/InteractionRecord.h"
+#include <set>
 
 namespace o2::mch::raw
 {
-class SampaCluster;
-class SampaHeader;
-
-template <typename FORMAT, typename CHARGESUM>
-class ElinkEncoder
-{
- public:
-  explicit ElinkEncoder(uint8_t elinkId, uint8_t chip, int phase = 0);
-
-  void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
-
-  size_t moveToBuffer(std::vector<uint64_t>& buffer, uint64_t prefix);
-
-  void clear();
-};
-
-SampaHeader buildHeader(uint8_t elinkId, uint8_t chId, const std::vector<SampaCluster>& data);
+uint32_t equalizeHBFPerFeeId(gsl::span<const std::byte> buffer,
+                             std::vector<std::byte>& outBuffer,
+                             const std::set<uint16_t>& feeIds,
+                             o2::InteractionRecord currentIR);
 
 } // namespace o2::mch::raw
 

@@ -8,22 +8,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ENCODER_INSERTER_H
-#define O2_MCH_RAW_ENCODER_INSERTER_H
+#ifndef O2_MCH_RAW_ENCODER_FEELINK_SETTER_H
+#define O2_MCH_RAW_ENCODER_FEELINK_SETTER_H
 
 #include <gsl/span>
+#include <functional>
+#include <optional>
 #include <cstdint>
-#include <vector>
-#include "CommonDataFormat/InteractionRecord.h"
-#include <set>
+#include "MCHRawElecMap/FeeLinkId.h"
 
 namespace o2::mch::raw
 {
-uint32_t equalizeHBFPerFeeId(gsl::span<const uint8_t> buffer,
-                             std::vector<uint8_t>& outBuffer,
-                             const std::set<uint16_t>& feeIds,
-                             o2::InteractionRecord currentIR);
-
-} // namespace o2::mch::raw
+template <typename RDH>
+void assignFeeLink(gsl::span<std::byte> buffer,
+                   std::function<std::optional<FeeLinkId>(uint16_t solarId)> solar2feelink);
+}
 
 #endif

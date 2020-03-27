@@ -24,7 +24,7 @@ namespace o2::mch::raw
 {
 
 using DigitEncoder = std::function<void(gsl::span<o2::mch::Digit> digits,
-                                        std::vector<uint8_t>& buffer,
+                                        std::vector<std::byte>& buffer,
                                         uint32_t orbit,
                                         uint16_t bc)>;
 

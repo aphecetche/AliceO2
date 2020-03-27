@@ -47,7 +47,7 @@ DigitEncoder createDigitEncoder(Det2ElecMapper det2elec)
   auto digit2elec = createDigit2ElecMapper(det2elec);
 
   return [encoder, digit2elec](gsl::span<o2::mch::Digit> digits,
-                               std::vector<uint8_t>& buffer,
+                               std::vector<std::byte>& buffer,
                                uint32_t orbit,
                                uint16_t bc) {
     static int nadd{0};

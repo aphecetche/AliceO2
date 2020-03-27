@@ -37,9 +37,9 @@ typedef boost::mpl::list<o2::header::RAWDataHeaderV4> testTypes;
 namespace
 {
 template <typename RDH>
-std::vector<uint8_t> createBuffer()
+std::vector<std::byte> createBuffer()
 {
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   std::vector<uint8_t> fees{1, 1, 1, 2, 2, 2};
 
   for (auto feeId : fees) {
@@ -51,7 +51,7 @@ std::vector<uint8_t> createBuffer()
 }
 
 template <typename RDH>
-bool isPacketCounterContiguousPerfee(gsl::span<uint8_t> buffer)
+bool isPacketCounterContiguousPerfee(gsl::span<const std::byte> buffer)
 {
   std::map<int, uint8_t> counters;
   bool ok{true};

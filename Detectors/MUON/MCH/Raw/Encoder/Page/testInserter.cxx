@@ -42,9 +42,9 @@ std::vector<o2::InteractionRecord> interactions{
 
 std::vector<uint16_t> feeIds{10, 12, 11, 5, 3};
 
-std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
+std::vector<std::byte> createBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   for (auto ir : interactions) {
     for (auto feeId : feeIds) {
       DataBlockHeader header{ir.orbit, ir.bc, feeId, 0};
@@ -61,11 +61,11 @@ std::vector<uint8_t> createBuffer(gsl::span<o2::InteractionRecord> interactions)
   return buffer;
 } // namespace
 
-std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
+std::vector<std::byte> testBuffer(gsl::span<o2::InteractionRecord> interactions)
 {
   auto buffer = createBuffer(interactions);
 
-  std::vector<uint8_t> outBuffer;
+  std::vector<std::byte> outBuffer;
   std::set<uint16_t> links(feeIds.begin(), feeIds.end());
   o2::InteractionRecord currentIR{42, 12345};
   equalizeHBFPerFeeId(buffer, outBuffer, links, currentIR);
@@ -76,7 +76,7 @@ std::vector<uint8_t> testBuffer(gsl::span<o2::InteractionRecord> interactions)
 
 } // namespace
 
-bool checkAllFeesHaveSameNumberOfHeaders(gsl::span<const uint8_t> buffer)
+bool checkAllFeesHaveSameNumberOfHeaders(gsl::span<const std::byte> buffer)
 {
   std::map<uint16_t, std::vector<DataBlockRef>> headers;
 

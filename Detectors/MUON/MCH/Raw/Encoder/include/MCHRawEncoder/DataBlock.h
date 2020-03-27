@@ -29,7 +29,7 @@ struct DataBlockHeader {
 
 struct DataBlock {
   DataBlockHeader header;
-  gsl::span<const uint8_t> payload;
+  gsl::span<const std::byte> payload;
   uint64_t size() const
   {
     return sizeof(header) + payload.size();
@@ -41,12 +41,12 @@ struct DataBlockRef {
   std::optional<uint64_t> offset;
 };
 
-void appendDataBlockHeader(std::vector<uint8_t>& outBuffer, DataBlockHeader header);
+void appendDataBlockHeader(std::vector<std::byte>& outBuffer, DataBlockHeader header);
 
-int forEachDataBlockRef(gsl::span<const uint8_t> buffer,
+int forEachDataBlockRef(gsl::span<const std::byte> buffer,
                         std::function<void(DataBlockRef blockRef)> f);
 
-int countHeaders(gsl::span<uint8_t> buffer);
+int countHeaders(gsl::span<const std::byte> buffer);
 
 std::ostream& operator<<(std::ostream& os, const DataBlockHeader& header);
 std::ostream& operator<<(std::ostream& os, const DataBlockRef& ref);

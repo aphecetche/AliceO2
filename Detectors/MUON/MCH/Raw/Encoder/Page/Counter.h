@@ -8,20 +8,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_ENCODER_CRULINK_SETTER_H
-#define O2_MCH_RAW_ENCODER_CRULINK_SETTER_H
+#ifndef O2_MCH_RAW_ENCODER_COUNTER_H
+#define O2_MCH_RAW_ENCODER_COUNTER_H
 
 #include <gsl/span>
-#include <functional>
-#include <optional>
 #include <cstdint>
-#include "MCHRawElecMap/CruLinkId.h"
+#include <map>
 
 namespace o2::mch::raw
 {
+// setPacketCounter updates the packetCounter field of the RDHs
+// where the packetCounter, for a given link,  is incremented
+// by one for each new RDH this link has seen (modulo 255 as the
+// packetCounter is only 8 bits)
 template <typename RDH>
-void assignCruLink(gsl::span<uint8_t> buffer,
-                   std::function<std::optional<CruLinkId>(uint16_t solarId)> solar2cru);
-}
+void setPacketCounter(gsl::span<std::byte> buffer,
+                      std::map<uint16_t, uint8_t>& initialCounters);
+
+} // namespace o2::mch::raw
 
 #endif

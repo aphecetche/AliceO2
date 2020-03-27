@@ -31,7 +31,7 @@ namespace o2::mch::raw
 ///
 /// @return the number of pages added to outBuffer
 template <typename RDH>
-using DataBlockSplitter = std::function<size_t(DataBlock block, std::vector<uint8_t>& outBuffer)>;
+using DataBlockSplitter = std::function<size_t(DataBlock block, std::vector<std::byte>& outBuffer)>;
 
 /// A StopPager adds one single page, composed of only
 /// a RDH (i.e. with no payload), to the outBuffer.
@@ -39,7 +39,7 @@ using DataBlockSplitter = std::function<size_t(DataBlock block, std::vector<uint
 ///
 /// @return the number of pages added to outBuffer
 template <typename RDH>
-using StopPager = std::function<void(DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount)>;
+using StopPager = std::function<void(DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount)>;
 
 template <typename RDH>
 RDH createRDH(const DataBlockHeader& header,
@@ -57,9 +57,9 @@ RDH createRDH(const DataBlockHeader& header,
 
 template <typename RDH>
 size_t createPaddedPage(DataBlock block,
-                        std::vector<uint8_t>& outBuffer,
+                        std::vector<std::byte>& outBuffer,
                         size_t pageSize,
-                        uint8_t paddingByte)
+                        std::byte paddingByte)
 
 {
   auto rdh = createRDH<RDH>(block.header, pageSize, 0, block.payload.size());
@@ -73,8 +73,8 @@ size_t createPaddedPage(DataBlock block,
 }
 
 template <typename RDH>
-size_t createSplitPages(DataBlock block, std::vector<uint8_t>& outBuffer,
-                        size_t pageSize, uint8_t paddingByte)
+size_t createSplitPages(DataBlock block, std::vector<std::byte>& outBuffer,
+                        size_t pageSize, std::byte paddingByte)
 {
   int payloadSize = block.header.payloadSize;
   int useableSize = pageSize - sizeof(RDH);
@@ -96,10 +96,10 @@ size_t createSplitPages(DataBlock block, std::vector<uint8_t>& outBuffer,
 
 template <typename RDH>
 DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
-                                               uint8_t paddingByte)
+                                               std::byte paddingByte)
 {
   if (pageSize == 0) {
-    return [](DataBlock block, std::vector<uint8_t>& outBuffer) {
+    return [](DataBlock block, std::vector<std::byte>& outBuffer) {
       // do not paginate, just add a RDH (assuming payload is small enough
       // to fit in 2<<15 - 64)
       auto len = block.header.payloadSize;
@@ -119,7 +119,7 @@ DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
   }
   return
     [pageSize, paddingByte](DataBlock block,
-                            std::vector<uint8_t>& outBuffer) -> size_t {
+                            std::vector<std::byte>& outBuffer) -> size_t {
       int payloadSize = block.header.payloadSize;
       int useableSize = pageSize - sizeof(block.header);
       if (payloadSize < useableSize) {
@@ -131,10 +131,10 @@ DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
 
 template <typename RDH>
 StopPager<RDH> createStopPager(size_t pageSize,
-                               uint8_t paddingByte)
+                               std::byte paddingByte)
 {
   if (pageSize == 0) {
-    return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount) {
+    return [pageSize, paddingByte](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
       // append RDH with no payload, stop bit is set
       auto rdh = createRDH<RDH>(header, sizeof(RDH));
       rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
@@ -146,7 +146,7 @@ StopPager<RDH> createStopPager(size_t pageSize,
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
-  return [pageSize, paddingByte](DataBlockHeader header, std::vector<uint8_t>& outBuffer, uint16_t pageCount) {
+  return [pageSize, paddingByte](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
     // append RDH with padding payload to fill up a page
     // stop bit is set
     auto rdh = createRDH<RDH>(header, pageSize);
@@ -159,16 +159,16 @@ StopPager<RDH> createStopPager(size_t pageSize,
   };
 }
 
-template <typename RDH, typename ELECMAP>
-size_t paginateBuffer(gsl::span<const uint8_t> buffer,
-                      std::vector<uint8_t>& outBuffer,
+template <typename RDH>
+size_t paginateBuffer(gsl::span<const std::byte> buffer,
+                      std::vector<std::byte>& outBuffer,
                       size_t pageSize,
-                      uint8_t paddingByte)
+                      std::byte paddingByte)
 {
   auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
   auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
 
-  auto solar2feelinkid;
+  //auto solar2feelinkid;
 
   constexpr auto headerSize = sizeof(DataBlockHeader);
 
@@ -196,8 +196,8 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
 
 using header::RAWDataHeaderV4;
 
-template size_t paginateBuffer<RAWDataHeaderV4>(gsl::span<const uint8_t> compactBuffer,
-                                                std::vector<uint8_t>& outBuffer,
+template size_t paginateBuffer<RAWDataHeaderV4>(gsl::span<const std::byte> compactBuffer,
+                                                std::vector<std::byte>& outBuffer,
                                                 size_t pageSize,
-                                                uint8_t paddingByte);
+                                                std::byte paddingByte);
 } // namespace o2::mch::raw

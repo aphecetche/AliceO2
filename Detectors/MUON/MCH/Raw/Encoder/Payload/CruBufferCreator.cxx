@@ -13,7 +13,7 @@
 namespace o2::mch::raw::test
 {
 
-std::vector<uint8_t> fillChargeSum(Encoder& encoder, int norbit)
+std::vector<std::byte> fillChargeSum(Encoder& encoder, int norbit)
 {
   uint16_t ts(0);
   uint16_t bc(678);
@@ -51,7 +51,7 @@ std::vector<uint8_t> fillChargeSum(Encoder& encoder, int norbit)
     encoder.addChannelData(DsElecId{448, 6, 2}, 12, {SampaCluster(ts, 420)});
   }
 
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   encoder.moveToBuffer(buffer);
   // int i{0};
   // for (auto v : buffer) {

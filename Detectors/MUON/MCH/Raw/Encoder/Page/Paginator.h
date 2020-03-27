@@ -36,11 +36,11 @@ namespace raw
 ///
 /// @return the number of pages in the paginatedBuffer.
 ///
-template <typename RDH, typename ELECMAP>
-size_t paginateBuffer(gsl::span<const uint8_t> buffer,
-                      std::vector<uint8_t>& paginatedBuffer,
+template <typename RDH>
+size_t paginateBuffer(gsl::span<const std::byte> buffer,
+                      std::vector<std::byte>& paginatedBuffer,
                       size_t pageSize = 8192,
-                      uint8_t paddingByte = 0xFF);
+                      std::byte paddingByte = std::byte{0xFF});
 } // namespace raw
 } // namespace mch
 } // namespace o2

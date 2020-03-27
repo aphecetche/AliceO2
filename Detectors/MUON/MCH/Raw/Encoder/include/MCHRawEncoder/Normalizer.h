@@ -43,17 +43,17 @@ class BufferNormalizer
   BufferNormalizer(o2::InteractionRecord firstIR,
                    const std::set<uint16_t>& feeIds,
                    uint16_t pageSize = 8192,
-                   uint8_t paddingByte = 0x42);
+                   std::byte paddingByte = std::byte{0x42});
 
-  void normalize(gsl::span<const uint8_t> buffer,
-                 std::vector<uint8_t>& outBuffer,
+  void normalize(gsl::span<const std::byte> buffer,
+                 std::vector<std::byte>& outBuffer,
                  o2::InteractionRecord currentIR);
 
  private:
   o2::InteractionRecord mFirstIR;
   std::set<uint16_t> mFeeIds;
   uint16_t mPageSize;
-  uint8_t mPaddingByte;
+  std::byte mPaddingByte;
   std::map<uint16_t, uint8_t> mFeeIdPacketCounters;
 };
 

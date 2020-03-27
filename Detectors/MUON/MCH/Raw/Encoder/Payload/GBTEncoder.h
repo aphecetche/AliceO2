@@ -66,7 +66,7 @@ class GBTEncoder
   /// The internal GBT words that have been accumulated so far are
   /// _moved_ (i.e. deleted from this object) to the external buffer of bytes.
   /// Returns the number of bytes added to buffer
-  size_t moveToBuffer(std::vector<uint8_t>& buffer);
+  size_t moveToBuffer(std::vector<std::byte>& buffer);
   ///@}
 
   /** @name Methods for testing.
@@ -129,7 +129,7 @@ void GBTEncoder<FORMAT, CHARGESUM>::addChannelData(uint8_t elinkGroupId, uint8_t
 }
 
 template <typename FORMAT, typename CHARGESUM>
-size_t GBTEncoder<FORMAT, CHARGESUM>::moveToBuffer(std::vector<uint8_t>& buffer)
+size_t GBTEncoder<FORMAT, CHARGESUM>::moveToBuffer(std::vector<std::byte>& buffer)
 {
   auto s = gsl::span(mElinks.begin(), mElinks.end());
   mElinkMerger(mGbtId, s, mGbtWords);

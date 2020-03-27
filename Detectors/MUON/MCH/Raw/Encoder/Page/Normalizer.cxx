@@ -21,7 +21,7 @@
 
 namespace
 {
-void showSize(const char* msg, gsl::span<const uint8_t> buffer)
+void showSize(const char* msg, gsl::span<const std::byte> buffer)
 {
   std::cout << msg << fmt::format(" buffer size is {} bytes ({:5.2f} MB)\n", buffer.size(), 1.0 * buffer.size() / 1024 / 1024);
 }
@@ -31,13 +31,15 @@ void showSize(const char* msg, gsl::span<const uint8_t> buffer)
 namespace o2::mch::raw
 {
 template <typename RDH>
-void setHBAndTFBits(gsl::span<uint8_t> pages, o2::InteractionRecord firstIR)
+void setHBAndTFBits(gsl::span<std::byte> pages, o2::InteractionRecord firstIR)
 {
-  o2::raw::HBFUtils hbfutils(firstIR);
+  const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
+  // o2::raw::HBFUtils hbfutils(firstIR);
+
   /// Ensure the triggerType of each RDH is correctly set
-  forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<uint8_t>::size_type offset) {
+  forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<std::byte>::size_type offset) {
     o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
-    rdhTriggerType(rdh, rdhTriggerType(rdh) | hbfutils.triggerType(rec));
+    hbfutils.updateRDH<RDH>(rdh, rec);
   });
 }
 
@@ -45,7 +47,7 @@ template <typename RDH>
 BufferNormalizer<RDH>::BufferNormalizer(o2::InteractionRecord firstIR,
                                         const std::set<uint16_t>& feeIds,
                                         uint16_t pageSize,
-                                        uint8_t paddingByte)
+                                        std::byte paddingByte)
   : mFirstIR{firstIR},
     mFeeIds{feeIds},
     mPageSize{pageSize},
@@ -54,8 +56,8 @@ BufferNormalizer<RDH>::BufferNormalizer(o2::InteractionRecord firstIR,
 }
 
 template <typename RDH>
-void BufferNormalizer<RDH>::normalize(gsl::span<const uint8_t> buffer,
-                                      std::vector<uint8_t>& outBuffer,
+void BufferNormalizer<RDH>::normalize(gsl::span<const std::byte> buffer,
+                                      std::vector<std::byte>& outBuffer,
                                       o2::InteractionRecord currentIR)
 
 {
@@ -68,7 +70,7 @@ void BufferNormalizer<RDH>::normalize(gsl::span<const uint8_t> buffer,
 
   /// Turn the buffer into a real (RDH,payload) one
   /// There's one RDH at the start of each page
-  std::vector<uint8_t> pages;
+  std::vector<std::byte> pages;
   paginateBuffer<RDH>(outBuffer, pages, mPageSize, mPaddingByte);
 
   /// Ensure the packet counter of each link is correct

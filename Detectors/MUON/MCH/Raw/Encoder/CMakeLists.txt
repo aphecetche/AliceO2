@@ -9,17 +9,25 @@
 # submit itself to any jurisdiction.
 
 o2_add_library(MCHRawEncoder
-        SOURCES src/Encoder.cxx src/BitSet.cxx src/ElinkEncoder.cxx
-        src/Paginator.cxx src/Counter.cxx
-        src/FeeIdRange.cxx src/Inserter.cxx
-        src/DataBlock.cxx src/Normalizer.cxx
-        src/CruLinkSetter.cxx
-        src/DigitEncoder.cxx
-        PUBLIC_LINK_LIBRARIES O2::MCHRawCommon O2::MCHMappingFactory
-        O2::MCHRawElecMap
-        O2::MCHBase
+        SOURCES
+        Page/Counter.cxx
+        Page/DigitEncoder.cxx
+        Page/FeeIdRange.cxx
+        Page/FeeLinkSetter.cxx
+        Page/Inserter.cxx
+        Page/Normalizer.cxx
+        Page/Paginator.cxx
+        Payload/BitSet.cxx
+        Payload/DataBlock.cxx
+        Payload/ElinkEncoder.cxx
+        Payload/Encoder.cxx
+        PUBLIC_LINK_LIBRARIES
         O2::CommonDataFormat
         O2::DetectorsRaw
+        O2::MCHBase
+        O2::MCHMappingFactory
+        O2::MCHRawCommon
+        O2::MCHRawElecMap
         PRIVATE_LINK_LIBRARIES O2::MCHRawImplHelpers)
 
 if(BUILD_TESTING)
@@ -44,7 +52,7 @@ if(BUILD_TESTING)
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
         o2_add_test(normalizer
-                SOURCES src/testNormalizer.cxx src/CruBufferCreator.cxx
+                SOURCES Page/testNormalizer.cxx Payload/CruBufferCreator.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
@@ -62,27 +70,27 @@ if(BUILD_TESTING)
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
         o2_add_test(paginator
-                SOURCES src/testPaginator.cxx
+                SOURCES Page/testPaginator.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawImplHelpers)
 
         o2_add_test(counter
-                SOURCES src/testCounter.cxx
+                SOURCES Page/testCounter.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
                 O2::MCHRawImplHelpers)
 
         o2_add_test(inserter
-                SOURCES src/testInserter.cxx
+                SOURCES Page/testInserter.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
                 O2::MCHRawImplHelpers)
 
         o2_add_test(create-test-buffers
-                SOURCES src/testCreateTestBuffers.cxx src/CruBufferCreator.cxx
+                SOURCES Page/testCreateTestBuffers.cxx Payload/CruBufferCreator.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder

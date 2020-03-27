@@ -46,7 +46,7 @@ class EncoderImpl : public Encoder
 
   void startHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing) override;
 
-  size_t moveToBuffer(std::vector<uint8_t>& buffer) override;
+  size_t moveToBuffer(std::vector<std::byte>& buffer) override;
 
  private:
   void closeHeartbeatFrame(uint32_t orbit, uint16_t bunchCrossing);
@@ -55,7 +55,7 @@ class EncoderImpl : public Encoder
  private:
   uint32_t mOrbit;
   uint16_t mBunchCrossing;
-  std::vector<uint8_t> mBuffer;
+  std::vector<std::byte> mBuffer;
   std::map<uint16_t, std::unique_ptr<GBTEncoder<FORMAT, CHARGESUM>>> mGBTs;
   bool mFirstHBFrame;
 };
@@ -90,7 +90,7 @@ void EncoderImpl<FORMAT, CHARGESUM>::gbts2buffer(uint32_t orbit, uint16_t bunchC
 
   for (auto& p : mGBTs) {
     auto& gbt = p.second;
-    std::vector<uint8_t> gbtBuffer;
+    std::vector<std::byte> gbtBuffer;
     gbt->moveToBuffer(gbtBuffer);
     if (gbtBuffer.empty()) {
       continue;
@@ -103,7 +103,7 @@ void EncoderImpl<FORMAT, CHARGESUM>::gbts2buffer(uint32_t orbit, uint16_t bunchC
 }
 
 template <typename FORMAT, typename CHARGESUM>
-size_t EncoderImpl<FORMAT, CHARGESUM>::moveToBuffer(std::vector<uint8_t>& buffer)
+size_t EncoderImpl<FORMAT, CHARGESUM>::moveToBuffer(std::vector<std::byte>& buffer)
 {
   closeHeartbeatFrame(mOrbit, mBunchCrossing);
   buffer.insert(buffer.end(), mBuffer.begin(), mBuffer.end());

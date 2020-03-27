@@ -17,12 +17,12 @@
 namespace o2::mch::raw
 {
 template <typename RDH>
-std::map<int, std::vector<FeeIdRange>> getFeeIdRanges(gsl::span<const uint8_t> buffer)
+std::map<int, std::vector<FeeIdRange>> getFeeIdRanges(gsl::span<const std::byte> buffer)
 {
   std::map<int, std::vector<FeeIdRange>> feeIdRanges;
-  constexpr auto rdhSize = static_cast<gsl::span<const uint8_t>::size_type>(sizeof(RDH));
+  constexpr auto rdhSize = static_cast<gsl::span<const std::byte>::size_type>(sizeof(RDH));
   auto bufSize = buffer.size();
-  o2::mch::raw::forEachRDH<RDH>(buffer, [&feeIdRanges, rdhSize, bufSize](const RDH& rdh, gsl::span<const uint8_t>::size_type offset) {
+  o2::mch::raw::forEachRDH<RDH>(buffer, [&feeIdRanges, rdhSize, bufSize](const RDH& rdh, gsl::span<const std::byte>::size_type offset) {
     uint16_t feeId = rdhFeeId(rdh);
     auto rsize = std::min(rdhSize + rdhPayloadSize(rdh), bufSize);
     auto& previousRanges = feeIdRanges[feeId];
@@ -56,6 +56,6 @@ void dumpFeeIdRanges(const std::map<int, std::vector<FeeIdRange>>& feeIdRanges)
 
 // Provide only the specialization(s) we need
 
-template std::map<int, std::vector<FeeIdRange>> getFeeIdRanges<o2::header::RAWDataHeaderV4>(gsl::span<const uint8_t> buffer);
+template std::map<int, std::vector<FeeIdRange>> getFeeIdRanges<o2::header::RAWDataHeaderV4>(gsl::span<const std::byte> buffer);
 
 } // namespace o2::mch::raw

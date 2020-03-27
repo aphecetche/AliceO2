@@ -27,6 +27,7 @@
 #include <fmt/printf.h>
 #include <fstream>
 #include <iostream>
+#include <cstddef>
 
 using namespace o2::mch::raw;
 using namespace o2::header;
@@ -39,9 +40,9 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(encoder)
 
-std::vector<uint8_t> createDataBlock(gsl::span<uint8_t> payload)
+std::vector<std::byte> createDataBlock(gsl::span<std::byte> payload)
 {
-  std::vector<uint8_t> outBuffer;
+  std::vector<std::byte> outBuffer;
   DataBlockHeader header{0, 0, 0, static_cast<uint16_t>(payload.size())};
   appendDataBlockHeader(outBuffer, header);
   outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
@@ -50,36 +51,36 @@ std::vector<uint8_t> createDataBlock(gsl::span<uint8_t> payload)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(TestPadding, RDH, testTypes)
 {
-  std::vector<uint8_t> data;
+  std::vector<std::byte> data;
 
-  data.emplace_back(0x22);
-  data.emplace_back(0x22);
-  data.emplace_back(0x22);
-  data.emplace_back(0x22);
-  data.emplace_back(0x44);
-  data.emplace_back(0x44);
-  data.emplace_back(0x44);
-  data.emplace_back(0x44);
-  data.emplace_back(0x66);
-  data.emplace_back(0x66);
-  data.emplace_back(0x66);
-  data.emplace_back(0x66);
-  data.emplace_back(0x88);
-  data.emplace_back(0x88);
-  data.emplace_back(0x88);
-  data.emplace_back(0x88);
+  data.emplace_back(std::byte{0x22});
+  data.emplace_back(std::byte{0x22});
+  data.emplace_back(std::byte{0x22});
+  data.emplace_back(std::byte{0x22});
+  data.emplace_back(std::byte{0x44});
+  data.emplace_back(std::byte{0x44});
+  data.emplace_back(std::byte{0x44});
+  data.emplace_back(std::byte{0x44});
+  data.emplace_back(std::byte{0x66});
+  data.emplace_back(std::byte{0x66});
+  data.emplace_back(std::byte{0x66});
+  data.emplace_back(std::byte{0x66});
+  data.emplace_back(std::byte{0x88});
+  data.emplace_back(std::byte{0x88});
+  data.emplace_back(std::byte{0x88});
+  data.emplace_back(std::byte{0x88});
 
-  std::vector<uint8_t> pages;
+  std::vector<std::byte> pages;
 
   size_t pageSize = 128;
-  uint8_t paddingByte = 0x78;
+  std::byte paddingByte = std::byte{0x78};
   auto buffer = createDataBlock(data);
   paginateBuffer<RDH>(buffer, pages, pageSize, paddingByte);
 
   size_t expected = pageSize * 2; // +1 STOP page per actual page
   BOOST_CHECK_EQUAL(pages.size(), expected);
   for (int i = sizeof(RDH) + data.size(); i < pageSize; i++) {
-    BOOST_CHECK_EQUAL(pages[i], paddingByte);
+    BOOST_CHECK(pages[i] == paddingByte);
   }
 }
 
@@ -88,14 +89,14 @@ BOOST_DATA_TEST_CASE(TestSplit,
                        boost::unit_test::data::make({0, 128, 512, 8192}),
                      ndata, pageSize)
 {
-  constexpr uint8_t paddingByte = 0x55;
+  constexpr std::byte paddingByte = std::byte{0x55};
 
-  std::vector<uint8_t> data;
+  std::vector<std::byte> data;
   for (int i = 0; i < ndata * 4; i++) {
-    data.emplace_back((i + 1) % 256);
+    data.emplace_back(std::byte{static_cast<uint8_t>((i + 1) % 256)});
   }
 
-  std::vector<uint8_t> pages;
+  std::vector<std::byte> pages;
   int npages = 1;
   if (pageSize > 0) {
     npages = std::ceil(1.0 * data.size() / (pageSize - sizeof(RAWDataHeader)));
@@ -117,7 +118,7 @@ BOOST_DATA_TEST_CASE(TestSplit,
       if (n >= data.size()) {
         break;
       }
-      if (pages[dataPos + j] != (n % 256)) {
+      if (std::to_integer<int>(pages[dataPos + j]) != (n % 256)) {
         ok = false;
       }
     }
@@ -128,19 +129,19 @@ BOOST_DATA_TEST_CASE(TestSplit,
 
 BOOST_AUTO_TEST_CASE(CannotPaginateIfPageSizeIsSmallerThanRDHSize)
 {
-  std::vector<uint8_t> buffer;
-  std::vector<uint8_t> pages;
-  BOOST_CHECK_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, 24, 0xFF),
+  std::vector<std::byte> buffer;
+  std::vector<std::byte> pages;
+  BOOST_CHECK_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, 24, std::byte{0xFF}),
                     std::invalid_argument);
-  BOOST_CHECK_NO_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, sizeof(RAWDataHeaderV4) + 8, 0xFF));
+  BOOST_CHECK_NO_THROW(paginateBuffer<RAWDataHeaderV4>(buffer, pages, sizeof(RAWDataHeaderV4) + 8, std ::byte{0xFF}));
 }
 
 BOOST_DATA_TEST_CASE(PaginateEmptyPayloads,
                      boost::unit_test::data::make({72, 8192}),
                      pageSize)
 {
-  constexpr uint8_t paddingByte = 0x66;
-  std::vector<uint8_t> buffer;
+  constexpr std::byte paddingByte = std::byte{0x66};
+  std::vector<std::byte> buffer;
   std::array<uint16_t, 5> feeIds = {631, 729, 424, 12, 42};
   for (auto feeId : feeIds) {
     DataBlockHeader header{12345, 678, feeId, 0};
@@ -148,7 +149,7 @@ BOOST_DATA_TEST_CASE(PaginateEmptyPayloads,
   }
   BOOST_REQUIRE_EQUAL(buffer.size(), feeIds.size() * sizeof(DataBlockHeader));
 
-  std::vector<uint8_t> pages;
+  std::vector<std::byte> pages;
   paginateBuffer<RAWDataHeaderV4>(buffer, pages, pageSize, paddingByte);
   int expectedNofRDHs(feeIds.size() * 2); // 1 page + 1 stop page per link
 

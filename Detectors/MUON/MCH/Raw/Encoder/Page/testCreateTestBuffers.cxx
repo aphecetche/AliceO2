@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CruBufferCreator.h"
+#include "../Payload/CruBufferCreator.h"
 #include "MCHRawCommon/DataFormats.h"
 #include "MCHRawEncoder/DataBlock.h"
 #include <iostream>
@@ -26,7 +26,7 @@ namespace o2::header
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 }
 
-void generateCxxFile(std::ostream& out, gsl::span<const uint8_t> pages)
+void generateCxxFile(std::ostream& out, gsl::span<const std::byte> pages)
 {
   out << R"(// Copyright CERN and copyright holders of ALICE O2. This software is
 // distributed under the terms of the GNU General Public License v3 (GPL
@@ -88,15 +88,15 @@ int main()
   std::array<size_t, pageSizes.size()> bufferSizes;
 
   for (auto i = 0; i < pageSizes.size(); i++) {
-    std::vector<uint8_t> pages;
-    paginateBuffer<V4>(buffer, pages, pageSizes[i], 0);
+    std::vector<std::byte> pages;
+    paginateBuffer<V4>(buffer, pages, pageSizes[i], std::byte{0});
     bufferSizes[i] = pages.size();
   }
 
   auto smallest = std::distance(bufferSizes.begin(), std::min_element(bufferSizes.begin(), bufferSizes.end()));
 
-  std::vector<uint8_t> pages;
-  paginateBuffer<V4>(buffer, pages, pageSizes[smallest], 0);
+  std::vector<std::byte> pages;
+  paginateBuffer<V4>(buffer, pages, pageSizes[smallest], std::byte{0});
 
   generateCxxFile(std::cout, pages);
 
