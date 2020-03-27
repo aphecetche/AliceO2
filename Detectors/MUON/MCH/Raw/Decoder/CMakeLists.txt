@@ -16,20 +16,20 @@ o2_add_library(MCHRawDecoder
 if(BUILD_TESTING)
         o2_add_test(page-decoder
                 SOURCES src/testPageDecoder.cxx
-                COMPONENT_NAME mch
+                COMPONENT_NAME mchraw
                 LABELS "mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHTestRawRefBuffers
                 O2::DPLUtils)
 
         o2_add_test(bare-elink-decoder
                 SOURCES src/testBareElinkDecoder.cxx
-                COMPONENT_NAME mch
+                COMPONENT_NAME mchraw
                 LABELS "mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHRawImplHelpers)
 
         o2_add_test(userlogic-endpoint-decoder
                 SOURCES src/testUserLogicEndpointDecoder.cxx
-                COMPONENT_NAME mch
+                COMPONENT_NAME mchraw
                 LABELS "mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawDecoder O2::MCHRawImplHelpers)
 

@@ -12,6 +12,7 @@
 #include "MCHRawCommon/RDHManip.h"
 #include "Headers/RAWDataHeader.h"
 #include "MCHRawEncoder/DataBlock.h"
+#include "MCHRawElecMap/Mapper.h"
 #include <fmt/format.h>
 #include <gsl/span>
 
@@ -41,14 +42,24 @@ using DataBlockSplitter = std::function<size_t(DataBlock block, std::vector<std:
 template <typename RDH>
 using StopPager = std::function<void(DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount)>;
 
+// /// From solarId to (feeId,linkId)
+// template <typename T>
+// std::function<std::optional<FeeLinkId>(uint16_t solarId)> createSolar2FeeLinkMapper();
+
 template <typename RDH>
 RDH createRDH(const DataBlockHeader& header,
               size_t pageSize, uint16_t pageCnt = 0, uint16_t len = 0)
 {
+  static auto solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
   RDH rdh;
   rdhOrbit(rdh, header.orbit);
   rdhBunchCrossing(rdh, header.bc);
-  rdhFeeId(rdh, header.solarId);
+  auto feeLinkId = solar2feelink(header.solarId);
+  if (!feeLinkId.has_value()) {
+    throw std::invalid_argument(fmt::format("Could not get FeeLinkId from Solar={}\n", header.solarId));
+  }
+  rdhFeeId(rdh, feeLinkId.value().feeId());
+  rdhLinkId(rdh, feeLinkId.value().linkId());
   rdhOffsetToNext(rdh, pageSize);
   rdhPageCounter(rdh, pageCnt);
   rdhMemorySize(rdh, len + sizeof(RDH));

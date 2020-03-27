@@ -28,7 +28,10 @@
 using namespace o2::mch::raw;
 using o2::header::RAWDataHeaderV4;
 
-std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
+namespace o2::header
+{
+extern std::ostream& operator<<(std::ostream&, const RAWDataHeaderV4&);
+}
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
@@ -71,7 +74,7 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
 {
   auto testBuffer = REF_BUFFER_CRU<BareFormat, ChargeSumMode>();
   int n = countRDHs<RAWDataHeaderV4>(testBuffer);
-  BOOST_CHECK_EQUAL(n, 4);
+  BOOST_CHECK_EQUAL(n, 28);
   std::vector<std::string> result;
   std::vector<std::string> expected{
     "S728-J1-DS2-ch-0-ts-0-q-10",
@@ -96,6 +99,10 @@ BOOST_AUTO_TEST_CASE(TestDecoding)
     "S448-J6-DS2-ch-12-ts-0-q-420"
 
   };
+
+  forEachRDH<RAWDataHeaderV4>(testBuffer, [](const RAWDataHeaderV4& rdh) {
+    std::cout << rdh << "\n";
+  });
 
   auto pageDecoder = createPageDecoder(testBuffer, handlePacketStoreAsVec(result));
 
