@@ -57,7 +57,7 @@ uint32_t equalizeHBFPerFeeId(gsl::span<const uint8_t> buffer,
   forEachDataBlockRef(
     buffer, [&dataBlockRefs, &feeIds, &hbfs](const DataBlockRef& ref) {
       dataBlockRefs.insert(ref);
-      auto feeId = ref.block.header.feeId;
+      auto feeId = ref.block.header.solarId;
       if (feeIds.find(feeId) == feeIds.end()) {
         throw std::logic_error(fmt::format("Could not find feeId={} in the given set\n", feeId));
       }

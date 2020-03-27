@@ -25,8 +25,8 @@ namespace raw
 /// paginateBuffer converts an input buffer composed of
 /// (payloadHeader,payload) blocks
 /// to a buffer of (RDH,payload) blocks of fixed size (the pageSize).
-/// A RDH (derived from the input PayloadHeader) is present at the
-/// beginning of each page.
+/// A RDH (derived from one or several input PayloadHeader(s))
+/// is present at the beginning of each page.
 ///
 /// @param buffer the input buffer containing (payloadHeader,payload) blocks
 /// @param paginatedBuffer the output buffer containing (RDH,payload) blocks
@@ -36,7 +36,7 @@ namespace raw
 ///
 /// @return the number of pages in the paginatedBuffer.
 ///
-template <typename RDH>
+template <typename RDH, typename ELECMAP>
 size_t paginateBuffer(gsl::span<const uint8_t> buffer,
                       std::vector<uint8_t>& paginatedBuffer,
                       size_t pageSize = 8192,

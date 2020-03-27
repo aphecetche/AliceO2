@@ -81,7 +81,7 @@ bool checkAllFeesHaveSameNumberOfHeaders(gsl::span<const uint8_t> buffer)
   std::map<uint16_t, std::vector<DataBlockRef>> headers;
 
   forEachDataBlockRef(buffer, [&headers](const DataBlockRef& ref) {
-    headers[ref.block.header.feeId].emplace_back(ref);
+    headers[ref.block.header.solarId].emplace_back(ref);
   });
 
   bool first{true};

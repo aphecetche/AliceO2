@@ -80,6 +80,13 @@ if(BUILD_TESTING)
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
                 O2::MCHRawImplHelpers)
+
+        o2_add_test(create-test-buffers
+                SOURCES src/testCreateTestBuffers.cxx src/CruBufferCreator.cxx
+                COMPONENT_NAME mchraw
+                LABELS "muon;mch;raw"
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder
+                O2::MCHRawImplHelpers)
 endif()
 
 if(benchmark_FOUND)

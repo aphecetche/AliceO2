@@ -48,7 +48,7 @@ RDH createRDH(const DataBlockHeader& header,
   RDH rdh;
   rdhOrbit(rdh, header.orbit);
   rdhBunchCrossing(rdh, header.bc);
-  rdhFeeId(rdh, header.feeId);
+  rdhFeeId(rdh, header.solarId);
   rdhOffsetToNext(rdh, pageSize);
   rdhPageCounter(rdh, pageCnt);
   rdhMemorySize(rdh, len + sizeof(RDH));
@@ -159,7 +159,7 @@ StopPager<RDH> createStopPager(size_t pageSize,
   };
 }
 
-template <typename RDH>
+template <typename RDH, typename ELECMAP>
 size_t paginateBuffer(gsl::span<const uint8_t> buffer,
                       std::vector<uint8_t>& outBuffer,
                       size_t pageSize,
@@ -167,6 +167,8 @@ size_t paginateBuffer(gsl::span<const uint8_t> buffer,
 {
   auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
   auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
+
+  auto solar2feelinkid;
 
   constexpr auto headerSize = sizeof(DataBlockHeader);
 

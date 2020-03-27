@@ -23,7 +23,7 @@ namespace o2::mch::raw
 struct DataBlockHeader {
   uint32_t orbit;
   uint16_t bc;
-  uint16_t feeId;
+  uint16_t solarId;
   uint64_t payloadSize;
 };
 

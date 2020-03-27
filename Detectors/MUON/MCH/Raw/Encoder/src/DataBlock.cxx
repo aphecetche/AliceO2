@@ -45,8 +45,8 @@ int countHeaders(gsl::span<uint8_t> buffer)
 
 std::ostream& operator<<(std::ostream& os, const DataBlockHeader& header)
 {
-  os << fmt::format("ORB{:6d} BC{:4d} FEE{:4d} PAYLOADSIZE{:6d}",
-                    header.orbit, header.bc, header.feeId, header.payloadSize);
+  os << fmt::format("ORB{:6d} BC{:4d} SOLAR{:4d} PAYLOADSIZE{:6d}",
+                    header.orbit, header.bc, header.solarId, header.payloadSize);
   return os;
 }
 
@@ -68,10 +68,10 @@ std::ostream& operator<<(std::ostream& os, const DataBlockRef& ref)
 
 bool operator<(const DataBlockHeader& a, const DataBlockHeader& b)
 {
-  if (a.feeId < b.feeId) {
+  if (a.solarId < b.solarId) {
     return true;
   }
-  if (a.feeId > b.feeId) {
+  if (a.solarId > b.solarId) {
     return false;
   }
   if (a.orbit < b.orbit) {
