@@ -34,9 +34,10 @@ void GBTBareDecoder::init(uint16_t feeId, uint8_t mask, bool debugMode)
   /// Initializes the task
   mFeeId = feeId;
   mMask = mask;
+  mProcessLoc = &GBTBareDecoder::processLoc;
   if (debugMode == true) {
     mProcessReg = std::bind(&GBTBareDecoder::processRegDebug, this, std::placeholders::_1, std::placeholders::_2);
-    mProcessLoc = std::bind(&GBTBareDecoder::processLocDebug, this, std::placeholders::_1, std::placeholders::_2);
+    mProcessLoc = &GBTBareDecoder::processLocDebug;
   }
 }
 
@@ -83,7 +84,7 @@ void GBTBareDecoder::processHalfReg(size_t idx, int halfReg, const gsl::span<con
 
   // local links
   for (int ib = 0; ib < 4; ++ib) {
-    mProcessLoc(linkOffset + ib, bytes[byteOffset + ib]);
+    std::invoke(mProcessLoc, this, linkOffset + ib, bytes[byteOffset + ib]);
   }
 
   // Regional link
