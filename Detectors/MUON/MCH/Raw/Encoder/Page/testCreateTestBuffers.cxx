@@ -94,9 +94,10 @@ int main()
   }
 
   auto smallest = std::distance(bufferSizes.begin(), std::min_element(bufferSizes.begin(), bufferSizes.end()));
+  auto smallestPageSize = pageSizes[smallest];
 
   std::vector<std::byte> pages;
-  paginateBuffer<V4>(buffer, pages, pageSizes[smallest], std::byte{0});
+  paginateBuffer<V4>(buffer, pages, smallestPageSize, std::byte{0});
 
   generateCxxFile(std::cout, pages);
 

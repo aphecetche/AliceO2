@@ -16,7 +16,10 @@
 #include <fmt/format.h>
 #include <gsl/span>
 
+namespace o2::header
+{
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
+}
 
 namespace o2::mch::raw
 {
@@ -178,8 +181,6 @@ size_t paginateBuffer(gsl::span<const std::byte> buffer,
 {
   auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
   auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
-
-  //auto solar2feelinkid;
 
   constexpr auto headerSize = sizeof(DataBlockHeader);
 

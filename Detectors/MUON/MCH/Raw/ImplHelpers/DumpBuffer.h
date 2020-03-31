@@ -114,7 +114,6 @@ void dumpBuffer<o2::mch::raw::BareFormat>(gsl::span<const std::byte> buffer, std
       }
     } else {
       SampaHeader h(w & 0x3FFFFFFFFFFFF);
-      std::cout << "14first=" << ((w & 0xFFFC000000000000) >> 50) << " ";
       if (h == sampaSync()) {
         out << "SYNC !!";
       } else if (h.packetType() == SampaPacketType::Sync) {
