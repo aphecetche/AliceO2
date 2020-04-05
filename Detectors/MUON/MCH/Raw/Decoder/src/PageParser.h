@@ -8,19 +8,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_RAW_PAGEPARSER_H
-#define O2_MCH_RAW_PAGEPARSER_H
+#ifndef O2_MCH_RAW_DECODER_PAGE_PARSER_H
+#define O2_MCH_RAW_DECODER_PAGE_PARSER_H
 
+<<<<<<< HEAD
 #include <gsl/span>
 #include "MCHRawDecoder/RawDataHeaderHandler.h"
 #include "PayloadDecoder.h"
 
 namespace
 {
-bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
-{
-  return std::abs(static_cast<long int>(orb1 - orb2)) > 1;
-}
+  bool hasOrbitJump(uint32_t orb1, uint32_t orb2)
+  {
+    return std::abs(static_cast<long int>(orb1 - orb2)) > 1;
+  }
 } // namespace
 
 namespace o2::mch::raw
@@ -87,5 +88,3 @@ DecoderStat PageParser<RDH, PAYLOADDECODER>::parse(gsl::span<const std::byte> bu
 }
 
 } // namespace o2::mch::raw
-
-#endif
