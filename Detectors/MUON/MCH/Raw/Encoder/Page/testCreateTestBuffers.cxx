@@ -99,6 +99,12 @@ int main()
   std::vector<std::byte> pages;
   paginateBuffer<V4>(buffer, pages, smallestPageSize, std::byte{0});
 
+  // set the chargesum mask for each rdh
+  o2::mch::raw::forEachRDH<V4>(pages,
+                               [](V4& rdh, gsl::span<std::byte>::size_type offset) {
+                                 rdhFeeId(rdh, rdhFeeId(rdh) | 0x100);
+                               });
+
   generateCxxFile(std::cout, pages);
 
   return 0;
