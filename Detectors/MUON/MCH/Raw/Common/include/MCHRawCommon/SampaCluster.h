@@ -88,6 +88,9 @@ std::ostream& operator<<(std::ostream& os, const SampaCluster& sc);
 
 std::string asString(const SampaCluster& sc);
 
+template <typename CHARGESUM>
+std::vector<SampaCluster> createSampaClusters(uint16_t ts, float adc);
+
 } // namespace raw
 } // namespace mch
 } // namespace o2

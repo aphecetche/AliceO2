@@ -90,6 +90,23 @@ std::string asString(const SampaCluster& sc)
   return s.str();
 }
 
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::ChargeSumMode>(uint16_t ts, float adc)
+{
+  return {raw::SampaCluster(ts, static_cast<uint32_t>(adc))};
+}
+
+template <>
+std::vector<SampaCluster> createSampaClusters<raw::SampleMode>(uint16_t ts, float adc)
+{
+  uint32_t a = static_cast<uint32_t>(adc);
+  std::vector<uint16_t> samples;
+
+  samples.emplace_back(static_cast<uint16_t>((a & 0xFFC00) >> 10));
+  samples.emplace_back(static_cast<uint16_t>(a & 0x3FF));
+  return {raw::SampaCluster(ts, samples)};
+}
+
 } // namespace raw
 } // namespace mch
 } // namespace o2

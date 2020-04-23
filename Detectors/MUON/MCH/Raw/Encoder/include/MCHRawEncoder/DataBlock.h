@@ -23,13 +23,13 @@ namespace o2::mch::raw
 struct DataBlockHeader {
   uint32_t orbit;
   uint16_t bc;
-  uint16_t feeId;
+  uint16_t solarId;
   uint64_t payloadSize;
 };
 
 struct DataBlock {
   DataBlockHeader header;
-  gsl::span<const uint8_t> payload;
+  gsl::span<const std::byte> payload;
   uint64_t size() const
   {
     return sizeof(header) + payload.size();
@@ -41,18 +41,20 @@ struct DataBlockRef {
   std::optional<uint64_t> offset;
 };
 
-void appendDataBlockHeader(std::vector<uint8_t>& outBuffer, DataBlockHeader header);
+void appendDataBlockHeader(std::vector<std::byte>& outBuffer, DataBlockHeader header);
 
-int forEachDataBlockRef(gsl::span<const uint8_t> buffer,
+int forEachDataBlockRef(gsl::span<const std::byte> buffer,
                         std::function<void(DataBlockRef blockRef)> f);
 
-int countHeaders(gsl::span<uint8_t> buffer);
+int countHeaders(gsl::span<const std::byte> buffer);
 
 std::ostream& operator<<(std::ostream& os, const DataBlockHeader& header);
 std::ostream& operator<<(std::ostream& os, const DataBlockRef& ref);
 std::ostream& operator<<(std::ostream& os, const DataBlock& block);
 
 bool operator<(const DataBlockHeader& a, const DataBlockHeader& b);
+bool operator<(const DataBlockRef& a, const DataBlockRef& rhs);
+
 } // namespace o2::mch::raw
 
 #endif

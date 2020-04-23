@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EmptyEncoderHasEmptyBufferIfPhaseIsZero, T, testTy
   srand(time(nullptr));
   auto encoder = defaultEncoder<T>();
   encoder->startHeartbeatFrame(12345, 123);
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   encoder->moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(EmptyEncodeIsNotNecessarilyEmptyDependingOnPhase, 
   srand(time(nullptr));
   auto encoder = createEncoder<T, SampleMode, false>();
   encoder->startHeartbeatFrame(12345, 123);
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   encoder->moveToBuffer(buffer);
   BOOST_CHECK_GE(buffer.size(), 0);
 }
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(MultipleOrbitsWithNoDataIsAnEmptyBufferIfPhaseIsZe
   encoder->startHeartbeatFrame(12345, 123);
   encoder->startHeartbeatFrame(12345, 125);
   encoder->startHeartbeatFrame(12345, 312);
-  std::vector<uint8_t> buffer;
+  std::vector<std::byte> buffer;
   encoder->moveToBuffer(buffer);
   BOOST_CHECK_EQUAL(buffer.size(), 0);
 }

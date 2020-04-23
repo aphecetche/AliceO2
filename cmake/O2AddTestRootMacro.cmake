@@ -68,7 +68,6 @@ function(o2_add_test_root_macro macro)
     set(nonFatal "NON_FATAL")
   endif()
 
-  list(APPEND incdir $ENV{ROOT_INCLUDE_PATH})
   list(APPEND incdir ${A_PUBLIC_INCLUDE_DIRECTORIES})
 
   # Get all the include dir dependencies

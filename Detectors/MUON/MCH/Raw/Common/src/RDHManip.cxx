@@ -233,7 +233,7 @@ int countRDHs(gsl::span<const std::byte> buffer)
 }
 
 template <typename RDH>
-int forEachRDH(gsl::span<uint8_t> buffer, std::function<void(RDH&, gsl::span<uint8_t>::size_type offset)> f)
+int forEachRDH(gsl::span<std::byte> buffer, std::function<void(RDH&, gsl::span<uint8_t>::size_type offset)> f)
 {
   int index{0};
   int nrdh{0};
@@ -310,7 +310,7 @@ int forEachRDH(gsl::span<const std::byte> buffer, std::function<void(const RDH&,
 template int showRDHs<RAWDataHeaderV4>(gsl::span<const std::byte> buffer);
 template int countRDHs<RAWDataHeaderV4>(gsl::span<const std::byte> buffer);
 template int forEachRDH(gsl::span<const std::byte> buffer, std::function<void(const RAWDataHeaderV4&)> f);
-template int forEachRDH(gsl::span<uint8_t> buffer, std::function<void(RAWDataHeaderV4&, gsl::span<uint8_t>::size_type)> f);
+template int forEachRDH(gsl::span<std::byte> buffer, std::function<void(RAWDataHeaderV4&, gsl::span<uint8_t>::size_type)> f);
 template int forEachRDH(gsl::span<const std::byte> buffer, std::function<void(const RAWDataHeaderV4&, gsl::span<const std::byte>::size_type)> f);
 
 } // namespace o2::mch::raw
