@@ -194,7 +194,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(CheckOrbitJumpsAreAnIntegerNumberOfFullOrbits, RDH
     o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, F.feeIds, s.pageSize, F.paddingByte);
     normalizer.normalize(F.buffer, pages, F.firstIR);
     bool ok = checkOrbitJumpsAreFullOrbits<RDH>(pages);
-    o2::mch::raw::impl::dumpBuffer<BareFormat>(pages);
     BOOST_CHECK_EQUAL(ok, true);
     break;
   }

@@ -199,7 +199,6 @@ size_t paginateBuffer(gsl::span<const std::byte> buffer,
   while (inputPos < buffer.size()) {
     DataBlockHeader header;
     memcpy(&header, &buffer[inputPos], headerSize);
-    std::cout << header << "\n";
     inputPos += headerSize;
     DataBlock block{header, buffer.subspan(inputPos, header.payloadSize)};
     auto npages = payloadSplitter(block, outBuffer);

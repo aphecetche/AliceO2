@@ -18,9 +18,11 @@
 #include "MCHRawCommon/RDHManip.h"
 #include <fmt/format.h>
 #include "MCHRawEncoder/DataBlock.h"
+#include "CommonUtils/ConfigurableParam.h"
 
 namespace
 {
+
 void showSize(const char* msg, gsl::span<const std::byte> buffer)
 {
   std::cout << msg << fmt::format(" buffer size is {} bytes ({:5.2f} MB)\n", buffer.size(), 1.0 * buffer.size() / 1024 / 1024);
@@ -30,17 +32,24 @@ void showSize(const char* msg, gsl::span<const std::byte> buffer)
 
 namespace o2::mch::raw
 {
+
 template <typename RDH>
 void setHBAndTFBits(gsl::span<std::byte> pages, o2::InteractionRecord firstIR)
 {
   const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
-  // o2::raw::HBFUtils hbfutils(firstIR);
+
+  std::cout << "firstIR=" << firstIR << "\n";
+  o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", firstIR.orbit);
 
   /// Ensure the triggerType of each RDH is correctly set
   forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<std::byte>::size_type offset) {
     o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
     hbfutils.updateRDH<RDH>(rdh, rec);
   });
+
+  std::cout << "TOTO: HBFUtils.orbitFirst=" << o2::conf::ConfigurableParam::getValueAs<int>("HBFUtils.orbitFirst")
+            << "\n";
+  //showRDHs<RDH>(pages);
 }
 
 template <typename RDH>
@@ -77,8 +86,6 @@ void BufferNormalizer<RDH>::normalize(gsl::span<const std::byte> buffer,
   setPacketCounter<RDH>(pages, mFeeIdPacketCounters);
 
   setHBAndTFBits<RDH>(pages, mFirstIR);
-
-  showRDHs<RDH>(pages);
 
   outBuffer.swap(pages);
 }
