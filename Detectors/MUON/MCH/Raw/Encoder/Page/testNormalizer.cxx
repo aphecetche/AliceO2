@@ -30,6 +30,7 @@
 #include "DetectorsRaw/HBFUtils.h"
 #include "DetectorsRaw/RawFileWriter.h"
 #include "MCHRawElecMap/Mapper.h"
+#include <fstream>
 
 using namespace o2::mch::raw;
 
@@ -52,9 +53,9 @@ struct Common {
   Common() : buffer(test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(3)),
              interactions{},
              testPoints{
-               // {8192, 18},
-               // {1024, 30},
-               // {512, 50},
+               {8192, 18},
+               {1024, 30},
+               {512, 50},
                {128, 262}}
   {
 
@@ -94,7 +95,7 @@ bool packetCounterMustBeIncreasingByOne(gsl::span<const std::byte> pages)
 template <typename RDH>
 bool pageCountsMustBeIncreasingByOne(gsl::span<const std::byte> pages)
 {
-  // pageCounts is a map (orbc -> (feeId,{pageCounts}))
+  // pageCounts is a map (orbc -> (linkuniqueid,{pageCounts}))
   // where orb is a combination of orbit and bc
   // {pageCounts} is a vector of page counters
   std::map<uint64_t, std::map<int, std::vector<int>>> pageCounts;
@@ -102,7 +103,8 @@ bool pageCountsMustBeIncreasingByOne(gsl::span<const std::byte> pages)
     uint64_t orbc =
       static_cast<uint64_t>(rdhOrbit(rdh)) |
       ((static_cast<uint64_t>(rdhBunchCrossing(rdh)) << 32));
-    (pageCounts[orbc])[rdhFeeId(rdh)].emplace_back(rdhPageCounter(rdh));
+    uint32_t uniqueLinkId = rdhFeeId(rdh) << 16 | rdhLinkId(rdh);
+    (pageCounts[orbc])[uniqueLinkId].emplace_back(rdhPageCounter(rdh));
   });
 
   bool ok{true};
@@ -114,21 +116,14 @@ bool pageCountsMustBeIncreasingByOne(gsl::span<const std::byte> pages)
   for (auto ob : pageCounts) {
     uint32_t orbit = static_cast<uint32_t>(ob.first & 0xFFFF);
     uint16_t bc = static_cast<uint16_t>((ob.first >> 32) & 0xFFFF);
-    std::cout << "orbit " << orbit << "\n";
     for (auto p : ob.second) {
-      std::cout << "feeid " << p.first << "\n";
       if (p.second.size() > 1) {
-        for (auto pc : p.second) {
-          std::cout << pc << " ";
-        }
         for (auto i = 0; i < p.second.size() - 1; i++) {
           if (p.second[i] != p.second[i + 1] - 1) {
             ok = false;
-            std::cout << "***";
           }
         }
       }
-      std::cout << "\n";
     }
   }
   return ok;
@@ -249,6 +244,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(FirstInteractionRecordMustHaveTFBitSet, RDH, testT
   }
 }
 
+BOOST_AUTO_TEST_CASE_TEMPLATE(TestBasicRawWriter, RDH, testTypes)
+{
+  for (auto s : F.testPoints) {
+    std::ofstream out(fmt::format("mch.{}.raw", s.pageSize));
+    std::vector<std::byte> pages;
+    o2::mch::raw::BufferNormalizer<RDH> normalizer(F.firstIR, F.feeIds, s.pageSize, F.paddingByte);
+    normalizer.normalize(F.buffer, pages, F.firstIR);
+    out.write(reinterpret_cast<char*>(&pages[0]), pages.size());
+  }
+}
+
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_CASE_TEMPLATE(TestRawFileWriter, RDH, testTypes)
 {
   o2::raw::RawFileWriter fw;
@@ -268,19 +275,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestRawFileWriter, RDH, testTypes)
   }
 
   for (auto f : feeLinkIds) {
-    std::cout << f << "\n";
     int endpoint = f.feeId() % 2;
     int cru = (f.feeId() - endpoint) / 2;
-    fw.registerLink(f.feeId(), cru, f.linkId(), endpoint, "mch.raw");
+    auto& link = fw.registerLink(f.feeId(), cru, f.linkId(), endpoint, "mch.raw");
+    link.updateIR = {678, 12344}; // FIXME: this is not working. not the way to select the firstIR
   }
 
   for (auto r : dataBlockRefs) {
-    std::cout << r << "\n";
     auto& b = r.block;
     auto& h = b.header;
     auto f = solar2feelink(r.block.header.solarId).value();
     int endpoint = f.feeId() % 2;
     int cru = (f.feeId() - endpoint) / 2;
+    std::cout << fmt::format("feeId {} cruId {} linkId {} endpoint {}\n",
+                             f.feeId(), cru, f.linkId(), endpoint);
     fw.addData(f.feeId(), cru, f.linkId(), endpoint, {h.bc, h.orbit}, gsl::span<char>(const_cast<char*>(reinterpret_cast<const char*>(&b.payload[0])), b.payload.size()));
   }
 }
