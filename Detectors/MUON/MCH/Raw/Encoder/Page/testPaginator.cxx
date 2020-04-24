@@ -43,7 +43,8 @@ BOOST_AUTO_TEST_SUITE(encoder)
 std::vector<std::byte> createDataBlock(gsl::span<std::byte> payload)
 {
   std::vector<std::byte> outBuffer;
-  DataBlockHeader header{0, 0, 0, static_cast<uint16_t>(payload.size())};
+  uint16_t solarId{968}; // must be a valid solar identifier
+  DataBlockHeader header{0, 0, solarId, static_cast<uint16_t>(payload.size())};
   appendDataBlockHeader(outBuffer, header);
   outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
   return outBuffer;
@@ -142,7 +143,8 @@ BOOST_DATA_TEST_CASE(PaginateEmptyPayloads,
 {
   constexpr std::byte paddingByte = std::byte{0x66};
   std::vector<std::byte> buffer;
-  std::array<uint16_t, 5> feeIds = {631, 729, 424, 12, 42};
+  //std::array<uint16_t, 5> feeIds = {631, 729, 424, 12, 42};
+  std::array<uint16_t, 5> feeIds = {144, 72, 448, 728, 968};
   for (auto feeId : feeIds) {
     DataBlockHeader header{12345, 678, feeId, 0};
     appendDataBlockHeader(buffer, header);

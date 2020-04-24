@@ -48,9 +48,10 @@ using StopPager = std::function<void(DataBlockHeader header, std::vector<std::by
 // /// From solarId to (feeId,linkId)
 template <typename RDH>
 RDH createRDH(const DataBlockHeader& header,
-              size_t pageSize, uint16_t pageCnt = 0, uint16_t len = 0)
+              size_t pageSize,
+              std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink,
+              uint16_t pageCnt = 0, uint16_t len = 0)
 {
-  static auto solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
   RDH rdh;
   rdhOrbit(rdh, header.orbit);
   rdhBunchCrossing(rdh, header.bc);
@@ -70,10 +71,11 @@ template <typename RDH>
 size_t createPaddedPage(DataBlock block,
                         std::vector<std::byte>& outBuffer,
                         size_t pageSize,
-                        std::byte paddingByte)
+                        std::byte paddingByte,
+                        std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink)
 
 {
-  auto rdh = createRDH<RDH>(block.header, pageSize, 0, block.payload.size());
+  auto rdh = createRDH<RDH>(block.header, pageSize, solar2feelink, 0, block.payload.size());
   appendRDH<RDH>(outBuffer, rdh);
   outBuffer.insert(outBuffer.end(), block.payload.begin(), block.payload.end());
   auto len = pageSize - block.payload.size() - sizeof(rdh);
@@ -85,7 +87,9 @@ size_t createPaddedPage(DataBlock block,
 
 template <typename RDH>
 size_t createSplitPages(DataBlock block, std::vector<std::byte>& outBuffer,
-                        size_t pageSize, std::byte paddingByte)
+                        size_t pageSize, std::byte paddingByte,
+                        std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink)
+
 {
   int payloadSize = block.header.payloadSize;
   int useableSize = pageSize - sizeof(RDH);
@@ -93,7 +97,7 @@ size_t createSplitPages(DataBlock block, std::vector<std::byte>& outBuffer,
   int inputPos{0};
   for (int i = 0; i < npages; i++) {
     auto len = std::min(payloadSize - inputPos, useableSize);
-    auto ri = createRDH<RDH>(block.header, pageSize, i, len);
+    auto ri = createRDH<RDH>(block.header, pageSize, solar2feelink, i, len);
     appendRDH<RDH>(outBuffer, ri);
     auto s = block.payload.subspan(inputPos, len);
     outBuffer.insert(outBuffer.end(), s.begin(), s.end());
@@ -107,10 +111,11 @@ size_t createSplitPages(DataBlock block, std::vector<std::byte>& outBuffer,
 
 template <typename RDH>
 DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
-                                               std::byte paddingByte)
+                                               std::byte paddingByte,
+                                               std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink)
 {
   if (pageSize == 0) {
-    return [](DataBlock block, std::vector<std::byte>& outBuffer) {
+    return [solar2feelink](DataBlock block, std::vector<std::byte>& outBuffer) {
       // do not paginate, just add a RDH (assuming payload is small enough
       // to fit in 2<<15 - 64)
       auto len = block.header.payloadSize;
@@ -118,7 +123,7 @@ DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
       if (len > sizeLimit) {
         throw std::invalid_argument("Payload too big to fit into an unsplit page...\n");
       }
-      auto ri = createRDH<RDH>(block.header, block.header.payloadSize + sizeof(RDH), 0, len);
+      auto ri = createRDH<RDH>(block.header, block.header.payloadSize + sizeof(RDH), solar2feelink, 0, len);
       appendRDH<RDH>(outBuffer, ri);
       auto s = block.payload.subspan(0, len);
       outBuffer.insert(outBuffer.end(), s.begin(), s.end());
@@ -129,25 +134,26 @@ DataBlockSplitter<RDH> createDataBlockSplitter(size_t pageSize,
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
   return
-    [pageSize, paddingByte](DataBlock block,
-                            std::vector<std::byte>& outBuffer) -> size_t {
+    [pageSize, paddingByte, solar2feelink](DataBlock block,
+                                           std::vector<std::byte>& outBuffer) -> size_t {
       int payloadSize = block.header.payloadSize;
       int useableSize = pageSize - sizeof(block.header);
       if (payloadSize < useableSize) {
-        return createPaddedPage<RDH>(block, outBuffer, pageSize, paddingByte);
+        return createPaddedPage<RDH>(block, outBuffer, pageSize, paddingByte, solar2feelink);
       }
-      return createSplitPages<RDH>(block, outBuffer, pageSize, paddingByte);
+      return createSplitPages<RDH>(block, outBuffer, pageSize, paddingByte, solar2feelink);
     };
 }
 
 template <typename RDH>
 StopPager<RDH> createStopPager(size_t pageSize,
-                               std::byte paddingByte)
+                               std::byte paddingByte,
+                               std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink)
 {
   if (pageSize == 0) {
-    return [pageSize, paddingByte](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
+    return [pageSize, paddingByte, solar2feelink](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
       // append RDH with no payload, stop bit is set
-      auto rdh = createRDH<RDH>(header, sizeof(RDH));
+      auto rdh = createRDH<RDH>(header, sizeof(RDH), solar2feelink);
       rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
       rdhMemorySize(rdh, sizeof(rdh));
       rdhStop(rdh, 1);
@@ -157,10 +163,10 @@ StopPager<RDH> createStopPager(size_t pageSize,
   if (pageSize < sizeof(RDH)) {
     throw std::invalid_argument("cannot split with pageSize below rdh size");
   }
-  return [pageSize, paddingByte](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
+  return [pageSize, paddingByte, solar2feelink](DataBlockHeader header, std::vector<std::byte>& outBuffer, uint16_t pageCount) {
     // append RDH with padding payload to fill up a page
     // stop bit is set
-    auto rdh = createRDH<RDH>(header, pageSize);
+    auto rdh = createRDH<RDH>(header, pageSize, solar2feelink);
     rdhPageCounter(rdh, rdhPageCounter(rdh) + pageCount);
     rdhMemorySize(rdh, sizeof(rdh));
     rdhStop(rdh, 1);
@@ -174,10 +180,12 @@ template <typename RDH>
 size_t paginateBuffer(gsl::span<const std::byte> buffer,
                       std::vector<std::byte>& outBuffer,
                       size_t pageSize,
-                      std::byte paddingByte)
+                      std::byte paddingByte,
+                      std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink)
 {
-  auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte);
-  auto stopPager = createStopPager<RDH>(pageSize, paddingByte);
+
+  auto payloadSplitter = createDataBlockSplitter<RDH>(pageSize, paddingByte, solar2feelink);
+  auto stopPager = createStopPager<RDH>(pageSize, paddingByte, solar2feelink);
 
   constexpr auto headerSize = sizeof(DataBlockHeader);
 
@@ -209,5 +217,6 @@ using header::RAWDataHeaderV4;
 template size_t paginateBuffer<RAWDataHeaderV4>(gsl::span<const std::byte> compactBuffer,
                                                 std::vector<std::byte>& outBuffer,
                                                 size_t pageSize,
-                                                std::byte paddingByte);
+                                                std::byte paddingByte,
+                                                std::function<std::optional<FeeLinkId>(uint16_t)>);
 } // namespace o2::mch::raw

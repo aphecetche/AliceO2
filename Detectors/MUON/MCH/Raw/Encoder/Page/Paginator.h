@@ -14,6 +14,7 @@
 #include <gsl/span>
 #include <vector>
 #include <cstdlib>
+#include "MCHRawElecMap/Mapper.h"
 
 namespace o2
 {
@@ -40,9 +41,10 @@ template <typename RDH>
 size_t paginateBuffer(gsl::span<const std::byte> buffer,
                       std::vector<std::byte>& paginatedBuffer,
                       size_t pageSize = 8192,
-                      std::byte paddingByte = std::byte{0xFF});
+                      std::byte paddingByte = std::byte{0xFF},
+                      std::function<std::optional<FeeLinkId>(uint16_t)> solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>());
+
 } // namespace raw
 } // namespace mch
 } // namespace o2
-
 #endif
