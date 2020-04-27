@@ -30,7 +30,7 @@ namespace conf
 {
 // Base class for a configurable parameter.
 //
-// A configurable parameter (ConfigurableParameter) is a simple class, defining
+// A configurable parameter (ConfigurableParam) is a simple class, defining
 // a few (pod) properties/members which are registered
 // in a global (boost) property tree / structure.
 //
@@ -69,11 +69,11 @@ namespace conf
 // We can now query the parameters in various ways
 // - All parameter classes are singletons and we can say: TPCGasParameter::Instance().getGasDensity();
 // - We can query by key (using classname + parameter name) from the global registry:
-// -    ConfigurableParameter::getValueAs<double>("TPCGas", "mGasDensity");
+// -    ConfigurableParam::getValueAs<double>("TPCGas.mGasDensity");
 //
 // We can modify the parameters via the global registry together with an automatic syncing
 // of the underlying C++ object:
-// - ConfigurableParameter::setValue("TPCGas.mGasDensity", "0.5");
+// - ConfigurableParam::setValue("TPCGas.mGasDensity", "0.5");
 //
 // - TPCGasParameter::Instance().getGasParameter() will now return 0.5;
 //
@@ -82,7 +82,7 @@ namespace conf
 //
 // The collection of all parameter keys and values can be stored to a human/machine readable
 // file
-//  - ConfigurableParameter::writeJSON("thisconfiguration.json")
+//  - ConfigurableParam::writeJSON("thisconfiguration.json")
 
 struct EnumLegalValues {
   std::vector<std::pair<std::string, int>> vvalues;
