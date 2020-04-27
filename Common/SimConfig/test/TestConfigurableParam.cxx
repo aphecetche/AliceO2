@@ -29,6 +29,7 @@
 #include <TInterpreter.h>
 #include <array>
 #include "BazParam.h"
+#include <TSystem.h>
 
 using namespace o2;
 
@@ -42,18 +43,6 @@ struct INIT {
     o2::conf::ConfigurableParam::updateFromString(conf.getKeyValueString());
   }
 };
-
-// struct GenerateDictionary {
-//   GenerateDictionary()
-//   {
-//     std::cout << "Begin GenerateDictionary\n";
-//     gInterpreter->GenerateDictionary("BazParam");
-//     gInterpreter->GenerateTClass("BazParam", false);
-//     std::cout << "End GenerateDictionary\n";
-//   }
-// };
-//
-//BOOST_TEST_GLOBAL_FIXTURE(GenerateDictionary);
 
 BOOST_FIXTURE_TEST_SUITE(ConfigurableParam_test_suite, INIT)
 
@@ -86,6 +75,11 @@ BOOST_AUTO_TEST_CASE(QueryFromRegistryAndStringName)
 BOOST_AUTO_TEST_CASE(Update)
 {
   // update
+  gSystem->ListLibraries();
+  std::cout << "GetClass" << std::endl;
+  auto c = TClass::GetClass("BazParam");
+  c->GetListOfDataMembers()->ls();
+  gSystem->ListLibraries();
   double x = 102;
   o2::conf::ConfigurableParam::setValue<double>("Baz", "mGasDensity", x);
   // check that update correctly synced
