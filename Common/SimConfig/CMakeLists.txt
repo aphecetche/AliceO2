@@ -29,10 +29,20 @@ o2_add_test(Config
             PUBLIC_LINK_LIBRARIES O2::SimConfig
             NO_BOOST_TEST)
 
+
+add_library(BazParam test/BazParam.cxx test/BazParamLinkDef.h)
+target_link_libraries(BazParam PUBLIC O2::CommonUtils)
+
+add_root_dictionary(BazParam HEADERS test/BazParam.h LINKDEF test/BazParamLinkDef.h)
+
 # FIXME: not working ?
 #
-# * o2_add_test(ConfigurableParam
-# * SOURCES test/TestConfigurableParam.cxx
-# * COMPONENT_NAME SimConfig
-# * PUBLIC_LINK_LIBRARIES O2::SimConfig
-# * NO_BOOST_TEST)
+o2_add_test(ConfigurableParam
+            SOURCES test/TestConfigurableParam.cxx test/BazParam.cxx
+            COMPONENT_NAME SimConfig
+            PUBLIC_LINK_LIBRARIES O2::SimConfig 
+            TARGETVARNAME testName)
+
+target_link_libraries(${testName} PRIVATE BazParam)
+
+
