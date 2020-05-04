@@ -10,16 +10,16 @@
 
 foreach(impl RANGE 3 4)
 
-        o2_add_executable(generate-pad-indices-impl${impl}
+        o2_add_executable(mapping-generate-pad-indices-impl${impl}
                 SOURCES src/generatePadIndices.cxx
-                COMPONENT_NAME mchmapping
+                COMPONENT_NAME mch
                 PUBLIC_LINK_LIBRARIES O2::MCHMappingImpl${impl}
                 RapidJSON::RapidJSON Boost::program_options)
 
         o2_add_test(PadIndices${impl}
-                NAME o2-test-mchmapping-pad-indices-impl${impl}
+                NAME o2-test-mch-mapping-pad-indices-impl${impl}
                 SOURCES src/testPadIndices.cxx
-                COMPONENT_NAME mchmapping
+                COMPONENT_NAME mch
                 MAX_ATTEMPTS 1
                 COMMAND_LINE_ARGS --filepattern ${CMAKE_CURRENT_LIST_DIR}/data/test_pad_indices_de{}.json
                 --de 100

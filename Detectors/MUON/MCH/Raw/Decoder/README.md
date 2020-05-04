@@ -80,5 +80,5 @@ SampaChannelHandler handlePacket(DsElecId dsId, uint8_t channel, SampaCluster sc
 
 ## Example of decoding raw data
 
-A (not particularly clean) example of how to decode raw data can be found in the source of the `o2-mchraw-dump` 
+A (not particularly clean) example of how to decode raw data can be found in the source of the `o2-mch-raw-dump` 
  executable [rawdump](../Tools/rawdump.cxx)
