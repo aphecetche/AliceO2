@@ -66,13 +66,13 @@ class _ParamHelper
 
 // implementer (and checker) for concrete ConfigurableParam classes P
 template <typename P>
-class ConfigurableParamHelper : virtual public ConfigurableParam
+class ConfigurableParamHelper : /*virtual*/ public ConfigurableParam
 {
  public:
   using ConfigurableParam::ConfigurableParam;
   static const P& Instance()
   {
-    return P::sInstance;
+    return P::sInstance();
   }
 
   // ----------------------------------------------------------------
@@ -109,7 +109,7 @@ class ConfigurableParamHelper : virtual public ConfigurableParam
     // and that compiler complains about missing static sInstance of type P
     // volatile void* ptr = (void*)&P::sInstance;
     // static assert on type of sInstance:
-    static_assert(std::is_same<decltype(P::sInstance), P>::value,
+    static_assert(std::is_same<typename std::decay<decltype(P::sInstance())>::type, P>::value,
                   "static instance must of same type as class");
 
     // obtain the TClass for P and delegate further

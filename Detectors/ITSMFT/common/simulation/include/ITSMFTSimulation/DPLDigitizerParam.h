@@ -48,9 +48,6 @@ struct DPLDigitizerParam : public o2::conf::ConfigurableParamHelper<DPLDigitizer
   static constexpr std::string_view ParamName[2] = {"ITSDigitizerParam", "MFTDigitizerParam"};
 };
 
-template <int N>
-DPLDigitizerParam<N> DPLDigitizerParam<N>::sInstance;
-
 } // namespace itsmft
 } // namespace o2
 

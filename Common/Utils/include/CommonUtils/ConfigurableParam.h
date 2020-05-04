@@ -279,20 +279,43 @@ class ConfigurableParam
 } // end namespace conf
 } // end namespace o2
 
+//#define quote(sequence) "\"" #sequence "\""
+
 // a helper macro for boilerplate code in parameter classes
-#define O2ParamDef(classname, key)               \
- public:                                         \
-  classname(TRootIOCtor*) {}                     \
-  classname(classname const&) = delete;          \
-                                                 \
- private:                                        \
-  static constexpr char const* const sKey = key; \
-  static classname sInstance;                    \
-  classname() = default;                         \
-  template <typename T>                          \
+#define O2ParamDef(classname, key)                                        \
+ public:                                                                  \
+  classname(TRootIOCtor*) { std::cout << "TRootIOCtor " << key << "\n"; } \
+  classname(classname const&) = delete;                                   \
+                                                                          \
+ private:                                                                 \
+  static constexpr char const* const sKey = key;                          \
+  static classname& sInstance();                                          \
+  classname()                                                             \
+  {                                                                       \
+    std::cout << "Default ctor "                                          \
+              << #classname << " : "                                      \
+              << #key                                                     \
+              << "\n";                                                    \
+  }                                                                       \
+  template <typename T>                                                   \
   friend class o2::conf::ConfigurableParamHelper;
 
 // a helper macro to implement necessary symbols in source
-#define O2ParamImpl(classname) classname classname::sInstance;
+#define O2ParamImpl(classname)                                                 \
+  classname& classname::sInstance()                                            \
+  {                                                                            \
+    static classname theOnlyOne;                                               \
+    return theOnlyOne;                                                         \
+  }                                                                            \
+  namespace                                                                    \
+  {                                                                            \
+  static struct ConfigurableParamCreateObject {                                \
+    ConfigurableParamCreateObject()                                            \
+    {                                                                          \
+      std::cout << "ConfigurableParamCreateObject for " << #classname << "\n"; \
+      o2::conf::ConfigurableParamHelper<classname>::Instance();                \
+    }                                                                          \
+  } staticCreator;                                                             \
+  }
 
 #endif /* COMMON_SIMCONFIG_INCLUDE_SIMCONFIG_CONFIGURABLEPARAM_H_ */

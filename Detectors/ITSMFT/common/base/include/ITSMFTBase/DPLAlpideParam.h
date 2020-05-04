@@ -44,9 +44,6 @@ struct DPLAlpideParam : public o2::conf::ConfigurableParamHelper<DPLAlpideParam<
   static constexpr std::string_view ParamName[2] = {"ITSAlpideParam", "MFTAlpideParam"};
 };
 
-template <int N>
-DPLAlpideParam<N> DPLAlpideParam<N>::sInstance;
-
 } // namespace itsmft
 } // namespace o2
 
