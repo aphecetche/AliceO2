@@ -160,7 +160,7 @@ const char* asString(TDataMember const& dm, char* pointer)
 // ----------------------------------------------------------------------
 
 std::vector<ParamDataMember>* _ParamHelper::getDataMembersImpl(std::string mainkey, TClass* cl, void* obj,
-                                                               std::map<std::string, ConfigurableParam::EParamProvenance> const* provmap)
+                                                               std::map<std::string, ConfigurableParam::EParamProvenance> const& provmap)
 {
   std::vector<ParamDataMember>* members = new std::vector<ParamDataMember>;
 
@@ -172,8 +172,8 @@ std::vector<ParamDataMember>* _ParamHelper::getDataMembersImpl(std::string maink
     const char* value = asString(*dm, pointer);
 
     std::string prov = "";
-    auto iter = provmap->find(mainkey + "." + name);
-    if (iter != provmap->end()) {
+    auto iter = provmap.find(mainkey + "." + name);
+    if (iter != provmap.end()) {
       prov = ConfigurableParam::toString(iter->second);
     }
     ParamDataMember member{name, value, prov};
@@ -251,9 +251,9 @@ std::type_info const& nameToTypeInfo(const char* tname, TDataType const* dt)
 
 // ----------------------------------------------------------------------
 
-void _ParamHelper::fillKeyValuesImpl(std::string mainkey, TClass* cl, void* obj, boost::property_tree::ptree* tree,
-                                     std::map<std::string, std::pair<std::type_info const&, void*>>* keytostoragemap,
-                                     EnumRegistry* enumRegistry)
+void _ParamHelper::fillKeyValuesImpl(std::string mainkey, TClass* cl, void* obj, boost::property_tree::ptree& tree,
+                                     std::map<std::string, std::pair<std::type_info const&, void*>>& keytostoragemap,
+                                     EnumRegistry& enumRegistry)
 {
   boost::property_tree::ptree localtree;
   auto fillMap = [obj, &mainkey, &localtree, &keytostoragemap, &enumRegistry](const TDataMember* dm, int index, int size) {
@@ -268,15 +268,15 @@ void _ParamHelper::fillKeyValuesImpl(std::string mainkey, TClass* cl, void* obj,
     // If it's an enum, we need to store separately all the legal
     // values so that we can map to them from the command line
     if (dm->IsEnum()) {
-      enumRegistry->add(key, dm);
+      enumRegistry.add(key, dm);
     }
 
     using mapped_t = std::pair<std::type_info const&, void*>;
     auto& ti = nameToTypeInfo(dm->GetTrueTypeName(), dt);
-    keytostoragemap->insert(std::pair<std::string, mapped_t>(key, mapped_t(ti, pointer)));
+    keytostoragemap.insert(std::pair<std::string, mapped_t>(key, mapped_t(ti, pointer)));
   };
   loopOverMembers(cl, obj, fillMap);
-  tree->add_child(mainkey, localtree);
+  tree.add_child(mainkey, localtree);
 }
 
 // ----------------------------------------------------------------------
@@ -313,9 +313,9 @@ bool isMemblockDifferent(char const* block1, char const* block2, int sizeinbytes
 // ----------------------------------------------------------------------
 
 void _ParamHelper::assignmentImpl(std::string mainkey, TClass* cl, void* to, void* from,
-                                  std::map<std::string, ConfigurableParam::EParamProvenance>* provmap)
+                                  std::map<std::string, ConfigurableParam::EParamProvenance>& provmap)
 {
-  auto assignifchanged = [to, from, &mainkey, provmap](const TDataMember* dm, int index, int size) {
+  auto assignifchanged = [to, from, &mainkey, &provmap](const TDataMember* dm, int index, int size) {
     const auto name = getName(dm, index, size);
     auto dt = dm->GetDataType();
     auto TS = dt ? dt->Size() : 0;
@@ -323,10 +323,10 @@ void _ParamHelper::assignmentImpl(std::string mainkey, TClass* cl, void* to, voi
     char* pointerfrom = ((char*)from) + dm->GetOffset() + index * TS;
 
     // lambda to update the provenance
-    auto updateProv = [&mainkey, name, provmap]() {
+    auto updateProv = [&mainkey, name, &provmap]() {
       auto key = mainkey + "." + name;
-      auto iter = provmap->find(key);
-      if (iter != provmap->end()) {
+      auto iter = provmap.find(key);
+      if (iter != provmap.end()) {
         iter->second = ConfigurableParam::EParamProvenance::kCCDB; // TODO: change to "current STATE"??
       } else {
         LOG(WARN) << "KEY " << key << " NOT FOUND WHILE UPDATING PARAMETER PROVENANCE";

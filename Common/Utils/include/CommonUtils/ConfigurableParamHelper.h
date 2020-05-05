@@ -44,16 +44,16 @@ class _ParamHelper
 {
  private:
   static std::vector<ParamDataMember>* getDataMembersImpl(std::string mainkey, TClass* cl, void*,
-                                                          std::map<std::string, ConfigurableParam::EParamProvenance> const* provmap);
+                                                          std::map<std::string, ConfigurableParam::EParamProvenance> const& provmap);
 
-  static void fillKeyValuesImpl(std::string mainkey, TClass* cl, void*, boost::property_tree::ptree*,
-                                std::map<std::string, std::pair<std::type_info const&, void*>>*,
-                                EnumRegistry*);
+  static void fillKeyValuesImpl(std::string mainkey, TClass* cl, void*, boost::property_tree::ptree&,
+                                std::map<std::string, std::pair<std::type_info const&, void*>>&,
+                                EnumRegistry&);
 
   static void printWarning(std::type_info const&);
 
   static void assignmentImpl(std::string mainkey, TClass* cl, void* to, void* from,
-                             std::map<std::string, ConfigurableParam::EParamProvenance>* provmap);
+                             std::map<std::string, ConfigurableParam::EParamProvenance>& provmap);
 
   static void outputMembersImpl(std::ostream& out, std::vector<ParamDataMember> const* members, bool showProv);
   static void printMembersImpl(std::vector<ParamDataMember> const* members, bool showProv);
@@ -119,20 +119,20 @@ class ConfigurableParamHelper : virtual public ConfigurableParam
       return nullptr;
     }
 
-    return _ParamHelper::getDataMembersImpl(getName(), cl, (void*)this, sValueProvenanceMap);
+    return _ParamHelper::getDataMembersImpl(getName(), cl, (void*)this, sValueProvenanceMap());
   }
 
   // ----------------------------------------------------------------
 
   // fills the data structures with the initial default values
-  void putKeyValues(boost::property_tree::ptree* tree) final
+  void putKeyValues(boost::property_tree::ptree& tree) final
   {
     auto cl = TClass::GetClass(typeid(P));
     if (!cl) {
       _ParamHelper::printWarning(typeid(P));
       return;
     }
-    _ParamHelper::fillKeyValuesImpl(getName(), cl, (void*)this, tree, sKeyToStorageMap, sEnumRegistry);
+    _ParamHelper::fillKeyValuesImpl(getName(), cl, (void*)this, tree, sKeyToStorageMap(), sEnumRegistry());
   }
 
   // ----------------------------------------------------------------
@@ -146,7 +146,7 @@ class ConfigurableParamHelper : virtual public ConfigurableParam
     file->GetObject(getName().c_str(), readback);
     if (readback != nullptr) {
       _ParamHelper::assignmentImpl(getName(), TClass::GetClass(typeid(P)), (void*)this, (void*)readback,
-                                   sValueProvenanceMap);
+                                   sValueProvenanceMap());
       delete readback;
     }
     setRegisterMode(true);

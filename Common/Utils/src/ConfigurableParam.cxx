@@ -38,11 +38,35 @@ namespace o2
 {
 namespace conf
 {
-std::vector<ConfigurableParam*>* ConfigurableParam::sRegisteredParamClasses = nullptr;
-boost::property_tree::ptree* ConfigurableParam::sPtree = nullptr;
-std::map<std::string, std::pair<std::type_info const&, void*>>* ConfigurableParam::sKeyToStorageMap = nullptr;
-std::map<std::string, ConfigurableParam::EParamProvenance>* ConfigurableParam::sValueProvenanceMap = nullptr;
-EnumRegistry* ConfigurableParam::sEnumRegistry = nullptr;
+std::vector<ConfigurableParam*>& ConfigurableParam::sRegisteredParamClasses()
+{
+  static std::vector<ConfigurableParam*> v;
+  return v;
+}
+
+boost::property_tree::ptree& ConfigurableParam::sPtree()
+{
+  static boost::property_tree::ptree tree;
+  return tree;
+}
+
+std::map<std::string, std::pair<std::type_info const&, void*>>& ConfigurableParam::sKeyToStorageMap()
+{
+  static std::map<std::string, std::pair<std::type_info const&, void*>> m;
+  return m;
+}
+
+std::map<std::string, ConfigurableParam::EParamProvenance>& ConfigurableParam::sValueProvenanceMap()
+{
+  static std::map<std::string, ConfigurableParam::EParamProvenance> m;
+  return m;
+}
+
+EnumRegistry& ConfigurableParam::sEnumRegistry()
+{
+  static EnumRegistry r;
+  return r;
+}
 
 bool ConfigurableParam::sIsFullyInitialized = false;
 bool ConfigurableParam::sRegisterMode = true;
@@ -94,14 +118,14 @@ std::vector<std::string> splitString(const std::string& src, char delim, bool tr
 }
 
 // Does the given key exist in the boost property tree?
-bool keyInTree(boost::property_tree::ptree* pt, std::string key)
+bool keyInTree(boost::property_tree::ptree& pt, std::string key)
 {
-  if (key.size() == 0 || pt == nullptr) {
+  if (key.size() == 0) {
     return false;
   }
   bool reply = false;
   try {
-    reply = pt->get_optional<std::string>(key).is_initialized();
+    reply = pt.get_optional<std::string>(key).is_initialized();
   } catch (std::exception const& e) {
     LOG(ERROR) << "ConfigurableParam: Exception when checking for key " << key << " : " << e.what();
   }
@@ -206,13 +230,13 @@ void ConfigurableParam::writeINI(std::string const& filename, std::string const&
   if (!keyOnly.empty()) { // write ini for selected key only
     try {
       boost::property_tree::ptree kTree;
-      kTree.add_child(keyOnly, sPtree->get_child(keyOnly));
+      kTree.add_child(keyOnly, sPtree().get_child(keyOnly));
       boost::property_tree::write_ini(filename, kTree);
     } catch (const boost::property_tree::ptree_bad_path& err) {
       LOG(FATAL) << "non-existing key " << keyOnly << " provided to writeINI";
     }
   } else {
-    boost::property_tree::write_ini(filename, *sPtree);
+    boost::property_tree::write_ini(filename, sPtree());
   }
 }
 
@@ -276,13 +300,13 @@ void ConfigurableParam::writeJSON(std::string const& filename, std::string const
   if (!keyOnly.empty()) { // write ini for selected key only
     try {
       boost::property_tree::ptree kTree;
-      kTree.add_child(keyOnly, sPtree->get_child(keyOnly));
+      kTree.add_child(keyOnly, sPtree().get_child(keyOnly));
       boost::property_tree::write_json(filename, kTree);
     } catch (const boost::property_tree::ptree_bad_path& err) {
       LOG(FATAL) << "non-existing key " << keyOnly << " provided to writeJSON";
     }
   } else {
-    boost::property_tree::write_json(filename, *sPtree);
+    boost::property_tree::write_json(filename, sPtree());
   }
 }
 
@@ -290,9 +314,9 @@ void ConfigurableParam::writeJSON(std::string const& filename, std::string const
 
 void ConfigurableParam::initPropertyTree()
 {
-  sPtree->clear();
-  for (auto p : *sRegisteredParamClasses) {
-    p->putKeyValues(sPtree);
+  sPtree().clear();
+  for (auto p : sRegisteredParamClasses()) {
+    p->putKeyValues(sPtree());
   }
 }
 
@@ -304,7 +328,7 @@ void ConfigurableParam::printAllKeyValuePairs()
     initialize();
   }
   std::cout << "####\n";
-  for (auto p : *sRegisteredParamClasses) {
+  for (auto p : sRegisteredParamClasses()) {
     p->printKeyValues(true);
   }
   std::cout << "----\n";
@@ -320,7 +344,7 @@ void ConfigurableParam::toCCDB(std::string filename)
     initialize();
   }
   TFile file(filename.c_str(), "RECREATE");
-  for (auto p : *sRegisteredParamClasses) {
+  for (auto p : sRegisteredParamClasses()) {
     p->serializeTo(&file);
   }
   file.Close();
@@ -334,7 +358,7 @@ void ConfigurableParam::fromCCDB(std::string filename)
     initialize();
   }
   TFile file(filename.c_str(), "READ");
-  for (auto p : *sRegisteredParamClasses) {
+  for (auto p : sRegisteredParamClasses()) {
     p->initFrom(&file);
   }
   file.Close();
@@ -344,25 +368,8 @@ void ConfigurableParam::fromCCDB(std::string filename)
 
 ConfigurableParam::ConfigurableParam()
 {
-  if (sRegisteredParamClasses == nullptr) {
-    sRegisteredParamClasses = new std::vector<ConfigurableParam*>;
-  }
-  if (sPtree == nullptr) {
-    sPtree = new boost::property_tree::ptree;
-  }
-  if (sKeyToStorageMap == nullptr) {
-    sKeyToStorageMap = new std::map<std::string, std::pair<std::type_info const&, void*>>;
-  }
-  if (sValueProvenanceMap == nullptr) {
-    sValueProvenanceMap = new std::map<std::string, ConfigurableParam::EParamProvenance>;
-  }
-
-  if (sEnumRegistry == nullptr) {
-    sEnumRegistry = new EnumRegistry();
-  }
-
   if (sRegisterMode == true) {
-    sRegisteredParamClasses->push_back(this);
+    sRegisteredParamClasses().push_back(this);
   }
 }
 
@@ -373,8 +380,8 @@ void ConfigurableParam::initialize()
   initPropertyTree();
   // initialize the provenance map
   // initially the values come from code
-  for (auto& key : *sKeyToStorageMap) {
-    sValueProvenanceMap->insert(std::pair<std::string, ConfigurableParam::EParamProvenance>(key.first, kCODE));
+  for (auto& key : sKeyToStorageMap()) {
+    sValueProvenanceMap().insert(std::pair<std::string, ConfigurableParam::EParamProvenance>(key.first, kCODE));
   }
   sIsFullyInitialized = true;
 }
@@ -383,7 +390,7 @@ void ConfigurableParam::initialize()
 
 void ConfigurableParam::printAllRegisteredParamNames()
 {
-  for (auto p : *sRegisteredParamClasses) {
+  for (auto p : sRegisteredParamClasses()) {
     std::cout << p->getName() << "\n";
   }
 }
@@ -512,16 +519,16 @@ void ConfigurableParam::setValues(std::vector<std::pair<std::string, std::string
     std::string key = keyValue.first;
     std::string value = trimSpace(keyValue.second);
 
-    if (!keyInTree(sPtree, key)) {
+    if (!keyInTree(sPtree(), key)) {
       LOG(FATAL) << "Inexistant ConfigurableParam key: " << key;
     }
 
-    if (sEnumRegistry->contains(key)) {
+    if (sEnumRegistry().contains(key)) {
       setEnumValue(key, value);
     } else if (isArray(value)) {
       setArrayValue(key, value);
     } else {
-      assert(sKeyToStorageMap->find(key) != sKeyToStorageMap->end());
+      assert(sKeyToStorageMap().find(key) != sKeyToStorageMap().end());
 
       // If the value is given as a boolean true|false, change to 1|0 int equivalent
       if (value == "true") {
@@ -556,12 +563,12 @@ void ConfigurableParam::setArrayValue(const std::string& key, const std::string&
 
 void ConfigurableParam::setEnumValue(const std::string& key, const std::string& value)
 {
-  int val = (*sEnumRegistry)[key]->getIntValue(value);
+  int val = sEnumRegistry()[key]->getIntValue(value);
   if (val == -1) {
     LOG(FATAL) << "Illegal value "
                << value << " for enum " << key
                << ". Legal string|int values:\n"
-               << (*sEnumRegistry)[key]->toString() << std::endl;
+               << sEnumRegistry()[key]->toString() << std::endl;
   }
 
   setValue(key, std::to_string(val));
@@ -598,8 +605,8 @@ bool ConfigurableParam::updateThroughStorageMap(std::string mainkey, std::string
 {
   // check if key_exists
   auto key = mainkey + "." + subkey;
-  auto iter = sKeyToStorageMap->find(key);
-  if (iter == sKeyToStorageMap->end()) {
+  auto iter = sKeyToStorageMap().find(key);
+  if (iter == sKeyToStorageMap().end()) {
     LOG(WARN) << "Cannot update parameter " << key << " not found";
     return false;
   }
@@ -751,8 +758,8 @@ bool ConvertAndCopy<std::string>(std::string const& valuestring, void* targetadd
 bool ConfigurableParam::updateThroughStorageMapWithConversion(std::string const& key, std::string const& valuestring)
 {
   // check if key_exists
-  auto iter = sKeyToStorageMap->find(key);
-  if (iter == sKeyToStorageMap->end()) {
+  auto iter = sKeyToStorageMap().find(key);
+  if (iter == sKeyToStorageMap().end()) {
     LOG(WARN) << "Cannot update parameter " << key << " (parameter not found) ";
     return false;
   }

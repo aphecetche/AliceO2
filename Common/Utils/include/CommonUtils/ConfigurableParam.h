@@ -174,7 +174,7 @@ class ConfigurableParam
     if (!sIsFullyInitialized) {
       initialize();
     }
-    return sPtree->get<T>(key);
+    return sPtree().get<T>(key);
   }
 
   template <typename T>
@@ -182,11 +182,11 @@ class ConfigurableParam
   {
     try {
       auto key = mainkey + "." + subkey;
-      if (sPtree->get_optional<std::string>(key).is_initialized()) {
-        sPtree->put(key, x);
+      if (sPtree().get_optional<std::string>(key).is_initialized()) {
+        sPtree().put(key, x);
         auto changed = updateThroughStorageMap(mainkey, subkey, typeid(T), (void*)&x);
         if (changed) {
-          sValueProvenanceMap->find(key)->second = kRT; // set to runtime
+          sValueProvenanceMap().find(key)->second = kRT; // set to runtime
         }
       }
     } catch (std::exception const& e) {
@@ -199,11 +199,11 @@ class ConfigurableParam
   static void setValue(std::string const& key, std::string const& valuestring)
   {
     try {
-      if (sPtree->get_optional<std::string>(key).is_initialized()) {
-        sPtree->put(key, valuestring);
+      if (sPtree().get_optional<std::string>(key).is_initialized()) {
+        sPtree().put(key, valuestring);
         auto changed = updateThroughStorageMapWithConversion(key, valuestring);
         if (changed) {
-          sValueProvenanceMap->find(key)->second = kRT; // set to runtime
+          sValueProvenanceMap().find(key)->second = kRT; // set to runtime
         }
       }
     } catch (std::exception const& e) {
@@ -248,7 +248,7 @@ class ConfigurableParam
   virtual ~ConfigurableParam() = default;
 
   // fill property tree with the key-values from the sub-classes
-  virtual void putKeyValues(boost::property_tree::ptree*) = 0;
+  virtual void putKeyValues(boost::property_tree::ptree&) = 0;
   virtual void output(std::ostream& out) const = 0;
 
   virtual void serializeTo(TFile*) const = 0;
@@ -256,24 +256,24 @@ class ConfigurableParam
 
   // static map keeping, for each configuration key, its memory location and type
   // (internal use to easily sync updates, this is ok since parameter classes are singletons)
-  static std::map<std::string, std::pair<std::type_info const&, void*>>* sKeyToStorageMap;
+  static std::map<std::string, std::pair<std::type_info const&, void*>>& sKeyToStorageMap();
 
   // keep track of provenance of parameters and values
-  static std::map<std::string, ConfigurableParam::EParamProvenance>* sValueProvenanceMap;
+  static std::map<std::string, ConfigurableParam::EParamProvenance>& sValueProvenanceMap();
 
   // A registry of enum names and their allowed values
   // (stored as a vector of pairs <enumValueLabel, enumValueInt>)
-  static EnumRegistry* sEnumRegistry;
+  static EnumRegistry& sEnumRegistry();
 
   void setRegisterMode(bool b) { sRegisterMode = b; }
 
  private:
   // static registry for implementations of this type
-  static std::vector<ConfigurableParam*>* sRegisteredParamClasses; //!
+  static std::vector<ConfigurableParam*>& sRegisteredParamClasses(); //!
   // static property tree (stocking all key - value pairs from instances of type ConfigurableParam)
-  static boost::property_tree::ptree* sPtree; //!
-  static bool sIsFullyInitialized;            //!
-  static bool sRegisterMode;                  //! (flag to enable/disable autoregistering of child classes)
+  static boost::property_tree::ptree& sPtree(); //!
+  static bool sIsFullyInitialized;              //!
+  static bool sRegisterMode;                    //! (flag to enable/disable autoregistering of child classes)
 };
 
 } // end namespace conf
