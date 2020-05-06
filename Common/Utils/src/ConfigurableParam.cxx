@@ -223,20 +223,27 @@ int EnumLegalValues::getIntValue(const std::string& value) const
 }
 
 // -----------------------------------------------------------------
-
-void ConfigurableParam::writeINI(std::string const& filename, std::string const& keyOnly)
+void ConfigurableParam::writeINI(std::ostream& out, std::string const& keyOnly)
 {
   initPropertyTree();     // update the boost tree before writing
   if (!keyOnly.empty()) { // write ini for selected key only
     try {
       boost::property_tree::ptree kTree;
       kTree.add_child(keyOnly, sPtree().get_child(keyOnly));
-      boost::property_tree::write_ini(filename, kTree);
+      boost::property_tree::write_ini(out, kTree);
     } catch (const boost::property_tree::ptree_bad_path& err) {
       LOG(FATAL) << "non-existing key " << keyOnly << " provided to writeINI";
     }
   } else {
-    boost::property_tree::write_ini(filename, sPtree());
+    boost::property_tree::write_ini(out, sPtree());
+  }
+}
+
+void ConfigurableParam::writeINI(std::string const& filename, std::string const& keyOnly)
+{
+  std::ofstream out(filename);
+  if (out.is_open()) {
+    writeINI(out, keyOnly);
   }
 }
 
@@ -294,19 +301,27 @@ boost::property_tree::ptree ConfigurableParam::readJSON(std::string const& filep
 
 // ------------------------------------------------------------------
 
-void ConfigurableParam::writeJSON(std::string const& filename, std::string const& keyOnly)
+void ConfigurableParam::writeJSON(std::ostream& out, std::string const& keyOnly)
 {
   initPropertyTree();     // update the boost tree before writing
   if (!keyOnly.empty()) { // write ini for selected key only
     try {
       boost::property_tree::ptree kTree;
       kTree.add_child(keyOnly, sPtree().get_child(keyOnly));
-      boost::property_tree::write_json(filename, kTree);
+      boost::property_tree::write_json(out, kTree);
     } catch (const boost::property_tree::ptree_bad_path& err) {
       LOG(FATAL) << "non-existing key " << keyOnly << " provided to writeJSON";
     }
   } else {
-    boost::property_tree::write_json(filename, sPtree());
+    boost::property_tree::write_json(out, sPtree());
+  }
+}
+
+void ConfigurableParam::writeJSON(std::string const& filename, std::string const& keyOnly)
+{
+  std::ofstream out(filename);
+  if (out.is_open()) {
+    writeJSON(out, keyOnly);
   }
 }
 

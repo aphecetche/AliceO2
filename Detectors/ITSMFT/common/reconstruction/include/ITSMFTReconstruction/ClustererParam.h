@@ -41,9 +41,6 @@ struct ClustererParam : public o2::conf::ConfigurableParamHelper<ClustererParam<
   static constexpr std::string_view ParamName[2] = {"ITSClustererParam", "MFTClustererParam"};
 };
 
-template <int N>
-ClustererParam<N> ClustererParam<N>::sInstance;
-
 } // namespace itsmft
 } // namespace o2
 

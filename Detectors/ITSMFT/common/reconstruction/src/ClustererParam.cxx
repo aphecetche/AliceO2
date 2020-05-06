@@ -16,7 +16,18 @@ namespace itsmft
 {
 // this makes sure that the constructor of the parameters is statically called
 // so that these params are part of the parameter database
-static auto& sClustererParamITS = o2::itsmft::ClustererParam<o2::detectors::DetID::ITS>::Instance();
-static auto& sClustererParamMFT = o2::itsmft::ClustererParam<o2::detectors::DetID::MFT>::Instance();
+
+template <>
+ClustererParam<o2::detectors::DetID::ITS>& ClustererParam<o2::detectors::DetID::ITS>::sInstance()
+{
+  return o2::itsmft::ClustererParam<o2::detectors::DetID::ITS>::sInstance();
+}
+
+template <>
+ClustererParam<o2::detectors::DetID::MFT>& ClustererParam<o2::detectors::DetID::MFT>::sInstance()
+{
+  return o2::itsmft::ClustererParam<o2::detectors::DetID::MFT>::sInstance();
+}
+
 } // namespace itsmft
 } // namespace o2

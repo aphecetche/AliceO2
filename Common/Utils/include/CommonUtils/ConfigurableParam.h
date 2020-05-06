@@ -164,8 +164,10 @@ class ConfigurableParam
 
   // writes a human readable JSON file of all parameters
   static void writeJSON(std::string const& filename, std::string const& keyOnly = "");
+  static void writeJSON(std::ostream& out, std::string const& keyOnly = "");
   // writes a human readable INI file of all parameters
   static void writeINI(std::string const& filename, std::string const& keyOnly = "");
+  static void writeINI(std::ostream& out, std::string const& keyOnly = "");
 
   // can be used instead of using API on concrete child classes
   template <typename T>

@@ -30,17 +30,35 @@ o2_add_test(Config
             NO_BOOST_TEST)
 
 
+    set(IS_PUBLIC TRUE)
+
+if(IS_PUBLIC)
+  o2_add_library(BazParam
+          SOURCES test/BazParam.cxx
+          PUBLIC_LINK_LIBRARIES O2::CommonUtils)
+  o2_target_root_dictionary(BazParam
+          HEADERS test/BazParam.h
+          LINKDEF test/BazParamLinkDef.h)
+endif()
+
 add_library(BazParam test/BazParam.cxx)
 target_link_libraries(BazParam PRIVATE O2::CommonUtils)
 add_root_dictionary(BazParam HEADERS test/BazParam.h LINKDEF test/BazParamLinkDef.h)
 
-o2_add_test(ConfigurableParam
-            SOURCES test/TestConfigurableParam.cxx test/BazParam.cxx
-            COMPONENT_NAME SimConfig
-            PUBLIC_LINK_LIBRARIES O2::SimConfig 
-            TARGETVARNAME testName)
+if(IS_PUBLIC)
+  o2_add_test(ConfigurableParam
+              SOURCES test/TestConfigurableParam.cxx
+              COMPONENT_NAME SimConfig
+              PUBLIC_LINK_LIBRARIES O2::SimConfig O2::BazParam
+              TARGETVARNAME testName)
+else()
+  o2_add_test(ConfigurableParam
+              SOURCES test/TestConfigurableParam.cxx test/BazParam.cxx
+              COMPONENT_NAME SimConfig
+              PUBLIC_LINK_LIBRARIES O2::SimConfig
+              TARGETVARNAME testName)
+  target_link_libraries(${testName} PUBLIC BazParam)
+endif()
 
-    #target_link_libraries(${testName} PRIVATE BazParam)
-target_link_libraries(${testName} PUBLIC BazParam)
 
 

@@ -63,6 +63,7 @@ struct PHOSSimParams : public o2::conf::ConfigurableParamHelper<PHOSSimParams> {
   float mCoreR = 3.5;                 ///< Radius to caluclate core energy
   float mSortingDelta = 1.;           ///< used in sorting clusters
 
+  bool totoLA = false;
   O2ParamDef(PHOSSimParams, "PHOSSimParams");
 };
 } // namespace phos
