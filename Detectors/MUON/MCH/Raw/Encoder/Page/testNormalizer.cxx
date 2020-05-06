@@ -254,10 +254,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestBasicRawWriter, RDH, testTypes)
   }
 }
 
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+//BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_CASE_TEMPLATE(TestRawFileWriter, RDH, testTypes)
 {
   o2::raw::RawFileWriter fw;
+  fw.setDontFillEmptyHBF(true);
 
   std::set<DataBlockRef> dataBlockRefs;
 
@@ -277,7 +278,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(TestRawFileWriter, RDH, testTypes)
     int endpoint = f.feeId() % 2;
     int cru = (f.feeId() - endpoint) / 2;
     auto& link = fw.registerLink(f.feeId(), cru, f.linkId(), endpoint, "mch.raw");
-    link.updateIR = {678, 12344}; // FIXME: this is not working. not the way to select the firstIR
+    o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", F.firstIR.orbit);
+    o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", F.firstIR.bc);
   }
 
   for (auto r : dataBlockRefs) {

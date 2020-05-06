@@ -38,18 +38,14 @@ void setHBAndTFBits(gsl::span<std::byte> pages, o2::InteractionRecord firstIR)
 {
   const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
 
-  std::cout << "firstIR=" << firstIR << "\n";
   o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", firstIR.orbit);
+  o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", firstIR.bc);
 
-  /// Ensure the triggerType of each RDH is correctly set
+  // Ensure the triggerType of each RDH is correctly set
   forEachRDH<RDH>(pages, [&hbfutils](RDH& rdh, gsl::span<std::byte>::size_type offset) {
     o2::InteractionRecord rec(rdhBunchCrossing(rdh), rdhOrbit(rdh));
     hbfutils.updateRDH<RDH>(rdh, rec);
   });
-
-  std::cout << "TOTO: HBFUtils.orbitFirst=" << o2::conf::ConfigurableParam::getValueAs<int>("HBFUtils.orbitFirst")
-            << "\n";
-  //showRDHs<RDH>(pages);
 }
 
 template <typename RDH>
