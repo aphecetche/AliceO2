@@ -16,7 +16,7 @@
 #include <vector>
 #include "MCHRawEncoder/DigitEncoder.h"
 #include <ostream>
-#include "MCHRawElecMap/CruLinkId.h"
+#include "MCHRawElecMap/FeeLinkId.h"
 #include <functional>
 #include <optional>
 #include <set>
@@ -28,7 +28,7 @@ void digit2raw(const std::map<o2::InteractionRecord,
                               std::vector<o2::mch::Digit>>& digitsPerIR,
                const std::set<uint16_t>& feeIds,
                DigitEncoder encoder,
-               std::function<std::optional<CruLinkId>(uint16_t)> solar2cru,
+               std::function<std::optional<FeeLinkId>(uint16_t)> solar2fee,
                std::ostream& out);
 }
 

@@ -29,6 +29,8 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <string>
+#include "DetectorsRaw/RawFileWriter.h"
+#include "MCHRawEncoder/DataBlock.h"
 
 namespace po = boost::program_options;
 using namespace o2::mch::raw;
@@ -53,26 +55,6 @@ std::ostream& operator<<(std::ostream& os, const o2::mch::Digit& d)
                     d.getDetID(), d.getPadID(), d.getADC(),
                     d.getTimeStamp());
   return os;
-}
-
-std::function<std::set<int>(int deId)> createDualSampaMapper();
-
-std::set<uint16_t> getFeeIds(std::function<std::optional<DsElecId>(DsDetId)> det2elec)
-{
-  std::set<uint16_t> feeIds;
-  auto dslist = o2::mch::raw::createDualSampaMapper();
-  for (auto deId : deIdsForAllMCH) {
-    auto ds = dslist(deId);
-    for (auto d : ds) {
-      DsDetId detId(deId, d);
-      auto dsElecId = det2elec(detId);
-      if (!dsElecId.has_value()) {
-        throw std::logic_error(fmt::format("could not get dsElecId for dsDetId={}\n", asString(detId)));
-      }
-      feeIds.insert(dsElecId->solarId());
-    }
-  }
-  return feeIds;
 }
 
 std::string digitIdAsString(const o2::mch::Digit& digit,
@@ -100,9 +82,12 @@ void outputToJson(const std::vector<o2::mch::Digit>& digits,
   writer.Key("digits");
   writer.StartArray();
   for (auto d : digits) {
+    auto sid = digitIdAsString(d, digit2elec);
+    if (sid == "UNKNOWN") {
+      continue;
+    }
     writer.StartObject();
     writer.Key("id");
-    auto sid = digitIdAsString(d, digit2elec);
     writer.String(sid.c_str());
     writer.Key("adc");
     writer.Int(d.getADC());
@@ -129,7 +114,7 @@ int main(int argc, char* argv[])
       ("dummyElecMap,d",po::bool_switch(&dummyElecMap),"use a dummy electronic mapping (for testing only)")
       ("outfile,o",po::value<std::string>(&output)->required(),"output filename")
       ("infile,i",po::value<std::string>(&input)->required(),"input file name")
-      ("json,j",po::bool_switch(&jsonOutput),"output means and rms in json format");
+      ("json,j",po::bool_switch(&jsonOutput),"output digits in json format");
   // clang-format on
 
   po::options_description cmdline;
@@ -160,8 +145,6 @@ int main(int argc, char* argv[])
 
   digitBranch->GetEntry(0);
 
-  o2::raw::HBFUtils hbfutils;
-
   // get the first and last IRs used
   // (could be easier to find out if we had a ROFRecord of some sort)
   uint32_t firstOrbit = std::numeric_limits<uint32_t>::max();
@@ -185,6 +168,8 @@ int main(int argc, char* argv[])
     digitsPerIR[ir] = {};
   }
 
+  const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
+
   // now add actual digits to the relevant HBFs
   for (auto d : (*digits)) {
     o2::InteractionTimeRecord ir(d.getTimeStamp());
@@ -202,22 +187,67 @@ int main(int argc, char* argv[])
   if (dummyElecMap && !jsonOutput) {
     std::cout << "WARNING: using dummy electronic mapping\n";
   }
-  auto det2elec = (dummyElecMap ? createDet2ElecMapper<ElectronicMapperDummy>(deIdsForAllMCH) : createDet2ElecMapper<ElectronicMapperGenerated>(deIdsOfCH5L /*deIdsForAllMCH*/));
-  auto solar2cru = (dummyElecMap ? createSolar2CruLinkMapper<ElectronicMapperDummy>() : createSolar2CruLinkMapper<ElectronicMapperGenerated>());
+  auto det2elec = (dummyElecMap ? createDet2ElecMapper<ElectronicMapperDummy>() : createDet2ElecMapper<ElectronicMapperGenerated>());
 
   if (jsonOutput) {
     outputToJson(*digits, det2elec);
+    return 0;
   } else {
     std::cout << fmt::format("{:6d} digits {:4d} orbits\n", ndigits, digitsPerIR.size());
   }
 
-  auto feeIds = getFeeIds(det2elec);
-
   DigitEncoder encoder = createDigitEncoder(userLogic, det2elec);
 
-  std::ofstream out(output);
+  auto solar2feelink = (dummyElecMap ? createSolar2FeeLinkMapper<ElectronicMapperDummy>() : createSolar2FeeLinkMapper<ElectronicMapperGenerated>());
 
-  digit2raw<o2::header::RAWDataHeaderV4>(digitsPerIR, feeIds, encoder, solar2cru, out);
+  o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", firstOrbit);
+  //o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", F.firstIR.bc);
+
+  o2::raw::RawFileWriter fw;
+  fw.setDontFillEmptyHBF(true);
+
+  for (auto p : digitsPerIR) {
+
+    std::vector<std::byte> buffer;
+
+    auto& currentIR = p.first;
+    auto& digits = p.second;
+
+    encoder(digits, buffer, currentIR.orbit, currentIR.bc);
+
+    std::set<DataBlockRef> dataBlockRefs;
+
+    forEachDataBlockRef(
+      buffer, [&dataBlockRefs](const DataBlockRef& ref) {
+        dataBlockRefs.insert(ref);
+      });
+
+    // here should only register new links
+    {
+      std::set<FeeLinkId> feeLinkIds;
+
+      for (auto r : dataBlockRefs) {
+        feeLinkIds.insert(solar2feelink(r.block.header.solarId).value());
+      }
+
+      for (auto f : feeLinkIds) {
+        int endpoint = f.feeId() % 2;
+        int cru = (f.feeId() - endpoint) / 2;
+        auto& link = fw.registerLink(f.feeId(), cru, f.linkId(), endpoint, "mch.raw");
+      }
+    }
+
+    for (auto r : dataBlockRefs) {
+      auto& b = r.block;
+      auto& h = b.header;
+      auto f = solar2feelink(r.block.header.solarId).value();
+      int endpoint = f.feeId() % 2;
+      int cru = (f.feeId() - endpoint) / 2;
+      std::cout << fmt::format("feeId {} cruId {} linkId {} endpoint {}\n",
+                               f.feeId(), cru, f.linkId(), endpoint);
+      fw.addData(f.feeId(), cru, f.linkId(), endpoint, {h.bc, h.orbit}, gsl::span<char>(const_cast<char*>(reinterpret_cast<const char*>(&b.payload[0])), b.payload.size()));
+    }
+  }
 
   return 0;
 }

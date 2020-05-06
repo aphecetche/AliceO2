@@ -23,6 +23,7 @@
 namespace o2::mch::raw
 {
 
+// create a function that return the (DsElecId,chid) of a digit
 Digit2ElecMapper createDigit2ElecMapper(Det2ElecMapper det2elec)
 {
   return [det2elec](const o2::mch::Digit& digit) -> std::optional<std::pair<DsElecId, int>> {
@@ -31,7 +32,7 @@ Digit2ElecMapper createDigit2ElecMapper(Det2ElecMapper det2elec)
     DsDetId detId{deid, dsid};
     auto dselocopt = det2elec(DsDetId(deid, dsid));
     if (!dselocopt.has_value()) {
-      std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
+      //std::cout << fmt::format("WARNING : got no location for (de,ds)=({},{})\n", deid, dsid);
       return std::nullopt;
     }
     DsElecId elecId = dselocopt.value();

@@ -8,26 +8,16 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-o2_add_executable(generate-timeframe
-        SOURCES gentimeframe.cxx gtfGenerateDigits.cxx Digit2RawConverter.cxx
-        COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
-        O2::Steer
-        O2::MCHSimulation
-        O2::MCHMappingFactory
-        O2::MCHRawImplHelpers
-        O2::DetectorsRaw
-        fmt::fmt
-        Boost::program_options)
-
 o2_add_executable(digit2raw
-        SOURCES digit2raw.cxx Digit2RawConverter.cxx
+        SOURCES digit2raw.cxx
         COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoder O2::MCHRawElecMap
-        O2::Steer
-        O2::MCHSimulation
-        O2::MCHMappingFactory
-        O2::MCHRawImplHelpers
+        PUBLIC_LINK_LIBRARIES
+        Boost::program_options
         O2::DetectorsRaw
-        fmt::fmt
-        Boost::program_options)
+        O2::MCHMappingImpl4
+        O2::MCHRawElecMap
+        O2::MCHRawEncoder
+        O2::MCHRawImplHelpers
+        O2::MCHSimulation
+        O2::Steer
+        fmt::fmt)
