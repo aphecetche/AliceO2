@@ -106,3 +106,5 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_subdirectory(packaging)
 
 endif()
+
+message(WARNING "EOC Using build type: ${CMAKE_BUILD_TYPE} - CXXFLAGS: ${CMAKE_CXX_FLAGS} | ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")

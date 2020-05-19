@@ -20,13 +20,14 @@ class RawFileWriter;
 #include <gsl/span>
 #include <set>
 #include "MCHRawElecMap/Mapper.h"
+#include <vector>
 
 namespace o2::mch::raw
 {
+
 /// @brief Converts (DataBlockHeader,payload) pairs into RAW data (RDH,payload)
 ///
 /// \nosubgrouping
-
 class PayloadPaginator
 {
  public:
@@ -55,5 +56,11 @@ class PayloadPaginator
   std::set<FeeLinkId> mFeeLinkIds{};
   uint16_t mExtraFeeIdMask{0};
 };
+
+/// helper function to wrap usage of PayloadPaginator class to
+/// directly get memory representation of the buffer
+/// (still creates a file as it's using RawFileWriter internally,
+/// but that file is temporary)
+std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic);
 } // namespace o2::mch::raw
 #endif

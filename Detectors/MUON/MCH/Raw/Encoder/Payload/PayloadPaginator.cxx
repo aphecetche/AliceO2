@@ -11,6 +11,7 @@
 #include "MCHRawEncoderPayload/PayloadPaginator.h"
 #include "DetectorsRaw/RawFileWriter.h"
 #include "MCHRawEncoderPayload/DataBlock.h"
+#include "Framework/Logger.h"
 
 namespace o2::mch::raw
 {
@@ -51,4 +52,48 @@ void PayloadPaginator::operator()(gsl::span<const std::byte> buffer)
   }
 }
 
+std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic)
+{
+  fair::Logger::SetConsoleSeverity("nolog");
+  //fair::Logger::SetConsoleSeverity("debug");
+  o2::raw::RawFileWriter fw;
+
+  fw.setVerbosity(1);
+  fw.setDontFillEmptyHBF(true);
+
+  Solar2FeeLinkMapper solar2feelink;
+  //using Solar2FeeLinkMapper = std::function<std::optional<FeeLinkId>(uint16_t solarId)>;
+
+  if (userLogic) {
+    solar2feelink = [](uint16_t solarId) -> std::optional<FeeLinkId> {
+      static auto s2f = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
+      auto f = s2f(solarId);
+      if (!f.has_value()) {
+        return std::nullopt;
+      }
+      return FeeLinkId(f->feeId(), 15);
+    };
+  } else {
+    solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
+  }
+
+  auto tmpfile = "mch.cru.testbuffer.1.raw";
+  {
+    PayloadPaginator p(fw, tmpfile, solar2feelink, userLogic);
+    p(buffer);
+    fw.close();
+  }
+
+  std::ifstream in(tmpfile, std::ifstream::binary);
+  // get length of file:
+  in.seekg(0, in.end);
+  int length = in.tellg();
+  in.seekg(0, in.beg);
+  std::vector<std::byte> pages(length);
+
+  // read data as a block:
+  in.read(reinterpret_cast<char*>(&pages[0]), length);
+
+  return pages;
+}
 } // namespace o2::mch::raw

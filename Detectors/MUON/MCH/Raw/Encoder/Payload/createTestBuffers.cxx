@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CruBufferCreator.h"
+#include "BufferCreator.h"
 #include "DetectorsRaw/RawFileWriter.h"
 #include "DumpBuffer.h"
 #include "Headers/RAWDataHeader.h"
@@ -16,7 +16,6 @@
 #include "MCHRawEncoderPayload/DataBlock.h"
 #include "MCHRawEncoderPayload/PayloadPaginator.h"
 #include <boost/program_options.hpp>
-#include "Framework/Logger.h"
 #include <fstream>
 #include <gsl/span>
 #include <iostream>
@@ -30,7 +29,7 @@ namespace o2::header
 extern std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 }
 
-void generateCxxFile(std::ostream& out, gsl::span<const std::byte> pages, bool userLogic)
+void generateCxxFile(std::ostream& out, gsl::span<const std::byte> pages, bool userLogic, bool gbt)
 {
   out << R"(// Copyright CERN and copyright holders of ALICE O2. This software is
 // distributed under the terms of the GNU General Public License v3 (GPL
@@ -48,12 +47,14 @@ void generateCxxFile(std::ostream& out, gsl::span<const std::byte> pages, bool u
 
 )";
 
-  const std::string arrayName = userLogic ? "REF_BUFFER_CRU_USERLOGIC_CHARGESUM" : "REF_BUFFER_CRU_BARE_CHARGESUM";
+  const std::string baseName = gbt ? "GBT" : "CRU";
 
-  out << fmt::format("extern std::array<const uint8_t,{}> {};\n",
-                     pages.size_bytes(), arrayName);
+  const std::string arrayName = userLogic ? fmt::format("REF_BUFFER_{}_USERLOGIC_CHARGESUM", baseName) : fmt::format("REF_BUFFER_{}_BARE_CHARGESUM", baseName);
 
-  out << fmt::format("template <> gsl::span<const std::byte> REF_BUFFER_CRU<o2::mch::raw::{}, o2::mch::raw::ChargeSumMode>()\n", userLogic ? "UserLogicFormat" : "BareFormat");
+  out
+    << fmt::format("extern std::array<const uint8_t,{}> {};\n", pages.size_bytes(), arrayName);
+
+  out << fmt::format("template <> gsl::span<const std::byte> REF_BUFFER_{}<o2::mch::raw::{}, o2::mch::raw::ChargeSumMode>()\n", baseName, userLogic ? "UserLogicFormat" : "BareFormat");
 
   out << "{\n";
 
@@ -87,64 +88,23 @@ void generateCxxFile(std::ostream& out, gsl::span<const std::byte> pages, bool u
 )";
 }
 
-std::vector<std::byte> paginate(gsl::span<const std::byte> buffer,
-                                bool userLogic)
-{
-  fair::Logger::SetConsoleSeverity("nolog");
-  //fair::Logger::SetConsoleSeverity("debug");
-  o2::raw::RawFileWriter fw;
-
-  fw.setVerbosity(1);
-  fw.setDontFillEmptyHBF(true);
-
-  Solar2FeeLinkMapper solar2feelink;
-  //using Solar2FeeLinkMapper = std::function<std::optional<FeeLinkId>(uint16_t solarId)>;
-
-  if (userLogic) {
-    solar2feelink = [](uint16_t solarId) -> std::optional<FeeLinkId> {
-      static auto s2f = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
-      auto f = s2f(solarId);
-      if (!f.has_value()) {
-        return std::nullopt;
-      }
-      return FeeLinkId(f->feeId(), 15);
-    };
-  } else {
-    solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
-  }
-
-  auto tmpfile = "mch.cru.testbuffer.1.raw";
-  {
-    PayloadPaginator p(fw, tmpfile, solar2feelink, userLogic);
-    p(buffer);
-    fw.close();
-  }
-
-  std::ifstream in(tmpfile, std::ifstream::binary);
-  // get length of file:
-  in.seekg(0, in.end);
-  int length = in.tellg();
-  in.seekg(0, in.beg);
-  std::vector<std::byte> pages(length);
-
-  // read data as a block:
-  in.read(reinterpret_cast<char*>(&pages[0]), length);
-
-  return pages;
-}
-
 int main(int argc, char** argv)
 {
   po::options_description generic("options");
   bool userLogic{false};
   bool debugOnly{false};
+  bool gbt{false};
   po::variables_map vm;
+  std::string outputFile{""};
 
   // clang-format off
   generic.add_options()
       ("help,h", "produce help message")
       ("userLogic,u",po::bool_switch(&userLogic),"user logic format")
-      ("debug,d",po::bool_switch(&debugOnly),"debug only");
+      ("gbt,g",po::bool_switch(&gbt),"gbt buffer")
+      ("debug,d",po::bool_switch(&debugOnly),"debug only")
+      ("output,o",po::value<std::string>(&outputFile),"output file");
+
   // clang-format on
 
   po::options_description cmdline;
@@ -170,12 +130,20 @@ int main(int argc, char** argv)
   uint16_t bc = 678;
   std::vector<std::byte> buffer;
   if (userLogic) {
-    buffer = test::CruBufferCreator<UserLogicFormat, ChargeSumMode>::makeBuffer(1, orbit, bc);
+    if (gbt) {
+      buffer = test::GBTBufferCreator<UserLogicFormat, ChargeSumMode>::makeBuffer(11);
+    } else {
+      buffer = test::CruBufferCreator<UserLogicFormat, ChargeSumMode>::makeBuffer(1, orbit, bc);
+    }
   } else {
-    buffer = test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(1, orbit, bc);
+    if (gbt) {
+      buffer = test::GBTBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(11);
+    } else {
+      buffer = test::CruBufferCreator<BareFormat, ChargeSumMode>::makeBuffer(1, orbit, bc);
+    }
   }
 
-  if (debugOnly) {
+  if (debugOnly && !gbt) {
     auto solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
     forEachDataBlockRef(
       buffer, [&](const DataBlockRef& ref) {
@@ -190,10 +158,14 @@ int main(int argc, char** argv)
   }
 
   std::vector<std::byte> pages;
-  const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
-  o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", orbit);
-  o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", bc);
-  pages = paginate(buffer, userLogic);
+  if (!gbt) {
+    const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
+    o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", orbit);
+    o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", bc);
+    pages = paginate(buffer, userLogic);
+  } else {
+    pages = buffer;
+  }
 
   if (debugOnly) {
     if (userLogic) {
@@ -204,6 +176,11 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  generateCxxFile(std::cout, pages, userLogic);
+  if (outputFile.size()) {
+    std::ofstream out(outputFile);
+    generateCxxFile(out, pages, userLogic, gbt);
+  } else {
+    generateCxxFile(std::cout, pages, userLogic, gbt);
+  }
   return 0;
 }

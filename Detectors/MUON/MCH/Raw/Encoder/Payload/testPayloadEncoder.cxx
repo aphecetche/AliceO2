@@ -24,7 +24,7 @@
 #include "MCHRawEncoderPayload/DataBlock.h"
 #include <fmt/printf.h>
 #include <boost/mpl/list.hpp>
-#include "CruBufferCreator.h"
+#include "BufferCreator.h"
 #include "EncoderImplHelper.h"
 
 using namespace o2::mch::raw;

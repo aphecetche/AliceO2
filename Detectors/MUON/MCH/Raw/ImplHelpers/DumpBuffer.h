@@ -40,7 +40,7 @@ void dumpByteBuffer(gsl::span<T> buffer)
   std::cout << "\n";
 }
 
-void append(std::vector<std::byte>& buffer, uint64_t w)
+inline void append(std::vector<std::byte>& buffer, uint64_t w)
 {
   buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x00000000000000FF)))});
   buffer.emplace_back(std::byte{static_cast<uint8_t>((w & UINT64_C(0x000000000000FF00)) >> 8)});

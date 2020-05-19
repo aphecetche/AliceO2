@@ -13,7 +13,6 @@ o2_add_library(MCHRawEncoderPayload
         BitSet.cxx
         DataBlock.cxx
         PayloadEncoder.cxx
-        CruBufferCreator.cxx
         PayloadPaginator.cxx
         EncoderImplHelper.cxx
         PUBLIC_LINK_LIBRARIES
@@ -28,7 +27,7 @@ o2_add_library(MCHRawEncoderPayload
 o2_add_executable(raw-create-test-buffers
         SOURCES createTestBuffers.cxx
         COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES O2::MCHRawImplHelpers O2::MCHRawEncoderPayload
+        PUBLIC_LINK_LIBRARIES O2::MCHRawEncoderPayload
         TARGETVARNAME createTestBuffers)
 
 if(BUILD_TESTING)
@@ -47,7 +46,7 @@ if(BUILD_TESTING)
                 O2::MCHRawImplHelpers)
 
         o2_add_test(payload-encoder
-                SOURCES testPayloadEncoder.cxx 
+                SOURCES testPayloadEncoder.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoderPayload O2::MCHRawImplHelpers)
@@ -64,9 +63,9 @@ if(BUILD_TESTING)
                 LABELS "muon;mch;raw"
                 PUBLIC_LINK_LIBRARIES O2::MCHRawEncoderPayload O2::MCHRawImplHelpers)
 
-        add_test(NAME o2-test-mch-create-test-buffers-userlogic COMMAND ${createTestBuffers} -u)
+        add_test(NAME o2-test-mch-create-test-buffers-userlogic COMMAND ${createTestBuffers} -u -o RefBufferCRUUserLogic.cxx)
         set_property(TEST o2-test-mch-create-test-buffers-userlogic APPEND PROPERTY LABELS "muon;mch;raw")
-        add_test(NAME o2-test-mch-create-test-buffers-bare COMMAND ${createTestBuffers})
+        add_test(NAME o2-test-mch-create-test-buffers-bare COMMAND ${createTestBuffers} -o RefBufferCRUBare.cxx)
         set_property(TEST o2-test-mch-create-test-buffers-bare APPEND PROPERTY LABELS "muon;mch;raw")
                 
 endif()
