@@ -15,6 +15,7 @@ add_subdirectory(Decoder)
 add_subdirectory(Tools)
 add_subdirectory(Encoder)
 if(BUILD_TESTING)
-        add_subdirectory(testdata)
+      #   add_subdirectory(testdata)
+       
         add_subdirectory(test)
 endif()

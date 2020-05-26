@@ -37,11 +37,13 @@ class PayloadPaginator
   /// used to store the produced RAW data
   /// @param solar2feelink a mapper that converts a solarId value into
   /// a FeeLinkId object
-  /// @param userLogic whether or not the format to emulate is the UL one
+  /// @param userLogic whether or not the format to emulate is UL
+  /// @param chargeSumMode whether or not the format to emulate is in chargeSumMode
   PayloadPaginator(o2::raw::RawFileWriter& fw,
                    const std::string outputFileName,
                    Solar2FeeLinkMapper solar2feelink,
-                   bool userLogic = true);
+                   bool userLogic,
+                   bool chargeSumMode);
 
   /// Convert the buffer to raw data
   ///
@@ -61,6 +63,6 @@ class PayloadPaginator
 /// directly get memory representation of the buffer
 /// (still creates a file as it's using RawFileWriter internally,
 /// but that file is temporary)
-std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic);
+std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic, bool chargeSumMode);
 } // namespace o2::mch::raw
 #endif

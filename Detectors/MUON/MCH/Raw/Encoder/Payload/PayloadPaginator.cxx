@@ -19,11 +19,22 @@ namespace o2::mch::raw
 PayloadPaginator::PayloadPaginator(o2::raw::RawFileWriter& fw,
                                    const std::string outputFileName,
                                    Solar2FeeLinkMapper solar2feelink,
-                                   bool userLogic) : mRawFileWriter(fw),
-                                                     mOutputFileName{outputFileName},
-                                                     mSolar2FeeLink{solar2feelink},
-                                                     mExtraFeeIdMask{userLogic ? static_cast<uint16_t>(0x100) : static_cast<uint16_t>(0)}
+                                   bool userLogic,
+                                   bool chargeSumMode) : mRawFileWriter(fw),
+                                                         mOutputFileName{outputFileName},
+                                                         mSolar2FeeLink{solar2feelink},
+                                                         mExtraFeeIdMask{chargeSumMode ? static_cast<uint16_t>(0x100) : static_cast<uint16_t>(0)}
 {
+  if (userLogic) {
+    mSolar2FeeLink = [solar2feelink](uint16_t solarId) -> std::optional<FeeLinkId> {
+      static auto s2f = solar2feelink;
+      auto f = s2f(solarId);
+      if (!f.has_value()) {
+        return std::nullopt;
+      }
+      return FeeLinkId(f->feeId(), 15);
+    };
+  }
 }
 
 void PayloadPaginator::operator()(gsl::span<const std::byte> buffer)
@@ -52,7 +63,8 @@ void PayloadPaginator::operator()(gsl::span<const std::byte> buffer)
   }
 }
 
-std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic)
+std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogic,
+                                bool chargeSumMode)
 {
   fair::Logger::SetConsoleSeverity("nolog");
   //fair::Logger::SetConsoleSeverity("debug");
@@ -61,25 +73,11 @@ std::vector<std::byte> paginate(gsl::span<const std::byte> buffer, bool userLogi
   fw.setVerbosity(1);
   fw.setDontFillEmptyHBF(true);
 
-  Solar2FeeLinkMapper solar2feelink;
-  //using Solar2FeeLinkMapper = std::function<std::optional<FeeLinkId>(uint16_t solarId)>;
-
-  if (userLogic) {
-    solar2feelink = [](uint16_t solarId) -> std::optional<FeeLinkId> {
-      static auto s2f = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
-      auto f = s2f(solarId);
-      if (!f.has_value()) {
-        return std::nullopt;
-      }
-      return FeeLinkId(f->feeId(), 15);
-    };
-  } else {
-    solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
-  }
+  Solar2FeeLinkMapper solar2feelink = createSolar2FeeLinkMapper<ElectronicMapperGenerated>();
 
   auto tmpfile = "mch.cru.testbuffer.1.raw";
   {
-    PayloadPaginator p(fw, tmpfile, solar2feelink, userLogic);
+    PayloadPaginator p(fw, tmpfile, solar2feelink, userLogic, chargeSumMode);
     p(buffer);
     fw.close();
   }

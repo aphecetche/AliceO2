@@ -65,5 +65,26 @@ BOOST_AUTO_TEST_CASE(CtorWithInvalidSamplesMustThrow)
   BOOST_CHECK_THROW(SampaCluster sc(defaultTimestamp, defaultBunchCrossing, invalidSamples), std::invalid_argument);
 }
 
+BOOST_AUTO_TEST_CASE(CtorWithNoSamplesMustThrow)
+{
+  std::vector<uint16_t> empty;
+  BOOST_CHECK_THROW(SampaCluster sc(defaultTimestamp, defaultBunchCrossing, empty), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(AssertNotMixingShouldThrowIfClustersOfMixedSampleType)
+{
+  std::vector<SampaCluster> clusters;
+  clusters.emplace_back(defaultTimestamp, defaultBunchCrossing, defaultChargeSum);
+  clusters.emplace_back(defaultTimestamp, defaultBunchCrossing, defaultSamples);
+  BOOST_CHECK_THROW(assertNotMixingClusters<ChargeSumMode>(clusters), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(AssertNotMixingShouldThrowIfClustersOfDifferentBunchCrossing)
+{
+  std::vector<SampaCluster> clusters;
+  clusters.emplace_back(defaultTimestamp, defaultBunchCrossing, defaultChargeSum);
+  clusters.emplace_back(defaultTimestamp, defaultBunchCrossing - 1, defaultChargeSum);
+  BOOST_CHECK_THROW(assertNotMixingClusters<ChargeSumMode>(clusters), std::invalid_argument);
+}
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

@@ -88,9 +88,15 @@ std::ostream& operator<<(std::ostream& os, const SampaCluster& sc)
 
 std::string asString(const SampaCluster& sc)
 {
-  std::stringstream s;
-  s << sc;
-  return s.str();
+  std::string s = fmt::format("ts-{}-bc-{}-q", sc.sampaTime, sc.bunchCrossing);
+  if (sc.isClusterSum()) {
+    s += fmt::format("-{}", sc.chargeSum);
+  } else {
+    for (auto sample : sc.samples) {
+      s += fmt::format("-{}", sample);
+    }
+  }
+  return s;
 }
 
 } // namespace raw

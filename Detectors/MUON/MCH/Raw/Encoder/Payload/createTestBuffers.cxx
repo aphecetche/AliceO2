@@ -162,7 +162,8 @@ int main(int argc, char** argv)
     const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
     o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", orbit);
     o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", bc);
-    pages = paginate(buffer, userLogic);
+    constexpr bool chargeSumMode = true;
+    pages = paginate(buffer, userLogic, chargeSumMode);
   } else {
     pages = buffer;
   }

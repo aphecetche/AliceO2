@@ -172,6 +172,17 @@ BOOST_AUTO_TEST_CASE(SampleModeTwoChannels)
                     "S361-J6-DS2-ch-47-ts-346-q-1001-1002-1003-1004-1005-1006-1007\n");
 }
 
+BOOST_AUTO_TEST_CASE(SampleModeTwoChannelsBis)
+{
+  // 2 channels with one cluster
+  SampaCluster cl(24, 0, {13, 15, 17});
+  SampaCluster cl2(24, 0, {133, 135, 137});
+  auto r = testPayloadDecode<SampleMode>(DsElecId{728, 1, 0}, 3, {cl}, DsElecId{728, 1, 0}, 13, {cl2});
+  BOOST_CHECK_EQUAL(r,
+                    "S728-J1-DS0-ch-3-ts-24-q-13-15-17\n"
+                    "S728-J1-DS0-ch-13-ts-24-q-133-135-137\n");
+}
+
 BOOST_AUTO_TEST_CASE(ChargeSumModeSimplest)
 {
   // only one channel with one cluster

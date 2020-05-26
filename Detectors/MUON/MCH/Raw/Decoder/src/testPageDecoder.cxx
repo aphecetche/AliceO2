@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream&, const o2::header::RAWDataHeaderV4&);
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
   return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
-    result.emplace_back(fmt::format("{}-ch-{}-ts-{}-bc-{}-q-{}", asString(dsId), channel, sc.sampaTime, sc.bunchCrossing, sc.chargeSum));
+    result.emplace_back(fmt::format("{}-ch-{}-{}", asString(dsId), channel, asString(sc)));
   };
 }
 

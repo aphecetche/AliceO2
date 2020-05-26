@@ -18,12 +18,14 @@ namespace o2::mch::raw
 
 struct BareFormat {
 };
+
 struct UserLogicFormat {
 };
 
 struct ChargeSumMode {
   bool operator()() const { return true; }
 };
+
 struct SampleMode {
   bool operator()() const { return false; }
 };
@@ -32,6 +34,44 @@ using uint10_t = uint16_t;
 using uint20_t = uint32_t;
 using uint50_t = uint64_t;
 
+template <typename FORMAT>
+struct isUserLogicFormat {
+  static constexpr bool value = false;
+};
+template <typename FORMAT>
+struct isBareFormat {
+  static constexpr bool value = false;
+};
+
+template <>
+struct isUserLogicFormat<UserLogicFormat> {
+  static constexpr bool value = true;
+};
+
+template <>
+struct isBareFormat<BareFormat> {
+  static constexpr bool value = true;
+};
+
+template <typename CHARGESUM>
+struct isChargeSumMode {
+  static constexpr bool value = false;
+};
+
+template <typename CHARGESUM>
+struct isSampleMode {
+  static constexpr bool value = false;
+};
+
+template <>
+struct isChargeSumMode<ChargeSumMode> {
+  static constexpr bool value = true;
+};
+
+template <>
+struct isSampleMode<SampleMode> {
+  static constexpr bool value = true;
+};
 }; // namespace o2::mch::raw
 
 #endif

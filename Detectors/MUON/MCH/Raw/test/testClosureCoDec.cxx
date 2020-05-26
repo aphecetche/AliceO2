@@ -25,18 +25,72 @@
 
 using namespace o2::mch::raw;
 
-const char* sampaClusterFormat = "{}-CH{}-ts-{}-bc-{}-q-{}";
+const char* sampaClusterFormat = "{}-CH{}-{}";
+
+std::vector<SampaCluster> getSampaClusters(const std::string& d)
+{
+  // d is expected to be a valid SampaCluster string representation
+  // see the asString function in SampaCluster
+  std::vector<SampaCluster> clusters;
+
+  auto index = d.find("ts-");
+  auto ts = std::stoi(d.substr(index + 3));
+  index = d.find("bc-");
+  auto bc = std::stoi(d.substr(index + 3));
+  index = d.find("q-");
+  auto q = d.substr(index + 2);
+  index = q.find("-");
+  if (index != std::string::npos) {
+    std::vector<uint10_t> charges;
+    std::istringstream ss(q);
+    std::string adc;
+    while (std::getline(ss, adc, '-')) {
+      charges.emplace_back(std::stoi(adc) & 0x3FF);
+    }
+    clusters.emplace_back(SampaCluster(ts, bc, charges));
+  } else {
+    clusters.emplace_back(SampaCluster(ts, bc, std::stoi(q)));
+  }
+  return clusters;
+}
+
+template <typename FORMAT, typename CHARGESUM>
+std::vector<std::byte> createBuffer(gsl::span<std::string> data,
+                                    uint32_t orbit = 12345, uint16_t bc = 678)
+{
+  auto encoder = createPayloadEncoder<FORMAT, CHARGESUM, true>();
+  encoder->startHeartbeatFrame(orbit, bc);
+  for (auto d : data) {
+    auto dsElecId = decodeDsElecId(d);
+    if (!dsElecId) {
+      std::cout << "Could not get dsElecId for " << d << "\n";
+    }
+    auto channel = decodeChannelId(d);
+    if (!channel) {
+      std::cout << "Could not get channel for " << d << "\n";
+    }
+    auto sampaClusters = getSampaClusters(d);
+    encoder->addChannelData(dsElecId.value(), channel.value(), sampaClusters);
+  }
+  std::vector<std::byte> buffer;
+  encoder->moveToBuffer(buffer);
+
+  const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
+  o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", orbit);
+  o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", bc);
+  std::vector<std::byte> out = o2::mch::raw::paginate(buffer,
+                                                      isUserLogicFormat<FORMAT>::value,
+                                                      isChargeSumMode<CHARGESUM>::value);
+  // impl::dumpBuffer<FORMAT>(out);
+  return out;
+}
 
 SampaChannelHandler handlePacketStoreAsVec(std::vector<std::string>& result)
 {
   return [&result](DsElecId dsId, uint8_t channel, SampaCluster sc) {
-    result.emplace_back(fmt::format(sampaClusterFormat, asString(dsId), channel, sc.sampaTime, sc.bunchCrossing, sc.chargeSum));
+    result.emplace_back(fmt::format(sampaClusterFormat, asString(dsId), channel, asString(sc)));
   };
 }
-
-BOOST_AUTO_TEST_SUITE(o2_mch_raw)
-
-BOOST_AUTO_TEST_SUITE(closure)
 
 bool testDecode(gsl::span<const std::byte> testBuffer, gsl::span<std::string> expected)
 {
@@ -66,77 +120,9 @@ bool testDecode(gsl::span<const std::byte> testBuffer, gsl::span<std::string> ex
   return true;
 }
 
-std::vector<SampaCluster> getSampaClusters(const std::string& d)
-{
-  // d is expected to follow sampaClusterFormat above
-  std::vector<SampaCluster> clusters;
+BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
-  auto index = d.find("ts-");
-  auto ts = std::stoi(d.substr(index + 3));
-  index = d.find("bc-");
-  auto bc = std::stoi(d.substr(index + 3));
-  index = d.find("q-");
-  auto q = d.substr(index + 2);
-  index = q.find("-");
-  if (index != std::string::npos) {
-    std::vector<uint10_t> charges;
-    std::istringstream ss(q);
-    std::string adc;
-    while (std::getline(ss, adc, '-')) {
-      charges.emplace_back(std::stoi(adc) & 0x3FF);
-    }
-    clusters.emplace_back(SampaCluster(ts, bc, charges));
-  } else {
-    clusters.emplace_back(SampaCluster(ts, bc, std::stoi(q)));
-  }
-  return clusters;
-}
-
-template <typename FORMAT>
-struct isUserLogic {
-  static constexpr bool value = false;
-};
-
-template <>
-struct isUserLogic<UserLogicFormat> {
-  static constexpr bool value = true;
-};
-
-template <typename FORMAT, typename CHARGESUM>
-std::vector<std::byte> createBuffer(gsl::span<std::string> data,
-                                    uint32_t orbit = 12345, uint16_t bc = 678)
-{
-  auto encoder = createPayloadEncoder<FORMAT, CHARGESUM, true>();
-  encoder->startHeartbeatFrame(orbit, bc);
-  for (auto d : data) {
-    auto dsElecId = decodeDsElecId(d);
-    if (!dsElecId) {
-      std::cout << "Could not get dsElecId for " << d << "\n";
-    }
-    auto channel = decodeChannelId(d);
-    if (!channel) {
-      std::cout << "Could not get channel for " << d << "\n";
-    }
-    auto sampaClusters = getSampaClusters(d);
-    std::cout << "addChannelData : " << o2::mch::raw::asString(dsElecId.value())
-              << fmt::format(" ch {:2d} ", channel.value());
-    for (auto& c : sampaClusters) {
-      std::cout << c << " | ";
-    }
-    std::cout << "\n";
-    encoder->addChannelData(dsElecId.value(), channel.value(), sampaClusters);
-  }
-  std::vector<std::byte> buffer;
-  encoder->moveToBuffer(buffer);
-
-  impl::dumpBuffer<FORMAT>(buffer);
-  const o2::raw::HBFUtils& hbfutils = o2::raw::HBFUtils::Instance();
-  o2::conf::ConfigurableParam::setValue<uint32_t>("HBFUtils", "orbitFirst", orbit);
-  o2::conf::ConfigurableParam::setValue<uint16_t>("HBFUtils", "bcFirst", bc);
-  std::vector<std::byte> out = o2::mch::raw::paginate(buffer, isUserLogic<FORMAT>::value);
-  impl::dumpBuffer<FORMAT>(out);
-  return out;
-}
+BOOST_AUTO_TEST_SUITE(closure)
 
 std::vector<std::string> chargeSumInput = {
   "S728-J1-DS0-CH3-ts-24-bc-0-q-13",

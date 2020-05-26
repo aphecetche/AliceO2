@@ -42,7 +42,7 @@ if(BUILD_TESTING)
                 SOURCES testGBTEncoder.cxx
                 COMPONENT_NAME mchraw
                 LABELS "muon;mch;raw"
-                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoderPayload O2::MCHTestRawRefBuffers
+                PUBLIC_LINK_LIBRARIES O2::MCHRawEncoderPayload
                 O2::MCHRawImplHelpers)
 
         o2_add_test(payload-encoder
@@ -65,8 +65,15 @@ if(BUILD_TESTING)
 
         add_test(NAME o2-test-mch-create-test-buffers-userlogic COMMAND ${createTestBuffers} -u -o RefBufferCRUUserLogic.cxx)
         set_property(TEST o2-test-mch-create-test-buffers-userlogic APPEND PROPERTY LABELS "muon;mch;raw")
+
         add_test(NAME o2-test-mch-create-test-buffers-bare COMMAND ${createTestBuffers} -o RefBufferCRUBare.cxx)
         set_property(TEST o2-test-mch-create-test-buffers-bare APPEND PROPERTY LABELS "muon;mch;raw")
+
+        add_test(NAME o2-test-mch-create-test-buffers-userlogic-gbt COMMAND ${createTestBuffers} -u -g -o RefBufferGBTUserLogic.cxx)
+        set_property(TEST o2-test-mch-create-test-buffers-userlogic-gbt APPEND PROPERTY LABELS "muon;mch;raw")
+
+        add_test(NAME o2-test-mch-create-test-buffers-bare-gbt COMMAND ${createTestBuffers} -g -o RefBufferGBTBare.cxx)
+        set_property(TEST o2-test-mch-create-test-buffers-bare-gbt APPEND PROPERTY LABELS "muon;mch;raw")
                 
 endif()
 

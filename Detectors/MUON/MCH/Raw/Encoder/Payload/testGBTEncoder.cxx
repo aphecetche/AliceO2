@@ -20,7 +20,6 @@
 #include <array>
 #include <array>
 #include <fmt/printf.h>
-#include "RefBuffers.h"
 #include <boost/mpl/list.hpp>
 #include "GBTEncoder.h"
 #include "BufferCreator.h"
@@ -32,15 +31,6 @@ BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 BOOST_AUTO_TEST_SUITE(gbtencoder)
 
 typedef boost::mpl::list<BareFormat, UserLogicFormat> testTypes;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE(EncodeABufferInChargeSumMode, T, testTypes)
-{
-  auto buffer = test::GBTBufferCreator<T, ChargeSumMode>::makeBuffer();
-  auto ref = REF_BUFFER_GBT<T, ChargeSumMode>();
-  size_t n = ref.size();
-  BOOST_CHECK_GE(buffer.size(), n);
-  BOOST_CHECK(std::equal(begin(buffer), end(buffer), begin(ref)));
-}
 
 template <typename FORMAT, typename CHARGESUM>
 float expectedSize();

@@ -12,14 +12,14 @@
 #include <array>
 #include "MCHRawCommon/DataFormats.h"
 
-extern std::array<const uint8_t,496> REF_BUFFER_CRU_USERLOGIC_CHARGESUM;
-template <> gsl::span<const std::byte> REF_BUFFER_CRU<o2::mch::raw::UserLogicFormat, o2::mch::raw::ChargeSumMode>()
+extern std::array<const uint8_t, 496> REF_BUFFER_CRU_USERLOGIC_CHARGESUM;
+template <>
+gsl::span<const std::byte> REF_BUFFER_CRU<o2::mch::raw::UserLogicFormat, o2::mch::raw::ChargeSumMode>()
 {
-return gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(&REF_BUFFER_CRU_USERLOGIC_CHARGESUM[0]), REF_BUFFER_CRU_USERLOGIC_CHARGESUM.size());
-
+  return gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(&REF_BUFFER_CRU_USERLOGIC_CHARGESUM[0]), REF_BUFFER_CRU_USERLOGIC_CHARGESUM.size());
 }
-std::array<const uint8_t, 496> REF_BUFFER_CRU_USERLOGIC_CHARGESUM= {
-// clang-format off
+std::array<const uint8_t, 496> REF_BUFFER_CRU_USERLOGIC_CHARGESUM = {
+  // clang-format off
 0x04, 0x40, 0x00, 0x00, 0x1E, 0x01, 0x00, 0x00, 0x80, 0x00, 0x80, 0x00, 
 0x0F, 0x00, 0x0F, 0x00, 0x39, 0x30, 0x00, 0x00, 0x39, 0x30, 0x00, 0x00, 
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA6, 0x02, 0xA6, 0x02, 
@@ -62,5 +62,5 @@ std::array<const uint8_t, 496> REF_BUFFER_CRU_USERLOGIC_CHARGESUM= {
 0x03, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 0x00, 0x00, 0x00, 0x00
-// clang-format on
+  // clang-format on
 };
