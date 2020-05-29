@@ -16,8 +16,10 @@
 #define O2_MID_GBTRawDataChecker_H
 
 #include <cstdint>
-#include <vector>
+#include <map>
 #include <string>
+#include <tuple>
+#include <vector>
 #include <unordered_map>
 #include <gsl/gsl>
 #include "DataFormatsMID/ROFRecord.h"
@@ -33,14 +35,14 @@ class GBTRawDataChecker
   void init(uint16_t feeId, uint8_t mask);
   bool process(gsl::span<const LocalBoardRO> localBoards, gsl::span<const ROFRecord> rofRecords, gsl::span<const ROFRecord> pageRecords);
   /// Gets the number of processed events
-  unsigned int getNBCsProcessed() const { return mStatistics[0]; }
+  unsigned int getNEventsProcessed() const { return mStatistics[0]; }
   /// Gets the number of faulty events
-  unsigned int getNBCsFaulty() const { return mStatistics[1]; }
+  unsigned int getNEventsFaulty() const { return mStatistics[1]; }
+  /// Gets the number of busy raised
+  unsigned int getNBusyRaised() const { return mStatistics[2]; }
   /// Gets the
   std::string getDebugMessage() const { return mDebugMsg; }
   void clear();
-  /// Clears the statistics on analysed and faulty data
-  void clearStatistics() { mStatistics.fill(0); }
 
  private:
   struct Mask {
@@ -51,24 +53,44 @@ class GBTRawDataChecker
   struct GBT {
     std::vector<LocalBoardRO> regs{}; /// Regional boards
     std::vector<LocalBoardRO> locs{}; /// Local boards
+    std::vector<long int> pages{};    /// Pages information
   };
 
-  bool checkEvent(const std::vector<LocalBoardRO>& regs, const std::vector<LocalBoardRO>& locs, bool isAffectedByEOX, std::string& debugMsg) const;
+  struct BoardInfo {
+    LocalBoardRO board{};
+    o2::InteractionRecord interactionRecord{};
+    long int page{-1};
+  };
+
+  // void clearChecked(size_t nCheckedTriggers);
+  void clearChecked(const o2::InteractionRecord& lastCheckTrigIR, const std::unordered_map<uint8_t, size_t>& lastIndexes);
+  bool checkEvent(uint8_t triggerWord, const std::vector<LocalBoardRO>& regs, const std::vector<LocalBoardRO>& locs, std::string& debugMsg) const;
+  bool checkEvents();
   bool checkConsistency(const LocalBoardRO& board, std::string& debugMsg) const;
   bool checkConsistency(const std::vector<LocalBoardRO>& boards, std::string& debugMsg) const;
   bool checkMasks(const std::vector<LocalBoardRO>& locs, std::string& debugMsg) const;
   bool checkLocalBoardSize(const LocalBoardRO& board, std::string& debugMsg) const;
   bool checkLocalBoardSize(const std::vector<LocalBoardRO>& boards, std::string& debugMsg) const;
   bool checkRegLocConsistency(const std::vector<LocalBoardRO>& regs, const std::vector<LocalBoardRO>& locs, std::string& debugMsg) const;
+  uint8_t getElinkId(const LocalBoardRO& board) const;
+  auto getLastCompleteTrigEvent() const;
+  // uint64_t getTimeStamp(const o2::InteractionRecord& ir) const;
   std::string printBoards(const std::vector<LocalBoardRO>& boards) const;
+  std::unordered_map<uint8_t, size_t> sortEvents(const o2::InteractionRecord& lastCompleteTrigEventIR);
 
   std::string mDebugMsg{};                        /// Debug message
-  std::array<unsigned long int, 2> mStatistics{}; /// Processed events statistics
+  std::array<unsigned long int, 3> mStatistics{}; /// Processed events statistics
   std::unordered_map<uint8_t, Mask> mMasks;       /// Masks
   std::unordered_map<uint8_t, bool> mBusyFlag;    /// Busy flag
   std::unordered_map<uint8_t, bool> mBusyFlagReg; /// Busy flag for regional cards
   uint8_t mCrateMask{0xFF};                       /// Crate mask
   uint16_t mFeeId{0};                             /// FeeId
+
+  std::unordered_map<uint8_t, std::vector<BoardInfo>> mBoards{}; ///! Boards
+  // std::unordered_map<uint8_t, std::vector<size_t>> mTriggeredEvents{}; ///! Index of triggered events
+  std::map<o2::InteractionRecord, uint16_t> mTrigEvents{}; ///! Index of triggered events
+
+  std::map<o2::InteractionRecord, std::vector<std::pair<uint8_t, size_t>>> mOrderedIndexes{}; ///! Ordered indexes
 };
 } // namespace mid
 } // namespace o2
