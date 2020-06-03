@@ -89,8 +89,8 @@ bool GBTOutputHandler::processTrigger(size_t ilink, const ELinkDecoder& decoder,
   if (decoder.getTriggerWord() & raw::sORB) {
     // This is the answer to an orbit trigger
     // The local clock is reset: we are now in synch with the new HB
-    // ++mIRs[ilink].orbit;
-    mIRs[ilink] = mIRFirstPage; // TODO: CHECK
+    ++mIRs[ilink].orbit;
+    // mIRs[ilink] = mIRFirstPage; // TODO: CHECK
     if ((decoder.getTriggerWord() & raw::sSOX) == 0) {
       mLastClock[ilink] = correctedClock;
     }
