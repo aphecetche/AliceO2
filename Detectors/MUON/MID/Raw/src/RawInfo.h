@@ -26,7 +26,7 @@ namespace mid
 // The delays are in local clocks, and correspond to the LHC clocks (aka BCs)
 static constexpr uint16_t sDelayCalibToFET = 9;
 static constexpr uint16_t sDelayBCToLocal = 0;
-static constexpr uint16_t sDelayRegToLocal = 6;
+static constexpr uint16_t sDelayRegToLocal = 5;
 
 } // namespace mid
 } // namespace o2
