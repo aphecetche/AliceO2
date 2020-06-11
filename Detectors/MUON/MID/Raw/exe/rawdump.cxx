@@ -55,7 +55,9 @@ void decode(o2::mid::Decoder<GBTDECODER>& decoder, gsl::span<const uint8_t> payl
   decoder.process(payload, rdh);
   decoder.flush();
   for (auto& rof : decoder.getROFRecords()) {
-    out << rof.interactionRecord << std::endl;
+    std::stringstream ss;
+    ss << std::hex << std::showbase << rof.interactionRecord;
+    out << ss.str() << std::endl;
     for (auto colIt = decoder.getData().begin() + rof.firstEntry; colIt != decoder.getData().begin() + rof.firstEntry + rof.nEntries; ++colIt) {
       out << *colIt << std::endl;
     }
