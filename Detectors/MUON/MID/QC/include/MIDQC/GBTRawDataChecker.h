@@ -82,7 +82,6 @@ class GBTRawDataChecker
   std::array<unsigned long int, 3> mStatistics{}; /// Processed events statistics
   std::unordered_map<uint8_t, Mask> mMasks;       /// Masks
   std::unordered_map<uint8_t, bool> mBusyFlag;    /// Busy flag
-  std::unordered_map<uint8_t, bool> mBusyFlagReg; /// Busy flag for regional cards
   uint8_t mCrateMask{0xFF};                       /// Crate mask
   uint16_t mFeeId{0};                             /// FeeId
 

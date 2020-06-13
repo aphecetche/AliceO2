@@ -440,6 +440,7 @@ bool GBTRawDataChecker::checkEvents()
   // }
 
   std::unordered_map<uint8_t, GBT> gbtEvents;
+  std::unordered_map<uint8_t, size_t> lastBusyIdx;
   // Loop on the event indexes
   for (auto& evtIdxItem : mOrderedIndexes) {
     // All of these boards have the same timestamp
@@ -452,15 +453,26 @@ bool GBTRawDataChecker::checkEvents()
       // all of the cards are expected to answer.
       // This can happen on top of the self-triggered event, leading to two separate events for one BC
       // In this way, each element in the map contains all of the boards per GBT link per event
-      bool isBusy = ((boardInfo.board.statusWord & raw::sLOCALBUSY) != 0);
-      mBusyFlag[getElinkId(boardInfo.board)] = isBusy;
       uint8_t triggerId = boardInfo.board.triggerWord;
-      if (isBusy && triggerId == 0) {
-        // This is a special event that just signals a busy.
-        // Do not add the board to the events to be tested.
-        // Even because this event can have the same IR and triggerWord (0) of a self-triggered event
+      auto elinkId = getElinkId(boardInfo.board);
+      bool isBusy = ((boardInfo.board.statusWord & raw::sLOCALBUSY) != 0);
+
+      // This is a protection for regional cards, where the BC is affected by a delay.
+      // The self-triggered event arrived few BC later than the triggered one.
+      auto lastBusyItem = lastBusyIdx.find(elinkId);
+      if (lastBusyItem == lastBusyIdx.end() || evtPair.second > lastBusyItem->second) {
+        mBusyFlag[elinkId] = isBusy;
+      }
+
+      if (isBusy) {
+        lastBusyIdx[elinkId] = evtPair.second;
         busyRaised = true;
-        continue;
+        if (triggerId == 0) {
+          // This is a special event that just signals a busy.
+          // Do not add the board to the events to be tested.
+          // Even because this event can have the same IR and triggerWord (0) of a self-triggered event
+          continue;
+        }
       }
       auto& gbtEvent = gbtEvents[triggerId];
       if (raw::isLoc(boardInfo.board.statusWord)) {
@@ -500,7 +512,8 @@ bool GBTRawDataChecker::checkEvents()
   }
 
   // if (!isOk) {
-  //   for (auto& board : mBoards[0]) {
+  //   std::cout << "DEBUG: " << std::endl; // TODO: REMOVE
+  //   for (auto& board : mBoards[9]) {
   //     std::cout << std::hex << std::showbase << board.interactionRecord << std::endl; // TODO: REMOVE
   //     std::cout << board.board << std::endl;                                          // TODO: REMOVE
   //   }
@@ -577,7 +590,6 @@ void GBTRawDataChecker::clear()
   /// Resets the masks and flags
   mMasks.clear();
   mBusyFlag.clear();
-  mBusyFlagReg.clear();
   mStatistics.fill(0);
 }
 
