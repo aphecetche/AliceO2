@@ -313,6 +313,20 @@ auto GBTRawDataChecker::getLastCompleteTrigEvent() const
   auto end = mTrigEvents.rend();
   for (; trigEventIt != end; ++trigEventIt) {
     if ((trigEventIt->second & fullMask) == fullMask) {
+      // In this IR, which correspond to an orbit trigger, all of the expected boards answered.
+      // However, the regional information from self-triggered events is delayed.
+      // We will correctly retrieve it when we time order the events,
+      // but we must ensure that the information is in the current data.
+      // Otherwise we will continue checking for the previous orbit
+      for (uint8_t ireg = 8; ireg < 10; ++ireg) {
+        auto item = mBoards.find(ireg);
+        if (item != mBoards.end()) {
+          if (item->second.back().interactionRecord.orbit <= trigEventIt->first.orbit) {
+            ++trigEventIt;
+            break;
+          }
+        }
+      }
       break;
     }
   }
