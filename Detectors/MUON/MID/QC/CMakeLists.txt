@@ -10,7 +10,7 @@
 
 o2_add_library(
   MIDQC
-  SOURCES src/GBTRawDataChecker.cxx src/RawDataChecker.cxx
+  SOURCES src/GBTRawDataChecker.cxx src/RawDataChecker.cxx src/la.cxx
   PUBLIC_LINK_LIBRARIES ms_gsl::ms_gsl O2::MIDRaw)
 
 add_subdirectory(exe)

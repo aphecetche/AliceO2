@@ -20,6 +20,7 @@
 #include "MIDRaw/CrateParameters.h"
 
 #include <iostream> // TODO: REMOVE
+#include "la.h"     // TODO: REMOVE OF COURSE
 
 namespace o2
 {
@@ -33,6 +34,8 @@ void GBTRawDataChecker::init(uint16_t feeId, uint8_t mask)
   mCrateMask = mask;
 }
 
+// LA: why is this a member function ? it does not use any of the member data
+// should also be unit tested
 bool GBTRawDataChecker::checkLocalBoardSize(const LocalBoardRO& board, std::string& debugMsg) const
 {
   /// Checks that the board has the expected non-null patterns
@@ -54,9 +57,12 @@ bool GBTRawDataChecker::checkLocalBoardSize(const LocalBoardRO& board, std::stri
   return true;
 }
 
+// LA: why is this a member function ? it does not use any of the member data
+// should also be unit tested
 bool GBTRawDataChecker::checkLocalBoardSize(const std::vector<LocalBoardRO>& boards, std::string& debugMsg) const
 {
   /// Checks that the boards have the expected non-null patterns
+  // LA: would consider using std::any_of instead of custom loop to more immediately show the intent
   for (auto& board : boards) {
     if (!checkLocalBoardSize(board, debugMsg)) {
       return false;
@@ -65,6 +71,8 @@ bool GBTRawDataChecker::checkLocalBoardSize(const std::vector<LocalBoardRO>& boa
   return true;
 }
 
+// LA: why is this a member function ? it does not use any of the member data
+// should also be unit tested
 bool GBTRawDataChecker::checkConsistency(const LocalBoardRO& board, std::string& debugMsg) const
 {
   /// Checks that the event information is consistent
@@ -93,9 +101,11 @@ bool GBTRawDataChecker::checkConsistency(const LocalBoardRO& board, std::string&
   return true;
 }
 
+// LA: why is this a member function ? it does not use any of the member data
 bool GBTRawDataChecker::checkConsistency(const std::vector<LocalBoardRO>& boards, std::string& debugMsg) const
 {
   /// Checks that the event information is consistent
+  // LA: same remark as above for usage of std::any_of
   for (auto& board : boards) {
     if (!checkConsistency(board, debugMsg)) {
       std::stringstream ss;
@@ -190,6 +200,7 @@ bool GBTRawDataChecker::checkRegLocConsistency(const std::vector<LocalBoardRO>& 
   return true;
 }
 
+// LA: why is it a member function ? (plus the name is misleading, this function prints nothing)
 std::string GBTRawDataChecker::printBoards(const std::vector<LocalBoardRO>& boards) const
 {
   /// Prints the boards
@@ -200,7 +211,10 @@ std::string GBTRawDataChecker::printBoards(const std::vector<LocalBoardRO>& boar
   return ss.str();
 }
 
-bool GBTRawDataChecker::checkEvent(uint8_t triggerWord, const std::vector<LocalBoardRO>& regs, const std::vector<LocalBoardRO>& locs, std::string& debugMsg) const
+bool GBTRawDataChecker::checkEvent(uint8_t triggerWord,
+                                   const std::vector<LocalBoardRO>& regs,
+                                   const std::vector<LocalBoardRO>& locs,
+                                   std::string& debugMsg) const
 {
   /// Checks the cards belonging to the same BC
   bool isOk = true;
@@ -228,6 +242,8 @@ bool GBTRawDataChecker::checkEvent(uint8_t triggerWord, const std::vector<LocalB
   return true;
 }
 
+// LA: why is this a member function ?
+// why not in free function defined in (Local)BoardRO instead ?
 uint8_t GBTRawDataChecker::getElinkId(const LocalBoardRO& board) const
 {
   /// Returns the e-link ID
@@ -246,7 +262,8 @@ uint8_t GBTRawDataChecker::getElinkId(const LocalBoardRO& board) const
 //   return ((static_cast<uint64_t>(ir.orbit) << 16ULL) | ir.bc);
 // }
 
-void GBTRawDataChecker::clearChecked(const o2::InteractionRecord& lastCheckTrigIR, const std::unordered_map<uint8_t, size_t>& lastIndexes)
+void GBTRawDataChecker::clearChecked(const o2::InteractionRecord& lastCheckTrigIR,
+                                     const std::unordered_map<uint8_t, size_t>& lastIndexes)
 {
   /// Clears the checked events
 
@@ -537,8 +554,11 @@ bool GBTRawDataChecker::checkEvents()
   return isOk;
 }
 
-bool GBTRawDataChecker::process(gsl::span<const LocalBoardRO> localBoards, gsl::span<const ROFRecord> rofRecords, gsl::span<const ROFRecord> pageRecords)
+bool GBTRawDataChecker::process(gsl::span<const LocalBoardRO> localBoards,
+                                gsl::span<const ROFRecord> rofRecords,
+                                gsl::span<const ROFRecord> pageRecords)
 {
+  la::debugHeader(mFeeId, localBoards, rofRecords);
   /// Checks the raw data
   mDebugMsg.clear();
 

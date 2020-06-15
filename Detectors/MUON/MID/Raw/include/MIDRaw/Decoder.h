@@ -62,8 +62,10 @@ class Decoder
   bool isComplete() const;
 
  private:
-  std::vector<LocalBoardRO> mData{};                          /// Vector of output data
-  std::vector<ROFRecord> mROFRecords{};                       /// List of ROF records
+  std::vector<LocalBoardRO> mData{};    /// Vector of output data
+  std::vector<ROFRecord> mROFRecords{}; /// List of ROF records
+  /// LA: are both vectors above always the same size ? if yes, would help to put it
+  /// in the comments
   std::array<GBTDECODER, crateparams::sNGBTs> mGBTDecoders{}; /// GBT decoders
   FEEIdConfig mFEEIdConfig{};                                 /// Crate FEEID mapper
   CrateMasks mMasks{};                                        /// Crate masks

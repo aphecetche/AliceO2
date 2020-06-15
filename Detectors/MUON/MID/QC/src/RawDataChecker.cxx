@@ -31,7 +31,9 @@ void RawDataChecker::init(const CrateMasks& crateMasks)
   }
 }
 
-bool RawDataChecker::process(gsl::span<const LocalBoardRO> localBoards, gsl::span<const ROFRecord> rofRecords, gsl::span<const ROFRecord> pageRecords)
+bool RawDataChecker::process(gsl::span<const LocalBoardRO> localBoards,
+                             gsl::span<const ROFRecord> rofRecords,
+                             gsl::span<const ROFRecord> pageRecords)
 {
   /// Checks the raw data
 
@@ -42,6 +44,9 @@ bool RawDataChecker::process(gsl::span<const LocalBoardRO> localBoards, gsl::spa
     auto& loc = localBoards[rof.firstEntry];
     auto crateId = crateparams::getCrateId(loc.boardId);
     auto linkId = crateparams::getGBTIdFromBoardInCrate(crateparams::getLocId(loc.boardId));
+    // LA: both methods above use loc.boardId as only input, probably
+    // a direct crateparams::getFeeId(loc.boardId) function would make sense
+    // here and get cleaner code in this loop ?
     auto feeId = crateparams::makeROId(crateId, linkId);
     rofs[feeId].emplace_back(rof);
   }

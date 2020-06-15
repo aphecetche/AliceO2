@@ -34,8 +34,10 @@ enum class EventType {
 struct ROFRecord {
   o2::InteractionRecord interactionRecord{}; //< Interaction record
   EventType eventType{EventType::Standard};  //< Event type
-  size_t firstEntry{0};                      //< First associated entry
-  size_t nEntries{0};                        //< Number of associated entries
+  // LA: when looking at the raw data decoding, this firstEntry looks more like
+  // an offset within some kind of buffer (than an "entry" in a "tree"), right ?
+  size_t firstEntry{0}; //< First associated entry
+  size_t nEntries{0};   //< Number of associated entries
 
   ROFRecord() = default;
   ROFRecord(const o2::InteractionRecord& intRecord, const EventType& evtType, size_t first, size_t nElements) : interactionRecord(intRecord), eventType(evtType), firstEntry(first), nEntries(nElements) {}

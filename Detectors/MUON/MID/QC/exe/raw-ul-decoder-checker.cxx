@@ -55,6 +55,9 @@ bool readFile(std::string filename, DECODER& decoder, std::vector<o2::mid::Local
   return true;
 }
 
+// LA: would be clearer to use
+// unordered_map<InteractionRecord,std::vector<size_t>>
+// (as the InteractionRecord is sortable anyway)
 std::unordered_map<uint64_t, std::vector<size_t>> getOrderedIndexes(const std::vector<o2::mid::ROFRecord>& rofRecords)
 {
   // Order data according to their IR
@@ -66,11 +69,18 @@ std::unordered_map<uint64_t, std::vector<size_t>> getOrderedIndexes(const std::v
   return orderIndexes;
 }
 
+// LA: would be clearer to use
+// unordered_map<BoardId,std:vector<size_t>> with
+// using BoardId=uint16_t;
+// just so it's obvious what the map key is supposed to be
 std::unordered_map<uint16_t, std::vector<size_t>> getIndexesPerBoard(const std::vector<o2::mid::LocalBoardRO>& data, const std::vector<o2::mid::ROFRecord>& rofRecords, bool isLoc)
 {
   std::unordered_map<uint16_t, std::vector<size_t>> indexes;
   for (auto rofIt = rofRecords.begin(); rofIt != rofRecords.end(); ++rofIt) {
     auto& loc = data[rofIt->firstEntry];
+    /// LA: given this test exists, I would conclude that the LocalBoardRO struct should
+    /// actually be renamed BoardRO as it is used also for regional boards
+    /// or am I missing something ?
     if (isLoc == o2::mid::raw::isLoc(loc.statusWord)) {
       indexes[loc.boardId].emplace_back(rofIt->firstEntry);
     }
@@ -78,6 +88,7 @@ std::unordered_map<uint16_t, std::vector<size_t>> getIndexesPerBoard(const std::
   return indexes;
 }
 
+// LA: why not std::find_if instead ?
 o2::InteractionRecord findIR(uint64_t irLong, const std::vector<o2::mid::ROFRecord>& rofRecords)
 {
   for (auto& rof : rofRecords) {
@@ -88,6 +99,8 @@ o2::InteractionRecord findIR(uint64_t irLong, const std::vector<o2::mid::ROFReco
   return o2::InteractionRecord();
 }
 
+// LA: why not convert this to more idiomatic bool operator==(const LocalBoardRO& loc1, const LocalBoardRO& loc2)
+// and put it in LocalBoardRO.h
 bool isSame(const o2::mid::LocalBoardRO& loc1, const o2::mid::LocalBoardRO& loc2)
 {
   if (loc1.statusWord == loc2.statusWord && loc1.triggerWord == loc2.triggerWord && loc1.firedChambers == loc2.firedChambers && loc1.boardId == loc2.boardId) {
@@ -108,7 +121,12 @@ std::string printIRHex(const o2::InteractionRecord& ir)
   return ss.str();
 }
 
-bool checkBoards(const std::vector<o2::mid::LocalBoardRO>& bareData, const std::vector<o2::mid::ROFRecord>& bareRofs, const std::vector<o2::mid::LocalBoardRO>& ulData, const std::vector<o2::mid::ROFRecord>& ulRofs, bool isLoc, std::ofstream& out)
+bool checkBoards(const std::vector<o2::mid::LocalBoardRO>& bareData,
+                 const std::vector<o2::mid::ROFRecord>& bareRofs,
+                 const std::vector<o2::mid::LocalBoardRO>& ulData,
+                 const std::vector<o2::mid::ROFRecord>& ulRofs,
+                 bool isLoc,
+                 std::ofstream& out)
 {
   auto bareIndexes = getIndexesPerBoard(bareData, bareRofs, isLoc);
   auto ulIndexes = getIndexesPerBoard(ulData, ulRofs, isLoc);
@@ -152,7 +170,11 @@ bool checkBoards(const std::vector<o2::mid::LocalBoardRO>& bareData, const std::
   return isOk;
 }
 
-bool checkAll(const std::vector<o2::mid::LocalBoardRO>& bareData, const std::vector<o2::mid::ROFRecord>& bareRofs, const std::vector<o2::mid::LocalBoardRO>& ulData, const std::vector<o2::mid::ROFRecord>& ulRofs, std::ofstream& out)
+bool checkAll(const std::vector<o2::mid::LocalBoardRO>& bareData,
+              const std::vector<o2::mid::ROFRecord>& bareRofs,
+              const std::vector<o2::mid::LocalBoardRO>& ulData,
+              const std::vector<o2::mid::ROFRecord>& ulRofs,
+              std::ofstream& out)
 {
   auto bareIndexes = getOrderedIndexes(bareRofs);
   auto ulIndexes = getOrderedIndexes(ulRofs);
