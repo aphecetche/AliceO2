@@ -104,22 +104,22 @@ class SimpleMerger : public BaseMerger
   SimpleMerger() = default;
   ~SimpleMerger() = default;
 
-  void setOrbit(int feeId, uint32_t orbit, bool stop)
+  void setOrbit(int feeId, uint32_t orbit, bool stop) override
   {
   }
 
-  void setDigitHandler(std::function<void(const Digit&)> h)
+  void setDigitHandler(std::function<void(const Digit&)> h) override
   {
     sendDigit = h;
   }
 
   void addDigit(int feeId, int solarId, int dsAddr, int chAddr,
-                int deId, int padId, int adc, Digit::Time time, uint16_t nSamples)
+                int deId, int padId, int adc, Digit::Time time, uint16_t nSamples) override
   {
     sendDigit(o2::mch::Digit(deId, padId, adc, time, nSamples));
   }
 
-  void mergeDigits(int feeId) {}
+  void mergeDigits(int feeId) override {}
 };
 
 //_________________________________________________________________
@@ -132,14 +132,14 @@ class Merger : public BaseMerger
   Merger() = default;
   ~Merger() = default;
 
-  void setOrbit(int feeId, uint32_t orbit, bool stop);
+  void setOrbit(int feeId, uint32_t orbit, bool stop) override;
 
-  void setDigitHandler(std::function<void(const Digit&)> h);
+  void setDigitHandler(std::function<void(const Digit&)> h) override;
 
   void addDigit(int feeId, int solarId, int dsAddr, int chAddr,
-                int deId, int padId, int adc, Digit::Time time, uint16_t nSamples);
+                int deId, int padId, int adc, Digit::Time time, uint16_t nSamples) override;
 
-  void mergeDigits(int feeId);
+  void mergeDigits(int feeId) override;
 };
 
 } // namespace raw

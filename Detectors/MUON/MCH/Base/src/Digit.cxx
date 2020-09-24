@@ -40,6 +40,4 @@ bool Digit::operator==(const Digit& other) const
          mNofSamples == other.mNofSamples;
 }
 
-
-
 } // namespace o2::mch

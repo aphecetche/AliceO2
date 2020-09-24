@@ -23,26 +23,6 @@
 #include "DigitsMerger.h"
 #include "MCHMappingInterface/Segmentation.h"
 
-/*
-#include <random>
-#include <iostream>
-#include <stdexcept>
-#include "Framework/CallbackService.h"
-#include "Framework/ConfigParamRegistry.h"
-#include "Framework/ControlService.h"
-#include "Framework/DataProcessorSpec.h"
-#include "Framework/Lifetime.h"
-#include "Framework/Output.h"
-#include "Framework/Task.h"
-#include "Framework/WorkflowSpec.h"
-
-#include "DPLUtils/DPLRawParser.h"
-#include "MCHBase/Digit.h"
-#include "MCHRawCommon/DataFormats.h"
-#include "MCHRawDecoder/PageDecoder.h"
-#include "MCHRawElecMap/Mapper.h"
-*/
-
 static bool mPrint = false;
 
 namespace o2

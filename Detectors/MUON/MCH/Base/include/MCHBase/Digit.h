@@ -41,8 +41,8 @@ class Digit
     };
 
     Time() = default;
-    Time(uint32_t s, uint32_t b, uint32_t o) : sampaTime(s), bunchCrossing(b), orbit(o) { }
-    Time(uint64_t t) : time(t) { }
+    Time(uint32_t s, uint32_t b, uint32_t o) : sampaTime(s), bunchCrossing(b), orbit(o) {}
+    Time(uint64_t t) : time(t) {}
 
     uint64_t getBXTime()
     {

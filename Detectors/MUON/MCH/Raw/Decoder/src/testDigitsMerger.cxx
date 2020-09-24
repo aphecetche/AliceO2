@@ -18,13 +18,11 @@
 using namespace o2::mch;
 using namespace o2::mch::raw;
 
-
 BOOST_AUTO_TEST_SUITE(o2_mch_raw)
 
 BOOST_AUTO_TEST_SUITE(digitsmerger)
 
 static const int sampaWindowSize = 100;
-
 
 /// \brief Helper function for creating two digits that can be merged together
 static void makeMergeableDigits(MergerDigit& d1, MergerDigit& d2)
@@ -35,23 +33,22 @@ static void makeMergeableDigits(MergerDigit& d1, MergerDigit& d2)
   int deId = 100;
   int padId = 0;
   int adc = 100;
-  int orbit = 0;
-  int sampaTime = 50;
-  int bunchCrossing = 0;
+  uint32_t orbit = 0;
+  uint32_t sampaTime = 50;
+  uint32_t bunchCrossing = 0;
   int nSamples = sampaWindowSize - sampaTime;
   Digit::Time time{sampaTime, bunchCrossing, orbit};
 
-  d1 = MergerDigit{o2::mch::Digit(deId, padId, adc, time, nSamples), false/*, solarId, dsAddr, chAddr*/};
+  d1 = MergerDigit{o2::mch::Digit(deId, padId, adc, time, nSamples), false /*, solarId, dsAddr, chAddr*/};
 
   int adc2 = 10;
-  int sampaTime2 = 0;
-  int bunchCrossing2 = sampaWindowSize * 4;
+  uint32_t sampaTime2 = 0;
+  uint32_t bunchCrossing2 = sampaWindowSize * 4;
   int nSamples2 = 10;
   Digit::Time time2{sampaTime2, bunchCrossing2, orbit};
 
-  d2 = MergerDigit{o2::mch::Digit(deId, padId, adc2, time2, nSamples2), false/*, solarId, dsAddr, chAddr*/};
+  d2 = MergerDigit{o2::mch::Digit(deId, padId, adc2, time2, nSamples2), false /*, solarId, dsAddr, chAddr*/};
 }
-
 
 /// \brief Helper function for adding one digit to the merger object
 static void addDigit(Merger& merger, int feeId, MergerDigit& d)
@@ -62,7 +59,6 @@ static void addDigit(Merger& merger, int feeId, MergerDigit& d)
   merger.addDigit(feeId, solarId, dsAddr, chAddr, d.digit.getDetID(), d.digit.getPadID(), d.digit.getADC(), d.digit.getTime(), d.digit.nofSamples());
 }
 
-
 /// \brief Helper function to increment the orbit number in an existing digit
 void incrementOrbit(o2::mch::Digit& d)
 {
@@ -72,22 +68,19 @@ void incrementOrbit(o2::mch::Digit& d)
   d = o2::mch::Digit(d2.getDetID(), d2.getPadID(), d2.getADC(), t, d2.nofSamples());
 }
 
-
 /// \brief Helper function to increment the detector ID number in an existing digit
 void incrementDetID(o2::mch::Digit& d)
 {
   o2::mch::Digit d2 = d;
-  d = o2::mch::Digit(d2.getDetID()+1, d2.getPadID(), d2.getADC(), d2.getTime(), d2.nofSamples());
+  d = o2::mch::Digit(d2.getDetID() + 1, d2.getPadID(), d2.getADC(), d2.getTime(), d2.nofSamples());
 }
-
 
 /// \brief Helper function to increment the pad ID in an existing digit
 void incrementPadID(o2::mch::Digit& d)
 {
   o2::mch::Digit d2 = d;
-  d = o2::mch::Digit(d2.getDetID(), d2.getPadID()+1, d2.getADC(), d2.getTime(), d2.nofSamples());
+  d = o2::mch::Digit(d2.getDetID(), d2.getPadID() + 1, d2.getADC(), d2.getTime(), d2.nofSamples());
 }
-
 
 /// \brief Helper function to modify the sampa time in an existing digit
 void incrementSampaTime(o2::mch::Digit& d, int delta)
@@ -98,7 +91,6 @@ void incrementSampaTime(o2::mch::Digit& d, int delta)
   d = o2::mch::Digit(d2.getDetID(), d2.getPadID(), d2.getADC(), t, d2.nofSamples());
 }
 
-
 /// \brief Helper function to modify the bunch crossing value in an existing digit
 void incrementBunchCrossing(o2::mch::Digit& d, int delta)
 {
@@ -107,7 +99,6 @@ void incrementBunchCrossing(o2::mch::Digit& d, int delta)
   t.bunchCrossing += delta;
   d = o2::mch::Digit(d2.getDetID(), d2.getPadID(), d2.getADC(), t, d2.nofSamples());
 }
-
 
 /// \brief Helper function for running the digits merger on two input digits, and store the result in a vector object.
 /// \brief The two digits are inserted in the same orbit.
@@ -131,10 +122,9 @@ void runMergerSameOrbit(MergerDigit& d1, MergerDigit& d2, std::vector<Digit>& di
   merger.setOrbit(feeId, orbit, true);
 
   // start/stop a new orbit to trigger the sending of the merged digit
-  merger.setOrbit(feeId, orbit+1, false);
-  merger.setOrbit(feeId, orbit+1, true);
+  merger.setOrbit(feeId, orbit + 1, false);
+  merger.setOrbit(feeId, orbit + 1, true);
 }
-
 
 /// \brief Helper function for running the digits merger on two input digits, and store the result in a vector object.
 /// \brief The two digits are inserted in two consecutive orbits.
@@ -157,29 +147,27 @@ void runMergerConsecutiveOrbits(MergerDigit& d1, MergerDigit& d2, std::vector<Di
   merger.setOrbit(feeId, orbit, true);
 
   // start/stop a new orbit to trigger the sending of the merged digit
-  merger.setOrbit(feeId, orbit+1, false);
+  merger.setOrbit(feeId, orbit + 1, false);
   addDigit(merger, feeId, d2);
-  merger.setOrbit(feeId, orbit+1, true);
+  merger.setOrbit(feeId, orbit + 1, true);
 }
 
-
 /// \brief helper macro for checking the equivalence of two digits
-#define CHECK_DIGIT(d1, d2) \
-    BOOST_CHECK_EQUAL(d1.getDetID(), d2.getDetID()); \
-    BOOST_CHECK_EQUAL(d1.getPadID(), d2.getPadID()); \
-    BOOST_CHECK_EQUAL(d1.getTime().sampaTime, d2.getTime().sampaTime); \
-    BOOST_CHECK_EQUAL(d1.getTime().bunchCrossing, d2.getTime().bunchCrossing); \
-    BOOST_CHECK_EQUAL(d1.getTime().orbit, d2.getTime().orbit); \
-    BOOST_CHECK_EQUAL(d1.getADC(), d2.getADC()); \
-    BOOST_CHECK_EQUAL(d1.nofSamples(), d2.nofSamples());
-
+#define CHECK_DIGIT(d1, d2)                                                  \
+  BOOST_CHECK_EQUAL(d1.getDetID(), d2.getDetID());                           \
+  BOOST_CHECK_EQUAL(d1.getPadID(), d2.getPadID());                           \
+  BOOST_CHECK_EQUAL(d1.getTime().sampaTime, d2.getTime().sampaTime);         \
+  BOOST_CHECK_EQUAL(d1.getTime().bunchCrossing, d2.getTime().bunchCrossing); \
+  BOOST_CHECK_EQUAL(d1.getTime().orbit, d2.getTime().orbit);                 \
+  BOOST_CHECK_EQUAL(d1.getADC(), d2.getADC());                               \
+  BOOST_CHECK_EQUAL(d1.nofSamples(), d2.nofSamples());
 
 /// \brief helper macro for checking the contents of a merged digit
-#define CHECK_MERGED_DIGIT(d, d1, d2) \
-    BOOST_CHECK_EQUAL(d.getDetID(), d1.getDetID()); \
-    BOOST_CHECK_EQUAL(d.getPadID(), d1.getPadID()); \
-    \
-    // check that the merged digit has the same time as the fist input digit \
+#define CHECK_MERGED_DIGIT(d, d1, d2)             \
+  BOOST_CHECK_EQUAL(d.getDetID(), d1.getDetID()); \
+  BOOST_CHECK_EQUAL(d.getPadID(), d1.getPadID()); \
+                                                  \
+  // check that the merged digit has the same time as the fist input digit \
     BOOST_CHECK_EQUAL(d.getTime().sampaTime, d1.getTime().sampaTime); \
     BOOST_CHECK_EQUAL(d.getTime().bunchCrossing, d1.getTime().bunchCrossing); \
     BOOST_CHECK_EQUAL(d.getTime().orbit, d1.getTime().orbit); \
@@ -189,7 +177,6 @@ void runMergerConsecutiveOrbits(MergerDigit& d1, MergerDigit& d2, std::vector<Di
     \
     // check that the number of samples of the merged digit is equal to the sum of the individual digits \
     BOOST_CHECK_EQUAL(d.nofSamples(), d1.nofSamples() + d2.nofSamples());
-
 
 /// \brief Test of digits merging in the same orbit
 BOOST_AUTO_TEST_CASE(MergeDigits)
@@ -206,7 +193,6 @@ BOOST_AUTO_TEST_CASE(MergeDigits)
   Digit& d = digitsOut[0];
   CHECK_MERGED_DIGIT(d, d1.digit, d2.digit);
 }
-
 
 /// \brief Test of digits merging in two consecutive orbits
 BOOST_AUTO_TEST_CASE(MergeDigitsConsecutiveOrbits)
@@ -225,7 +211,6 @@ BOOST_AUTO_TEST_CASE(MergeDigitsConsecutiveOrbits)
   Digit& d = digitsOut[0];
   CHECK_MERGED_DIGIT(d, d1.digit, d2.digit);
 }
-
 
 /// \brief Check that two digits with different detector IDs are not merged
 BOOST_AUTO_TEST_CASE(MergeDigitsWrongDetID)
@@ -248,7 +233,6 @@ BOOST_AUTO_TEST_CASE(MergeDigitsWrongDetID)
   CHECK_DIGIT(do2, d2.digit);
 }
 
-
 /// \brief Check that two digits with different pad IDs are not merged
 BOOST_AUTO_TEST_CASE(MergeDigitsWrongPadID)
 {
@@ -270,7 +254,6 @@ BOOST_AUTO_TEST_CASE(MergeDigitsWrongPadID)
   CHECK_DIGIT(do2, d2.digit);
 }
 
-
 /// \brief Check that two digits with incompatible SAMPA times are not merged
 BOOST_AUTO_TEST_CASE(MergeDigitsWrongSampaTime)
 {
@@ -291,7 +274,6 @@ BOOST_AUTO_TEST_CASE(MergeDigitsWrongSampaTime)
   CHECK_DIGIT(do1, d1.digit);
   CHECK_DIGIT(do2, d2.digit);
 }
-
 
 /// \brief Check that two digits with incompatible bunch crossings are not merged
 BOOST_AUTO_TEST_CASE(MergeDigitsWrongBunchCrossing)
