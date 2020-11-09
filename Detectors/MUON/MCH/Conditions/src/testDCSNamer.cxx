@@ -17,6 +17,7 @@
 #include "HVAliases.h"
 #include "LVAliases.h"
 #include <algorithm>
+#include <fmt/printf.h>
 
 using namespace o2::mch::dcs;
 
@@ -52,6 +53,9 @@ BOOST_AUTO_TEST_CASE(detElemId2DCSMustReturnChamberIdAndSideIfDetElemIdIsValid)
 BOOST_AUTO_TEST_CASE(NumberOfHVAliasesIs188PerType)
 {
   auto result = aliases({MeasurementType::Voltage});
+  for (auto r: result) {
+      fmt::printf("%-62s %2d\n",r.c_str(),r.size());
+  }
   BOOST_CHECK_EQUAL(result.size(), expectedHVAliasesVoltages.size());
   bool permutation = std::is_permutation(begin(result), end(result), begin(expectedHVAliasesVoltages));
   BOOST_CHECK_EQUAL(permutation, true);

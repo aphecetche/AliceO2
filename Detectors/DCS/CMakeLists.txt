@@ -18,6 +18,7 @@ o2_add_library(DetectorsDCS
 		       src/GenericFunctions.cxx
 		       src/StringUtils.cxx
 		       src/DCSProcessor.cxx
+               src/DataPointCreator.cxx
                PUBLIC_LINK_LIBRARIES O2::Headers
 	                             O2::CommonUtils
 				     O2::CCDB

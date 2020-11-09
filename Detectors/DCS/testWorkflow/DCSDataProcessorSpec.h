@@ -294,7 +294,7 @@ class DCSDataProcessor : public o2::framework::Task
   bool mResetStopwatchDeltaProcessingDetLoop = true;
 
   //________________________________________________________________
-  void sendOutput(DataAllocator& output)
+  void sendOutput(framework::DataAllocator& output)
   {
     // extract CCDB infos and calibration objects, convert it to TMemFile and send them to the output
     // copied from LHCClockCalibratorSpec.cxx
@@ -305,8 +305,8 @@ class DCSDataProcessor : public o2::framework::Task
     LOG(INFO) << "Sending object " << info.getPath() << "/" << info.getFileName() << " of size " << image->size()
               << " bytes, valid for " << info.getStartValidityTimestamp() << " : " << info.getEndValidityTimestamp();
 
-    output.snapshot(Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBPayload, 0}, *image.get());
-    output.snapshot(Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBInfo, 0}, info);
+    output.snapshot(framework::Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBPayload, 0}, *image.get());
+    output.snapshot(framework::Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBInfo, 0}, info);
   }
 }; // end class
 } // namespace dcs
