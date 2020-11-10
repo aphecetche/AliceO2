@@ -31,13 +31,28 @@ o2_target_root_dictionary(DetectorsDCS
 				  include/DetectorsDCS/DataPointValue.h
 				  include/DetectorsDCS/DCSProcessor.h)
 
-o2_add_executable(dcs-data-workflow
+o2_add_executable(data-workflow
 		  COMPONENT_NAME dcs
 		  SOURCES testWorkflow/dcs-data-workflow.cxx
+		  PUBLIC_LINK_LIBRARIES O2::Framework
+					O2::DetectorsDCS)
+
+o2_add_executable(data-dispatcher-workflow
+		  COMPONENT_NAME dcs
+		  SOURCES testWorkflow/dcs-data-dispatcher-workflow.cxx
 		  PUBLIC_LINK_LIBRARIES O2::Framework
 					O2::DetectorsDCS)
 
 if (OpenMP_CXX_FOUND)
     target_compile_definitions(${targetName} PRIVATE WITH_OPENMP)
     target_link_libraries(${targetName} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+  
+if(BUILD_TESTING)
+  o2_add_test(
+    data-points
+    SOURCES test/testDPs.cxx
+    COMPONENT_NAME dcs
+    LABELS "dcs"
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)
 endif()

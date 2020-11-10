@@ -254,6 +254,12 @@ struct alignas(128) DataPointCompositeObject final {
                  (char*)&dpcom.data.payload_pt1, 56);
     }
   }
+
+  /**
+    * The destructor for DataPointCompositeObject so it is not delete
+    * and so DataPointCompositeObject is trivially copyable
+    */
+  ~DataPointCompositeObject() noexcept = default;
   ClassDefNV(DataPointCompositeObject, 1);
 };
 } // namespace dcs

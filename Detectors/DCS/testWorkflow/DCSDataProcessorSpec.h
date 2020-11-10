@@ -30,6 +30,7 @@
 #include "Framework/WorkflowSpec.h"
 #include "Framework/Task.h"
 #include "Framework/Logger.h"
+#include <gsl/span>
 
 namespace o2
 {
@@ -135,6 +136,10 @@ class DCSDataProcessor : public o2::framework::Task
     std::unordered_map<DPID, DPVAL> dcsmap;
     DPCOM dptmp;
     LOG(DEBUG) << "TF: " << tfid << " -->  building unordered_map...";
+    auto dpcoms = pc.inputs().get<gsl::span<o2::dcs::DataPointCompositeObject>>("input");
+
+    LOG(INFO) << "dpcoms.size()=" << dpcoms.size() << " " << nDPs << "\n";
+    
     mBuildingUnorderedMap.Start(mFirstTF);
     for (int i = 0; i < nDPs; i++) {
       memcpy(&dptmp, rawchar + i * sizeof(DPCOM), sizeof(DPCOM));

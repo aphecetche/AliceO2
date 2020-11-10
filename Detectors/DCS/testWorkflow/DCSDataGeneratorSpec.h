@@ -13,22 +13,63 @@
 
 /// @file   DataGeneratorSpec.h
 /// @brief  Dummy data generator
-#include <unistd.h>
-#include <TRandom.h>
-#include <TDatime.h>
-#include <TStopwatch.h>
+#include "DetectorsDCS/DataPointCompositeObject.h"
+#include "DetectorsDCS/DataPointCreator.h"
 #include "DetectorsDCS/DataPointIdentifier.h"
 #include "DetectorsDCS/DataPointValue.h"
-#include "DetectorsDCS/DataPointCompositeObject.h"
 #include "DetectorsDCS/DeliveryType.h"
-#include "Framework/DeviceSpec.h"
+#include "DetectorsDCS/GenericFunctions.h"
 #include "Framework/ConfigParamRegistry.h"
 #include "Framework/ControlService.h"
-#include "Framework/WorkflowSpec.h"
-#include "Framework/Task.h"
+#include "Framework/DeviceSpec.h"
 #include "Framework/Logger.h"
+#include "Framework/Task.h"
+#include "Framework/WorkflowSpec.h"
+#include <TDatime.h>
+#include <TRandom.h>
+#include <TStopwatch.h>
+#include <ctime>
+#include <random>
+#include <sstream>
+#include <unistd.h>
 
 using namespace o2::framework;
+
+namespace
+{
+std::vector<std::string> mchTest = {
+  "MchHvLvLeft/Chamber00Left/Quad1Sect0.actual.vMon",
+  "MchHvLvLeft/Chamber03Left/Quad2Sect0.actual.vMon",
+  "MchHvLvRight/Chamber03Right/Quad3Sect0.actual.vMon",
+  "MchHvLvRight/Chamber03Right/Quad3Sect1.actual.vMon",
+  "MchHvLvLeft/Chamber05Left/Slat06.actual.vMon",
+  "MchHvLvLeft/Chamber05Left/Slat07.actual.vMon"};
+
+template <typename T,
+          typename = std::enable_if_t<std::is_arithmetic<T>::value>>
+std::vector<o2::dcs::DataPointCompositeObject> generateRandomDPCOM(const std::vector<std::string>& aliases,
+                                                                   T minValue, T maxValue, const std::string& refDate)
+{
+  std::vector<o2::dcs::DataPointCompositeObject> dpcoms;
+  typedef typename std::conditional<std::is_integral<T>::value,
+                                    std::uniform_int_distribution<T>,
+                                    std::uniform_real_distribution<T>>::type distType;
+
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  distType dist{minValue, maxValue};
+  std::tm t = {};
+  std::istringstream ss(refDate);
+  ss >> std::get_time(&t, "%Y-%b-%d %H:%M:%S");
+  uint32_t seconds = mktime(&t);
+  uint16_t msec = 5;
+  for (auto alias : aliases) {
+    auto value = dist(mt);
+    dpcoms.emplace_back(o2::dcs::createDataPointCompositeObject(alias, value, seconds, msec));
+  }
+  return dpcoms;
+}
+} // namespace
 
 namespace o2
 {
@@ -58,7 +99,7 @@ class DCSDataGenerator : public o2::framework::Task
     mNumDPscharFull++;
 
     // ints
-    for (int i = 0; i < 50000; i++) {
+    for (int i = 0; i < 5 /*50000*/; i++) {
       std::string dpAliasint = "TestInt_" + std::to_string(i);
       DPID::FILL(dpidtmp, dpAliasint, mtypeint);
       mDPIDvectFull.push_back(dpidtmp);
@@ -70,6 +111,13 @@ class DCSDataGenerator : public o2::framework::Task
         mNumDPsintDelta++;
       }
     }
+
+    // auto mch = generateRandomDPCOM<int32_t>(mchTest, 0, 20, "2019-November-18 12:34:56");
+    // for (auto m : mch) {
+    //   mDPIDvectFull.push_back(m.id);
+    //   mNumDPsFull++;
+    //   mNumDPsintFull++;
+    // }
 
     // doubles
     for (int i = 0; i < 4; i++) {
@@ -147,6 +195,11 @@ class DCSDataGenerator : public o2::framework::Task
       dpcomVectFull.emplace_back(mDPIDvectFull[mNumDPscharFull + mNumDPsintFull + mNumDPsdoubleFull + i], valstring);
     }
 
+    auto mch = generateRandomDPCOM<int32_t>(mchTest, 0, 20, "2019-November-18 12:34:56");
+    for (auto m : mch) {
+      dpcomVectFull.emplace_back(m.id, m.data);
+    }
+
     // delta map (only DPs that changed)
     mDeltaBuildingBinaryBlock.Start(mFirstTF);
     std::vector<DPCOM> dpcomVectDelta;
@@ -166,9 +219,9 @@ class DCSDataGenerator : public o2::framework::Task
 
     // Full map
     auto svect = dpcomVectFull.size();
-    LOG(DEBUG) << "dpcomVectFull has size " << svect;
+    LOG(INFO) << "dpcomVectFull has size " << svect;
     for (int i = 0; i < svect; i++) {
-      LOG(DEBUG) << "i = " << i << ", DPCOM = " << dpcomVectFull[i];
+      LOG(INFO) << "i = " << i << ", DPCOM = " << dpcomVectFull[i];
     }
     std::vector<char> buff(mNumDPsFull * sizeof(DPCOM));
     char* dptr = buff.data();
