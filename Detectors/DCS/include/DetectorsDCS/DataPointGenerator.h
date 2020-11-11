@@ -18,18 +18,11 @@
 namespace o2::dcs
 {
 
-struct DataPointHint {
-  std::string alias;
-  o2::dcs::DeliveryType type;
-  uint64_t min;
-  uint64_t max;
-};
-
-std::vector<o2::dcs::DataPointCompositeObject>
-  generateRandomFBI(const std::vector<DataPointHint>& dphints);
-std::vector<o2::dcs::DataPointCompositeObject> generateRandomDelta(const std::vector<DataPointHint>& dphints);
-
-std::vector<std::string> expandAliases(const std::vector<std::string>& patternedAliases);
+template <typename T>
+std::vector<DataPointCompositeObject> generateRandomDataPoints(const std::vector<std::string>& aliases,
+                                                               T min,
+                                                               T max,
+                                                               const std::string& refDate);
 
 } // namespace o2::dcs
 

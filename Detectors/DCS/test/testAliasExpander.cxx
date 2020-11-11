@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#define BOOST_TEST_MODULE Test DCS Generator
+#define BOOST_TEST_MODULE Test DCS AliasExpander
 #define BOOST_TEST_MAIN
 
 #define BOOST_TEST_DYN_LINK
@@ -16,7 +16,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 #include <iostream>
-#include "DataPointGenerator.h"
+#include "DetectorsDCS/AliasExpander.h"
 
 BOOST_AUTO_TEST_CASE(ExpandAliasesIsNoopWhenNoPatternGiven)
 {

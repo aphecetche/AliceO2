@@ -14,7 +14,6 @@
 /// @file   DataGeneratorSpec.h
 /// @brief  Dummy data generator
 #include "DetectorsDCS/DataPointCompositeObject.h"
-#include "DetectorsDCS/DataPointCreator.h"
 #include "DetectorsDCS/DataPointIdentifier.h"
 #include "DetectorsDCS/DataPointValue.h"
 #include "DetectorsDCS/DeliveryType.h"

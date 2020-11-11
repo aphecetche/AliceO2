@@ -12,7 +12,6 @@
 #define O2_DCS_RANDOM_DATA_GENERATOR_SPEC_H
 
 #include "DetectorsDCS/DataPointCompositeObject.h"
-#include "DetectorsDCS/DataPointCreator.h"
 #include "DetectorsDCS/DataPointIdentifier.h"
 #include "DetectorsDCS/DataPointValue.h"
 #include "DetectorsDCS/DeliveryType.h"

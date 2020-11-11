@@ -11,15 +11,17 @@
 o2_add_library(
   DetectorsDCS
   TARGETVARNAME targetName
-  SOURCES src/Clock.cxx
+  SOURCES src/AliasExpander.cxx
+          src/DCSProcessor.cxx
           src/DataPointCompositeObject.cxx
+          src/DataPointCreator.cxx
+          src/DataPointGenerator.cxx
           src/DataPointIdentifier.cxx
           src/DataPointValue.cxx
           src/DeliveryType.cxx
           src/GenericFunctions.cxx
           src/StringUtils.cxx
-          src/DCSProcessor.cxx
-          src/DataPointCreator.cxx
+  src/Clock.cxx
   PUBLIC_LINK_LIBRARIES O2::Headers O2::CommonUtils O2::CCDB
                         O2::DetectorsCalibration ms_gsl::ms_gsl)
 
@@ -55,8 +57,14 @@ if(BUILD_TESTING)
     LABELS "dcs"
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)
   o2_add_test(
+    alias-expander
+    SOURCES test/testAliasExpander.cxx
+    COMPONENT_NAME dcs
+    LABELS "dcs"
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)
+  o2_add_test(
     data-point-generator
-    SOURCES testWorkflow/testDataPointGenerator.cxx testWorkflow/DataPointGenerator.cxx
+    SOURCES test/testDataPointGenerator.cxx
     COMPONENT_NAME dcs
     LABELS "dcs"
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)

@@ -262,6 +262,10 @@ struct alignas(128) DataPointCompositeObject final {
   ~DataPointCompositeObject() noexcept = default;
   ClassDefNV(DataPointCompositeObject, 1);
 };
+
+template <typename T>
+T getValue(const DataPointCompositeObject& dpcom);
+
 } // namespace dcs
 } // namespace o2
 

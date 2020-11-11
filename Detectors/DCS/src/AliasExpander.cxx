@@ -8,65 +8,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "DataPointGenerator.h"
-#include <type_traits>
-#include "DetectorsDCS/DataPointCompositeObject.h"
-#include <random>
-#include "DetectorsDCS/DataPointCreator.h"
+#include "DetectorsDCS/AliasExpander.h"
 #include <fmt/format.h>
+#include <sstream>
 
 namespace
 {
-/**
-* Generate random data points, uniformly distributed between two values.
-*
-* @tparam T the type of data points to be generated. Must be an arithmetic type
-*
-* @param aliases the list of aliases to be generated
-* @param minValue the minimum value of the values to be generated
-* @param maxValue the maximum value of the values to be generated
-* @param refDate the date to be associated with all data points 
-*        in `%Y-%b-%d %H:%M:%S` format
-*
-* @returns a vector of DataPointCompositeObject objects
-*/
-template <typename T,
-          typename = std::enable_if_t<std::is_arithmetic<T>::value>>
-std::vector<o2::dcs::DataPointCompositeObject> generateRandomDPCOM(const std::vector<std::string>& aliases,
-                                                                   T minValue, T maxValue, const std::string& refDate)
-{
-  std::vector<o2::dcs::DataPointCompositeObject> dpcoms;
-  typedef typename std::conditional<std::is_integral<T>::value,
-                                    std::uniform_int_distribution<T>,
-                                    std::uniform_real_distribution<T>>::type distType;
-
-  std::random_device rd;
-  std::mt19937 mt(rd());
-  distType dist{minValue, maxValue};
-  std::tm t = {};
-  std::istringstream ss(refDate);
-  ss >> std::get_time(&t, "%Y-%b-%d %H:%M:%S");
-  uint32_t seconds = mktime(&t);
-  uint16_t msec = 5;
-  for (auto alias : aliases) {
-    auto value = dist(mt);
-    dpcoms.emplace_back(o2::dcs::createDataPointCompositeObject(alias, value, seconds, msec));
-  }
-  return dpcoms;
-}
-} // namespace
-
-namespace o2::dcs
-{
-std::vector<o2::dcs::DataPointCompositeObject>
-  generateRandomFBI(const std::vector<DataPointHint>& dphints)
-{
-  return {};
-}
-std::vector<o2::dcs::DataPointCompositeObject> generateRandomDelta(const std::vector<DataPointHint>& dphints)
-{
-  return {};
-}
 
 std::vector<std::string> splitString(const std::string& src, char delim)
 {
@@ -151,9 +98,12 @@ std::vector<std::string> expandAlias(const std::string& pattern)
     result.emplace_back(substituted);
   }
 
-  return expandAliases(result);
+  return o2::dcs::expandAliases(result);
 }
+} // namespace
 
+namespace o2::dcs
+{
 std::vector<std::string> expandAliases(const std::vector<std::string>& patternedAliases)
 {
   std::vector<std::string> result;
@@ -167,5 +117,4 @@ std::vector<std::string> expandAliases(const std::vector<std::string>& patterned
 
   return result;
 }
-
 } // namespace o2::dcs
