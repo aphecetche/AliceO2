@@ -19,7 +19,7 @@ struct has_root_dictionary<std::unordered_map<o2::dcs::DataPointIdentifier, o2::
 };
 } // namespace o2::framework
 #include "Framework/DataProcessorSpec.h"
-#include "DCSDataGeneratorSpec.h"
+#include "DCSRandomDataGeneratorSpec.h"
 #include "DCSDataDispatcherSpec.h"
 
 using namespace o2::framework;
@@ -37,7 +37,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 WorkflowSpec defineDataProcessing(ConfigContext const& configcontext)
 {
   WorkflowSpec specs;
-  specs.emplace_back(getDCSDataGeneratorSpec());
+  specs.emplace_back(getDCSRandomDataGeneratorSpec());
   specs.emplace_back(getDCSDataDispatcherSpec());
   return specs;
 }
