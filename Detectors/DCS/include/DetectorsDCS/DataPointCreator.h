@@ -16,27 +16,29 @@
 namespace o2::dcs
 {
 /**
-     * createDataPointCompositeObject is a convenience function to 
-     * simplify the creation of a DataPointCompositeObject.
-     *
-     * @param alias the DataPoint alias name (max 56 characters)
-     * @param val the value of the datapoint
-     * @param flags value for ADAPOS flags.
-     * @param milliseconds value for milliseconds.
-     * @param seconds value for seconds.
-     *
-     * The actual DeliveryType of the returned 
-     * DataPointCompositeObject is deduced from the type of val. 
-     *
-     * Note that only a few relevant specialization are actually provided
-     *
-     * - T=int32_t : DeliveryType = RAW_INT
-     * - T=uint32_t : DeliveryType = RAW_UINT
-     * - T=double : DeliveryType = RAW_DOUBLE
-     * - T=bool : DeliveryType = RAW_BOOL
-     * - T=char : DeliveryType = RAW_CHAR
-     *
-     */
+  * createDataPointCompositeObject is a convenience function to 
+  * simplify the creation of a DataPointCompositeObject.
+  *
+  * @param alias the DataPoint alias name (max 56 characters)
+  * @param val the value of the datapoint
+  * @param flags value for ADAPOS flags.
+  * @param milliseconds value for milliseconds.
+  * @param seconds value for seconds.
+  *
+  * @returns a DataPointCompositeObject
+  *
+  * The actual DeliveryType of the returned 
+  * DataPointCompositeObject is deduced from the type of val. 
+  *
+  * Note that only a few relevant specialization are actually provided
+  *
+  * - T=int32_t : DeliveryType = RAW_INT
+  * - T=uint32_t : DeliveryType = RAW_UINT
+  * - T=double : DeliveryType = RAW_DOUBLE
+  * - T=bool : DeliveryType = RAW_BOOL
+  * - T=char : DeliveryType = RAW_CHAR
+  *
+  */
 template <typename T>
 o2::dcs::DataPointCompositeObject createDataPointCompositeObject(const std::string& alias, T val, uint32_t seconds, uint16_t msec, uint16_t flags = 0);
 } // namespace o2::dcs

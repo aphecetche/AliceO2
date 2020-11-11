@@ -14,6 +14,7 @@
 #include "DetectorsDCS/DataPointCompositeObject.h"
 #include "DetectorsDCS/DataPointIdentifier.h"
 #include "DetectorsDCS/DataPointValue.h"
+#include "DetectorsDCS/DataPointGenerator.h"
 #include "DetectorsDCS/DeliveryType.h"
 #include "DetectorsDCS/GenericFunctions.h"
 #include "Framework/ConfigParamRegistry.h"
@@ -22,15 +23,35 @@
 #include "Framework/Logger.h"
 #include "Framework/Task.h"
 #include "Framework/WorkflowSpec.h"
-#include <TDatime.h>
-#include <TRandom.h>
-#include <TStopwatch.h>
 #include <ctime>
 #include <random>
 #include <sstream>
-#include <unistd.h>
+#include <variant>
 
 using namespace o2::framework;
+
+// union Converter {
+//   uint64_t raw_data;
+//   double double_value;
+//   uint32_t uint_value;
+//   int32_t int_value;
+//   char char_value;
+//   bool bool_value;
+// };
+//
+
+template <typename T>
+struct DataPointHint {
+  std::string alias;
+  T minValue;
+  T maxValue;
+};
+
+using HintType = std::variant<DataPointHint<double>,
+                              DataPointHint<uint32_t>,
+                              DataPointHint<int32_t>,
+                              DataPointHint<char>,
+                              DataPointHint<bool>>;
 
 namespace o2
 {
@@ -49,6 +70,9 @@ class DCSRandomDataGenerator : public o2::framework::Task
     mMaxTF = ic.options().get<int64_t>("max-timeframes");
 
     // here create the list of DataPointHints to be used by the generator
+    mDataPointHints.emplace_back(DataPointHint<char>{"TestChar_0", 'A', 'z'});
+    mDataPointHints.emplace_back(DataPointHint<uint32_t>{"TestInt_[0..10]", 0, 1234});
+    mDataPointHints.emplace_back(DataPointHint<bool>{"TestBool_[00..03]", 0, 1});
   }
 
   void run(o2::framework::ProcessingContext& pc) final
@@ -65,6 +89,26 @@ class DCSRandomDataGenerator : public o2::framework::Task
       }
       break; // we break because one input is enough to get the TF ID
     }
+
+    std::vector<DataPointCompositeObject> fbi;
+
+    auto GenerateVisitor = [](const auto& t) {
+      return o2::dcs::generateRandomDataPoints({t.alias}, t.minValue, t.maxValue, "2022-November-18 12:34:56");
+    };
+
+    for (const auto& hint : mDataPointHints) {
+      auto dpcoms = std::visit(GenerateVisitor, hint);
+      for (auto dp : dpcoms) {
+        fbi.push_back(dp);
+      }
+    }
+
+    for (auto dp : fbi) {
+      std::cout << dp << "\n";
+    }
+
+    //   auto dpcoms = o2::dcs::generateRandomDataPoints({hint.alias}, decltype(hint.minValue), decltype(hint.maxValue), "2022-November-18 12:34:56");
+    // }
 
     // here build FBI and/or Delta
     // LOG(DEBUG) << "TF: " << tfid << " --> building binary blob...";
@@ -109,6 +153,7 @@ class DCSRandomDataGenerator : public o2::framework::Task
 
   bool mFirstTF = true;
   uint64_t mTFs = 0;
+  std::vector<HintType> mDataPointHints;
 };
 
 } // namespace dcs

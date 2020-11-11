@@ -263,6 +263,17 @@ struct alignas(128) DataPointCompositeObject final {
   ClassDefNV(DataPointCompositeObject, 1);
 };
 
+/**
+  * Return the value contained in the DataPointCompositeObject, if possible.
+  *
+  * @tparam T the expected type of the value
+  *
+  * @param dpcom the DataPointCompositeObject the value is extracted from
+  *
+  * @returns the value of the data point
+  *
+  * @throws if the DeliveryType of the data point is not compatible with T
+  */
 template <typename T>
 T getValue(const DataPointCompositeObject& dpcom);
 

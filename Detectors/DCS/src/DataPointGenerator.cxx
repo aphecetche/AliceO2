@@ -15,38 +15,9 @@
 #include <fmt/format.h>
 #include <random>
 
-namespace
-{
-o2::dcs::DataPointCompositeObject createDPCOM(const std::string& alias, const uint64_t* val, uint32_t seconds, uint16_t msec, uint16_t flags, o2::dcs::DeliveryType dt)
-{
-  auto dpid = o2::dcs::DataPointIdentifier(alias, dt);
-  auto dpval = o2::dcs::DataPointValue(
-    flags,
-    msec,
-    seconds,
-    val,
-    dt);
-  return o2::dcs::DataPointCompositeObject(dpid, dpval);
-}
-
-} // namespace
-
 namespace o2::dcs
 {
 
-/**
-* Generate random data points, uniformly distributed between two values.
-*
-* @param aliases the list of aliases to be generated
-* @param dt ADAPOS delivery type. Only the types that are directly
-*   convertible to uint64_t are supported.
-* @param minValue the minimum value of the values to be generated
-* @param maxValue the maximum value of the values to be generated
-* @param refDate the date to be associated with all data points 
-*        in `%Y-%b-%d %H:%M:%S` format
-*
-* @returns a vector of DataPointCompositeObject objects
-*/
 template <typename T>
 std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints(const std::vector<std::string>& aliases,
                                                                         T minValue, T maxValue, const std::string& refDate)
