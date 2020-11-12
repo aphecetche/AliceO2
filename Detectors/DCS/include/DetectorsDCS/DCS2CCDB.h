@@ -11,21 +11,23 @@
 #ifndef O2_DCS_DCS_2_CCDB_H
 #define O2_DCS_DCS_2_CCDB_H
 
-#include <string>
+#include "CCDB/CcdbApi.h"
 #include "CCDB/CcdbObjectInfo.h"
 #include "CommonUtils/MemFileHelper.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/DataAllocator.h"
 #include "DetectorsCalibration/Utils.h"
+#include "Framework/DataAllocator.h"
+#include <map>
+#include <string>
 
-namespace o2::dcs
+namespace o2
+{
+namespace dcs
 {
 
 using TFType = uint64_t;
-using CcdbObjectInfo = o2::ccdb::CcdbObjectInfo;
 
 template <typename T>
-void prepareCCDBobject(T& obj, CcdbObjectInfo& info, const std::string& path, TFType tf,
+void prepareCCDBobject(T& obj, o2::ccdb::CcdbObjectInfo& info, const std::string& path, TFType tf,
                        const std::map<std::string, std::string>& md)
 {
 
@@ -40,18 +42,33 @@ void prepareCCDBobject(T& obj, CcdbObjectInfo& info, const std::string& path, TF
   info.setMetaData(md);
 }
 
-  template<typename T>
-  void sendOutput(const T& obj, const CcdbObjectInfo& info, framework::DataAllocator& output)
-  {
-    // extract CCDB infos and calibration objects, convert it to TMemFile and send them to the output
-    // copied from LHCClockCalibratorSpec.cxx
-    using clbUtils = o2::calibration::Utils;
-    const auto& payload = obj;
-    auto image = o2::ccdb::CcdbApi::createObjectImage(&payload, &info);
-    LOG(INFO) << "Sending object " << info.getPath() << "/" << info.getFileName() << " of size " << image->size()
-              << " bytes, valid for " << info.getStartValidityTimestamp() << " : " << info.getEndValidityTimestamp();
+template <typename T>
+void sendOutput(const T& obj, o2::ccdb::CcdbObjectInfo& info, framework::DataAllocator& output)
+{
+  // extract CCDB infos and calibration objects, convert it to TMemFile and send them to the output
+  // copied from LHCClockCalibratorSpec.cxx
+  const auto& payload = obj;
+  auto image = o2::ccdb::CcdbApi::createObjectImage(&payload, &info);
+  LOG(INFO) << "Sending object " << info.getPath() << "/" << info.getFileName() << " of size " << image->size()
+            << " bytes, valid for " << info.getStartValidityTimestamp() << " : " << info.getEndValidityTimestamp();
 
-    output.snapshot(framework::Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBPayload, 0}, *image.get());
-    output.snapshot(framework::Output{clbUtils::gDataOriginCLB, clbUtils::gDataDescriptionCLBInfo, 0}, info);
-  }
-} // namespace o2::dcs
+  output.snapshot(framework::Output{o2::calibration::Utils::gDataOriginCLB,
+                                    o2::calibration::Utils::gDataDescriptionCLBPayload, 0},
+                  *image.get());
+
+  output.snapshot(framework::Output{o2::calibration::Utils::gDataOriginCLB,
+                                    o2::calibration::Utils::gDataDescriptionCLBInfo, 0},
+                  info);
+}
+
+std::vector<framework::OutputSpec> CCDBOutputs() {
+  std::vector<framework::OutputSpec> outputs;
+  outputs.emplace_back(framework::ConcreteDataTypeMatcher{o2::calibration::Utils::gDataOriginCLB,
+                                               o2::calibration::Utils::gDataDescriptionCLBPayload});
+  outputs.emplace_back(framework::ConcreteDataTypeMatcher{o2::calibration::Utils::gDataOriginCLB,
+                                               o2::calibration::Utils::gDataDescriptionCLBInfo});
+  return outputs;
+}
+} // namespace dcs
+} // namespace o2
+#endif

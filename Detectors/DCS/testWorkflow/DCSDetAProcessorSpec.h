@@ -17,22 +17,23 @@
 #include "Framework/Logger.h"
 #include <limits>
 #include <vector>
+#include "DetectorsDCS/DCS2CCDB.h"
 
 namespace
 {
-void showRanges(gsl::span<const o2::dcs::DataPointCompositeObject> dpcoms)
+std::string showRanges(gsl::span<const o2::dcs::DataPointCompositeObject> dpcoms)
 {
-    double minValue = std::numeric_limits<double>::max();
-    double maxValue = std::numeric_limits<double>::min();
+  double minValue = std::numeric_limits<double>::max();
+  double maxValue = std::numeric_limits<double>::min();
 
-    for (auto dp: dpcoms) {
-        std::string alias = dp.id.get_alias();
-        if (alias.find("DETA/TestDouble_")!=std::string::npos) {
-            minValue = std::min(minValue,o2::dcs::getValue<double>(dp));
-            maxValue = std::max(maxValue,o2::dcs::getValue<double>(dp));
-        }
+  for (auto dp : dpcoms) {
+    std::string alias = dp.id.get_alias();
+    if (alias.find("DETA/TestDouble_") != std::string::npos) {
+      minValue = std::min(minValue, o2::dcs::getValue<double>(dp));
+      maxValue = std::max(maxValue, o2::dcs::getValue<double>(dp));
     }
-    LOG(INFO) << fmt::format("DetAProcessor: min {:7.2f} max {:7.2f}",minValue,maxValue);
+  }
+  return fmt::format("DetAProcessor: min {:7.2f} max {:7.2f}", minValue, maxValue);
 }
 } // namespace
 
@@ -43,16 +44,22 @@ namespace dcs
 class DCSDetAProcessor : public o2::framework::Task
 {
  public:
-
   void run(o2::framework::ProcessingContext& pc) final
   {
     auto dpcoms = pc.inputs().get<gsl::span<o2::dcs::DataPointCompositeObject>>("input");
-    showRanges(dpcoms);
-  }
+    auto result = showRanges(dpcoms);
+    LOG(INFO) << result;
 
-}; // end class
+    uint64_t tfid = header::get<o2::framework::DataProcessingHeader*>((*(pc.inputs().begin())).header)->startTime;
+
+    std::map<std::string, std::string> md;
+    o2::ccdb::CcdbObjectInfo info;
+    TObjString object(result.c_str());
+    prepareCCDBobject(object, info, "DETA/Ranges", tfid, md);
+    sendOutput(object, info, pc.outputs());
+  };
+};
 } // namespace dcs
-
 namespace framework
 {
 
@@ -61,10 +68,10 @@ DataProcessorSpec getDCSDetAProcessorSpec()
   return DataProcessorSpec{
     "dcs-deta-processor",
     Inputs{{"input", "DETA", "DATAPOINTS"}, {"inputdelta", "DETA", "DATAPOINTSdelta"}},
-    Outputs{},
+    o2::dcs::CCDBOutputs(),
     AlgorithmSpec{adaptFromTask<o2::dcs::DCSDetAProcessor>()},
     Options{}};
-} // namespace framework
+}
 
 } // namespace framework
 } // namespace o2

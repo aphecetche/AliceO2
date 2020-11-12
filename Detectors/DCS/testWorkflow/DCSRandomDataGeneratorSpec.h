@@ -12,20 +12,13 @@
 #define O2_DCS_RANDOM_DATA_GENERATOR_SPEC_H
 
 #include "DetectorsDCS/DataPointCompositeObject.h"
-#include "DetectorsDCS/DataPointIdentifier.h"
-#include "DetectorsDCS/DataPointValue.h"
 #include "DetectorsDCS/DataPointGenerator.h"
-#include "DetectorsDCS/DeliveryType.h"
-#include "DetectorsDCS/GenericFunctions.h"
 #include "Framework/ConfigParamRegistry.h"
 #include "Framework/ControlService.h"
 #include "Framework/DeviceSpec.h"
 #include "Framework/Logger.h"
 #include "Framework/Task.h"
-#include "Framework/WorkflowSpec.h"
-#include <ctime>
 #include <random>
-#include <sstream>
 #include <variant>
 
 using namespace o2::framework;
@@ -97,7 +90,7 @@ class DCSRandomDataGenerator : public o2::framework::Task
   void init(o2::framework::InitContext& ic) final
   {
     mMaxTF = ic.options().get<int64_t>("max-timeframes");
-
+    mDeltaFraction = ic.options().get<float>("delta-fraction");
     // here create the list of DataPointHints to be used by the generator
     mDataPointHints.emplace_back(DataPointHint<char>{"DETA/TestChar_0", 'A', 'z'});
     mDataPointHints.emplace_back(DataPointHint<double>{"DETA/TestDouble_[0..5000]", 0, 1700});
@@ -124,14 +117,10 @@ class DCSRandomDataGenerator : public o2::framework::Task
     mTFs++;
   }
 
-  void endOfStream(o2::framework::EndOfStreamContext& ec) final
-  {
-  }
-
  private:
-  uint64_t mMaxTF = 1;
+  uint64_t mMaxTF;
   uint64_t mTFs = 0;
-  float mDeltaFraction = 0.05; // Delta is 5% of FBI
+  float mDeltaFraction;
   std::vector<HintType> mDataPointHints;
 };
 
@@ -147,9 +136,10 @@ DataProcessorSpec getDCSRandomDataGeneratorSpec()
     Inputs{},
     Outputs{{{"outputDCS"}, "DCS", "DATAPOINTS"}, {{"outputDCSdelta"}, "DCS", "DATAPOINTSdelta"}},
     AlgorithmSpec{adaptFromTask<o2::dcs::DCSRandomDataGenerator>()},
-    Options{{"max-timeframes", VariantType::Int64, 99999999999ll, {"max TimeFrames to generate"}}}};
+    Options{
+      {"max-timeframes", VariantType::Int64, 99999999999ll, {"max TimeFrames to generate"}},
+      {"delta-fraction", VariantType::Float, 0.05f, {"fraction of data points to put in the delta"}}}};
 }
-
 } // namespace framework
 } // namespace o2
 

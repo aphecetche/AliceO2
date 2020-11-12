@@ -62,15 +62,15 @@ class DCSDataDispatcher : public o2::framework::Task
       o2::header::DataOrigin origin;
       origin.runtimeInit(sub.c_str());
       o2::header::DataDescription desc;
-      desc.runtimeInit(fmt::format("DATAPOINTS{}",(delta?"delta":"")).c_str());
+      desc.runtimeInit(fmt::format("DATAPOINTS{}", (delta ? "delta" : "")).c_str());
       pc.outputs().snapshot(framework::Output{origin, desc, 0, framework::Lifetime::Timeframe}, dpcoms);
     }
   }
 
   void run(o2::framework::ProcessingContext& pc) final
   {
-    process(pc,false);
-    process(pc,true);
+    process(pc, false);
+    process(pc, true);
   }
 
  private:
@@ -80,7 +80,6 @@ class DCSDataDispatcher : public o2::framework::Task
 
 namespace framework
 {
-
 DataProcessorSpec getDCSDataDispatcherSpec()
 {
   std::vector<std::string> dets = {"DETA", "DETB"};
@@ -101,8 +100,7 @@ DataProcessorSpec getDCSDataDispatcherSpec()
     Options{
       {"max-cycles-no-full-map", VariantType::Int64, 6000ll, {"max num of cycles between the sending of 2 full maps"}},
       {"process-full-delta-map", VariantType::Bool, false, {"to process the delta map as a whole instead of per DP"}}}};
-} // namespace framework
-
+}
 } // namespace framework
 } // namespace o2
 

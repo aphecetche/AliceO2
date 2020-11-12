@@ -12,6 +12,7 @@
 #define O2_DCS_DETB_PROCESSOR_SPEC_H
 
 #include "DetectorsDCS/DataPointCompositeObject.h"
+#include "DetectorsDCS/DCS2CCDB.h"
 #include "Framework/DeviceSpec.h"
 #include "Framework/Task.h"
 #include "Framework/Logger.h"
@@ -40,16 +41,13 @@ class DCSDetBProcessor : public o2::framework::Task
       }
     }
 
-
-    if (n>0) {
-        LOG(INFO) << fmt::format("DetBProcessor :: mean = {:7.2f}",mean/n);
-    }
-    else {
-        LOG(INFO) << "DetBProcessor: no data";
+    if (n > 0) {
+      LOG(INFO) << fmt::format("DetBProcessor: mean = {:7.2f}", mean / n);
+    } else {
+      LOG(INFO) << "DetBProcessor: no data";
     }
   }
-
-}; // end class
+};
 } // namespace dcs
 
 namespace framework
@@ -60,10 +58,10 @@ DataProcessorSpec getDCSDetBProcessorSpec()
   return DataProcessorSpec{
     "dcs-detb-processor",
     Inputs{{"input", "DETB", "DATAPOINTS"}, {"inputdelta", "DETB", "DATAPOINTSdelta"}},
-    Outputs{},
+    dcs::CCDBOutputs(),
     AlgorithmSpec{adaptFromTask<o2::dcs::DCSDetBProcessor>()},
     Options{}};
-} // namespace framework
+}
 
 } // namespace framework
 } // namespace o2
