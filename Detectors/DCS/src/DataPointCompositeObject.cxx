@@ -23,7 +23,7 @@ union Converter {
   T t_value;
 };
   if (dpcom.id.get_type() != dt) {
-    throw std::runtime_error("DPCOM is of expected type " + o2::dcs::show(dt));
+    throw std::runtime_error("DPCOM is of unexpected type " + o2::dcs::show(dt));
   }
   Converter converter;
   converter.raw_data = dpcom.data.payload_pt1;

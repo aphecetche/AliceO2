@@ -30,16 +30,8 @@
 
 using namespace o2::framework;
 
-// union Converter {
-//   uint64_t raw_data;
-//   double double_value;
-//   uint32_t uint_value;
-//   int32_t int_value;
-//   char char_value;
-//   bool bool_value;
-// };
-//
-
+namespace
+{
 template <typename T>
 struct DataPointHint {
   std::string alias;
@@ -52,6 +44,43 @@ using HintType = std::variant<DataPointHint<double>,
                               DataPointHint<int32_t>,
                               DataPointHint<char>,
                               DataPointHint<bool>>;
+
+std::vector<int> generateIntegers(size_t size, int min, int max)
+{
+  std::uniform_int_distribution<int> distribution(min, max);
+  std::mt19937 generator;
+  std::vector<int> data(size);
+  std::generate(data.begin(), data.end(), [&]() { return distribution(generator); });
+  return data;
+}
+
+std::vector<o2::dcs::DataPointCompositeObject> generate(const std::vector<HintType> hints,
+                                                        float fraction = 1.0)
+{
+  std::vector<o2::dcs::DataPointCompositeObject> dataPoints;
+
+  auto GenerateVisitor = [](const auto& t) {
+    return o2::dcs::generateRandomDataPoints({t.alias}, t.minValue, t.maxValue);
+  };
+
+  for (const auto& hint : hints) {
+    auto dpcoms = std::visit(GenerateVisitor, hint);
+    for (auto dp : dpcoms) {
+      dataPoints.push_back(dp);
+    }
+  }
+  if (fraction < 1.0) {
+    auto indices = generateIntegers(fraction * dataPoints.size(), 0, dataPoints.size() - 1);
+    auto tmp = dataPoints;
+    dataPoints.clear();
+    for (auto i : indices) {
+      dataPoints.push_back(tmp[i]);
+    }
+  }
+  return dataPoints;
+}
+
+} // namespace
 
 namespace o2
 {
@@ -70,72 +99,28 @@ class DCSRandomDataGenerator : public o2::framework::Task
     mMaxTF = ic.options().get<int64_t>("max-timeframes");
 
     // here create the list of DataPointHints to be used by the generator
-    mDataPointHints.emplace_back(DataPointHint<char>{"TestChar_0", 'A', 'z'});
-    mDataPointHints.emplace_back(DataPointHint<uint32_t>{"TestInt_[0..10]", 0, 1234});
-    mDataPointHints.emplace_back(DataPointHint<bool>{"TestBool_[00..03]", 0, 1});
+    mDataPointHints.emplace_back(DataPointHint<char>{"DETA/TestChar_0", 'A', 'z'});
+    mDataPointHints.emplace_back(DataPointHint<double>{"DETA/TestDouble_[0..5000]", 0, 1700});
+    mDataPointHints.emplace_back(DataPointHint<uint32_t>{"DETB/TestInt_[0..100]", 0, 1234});
+    mDataPointHints.emplace_back(DataPointHint<bool>{"DETB/TestBool_[00..03]", 0, 1});
   }
 
   void run(o2::framework::ProcessingContext& pc) final
   {
-
-    uint64_t tfid;
-    for (auto& input : pc.inputs()) {
-      tfid = header::get<o2::framework::DataProcessingHeader*>(input.header)->startTime;
-      LOG(DEBUG) << "tfid = " << tfid;
-      if (tfid >= mMaxTF) {
-        LOG(INFO) << "Data generator reached TF " << tfid << ", stopping";
-        pc.services().get<o2::framework::ControlService>().endOfStream();
-        pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
-      }
-      break; // we break because one input is enough to get the TF ID
+    auto input = pc.inputs().begin();
+    uint64_t tfid = header::get<o2::framework::DataProcessingHeader*>((*input).header)->startTime;
+    if (tfid >= mMaxTF) {
+      LOG(INFO) << "Data generator reached TF " << tfid << ", stopping";
+      pc.services().get<o2::framework::ControlService>().endOfStream();
+      pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
     }
 
-    std::vector<DataPointCompositeObject> fbi;
+    auto fbi = generate(mDataPointHints);
+    pc.outputs().snapshot(Output{"DCS", "DATAPOINTS", 0, Lifetime::Timeframe}, fbi);
 
-    auto GenerateVisitor = [](const auto& t) {
-      return o2::dcs::generateRandomDataPoints({t.alias}, t.minValue, t.maxValue, "2022-November-18 12:34:56");
-    };
+    auto delta = generate(mDataPointHints, mDeltaFraction);
+    pc.outputs().snapshot(Output{"DCS", "DATAPOINTSdelta", 0, Lifetime::Timeframe}, delta);
 
-    for (const auto& hint : mDataPointHints) {
-      auto dpcoms = std::visit(GenerateVisitor, hint);
-      for (auto dp : dpcoms) {
-        fbi.push_back(dp);
-      }
-    }
-
-    for (auto dp : fbi) {
-      std::cout << dp << "\n";
-    }
-
-    //   auto dpcoms = o2::dcs::generateRandomDataPoints({hint.alias}, decltype(hint.minValue), decltype(hint.maxValue), "2022-November-18 12:34:56");
-    // }
-
-    // here build FBI and/or Delta
-    // LOG(DEBUG) << "TF: " << tfid << " --> building binary blob...";
-    // uint16_t flags = 0;
-    // uint16_t milliseconds = 0;
-    // TDatime currentTime;
-    // uint32_t seconds = currentTime.Get();
-
-    // here output FBI
-    // std::vector<char> buff(mNumDPsFull * sizeof(DPCOM));
-    // char* dptr = buff.data();
-    // for (int i = 0; i < svect; i++) {
-    //   memcpy(dptr + i * sizeof(DPCOM), &dpcomVectFull[i], sizeof(DPCOM));
-    // }
-    // auto sbuff = buff.size();
-    // pc.outputs().snapshot(Output{"DCS", "DATAPOINTS", 0, Lifetime::Timeframe}, buff.data(), sbuff);
-    //
-    // // here output Delta map
-    // std::vector<char> buffDelta(mNumDPsDelta * sizeof(DPCOM));
-    // char* dptrDelta = buffDelta.data();
-    // for (int i = 0; i < svectDelta; i++) {
-    //   memcpy(dptrDelta + i * sizeof(DPCOM), &dpcomVectDelta[i], sizeof(DPCOM));
-    // }
-    // auto sbuffDelta = buffDelta.size();
-    // pc.outputs().snapshot(Output{"DCS", "DATAPOINTSdelta", 0, Lifetime::Timeframe}, buffDelta.data(), sbuffDelta);
-
-    mFirstTF = false;
     mTFs++;
   }
 
@@ -145,14 +130,8 @@ class DCSRandomDataGenerator : public o2::framework::Task
 
  private:
   uint64_t mMaxTF = 1;
-
-  // DeliveryType mtypechar = RAW_CHAR;
-  // DeliveryType mtypeint = RAW_INT;
-  // DeliveryType mtypedouble = RAW_DOUBLE;
-  // DeliveryType mtypestring = RAW_STRING;
-
-  bool mFirstTF = true;
   uint64_t mTFs = 0;
+  float mDeltaFraction = 0.05; // Delta is 5% of FBI
   std::vector<HintType> mDataPointHints;
 };
 

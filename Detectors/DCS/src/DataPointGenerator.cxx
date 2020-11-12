@@ -20,7 +20,7 @@ namespace o2::dcs
 
 template <typename T>
 std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints(const std::vector<std::string>& aliases,
-                                                                        T minValue, T maxValue, const std::string& refDate)
+                                                                        T minValue, T maxValue, std::string refDate)
 {
   static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
   std::vector<o2::dcs::DataPointCompositeObject> dpcoms;
@@ -31,10 +31,17 @@ std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints(const st
   std::random_device rd;
   std::mt19937 mt(rd());
   distType dist{minValue, maxValue};
-  std::tm t = {};
-  std::istringstream ss(refDate);
-  ss >> std::get_time(&t, "%Y-%b-%d %H:%M:%S");
-  uint32_t seconds = mktime(&t);
+  uint32_t seconds;
+  if (refDate.empty()) {
+    auto current = std::time(0);
+    auto t = std::localtime(&current);
+    uint32_t seconds = mktime(t);
+  } else {
+    std::tm t{};
+    std::istringstream ss(refDate);
+    ss >> std::get_time(&t, "%Y-%b-%d %H:%M:%S");
+    seconds = mktime(&t);
+  }
   uint16_t msec = 5;
   for (auto alias : expandAliases(aliases)) {
     auto value = dist(mt);
@@ -48,16 +55,16 @@ std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints(const st
 // - double
 // - uint32_t
 // - int32_t
-// - char 
+// - char
 // - bool
 
-template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<double>(const std::vector<std::string>& aliases, double minValue, double maxValue, const std::string&);
+template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<double>(const std::vector<std::string>& aliases, double minValue, double maxValue, std::string);
 
-template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<uint32_t>(const std::vector<std::string>& aliases, uint32_t minValue, uint32_t maxValue, const std::string&);
+template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<uint32_t>(const std::vector<std::string>& aliases, uint32_t minValue, uint32_t maxValue, std::string);
 
-template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<int32_t>(const std::vector<std::string>& aliases, int32_t minValue, int32_t maxValue, const std::string&);
+template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<int32_t>(const std::vector<std::string>& aliases, int32_t minValue, int32_t maxValue, std::string);
 
-template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<bool>(const std::vector<std::string>& aliases, bool minValue, bool maxValue, const std::string&);
+template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<bool>(const std::vector<std::string>& aliases, bool minValue, bool maxValue, std::string);
 
-template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<char>(const std::vector<std::string>& aliases, char minValue, char maxValue, const std::string&);
+template std::vector<o2::dcs::DataPointCompositeObject> generateRandomDataPoints<char>(const std::vector<std::string>& aliases, char minValue, char maxValue, std::string);
 } // namespace o2::dcs

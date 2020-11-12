@@ -28,7 +28,7 @@ namespace o2::dcs
 * @param minValue the minimum value of the values to be generated
 * @param maxValue the maximum value of the values to be generated
 * @param refDate the date to be associated with all data points 
-*        in `%Y-%b-%d %H:%M:%S` format
+*        in `%Y-%b-%d %H:%M:%S` format. If refDate="" the current date is used.
 *
 * @returns a vector of DataPointCompositeObject objects
 */
@@ -36,7 +36,7 @@ template <typename T>
 std::vector<DataPointCompositeObject> generateRandomDataPoints(const std::vector<std::string>& aliases,
                                                                T min,
                                                                T max,
-                                                               const std::string& refDate);
+                                                               std::string refDate="");
 
 } // namespace o2::dcs
 

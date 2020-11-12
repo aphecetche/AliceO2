@@ -39,9 +39,9 @@ o2_add_executable(
   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)
 
 o2_add_executable(
-  data-dispatcher-workflow
+  data-example-workflow
   COMPONENT_NAME dcs
-  SOURCES testWorkflow/dcs-data-dispatcher-workflow.cxx
+  SOURCES testWorkflow/dcs-data-example-workflow.cxx
   PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsDCS)
 
 if(OpenMP_CXX_FOUND)
