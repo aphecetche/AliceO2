@@ -14,7 +14,7 @@
 #include "DetectorsDCS/DataPointCompositeObject.h"
 #include "DetectorsDCS/DCS2CCDB.h"
 #include "Framework/DeviceSpec.h"
-#include "Framework/Task.h"
+#include "DCSProcessorDevice.h"
 #include "Framework/Logger.h"
 #include <limits>
 #include <vector>
@@ -23,13 +23,19 @@ namespace o2
 {
 namespace dcs
 {
-class DCSDetBProcessor : public o2::framework::Task
+class DCSDetBProcessor : public DCSProcessorDevice
 {
  public:
   void run(o2::framework::ProcessingContext& pc) final
   {
-    auto dpcoms = pc.inputs().get<gsl::span<o2::dcs::DataPointCompositeObject>>("input");
+    auto [fbi,delta]=getData(pc);
 
+    LOG(INFO) << fmt::format("FBI {} DELTA {}\n",fbi.size(),delta.size());
+    auto& dpcoms = fbi.empty() ? delta: fbi;
+
+    if (dpcoms.empty()) {
+        LOG(ERROR) << "both fbi and delta cannot be empty at the same time";
+    }
     double mean = 0;
     int n = 0;
 

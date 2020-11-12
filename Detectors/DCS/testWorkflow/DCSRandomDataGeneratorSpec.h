@@ -91,6 +91,7 @@ class DCSRandomDataGenerator : public o2::framework::Task
   {
     mMaxTF = ic.options().get<int64_t>("max-timeframes");
     mDeltaFraction = ic.options().get<float>("delta-fraction");
+    mMaxCyclesNoFullMap = ic.options().get<int64_t>("max-cycles-no-full-map");
     // here create the list of DataPointHints to be used by the generator
     mDataPointHints.emplace_back(DataPointHint<char>{"DETA/TestChar_0", 'A', 'z'});
     mDataPointHints.emplace_back(DataPointHint<double>{"DETA/TestDouble_[0..5000]", 0, 1700});
@@ -108,18 +109,23 @@ class DCSRandomDataGenerator : public o2::framework::Task
       pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
     }
 
-    auto fbi = generate(mDataPointHints);
-    pc.outputs().snapshot(Output{"DCS", "DATAPOINTS", 0, Lifetime::Timeframe}, fbi);
-
-    auto delta = generate(mDataPointHints, mDeltaFraction);
-    pc.outputs().snapshot(Output{"DCS", "DATAPOINTSdelta", 0, Lifetime::Timeframe}, delta);
-
+    bool generateFBI = (mTFs % mMaxCyclesNoFullMap == 0);
+    float fraction = (generateFBI ? 1.0 : mDeltaFraction);
+    auto dpcoms = generate(mDataPointHints, fraction);
+    o2::header::DataDescription desc;
+    desc.runtimeInit(fmt::format("DATAPOINTS{}", (generateFBI ? "" : "delta")).c_str());
+    pc.outputs().snapshot(Output{"DCS", desc, 0, Lifetime::Timeframe}, dpcoms);
+    o2::header::DataDescription otherDesc;
+    otherDesc.runtimeInit(fmt::format("DATAPOINTS{}", (generateFBI ? "delta" : "")).c_str());
+    std::vector<o2::dcs::DataPointCompositeObject> empty;
+    pc.outputs().snapshot(Output{"DCS", otherDesc, 0, Lifetime::Timeframe}, empty);
     mTFs++;
   }
 
  private:
   uint64_t mMaxTF;
   uint64_t mTFs = 0;
+  uint64_t mMaxCyclesNoFullMap;
   float mDeltaFraction;
   std::vector<HintType> mDataPointHints;
 };
@@ -138,7 +144,8 @@ DataProcessorSpec getDCSRandomDataGeneratorSpec()
     AlgorithmSpec{adaptFromTask<o2::dcs::DCSRandomDataGenerator>()},
     Options{
       {"max-timeframes", VariantType::Int64, 99999999999ll, {"max TimeFrames to generate"}},
-      {"delta-fraction", VariantType::Float, 0.05f, {"fraction of data points to put in the delta"}}}};
+      {"delta-fraction", VariantType::Float, 0.05f, {"fraction of data points to put in the delta"}},
+      {"max-cycles-no-full-map", VariantType::Int64, 6000ll, {"max num of cycles between the sending of 2 full maps"}}}};
 }
 } // namespace framework
 } // namespace o2

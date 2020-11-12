@@ -13,7 +13,7 @@
 
 #include "DetectorsDCS/DataPointCompositeObject.h"
 #include "Framework/DeviceSpec.h"
-#include "Framework/Task.h"
+#include "DCSProcessorDevice.h"
 #include "Framework/Logger.h"
 #include <limits>
 #include <vector>
@@ -41,12 +41,18 @@ namespace o2
 {
 namespace dcs
 {
-class DCSDetAProcessor : public o2::framework::Task
+
+class DCSDetAProcessor : public DCSProcessorDevice
 {
  public:
   void run(o2::framework::ProcessingContext& pc) final
   {
-    auto dpcoms = pc.inputs().get<gsl::span<o2::dcs::DataPointCompositeObject>>("input");
+    auto [fbi, delta] = getData(pc);
+
+    LOG(INFO) << fmt::format("FBI {} DELTA {}\n", fbi.size(), delta.size());
+
+    const auto& dpcoms = fbi.empty() ? delta : fbi;
+
     auto result = showRanges(dpcoms);
     LOG(INFO) << result;
 

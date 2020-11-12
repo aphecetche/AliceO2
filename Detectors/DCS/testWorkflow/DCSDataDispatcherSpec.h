@@ -43,13 +43,13 @@ class DCSDataDispatcher : public o2::framework::Task
   {
     auto inputName = fmt::format("input{}", (delta ? "delta" : ""));
     auto dpcoms = pc.inputs().get<gsl::span<o2::dcs::DataPointCompositeObject>>(inputName.c_str());
-    LOG(INFO) << "dpcoms.size()=" << dpcoms.size() << "\n";
 
     // build a map split by first 3 characters of the DataPointIdentifier
     std::unordered_map<std::string, std::vector<DPCOM>> mapPerSubsystem;
 
     for (auto o : mSubsystems) {
       auto upperSubsystem = boost::to_upper_copy(o);
+      mapPerSubsystem.emplace(o, std::vector<DPCOM>{});
       for (auto dp : dpcoms) {
         std::string alias = dp.id.get_alias();
         if (boost::to_upper_copy(alias.substr(0, o.size())) == upperSubsystem) {
@@ -63,6 +63,7 @@ class DCSDataDispatcher : public o2::framework::Task
       origin.runtimeInit(sub.c_str());
       o2::header::DataDescription desc;
       desc.runtimeInit(fmt::format("DATAPOINTS{}", (delta ? "delta" : "")).c_str());
+      // we _always_ output for each subsystem (even empty ones)
       pc.outputs().snapshot(framework::Output{origin, desc, 0, framework::Lifetime::Timeframe}, dpcoms);
     }
   }
@@ -98,8 +99,7 @@ DataProcessorSpec getDCSDataDispatcherSpec()
     outputs,
     AlgorithmSpec{adaptFromTask<o2::dcs::DCSDataDispatcher>(dets)},
     Options{
-      {"max-cycles-no-full-map", VariantType::Int64, 6000ll, {"max num of cycles between the sending of 2 full maps"}},
-      {"process-full-delta-map", VariantType::Bool, false, {"to process the delta map as a whole instead of per DP"}}}};
+      {"max-cycles-no-full-map", VariantType::Int64, 6000ll, {"max num of cycles between the sending of 2 full maps"}}}};
 }
 } // namespace framework
 } // namespace o2
