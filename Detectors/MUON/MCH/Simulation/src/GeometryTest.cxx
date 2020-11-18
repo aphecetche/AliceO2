@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 
 #include "MCHSimulation/GeometryTest.h"
-
+#include "MCHGeometry/Transformations.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/MaterialManager.h"
 #include "MCHSimulation/Geometry.h"
@@ -258,7 +258,7 @@ TH2* getRadio(int detElemId, float xmin, float ymin, float xmax, float ymax, flo
   }
   TH2* hmatb = new TH2F("hmatb", "hmatb", (int)((xmax - xmin) / xstep), xmin, xmax, (int)((ymax - ymin) / ystep), ymin, ymax);
 
-  auto t = o2::mch::getTransformation(detElemId, *gGeoManager);
+  auto t = o2::mch::geo::transformation(detElemId, *gGeoManager);
 
   auto normal = getNormalVector(t);
 

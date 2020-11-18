@@ -20,6 +20,7 @@
 #include "MCHMappingInterface/CathodeSegmentation.h"
 #include "MCHSimulation/Geometry.h"
 #include "MCHSimulation/GeometryTest.h"
+#include "MCHGeometry/Transformations.h"
 #include "TGeoManager.h"
 #include "boost/format.hpp"
 #include <boost/test/data/test_case.hpp>
@@ -167,8 +168,19 @@ BOOST_AUTO_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId)
   BOOST_REQUIRE(gGeoManager != nullptr);
 
   o2::mch::mapping::forEachDetectionElement([](int detElemId) {
-    BOOST_CHECK_NO_THROW((o2::mch::getTransformation(detElemId, *gGeoManager)));
+    BOOST_CHECK_NO_THROW((o2::mch::geo::transformation(detElemId, *gGeoManager)));
   });
+}
+
+BOOST_AUTO_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId)
+{
+  BOOST_REQUIRE(gGeoManager != nullptr);
+
+  const auto someInvalidDetElemIds = {99, 105, 1026};
+
+  for (auto detElemId : someInvalidDetElemIds) {
+    BOOST_CHECK_THROW((o2::mch::geo::transformation(detElemId, *gGeoManager)), std::runtime_error);
+  }
 }
 
 struct CoarseLocation {
@@ -195,7 +207,7 @@ bool operator==(const CoarseLocation& a, const CoarseLocation& b)
 
 CoarseLocation getDetElemCoarseLocation(int detElemId)
 {
-  auto t = o2::mch::getTransformation(detElemId, *gGeoManager);
+  auto t = o2::mch::geo::transformation(detElemId, *gGeoManager);
   o2::math_utils::Point3D<double> localTestPos{0.0, 0.0, 0.0}; // slat center
 
   if (detElemId < 500) {

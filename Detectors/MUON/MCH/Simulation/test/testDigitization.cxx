@@ -15,15 +15,16 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "TGeoManager.h"
 #include "MCHBase/Digit.h"
+#include "MCHGeometry/Transformations.h"
+#include "MCHMappingInterface/Segmentation.h"
 #include "MCHSimulation/Digitizer.h"
-#include "MCHSimulation/Hit.h"
 #include "MCHSimulation/Geometry.h"
 #include "MCHSimulation/GeometryTest.h"
-#include "MCHMappingInterface/Segmentation.h"
+#include "MCHSimulation/Hit.h"
 #include "SimulationDataFormat/MCCompLabel.h"
 #include "SimulationDataFormat/MCTruthContainer.h"
+#include "TGeoManager.h"
 #include "TGeoManager.h"
 #include "boost/format.hpp"
 #include <boost/test/data/test_case.hpp>
@@ -98,7 +99,7 @@ BOOST_AUTO_TEST_CASE(DigitizerTest)
       double padsizeX = seg1.padSizeX(padid);
       double padposY = seg1.padPositionY(padid);
       double padsizeY = seg1.padSizeY(padid);
-      auto t = o2::mch::getTransformation(detElemId1, *gGeoManager);
+      auto t = o2::mch::geo::transformation(detElemId1, *gGeoManager);
 
       o2::math_utils::Point3D<float> pos(hits.at(0).GetX(), hits.at(0).GetY(), hits.at(0).GetZ());
       o2::math_utils::Point3D<float> lpos;
@@ -117,7 +118,7 @@ BOOST_AUTO_TEST_CASE(DigitizerTest)
       double padsizeX = seg2.padSizeX(padid);
       double padposY = seg2.padPositionY(padid);
       double padsizeY = seg2.padSizeY(padid);
-      auto t = o2::mch::getTransformation(detElemId2, *gGeoManager);
+      auto t = o2::mch::geo::transformation(detElemId2, *gGeoManager);
 
       o2::math_utils::Point3D<float> pos(hits.at(1).GetX(), hits.at(1).GetY(), hits.at(1).GetZ());
       o2::math_utils::Point3D<float> lpos;
