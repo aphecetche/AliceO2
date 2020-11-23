@@ -17,10 +17,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "MCHMappingInterface/CathodeSegmentation.h"
-#include "MCHSimulation/Geometry.h"
-#include "MCHSimulation/GeometryTest.h"
-#include "MCHGeometry/Transformations.h"
+#include "MCHGeometryCreator/Geometry.h"
+#include "MCHGeometryCreator/GeometryTest.h"
+#include "MCHGeometryTransformer/Transformations.h"
 #include "TGeoManager.h"
 #include "boost/format.hpp"
 #include <boost/test/data/test_case.hpp>
@@ -36,24 +35,19 @@ o2::mch::geo::TransformationCreator transformationFixed()
   return nullptr;
 }
 
-
 struct GEOMETRY {
   GEOMETRY()
   {
     if (!gGeoManager) {
-      std::string param = boost::unit_test::framework::master_test_suite().argv[1];
-      if (param == "standalone") {
-        o2::mch::test::createStandaloneGeometry();
-      } else if (param == "regular") {
-        o2::mch::test::createRegularGeometry();
-      } else {
-        throw std::invalid_argument(fmt::format("only possible argument value are 'regular' or 'standalone', not {}", param.c_str()));
+      o2::mch::test::createStandaloneGeometry();
+      if (!gGeoManager->IsClosed()) {
+        gGeoManager->CloseGeometry();
       }
-      o2::mch::test::addAlignableVolumes();
+      o2::mch::geo::addAlignableVolumes();
     }
     transformations = {
-      o2::mch::geo::transformationFromTGeoManager(*gGeoManager),
-      transformationFixed()
+      o2::mch::geo::transformationFromTGeoManager(*gGeoManager)
+      //transformationFixed()
     };
   };
   std::vector<o2::mch::geo::TransformationCreator> transformations;
@@ -179,9 +173,9 @@ BOOST_AUTO_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId)
   BOOST_REQUIRE(gGeoManager != nullptr);
 
   for (auto t : transformations) {
-    o2::mch::mapping::forEachDetectionElement([&](int detElemId) {
+    for (auto detElemId : o2::mch::geo::allDeIds) {
       BOOST_REQUIRE_NO_THROW((t(detElemId)));
-    });
+    }
   }
 }
 
@@ -298,14 +292,14 @@ BOOST_AUTO_TEST_CASE(DetectionElementMustBeInTheRightCoarseLocation)
     setExpectation(720 + i * 100, 725 + i * 100, bottomRight, expected);
   }
 
-  o2::mch::mapping::forEachDetectionElement([&expected](int detElemId) {
+  for (auto detElemId : o2::mch::geo::allDeIds) {
     if (expected.find(detElemId) == expected.end()) {
       std::cout << "got no expectation for DE=" << detElemId << "\n";
       return;
     }
     BOOST_TEST_INFO(fmt::format("DeId {}", detElemId));
     BOOST_CHECK_EQUAL(asString(getDetElemCoarseLocation(detElemId)), asString(expected[detElemId]));
-  });
+  };
 }
 
 BOOST_AUTO_TEST_CASE(TextualTreeDump)

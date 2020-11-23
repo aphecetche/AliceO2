@@ -9,17 +9,18 @@
 // or submit itself to any jurisdiction.
 /// get the local-to-global transformation for a given detection element
 
-#ifndef O2_MCH_BASE_GEO_TRANSFORMATIONS_H
-#define O2_MCH_BASE_GEO_TRANSFORMATIONS_H
+#ifndef O2_MCH_GEOMETRY_TRANSFORMER_TRANSFORMATIONS_H
+#define O2_MCH_GEOMETRY_TRANSFORMER_TRANSFORMATIONS_H
 
 #include "MathUtils/Cartesian.h"
+#include <array>
 
 class TGeoManager;
 
 namespace o2::mch::geo
 {
 
-/* A geometry transformation creator must be able to 
+/** A geometry transformation creator must be able to 
  * create a transformation for any valid MCH detection element id.
  *
  * That transformation is used to convert coordinates from local 
@@ -33,13 +34,17 @@ namespace o2::mch::geo
  */
 using TransformationCreator = std::function<o2::math_utils::Transform3D(int detElemId)>;
 
-/* Tranformation creator using TGeoManager.
+/** Tranformation creator using TGeoManager.
  *
  * @param geo a reference to a GeoManager that must contain MCH volumes
  */
 TransformationCreator transformationFromTGeoManager(const TGeoManager& geo);
 
 TransformationCreator transformationFromJSON(const std::istream& in);
+
+/** The list of detection element identifiers for MCH 
+ */
+extern std::array<int, 156> allDeIds;
 
 } // namespace o2::mch::geo
 

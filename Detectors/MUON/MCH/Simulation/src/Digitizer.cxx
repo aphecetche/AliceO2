@@ -11,8 +11,8 @@
 #include "MCHSimulation/Digitizer.h"
 
 #include "MCHMappingInterface/Segmentation.h"
-#include "MCHSimulation/Geometry.h"
-#include "MCHGeometry/Transformations.h"
+#include "MCHGeometryCreator/Geometry.h"
+#include "MCHGeometryTransformer/Transformations.h"
 #include "MCHSimulation/Response.h"
 #include "TGeoManager.h"
 #include "TMath.h"

@@ -11,19 +11,16 @@
 /// @file   Geometry.h
 /// @brief  Interface for MCH geometry creation
 
-#ifndef O2_MCH_SIMULATION_GEOMETRY_H
-#define O2_MCH_SIMULATION_GEOMETRY_H
+#ifndef O2_MCH_GEOMETRY_CREATOR_GEOMETRY_H
+#define O2_MCH_GEOMETRY_CREATOR_GEOMETRY_H
 
 #include <vector>
 #include <iostream>
-#include "MathUtils/Cartesian.h"
 
 class TGeoVolume;
 class TGeoManager;
 
-namespace o2
-{
-namespace mch
+namespace o2::mch::geo
 {
 
 /// createGeometry creates MCH geometry and attach it to existing topVolume
@@ -33,9 +30,8 @@ void createGeometry(TGeoVolume& topVolume);
 std::vector<TGeoVolume*> getSensitiveVolumes();
 
 /// Add alignable mch volumes
-void addAlignableVolumesMCH();
+void addAlignableVolumes();
 
-} // namespace mch
-} // namespace o2
+} // namespace o2::mch::geo
 
-#endif // O2_MCH_SIMULATION_GEOMETRY_H
+#endif

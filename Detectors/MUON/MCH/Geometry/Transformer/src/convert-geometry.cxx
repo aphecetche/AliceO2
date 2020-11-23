@@ -222,6 +222,16 @@ int main(int argc, char** argv)
 
   if (vm.count("help")) {
     std::cout << "This program extracts MCH geometry\n";
+    std::cout << options << "\n";
+    return 2;
+  }
+
+  try {
+    po::notify(vm);
+  } catch (boost::program_options::error& e) {
+    std::cout << "Error: " << e.what() << "\n";
+    std::cout << options << "\n";
+    exit(1);
   }
 
   TGeoManager* geom{ nullptr };

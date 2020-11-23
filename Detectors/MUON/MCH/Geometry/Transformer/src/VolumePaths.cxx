@@ -8,7 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction. 
 
-#include "MCHGeometry/VolumePaths.h"
+#include "MCHGeometryTransformer/VolumePaths.h"
 
 namespace o2::mch::geo
 {

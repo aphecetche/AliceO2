@@ -8,8 +8,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "MCHSimulation/Geometry.h"
-#include "MCHGeometry/VolumePaths.h"
+#include "MCHGeometryCreator/Geometry.h"
+#include "MCHGeometryTransformer/VolumePaths.h"
 #include "Station1Geometry.h"
 #include "Station2Geometry.h"
 #include "Station345Geometry.h"
@@ -21,13 +21,10 @@
 #include "TGeoManager.h"
 #include "Framework/Logger.h"
 
-namespace o2
-{
-namespace mch
+namespace o2::mch::geo
 {
 
-void
-  createGeometry(TGeoVolume& topVolume)
+void createGeometry(TGeoVolume& topVolume)
 {
   createMaterials();
 
@@ -37,7 +34,7 @@ void
   createStation2Geometry((volYOUT1) ? *volYOUT1 : topVolume);
 
   createStation345Geometry(topVolume);
-}
+} // namespace o2::mch::geovoidcreateGeometry(TGeoVolume&topVolume)
 
 std::vector<TGeoVolume*> getSensitiveVolumes()
 {
@@ -99,19 +96,20 @@ void addAlignableVolumesHalfChamber(int hc, std::string& parent)
 
 } // namespace impl
 
-void dumpPNEntry(TGeoPNEntry& ae) {
-    ae.Print();
-    if (ae.GetMatrix()) {
-        std::cout << "Matrix\n";
-        ae.GetMatrix()->Print();
-    }
-    if (ae.GetGlobalOrig()) {
-        std::cout << "GlobalOrig\n";
-        ae.GetGlobalOrig()->Print();
-    }
+void dumpPNEntry(TGeoPNEntry& ae)
+{
+  ae.Print();
+  if (ae.GetMatrix()) {
+    std::cout << "Matrix\n";
+    ae.GetMatrix()->Print();
+  }
+  if (ae.GetGlobalOrig()) {
+    std::cout << "GlobalOrig\n";
+    ae.GetGlobalOrig()->Print();
+  }
 }
 
-void addAlignableVolumesMCH()
+void addAlignableVolumes()
 {
   //
   // Creates entries for alignable volumes associating the symbolic volume
@@ -144,12 +142,11 @@ void addAlignableVolumesMCH()
 
     LOG(DEBUG) << sname << " <-> " << path;
 
-
     auto ae = gGeoManager->SetAlignableEntry(sname.c_str(), path.c_str());
     if (!ae) {
       LOG(FATAL) << "Unable to set alignable entry ! " << sname << " : " << path;
     }
-   
+
     dumpPNEntry(*ae);
 
     Int_t lastUID = 0;
@@ -160,5 +157,4 @@ void addAlignableVolumesMCH()
   return;
 }
 
-} // namespace mch
-} // namespace o2
+} // namespace o2::mch::geo

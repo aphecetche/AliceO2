@@ -11,16 +11,17 @@
 /// \brief This task tests the Digitizer and the Response of the MCH digitization
 /// \author Michael Winn, DPhN/IRFU/CEA, michael.winn@cern.ch
 
+#define BOOST_TEST_MODULE Test MCHSimulation Digitization
 #define BOOST_TEST_DYN_LINK
 
 #include <boost/test/unit_test.hpp>
 
 #include "MCHBase/Digit.h"
-#include "MCHGeometry/Transformations.h"
+#include "MCHGeometryTransformer/Transformations.h"
 #include "MCHMappingInterface/Segmentation.h"
 #include "MCHSimulation/Digitizer.h"
-#include "MCHSimulation/Geometry.h"
-#include "MCHSimulation/GeometryTest.h"
+#include "MCHGeometryCreator/Geometry.h"
+#include "MCHGeometryCreator/GeometryTest.h"
 #include "MCHSimulation/Hit.h"
 #include "SimulationDataFormat/MCCompLabel.h"
 #include "SimulationDataFormat/MCTruthContainer.h"
@@ -49,8 +50,6 @@ o2::math_utils::Point3D<float> exitPoint2(-49.2965, 28.8806, -1441.75);
 /// \brief Test of the Digitization
 /// A couple of values are filled into Hits and we check whether we get reproducible output in terms of digits
 /// and MClabels
-
-BOOST_AUTO_TEST_SUITE(o2_mch_simulation)
 
 BOOST_FIXTURE_TEST_SUITE(digitization, GEOMETRY)
 
@@ -206,5 +205,4 @@ BOOST_AUTO_TEST_CASE(mergingDigitizer)
 
 } //testing
 
-BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

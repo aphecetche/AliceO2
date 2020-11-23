@@ -8,6 +8,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-add_subdirectory(Transformer)
-add_subdirectory(Creator)
-
+o2_add_test(
+  geometry-standalone NAME o2-test-mch-geometry-standalone
+  COMPONENT_NAME mch
+  SOURCES testGeometry.cxx
+  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator O2::DetectorsPassive
+  COMMAND_LINE_ARGS standalone
+  LABELS muon mch)
