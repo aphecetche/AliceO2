@@ -39,35 +39,36 @@ struct AlignableElement {
   std::vector<std::string> volNames;
 };
 
-o2::math_utils::Transform3D
-  transformation(int detElemId, const TGeoManager& geo)
+TransformationCreator transformationFromTGeoManager(const TGeoManager& geo)
 {
-  if (std::find(begin(deIdsForAllMCH), end(deIdsForAllMCH), detElemId) == end(deIdsForAllMCH)) {
-    throw std::runtime_error("Wrong detection element Id");
-  }
+  return [&geo](int detElemId) -> o2::math_utils::Transform3D {
+    if (std::find(begin(deIdsForAllMCH), end(deIdsForAllMCH), detElemId) == end(deIdsForAllMCH)) {
+      throw std::runtime_error("Wrong detection element Id");
+    }
 
-  std::string volPathName = geo.GetTopVolume()->GetName();
+    std::string volPathName = geo.GetTopVolume()->GetName();
 
-  int nCh = detElemId / 100;
+    int nCh = detElemId / 100;
 
-  if (nCh <= 4 && geo.GetVolume("YOUT1")) {
-    volPathName += "/YOUT1_1/";
-  } else if ((nCh == 5 || nCh == 6) && geo.GetVolume("DDIP")) {
-    volPathName += "/DDIP_1/";
-  } else if (nCh >= 7 && geo.GetVolume("YOUT2")) {
-    volPathName += "/YOUT2_1/";
-  } else {
-    volPathName += "/";
-  }
+    if (nCh <= 4 && geo.GetVolume("YOUT1")) {
+      volPathName += "/YOUT1_1/";
+    } else if ((nCh == 5 || nCh == 6) && geo.GetVolume("DDIP")) {
+      volPathName += "/DDIP_1/";
+    } else if (nCh >= 7 && geo.GetVolume("YOUT2")) {
+      volPathName += "/YOUT2_1/";
+    } else {
+      volPathName += "/";
+    }
 
-  volPathName += volumePathName(detElemId);
+    volPathName += volumePathName(detElemId);
 
-  TGeoNavigator* navig = gGeoManager->GetCurrentNavigator();
+    TGeoNavigator* navig = gGeoManager->GetCurrentNavigator();
 
-  if (!navig->cd(volPathName.c_str())) {
-    throw std::runtime_error("could not get to volPathName=" + volPathName);
-  }
+    if (!navig->cd(volPathName.c_str())) {
+      throw std::runtime_error("could not get to volPathName=" + volPathName);
+    }
 
-  return o2::math_utils::Transform3D{*(navig->GetCurrentMatrix())};
+    return o2::math_utils::Transform3D{*(navig->GetCurrentMatrix())};
+  };
 }
-} // namespace o2::mch
+} // namespace o2::mch::geo

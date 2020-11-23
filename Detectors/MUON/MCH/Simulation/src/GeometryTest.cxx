@@ -258,7 +258,8 @@ TH2* getRadio(int detElemId, float xmin, float ymin, float xmax, float ymax, flo
   }
   TH2* hmatb = new TH2F("hmatb", "hmatb", (int)((xmax - xmin) / xstep), xmin, xmax, (int)((ymax - ymin) / ystep), ymin, ymax);
 
-  auto t = o2::mch::geo::transformation(detElemId, *gGeoManager);
+  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+  auto t = transformation(detElemId);
 
   auto normal = getNormalVector(t);
 

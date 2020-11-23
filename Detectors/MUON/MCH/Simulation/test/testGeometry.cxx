@@ -31,6 +31,12 @@
 
 namespace bdata = boost::unit_test::data;
 
+o2::mch::geo::TransformationCreator transformationFixed()
+{
+  return nullptr;
+}
+
+
 struct GEOMETRY {
   GEOMETRY()
   {
@@ -45,7 +51,12 @@ struct GEOMETRY {
       }
       o2::mch::test::addAlignableVolumes();
     }
-  }
+    transformations = {
+      o2::mch::geo::transformationFromTGeoManager(*gGeoManager),
+      transformationFixed()
+    };
+  };
+  std::vector<o2::mch::geo::TransformationCreator> transformations;
 };
 
 const std::array<std::string, 8> quadrantChamberNames{"SC01I", "SC01O", "SC02I", "SC02O", "SC03I", "SC03O",
@@ -167,9 +178,11 @@ BOOST_AUTO_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId)
 {
   BOOST_REQUIRE(gGeoManager != nullptr);
 
-  o2::mch::mapping::forEachDetectionElement([](int detElemId) {
-    BOOST_CHECK_NO_THROW((o2::mch::geo::transformation(detElemId, *gGeoManager)));
-  });
+  for (auto t : transformations) {
+    o2::mch::mapping::forEachDetectionElement([&](int detElemId) {
+      BOOST_REQUIRE_NO_THROW((t(detElemId)));
+    });
+  }
 }
 
 BOOST_AUTO_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId)
@@ -178,8 +191,10 @@ BOOST_AUTO_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId)
 
   const auto someInvalidDetElemIds = {99, 105, 1026};
 
+  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+
   for (auto detElemId : someInvalidDetElemIds) {
-    BOOST_CHECK_THROW((o2::mch::geo::transformation(detElemId, *gGeoManager)), std::runtime_error);
+    BOOST_CHECK_THROW((transformation(detElemId)), std::runtime_error);
   }
 }
 
@@ -207,7 +222,8 @@ bool operator==(const CoarseLocation& a, const CoarseLocation& b)
 
 CoarseLocation getDetElemCoarseLocation(int detElemId)
 {
-  auto t = o2::mch::geo::transformation(detElemId, *gGeoManager);
+  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+  auto t = transformation(detElemId);
   o2::math_utils::Point3D<double> localTestPos{0.0, 0.0, 0.0}; // slat center
 
   if (detElemId < 500) {

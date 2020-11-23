@@ -83,6 +83,8 @@ BOOST_AUTO_TEST_CASE(DigitizerTest)
   int digitcounter2 = 0;
   int count = 0;
 
+  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+
   for (auto& digit : digits) {
 
     int padid = digit.getPadID();
@@ -99,7 +101,7 @@ BOOST_AUTO_TEST_CASE(DigitizerTest)
       double padsizeX = seg1.padSizeX(padid);
       double padposY = seg1.padPositionY(padid);
       double padsizeY = seg1.padSizeY(padid);
-      auto t = o2::mch::geo::transformation(detElemId1, *gGeoManager);
+      auto t = transformation(detElemId1);
 
       o2::math_utils::Point3D<float> pos(hits.at(0).GetX(), hits.at(0).GetY(), hits.at(0).GetZ());
       o2::math_utils::Point3D<float> lpos;
@@ -118,7 +120,7 @@ BOOST_AUTO_TEST_CASE(DigitizerTest)
       double padsizeX = seg2.padSizeX(padid);
       double padposY = seg2.padPositionY(padid);
       double padsizeY = seg2.padSizeY(padid);
-      auto t = o2::mch::geo::transformation(detElemId2, *gGeoManager);
+      auto t = transformation(detElemId2);
 
       o2::math_utils::Point3D<float> pos(hits.at(1).GetX(), hits.at(1).GetY(), hits.at(1).GetZ());
       o2::math_utils::Point3D<float> lpos;

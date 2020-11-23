@@ -1,0 +1,238 @@
+#include <boost/program_options.hpp>
+#include <iostream>
+#include <stdexcept>
+#include <TGeoManager.h>
+#include <TFile.h>
+#include <sstream>
+#include <tuple>
+#include <vector>
+#include <string>
+#include "TGeoPhysicalNode.h"
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <gsl/span>
+#include <cmath>
+#include <array>
+
+namespace po = boost::program_options;
+
+/** Convert the 3 Tait–Bryan angles (yaw,pitch,roll) into the 9 matrix 
+  * elements of a rotation matrix.
+  *
+  * @param yaw rotation around z-axis, in radian
+  * @param pitch rotation around y'-axis (new y-axis resulting from yaw 
+  * rotation), in radian
+  * @param roll rotation around x''-axis (new x-axis resulting from yaw 
+  * and pitch rotations), in radian
+  */
+std::array<double, 9> angles2matrix(double yaw, double pitch, double roll)
+{
+  std::array<double, 9> rot;
+
+  double sinpsi = std::sin(yaw);
+  double cospsi = std::cos(yaw);
+  double sinthe = std::sin(pitch);
+  double costhe = std::cos(pitch);
+  double sinphi = std::sin(roll);
+  double cosphi = std::cos(roll);
+  rot[0] = costhe * cosphi;
+  rot[1] = -costhe * sinphi;
+  rot[2] = sinthe;
+  rot[3] = sinpsi * sinthe * cosphi + cospsi * sinphi;
+  rot[4] = -sinpsi * sinthe * sinphi + cospsi * cosphi;
+  rot[5] = -costhe * sinpsi;
+  rot[6] = -cospsi * sinthe * cosphi + sinpsi * sinphi;
+  rot[7] = cospsi * sinthe * sinphi + sinpsi * cosphi;
+  rot[8] = costhe * cospsi;
+  return rot;
+}
+
+/** Convert the 9 matrix elements of a rotation matrix
+  * into 3 Tait-Bryan angles (yaw,pitch,roll).
+  *
+  * @param rot a 9-elements vector
+  * @returns a tuple of the 3 angles <yaw,pitch,roll>. The angles are 
+  * expressed in radian
+  */
+std::tuple<double, double, double> matrix2angles(gsl::span<double> rot)
+{
+  double yaw = std::atan2(-rot[5], rot[8]);
+  double pitch = std::asin(rot[2]);
+  double roll = std::atan2(-rot[1], rot[0]);
+  return std::make_tuple(yaw,
+                         pitch,
+                         roll);
+}
+
+std::vector<std::string> splitString(const std::string& src, char delim)
+{
+  std::stringstream ss(src);
+  std::string token;
+  std::vector<std::string> tokens;
+
+  while (std::getline(ss, token, delim)) {
+    if (!token.empty()) {
+      tokens.push_back(std::move(token));
+    }
+  }
+
+  return tokens;
+}
+
+TGeoManager* readFromFile(std::string filename)
+{
+  TFile* f = TFile::Open(filename.c_str());
+  if (f->IsZombie()) {
+    throw std::runtime_error("can not open " + filename);
+  }
+
+  auto possibleGeoNames = { "ALICE", "FAIRGeom", "MCH-ONLY", "MCH-BASICS" };
+
+  TGeoManager* geo{ nullptr };
+
+  for (auto name : possibleGeoNames) {
+    geo = static_cast<TGeoManager*>(f->Get(name));
+    if (geo) {
+      break;
+    }
+  }
+  if (!geo) {
+    f->ls();
+    throw std::runtime_error("could not find ALICE geometry (using ALICE or FAIRGeom names)");
+  }
+  return geo;
+}
+
+TGeoManager* readFromCCDB(std::string ocdb, int run)
+{
+  return nullptr;
+}
+
+template <typename WRITER>
+void matrix2json(const TGeoHMatrix& matrix, WRITER& w)
+{
+
+  constexpr double rad2deg = 180.0 / 3.14159265358979323846;
+  //constexpr double deg2rad = 3.14159265358979323846 / 180.0;
+
+  const Double_t* t = matrix.GetTranslation();
+  const Double_t* m = matrix.GetRotationMatrix();
+  gsl::span<double> mat(const_cast<double*>(m), 9);
+  auto [yaw, pitch, roll] = matrix2angles(mat);
+  w.Key("tx");
+  w.Double(t[0]);
+  w.Key("ty");
+  w.Double(t[1]);
+  w.Key("tz");
+  w.Double(t[2]);
+  w.Key("yaw");
+  w.Double(rad2deg * yaw);
+  w.Key("pitch");
+  w.Double(rad2deg * pitch);
+  w.Key("roll");
+  w.Double(rad2deg * roll);
+}
+
+std::tuple<bool, uint16_t> isMCH(std::string alignableName)
+{
+  auto parts = splitString(alignableName, '/');
+  bool aliroot = parts[0] == "MUON";
+  bool o2 = parts[0] == "MCH";
+  if (!o2 && !aliroot) {
+    return { false, 0 };
+  }
+  auto id = std::stoi(parts[1].substr(2));
+  bool ok = (aliroot && (id <= 15)) || (o2 && (id <= 19));
+  uint16_t deId{ 0 };
+  if (ok && parts.size() > 2) {
+    deId = std::stoi(parts[2].substr(2));
+  }
+  return { ok, deId };
+}
+
+template <typename WRITER>
+void writeMatrix(const char* name, const TGeoHMatrix* matrix, WRITER& w)
+{
+  if (matrix) {
+    w.Key(name);
+    w.StartObject();
+    matrix2json(*matrix, w);
+    w.EndObject();
+  }
+}
+
+void convertGeom(const TGeoManager& geom)
+{
+  // convert geometry as json document
+
+  rapidjson::OStreamWrapper osw(std::cout);
+  rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+
+  writer.StartObject();
+  writer.Key("alignables");
+  writer.StartArray();
+
+  for (auto i = 0; i < geom.GetNAlignable(); i++) {
+    auto ae = geom.GetAlignableEntry(i);
+    std::string symname = ae->GetName();
+    auto [mch, deId] = isMCH(symname);
+    if (!mch) {
+      continue;
+    }
+    writer.StartObject();
+    if (deId>0) {
+        writer.Key("deid");
+        writer.Int(deId);
+    }
+    writer.Key("symname");
+    writer.String(symname.c_str());
+    auto matrix = ae->GetMatrix();
+    bool aligned{ true };
+    if (!matrix) {
+      matrix = ae->GetGlobalOrig();
+      aligned = false;
+    }
+    writeMatrix("transform", matrix, writer);
+    writer.Key("aligned");
+    writer.Bool(aligned);
+    writer.EndObject();
+  }
+
+  writer.EndArray();
+  writer.EndObject();
+}
+
+int main(int argc, char** argv)
+{
+  po::variables_map vm;
+  po::options_description options;
+
+  // clang-format off
+    options.add_options()
+     ("help,h","help")
+     ("geom",po::value<std::string>(),"geometry.root file");
+  // clang-format on
+
+  po::options_description cmdline;
+  cmdline.add(options);
+
+  po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
+
+  if (vm.count("help")) {
+    std::cout << "This program extracts MCH geometry\n";
+  }
+
+  TGeoManager* geom{ nullptr };
+
+  if (vm.count("geom")) {
+    geom = readFromFile(vm["geom"].as<std::string>());
+  }
+
+  if (geom) {
+    convertGeom(*geom);
+  }
+
+  return 0;
+}

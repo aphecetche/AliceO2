@@ -13,3 +13,8 @@ o2_add_library(
   SOURCES src/Transformations.cxx src/VolumePaths.cxx
   PUBLIC_LINK_LIBRARIES ROOT::Geom O2::MathUtils)
 
+o2_add_executable(
+  convert-geometry
+  SOURCES src/convert-geometry.cxx
+  PUBLIC_LINK_LIBRARIES ROOT::Geom ms_gsl::ms_gsl Boost::program_options RapidJSON::RapidJSON
+  COMPONENT_NAME mch)

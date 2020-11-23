@@ -6,7 +6,7 @@
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
-// or submit itself to any jurisdiction. 
+// or submit itself to any jurisdiction.
 /// get the local-to-global transformation for a given detection element
 
 #ifndef O2_MCH_BASE_GEO_TRANSFORMATIONS_H
@@ -16,19 +16,31 @@
 
 class TGeoManager;
 
-namespace o2::mch::geo {
+namespace o2::mch::geo
+{
 
-/* Get a 3D transformation that can be used
- * to convert coordinates from local (x,y in detection element plane) to global
- * (x,y,z in Alice Coordinate System) and vice-versa
+/* A geometry transformation creator must be able to 
+ * create a transformation for any valid MCH detection element id.
+ *
+ * That transformation is used to convert coordinates from local 
+ * (x,y in detection element plane) to global (x,y,z in Alice Coordinate 
+ * System) and vice-versa
  * 
  * @param detElemId must be a valid detection element
  * @param geo a reference to a GeoManager that must contain MCH volumes
  *
  * @throw if detElemId is not valid
  */
-o2::math_utils::Transform3D transformation(int detElemId, const TGeoManager& geo);
+using TransformationCreator = std::function<o2::math_utils::Transform3D(int detElemId)>;
 
-}
+/* Tranformation creator using TGeoManager.
+ *
+ * @param geo a reference to a GeoManager that must contain MCH volumes
+ */
+TransformationCreator transformationFromTGeoManager(const TGeoManager& geo);
+
+TransformationCreator transformationFromJSON(const std::istream& in);
+
+} // namespace o2::mch::geo
 
 #endif

@@ -15,6 +15,7 @@
 #include "Station345Geometry.h"
 #include "Materials.h"
 #include <iostream>
+#include <TGeoPhysicalNode.h>
 #include <fmt/format.h>
 #include "TGeoVolume.h"
 #include "TGeoManager.h"
@@ -98,6 +99,18 @@ void addAlignableVolumesHalfChamber(int hc, std::string& parent)
 
 } // namespace impl
 
+void dumpPNEntry(TGeoPNEntry& ae) {
+    ae.Print();
+    if (ae.GetMatrix()) {
+        std::cout << "Matrix\n";
+        ae.GetMatrix()->Print();
+    }
+    if (ae.GetGlobalOrig()) {
+        std::cout << "GlobalOrig\n";
+        ae.GetGlobalOrig()->Print();
+    }
+}
+
 void addAlignableVolumesMCH()
 {
   //
@@ -131,9 +144,13 @@ void addAlignableVolumesMCH()
 
     LOG(DEBUG) << sname << " <-> " << path;
 
-    if (!gGeoManager->SetAlignableEntry(sname.c_str(), path.c_str())) {
+
+    auto ae = gGeoManager->SetAlignableEntry(sname.c_str(), path.c_str());
+    if (!ae) {
       LOG(FATAL) << "Unable to set alignable entry ! " << sname << " : " << path;
     }
+   
+    dumpPNEntry(*ae);
 
     Int_t lastUID = 0;
 
