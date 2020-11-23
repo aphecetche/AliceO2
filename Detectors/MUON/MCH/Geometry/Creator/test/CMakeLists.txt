@@ -9,9 +9,16 @@
 # submit itself to any jurisdiction.
 
 o2_add_test(
-  geometry-standalone NAME o2-test-mch-geometry-standalone
+  geometry-creator
   COMPONENT_NAME mch
-  SOURCES testGeometry.cxx
-  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator O2::DetectorsPassive
-  COMMAND_LINE_ARGS standalone
+  SOURCES testGeometryCreator.cxx
+  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator
+  LABELS muon mch)
+
+o2_add_test(
+  geometry-transformer
+  COMPONENT_NAME mch
+  SOURCES testGeometryTransformer.cxx
+  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator
+  COMMAND_LINE_ARGS ${CMAKE_CURRENT_LIST_DIR}/data/ideal-geometry.json
   LABELS muon mch)

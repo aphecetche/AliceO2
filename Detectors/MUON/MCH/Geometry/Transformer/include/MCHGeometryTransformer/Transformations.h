@@ -14,6 +14,8 @@
 
 #include "MathUtils/Cartesian.h"
 #include <array>
+#include <tuple>
+#include <gsl/span>
 
 class TGeoManager;
 
@@ -40,12 +42,31 @@ using TransformationCreator = std::function<o2::math_utils::Transform3D(int detE
  */
 TransformationCreator transformationFromTGeoManager(const TGeoManager& geo);
 
-TransformationCreator transformationFromJSON(const std::istream& in);
+TransformationCreator transformationFromJSON(std::istream& in);
 
 /** The list of detection element identifiers for MCH 
  */
 extern std::array<int, 156> allDeIds;
 
+/** Convert the 3 Tait–Bryan angles (yaw,pitch,roll) into the 9 matrix 
+  * elements of a rotation matrix.
+  *
+  * @param yaw rotation around z-axis, in radian
+  * @param pitch rotation around y'-axis (new y-axis resulting from yaw 
+  * rotation), in radian
+  * @param roll rotation around x''-axis (new x-axis resulting from yaw 
+  * and pitch rotations), in radian
+  */
+std::array<double, 9> angles2matrix(double yaw, double pitch, double roll);
+
+/** Convert the 9 matrix elements of a rotation matrix
+  * into 3 Tait-Bryan angles (yaw,pitch,roll).
+  *
+  * @param rot a 9-elements vector
+  * @returns a tuple of the 3 angles <yaw,pitch,roll>. The angles are 
+  * expressed in radian
+  */
+std::tuple<double, double, double> matrix2angles(gsl::span<double> rot);
 } // namespace o2::mch::geo
 
 #endif

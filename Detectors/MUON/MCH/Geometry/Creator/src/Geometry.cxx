@@ -96,34 +96,25 @@ void addAlignableVolumesHalfChamber(int hc, std::string& parent)
 
 } // namespace impl
 
-void dumpPNEntry(TGeoPNEntry& ae)
-{
-  ae.Print();
-  if (ae.GetMatrix()) {
-    std::cout << "Matrix\n";
-    ae.GetMatrix()->Print();
-  }
-  if (ae.GetGlobalOrig()) {
-    std::cout << "GlobalOrig\n";
-    ae.GetGlobalOrig()->Print();
-  }
-}
-
+/** 
+ * Creates entries for alignable volumes associating symbolic volume
+ * names with corresponding volume paths.
+ *
+ * @throw if gGeoManager is nullptr
+ */
 void addAlignableVolumes()
 {
-  //
-  // Creates entries for alignable volumes associating the symbolic volume
-  // name with the corresponding volume path.
-  //
+  if (!gGeoManager) {
+    throw std::runtime_error("No gGeoManager available");
+  }
+  if (!gGeoManager->IsClosed()) {
+    gGeoManager->CloseGeometry();
+  }
 
   LOG(INFO) << "Add MCH alignable volumes";
 
   for (int hc = 0; hc < 20; hc++) {
     int nCh = hc / 2 + 1;
-
-    if (nCh < 1 || nCh > 10) {
-      throw std::runtime_error("Wrong detection element Id");
-    }
 
     std::string volPathName = gGeoManager->GetTopVolume()->GetName();
 
@@ -146,8 +137,6 @@ void addAlignableVolumes()
     if (!ae) {
       LOG(FATAL) << "Unable to set alignable entry ! " << sname << " : " << path;
     }
-
-    dumpPNEntry(*ae);
 
     Int_t lastUID = 0;
 

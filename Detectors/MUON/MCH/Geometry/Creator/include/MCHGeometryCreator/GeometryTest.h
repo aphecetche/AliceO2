@@ -8,18 +8,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_MCH_SIMULATION_GEOMETRYTEST_H
-#define O2_MCH_SIMULATION_GEOMETRYTEST_H
+#ifndef O2_MCH_GEOMETRY_CREATOR_GEOMETRYTEST_H
+#define O2_MCH_GEOMETRY_CREATOR_GEOMETRYTEST_H
 
 #include <iostream>
 
 class TH2;
 
-namespace o2
-{
-namespace mch
-{
-namespace test
+namespace o2::mch::test
 {
 
 /// creates MCH geometry from scratch (i.e. from a null TGeoManager)
@@ -49,8 +45,6 @@ class Dummy
 {
   // to force Root produce a dictionary for namespace test (seems it is doing it fully if there are only functions in the namespace)
 };
-} // namespace test
-} // namespace mch
-} // namespace o2
+} // namespace o2::mch::test
 
 #endif

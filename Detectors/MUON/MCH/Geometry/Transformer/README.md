@@ -1,5 +1,5 @@
 <!-- doxy
-\page refDetectorsMUONMCHGeometry Geometry
+\page refDetectorsMUONMCHGeometryTransformer MCH Geometry Transformations
 /doxy -->
 
 # MCH Geometry Transformations

@@ -19,38 +19,23 @@
 
 #include "MCHGeometryCreator/Geometry.h"
 #include "MCHGeometryCreator/GeometryTest.h"
-#include "MCHGeometryTransformer/Transformations.h"
 #include "TGeoManager.h"
 #include "boost/format.hpp"
 #include <boost/test/data/test_case.hpp>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <fmt/format.h>
 
 namespace bdata = boost::unit_test::data;
 
-o2::mch::geo::TransformationCreator transformationFixed()
-{
-  return nullptr;
-}
-
 struct GEOMETRY {
   GEOMETRY()
   {
     if (!gGeoManager) {
       o2::mch::test::createStandaloneGeometry();
-      if (!gGeoManager->IsClosed()) {
-        gGeoManager->CloseGeometry();
-      }
       o2::mch::geo::addAlignableVolumes();
     }
-    transformations = {
-      o2::mch::geo::transformationFromTGeoManager(*gGeoManager)
-      //transformationFixed()
-    };
   };
-  std::vector<o2::mch::geo::TransformationCreator> transformations;
 };
 
 const std::array<std::string, 8> quadrantChamberNames{"SC01I", "SC01O", "SC02I", "SC02O", "SC03I", "SC03O",
@@ -81,9 +66,7 @@ const std::vector<std::vector<std::string>> deSymNames{
   {"DE1000", "DE1001", "DE1002", "DE1003", "DE1004", "DE1005", "DE1006", "DE1020", "DE1021", "DE1022", "DE1023", "DE1024", "DE1025"},
   {"DE1007", "DE1008", "DE1009", "DE1010", "DE1011", "DE1012", "DE1013", "DE1014", "DE1015", "DE1016", "DE1017", "DE1018", "DE1019"}};
 
-BOOST_AUTO_TEST_SUITE(o2_mch_simulation)
-
-BOOST_FIXTURE_TEST_SUITE(geometrytransformer, GEOMETRY)
+BOOST_FIXTURE_TEST_SUITE(geometrycreator, GEOMETRY)
 
 BOOST_AUTO_TEST_CASE(CanGetAllChambers)
 {
@@ -168,151 +151,9 @@ BOOST_AUTO_TEST_CASE(GetDetElemVolumePath, *boost::unit_test::disabled() * boost
   BOOST_CHECK_EQUAL(codeLines.size(), 156);
 }
 
-BOOST_AUTO_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId)
-{
-  BOOST_REQUIRE(gGeoManager != nullptr);
-
-  for (auto t : transformations) {
-    for (auto detElemId : o2::mch::geo::allDeIds) {
-      BOOST_REQUIRE_NO_THROW((t(detElemId)));
-    }
-  }
-}
-
-BOOST_AUTO_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId)
-{
-  BOOST_REQUIRE(gGeoManager != nullptr);
-
-  const auto someInvalidDetElemIds = {99, 105, 1026};
-
-  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-
-  for (auto detElemId : someInvalidDetElemIds) {
-    BOOST_CHECK_THROW((transformation(detElemId)), std::runtime_error);
-  }
-}
-
-struct CoarseLocation {
-  bool isRight;
-  bool isTop;
-};
-
-constexpr CoarseLocation topRight{true, true};
-constexpr CoarseLocation topLeft{false, true};
-constexpr CoarseLocation bottomRight{true, false};
-constexpr CoarseLocation bottomLeft{false, false};
-
-std::string asString(const CoarseLocation& q)
-{
-  std::string s = q.isTop ? "TOP" : "BOTTOM";
-  s += q.isRight ? "RIGHT" : "LEFT";
-  return s;
-}
-
-bool operator==(const CoarseLocation& a, const CoarseLocation& b)
-{
-  return a.isRight == b.isRight && a.isTop == b.isTop;
-}
-
-CoarseLocation getDetElemCoarseLocation(int detElemId)
-{
-  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-  auto t = transformation(detElemId);
-  o2::math_utils::Point3D<double> localTestPos{0.0, 0.0, 0.0}; // slat center
-
-  if (detElemId < 500) {
-    // in the rough ballpark of the center
-    // of the quadrants
-    localTestPos.SetXYZ(60, 60, 0);
-  }
-
-  // for slats around the middle (y closest to 0) we have to be a bit
-  // more precise, so take a given pad reference, chosen to be
-  // the most top right or most top left pad
-
-  switch (detElemId) {
-    case 500:
-    case 509:
-      localTestPos.SetXYZ(-72.50, 19.75, 0.0); // ds 107
-      break;
-    case 600:
-    case 609:
-      localTestPos.SetXYZ(-77.50, 19.75, 0.0); // ds 108
-      break;
-    case 700:
-    case 713:
-    case 800:
-    case 813:
-    case 900:
-    case 913:
-    case 1000:
-    case 1013:
-      localTestPos.SetXYZ(95.0, -19.75, 0); // ds 104
-      break;
-  }
-  o2::math_utils::Point3D<double> master;
-
-  t.LocalToMaster(localTestPos, master);
-  bool right = master.x() > 10.;
-  bool top = master.y() > -10.;
-
-  return CoarseLocation{right, top};
-}
-
-void setExpectation(int firstDeId, int lastDeId, CoarseLocation q, std::map<int, CoarseLocation>& expected)
-{
-  for (int deid = firstDeId; deid <= lastDeId; deid++) {
-    expected.emplace(deid, q);
-  }
-}
-
-BOOST_AUTO_TEST_CASE(DetectionElementMustBeInTheRightCoarseLocation)
-{
-  std::map<int, CoarseLocation> expected;
-
-  for (int i = 0; i < 4; i++) {
-    expected[100 + i * 100] = topRight;
-    expected[101 + i * 100] = topLeft;
-    expected[102 + i * 100] = bottomLeft;
-    expected[103 + i * 100] = bottomRight;
-  }
-
-  // note that by convention we consider slats in the middle to be "top"
-  for (int i = 0; i < 2; i++) {
-    setExpectation(500 + i * 100, 504 + i * 100, topRight, expected);
-    setExpectation(505 + i * 100, 509 + i * 100, topLeft, expected);
-    setExpectation(510 + i * 100, 513 + i * 100, bottomLeft, expected);
-    setExpectation(514 + i * 100, 517 + i * 100, bottomRight, expected);
-  }
-
-  for (int i = 0; i < 4; i++) {
-    setExpectation(700 + i * 100, 706 + i * 100, topRight, expected);
-    setExpectation(707 + i * 100, 713 + i * 100, topLeft, expected);
-    setExpectation(714 + i * 100, 719 + i * 100, bottomLeft, expected);
-    setExpectation(720 + i * 100, 725 + i * 100, bottomRight, expected);
-  }
-
-  for (auto detElemId : o2::mch::geo::allDeIds) {
-    if (expected.find(detElemId) == expected.end()) {
-      std::cout << "got no expectation for DE=" << detElemId << "\n";
-      return;
-    }
-    BOOST_TEST_INFO(fmt::format("DeId {}", detElemId));
-    BOOST_CHECK_EQUAL(asString(getDetElemCoarseLocation(detElemId)), asString(expected[detElemId]));
-  };
-}
 
 BOOST_AUTO_TEST_CASE(TextualTreeDump)
 {
-  std::string param = boost::unit_test::framework::master_test_suite().argv[1];
-  if (param != "standalone") {
-    // no point in checking the full hierarchy and have this test
-    // depending on all the details of the geometry of all detectors,
-    // so this test only makes sense for standalone geometry
-    BOOST_CHECK(true);
-    return;
-  }
-
   const std::string expected =
     R"(cave_1
 ├──SC01I_0
@@ -529,5 +370,4 @@ BOOST_AUTO_TEST_CASE(GetAlignableDetectionElements)
     }
   }
 }
-BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

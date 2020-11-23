@@ -15,56 +15,9 @@
 #include <gsl/span>
 #include <cmath>
 #include <array>
+#include "MCHGeometryTransformer/Transformations.h"
 
 namespace po = boost::program_options;
-
-/** Convert the 3 Tait–Bryan angles (yaw,pitch,roll) into the 9 matrix 
-  * elements of a rotation matrix.
-  *
-  * @param yaw rotation around z-axis, in radian
-  * @param pitch rotation around y'-axis (new y-axis resulting from yaw 
-  * rotation), in radian
-  * @param roll rotation around x''-axis (new x-axis resulting from yaw 
-  * and pitch rotations), in radian
-  */
-std::array<double, 9> angles2matrix(double yaw, double pitch, double roll)
-{
-  std::array<double, 9> rot;
-
-  double sinpsi = std::sin(yaw);
-  double cospsi = std::cos(yaw);
-  double sinthe = std::sin(pitch);
-  double costhe = std::cos(pitch);
-  double sinphi = std::sin(roll);
-  double cosphi = std::cos(roll);
-  rot[0] = costhe * cosphi;
-  rot[1] = -costhe * sinphi;
-  rot[2] = sinthe;
-  rot[3] = sinpsi * sinthe * cosphi + cospsi * sinphi;
-  rot[4] = -sinpsi * sinthe * sinphi + cospsi * cosphi;
-  rot[5] = -costhe * sinpsi;
-  rot[6] = -cospsi * sinthe * cosphi + sinpsi * sinphi;
-  rot[7] = cospsi * sinthe * sinphi + sinpsi * cosphi;
-  rot[8] = costhe * cospsi;
-  return rot;
-}
-
-/** Convert the 9 matrix elements of a rotation matrix
-  * into 3 Tait-Bryan angles (yaw,pitch,roll).
-  *
-  * @param rot a 9-elements vector
-  * @returns a tuple of the 3 angles <yaw,pitch,roll>. The angles are 
-  * expressed in radian
-  */
-std::tuple<double, double, double> matrix2angles(gsl::span<double> rot)
-{
-  double yaw = std::atan2(-rot[5], rot[8]);
-  double pitch = std::asin(rot[2]);
-  double roll = std::atan2(-rot[1], rot[0]);
-  return std::make_tuple(yaw,
-                         pitch,
-                         roll);
-}
 
 std::vector<std::string> splitString(const std::string& src, char delim)
 {
@@ -115,12 +68,11 @@ void matrix2json(const TGeoHMatrix& matrix, WRITER& w)
 {
 
   constexpr double rad2deg = 180.0 / 3.14159265358979323846;
-  //constexpr double deg2rad = 3.14159265358979323846 / 180.0;
 
   const Double_t* t = matrix.GetTranslation();
   const Double_t* m = matrix.GetRotationMatrix();
   gsl::span<double> mat(const_cast<double*>(m), 9);
-  auto [yaw, pitch, roll] = matrix2angles(mat);
+  auto [yaw, pitch, roll] = o2::mch::geo::matrix2angles(mat);
   w.Key("tx");
   w.Double(t[0]);
   w.Key("ty");

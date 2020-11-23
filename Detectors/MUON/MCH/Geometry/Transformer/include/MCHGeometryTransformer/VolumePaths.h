@@ -9,8 +9,8 @@
 // or submit itself to any jurisdiction.
 /// get the local-to-global transformation for a given detection element
 
-#ifndef O2_MCH_GEO_VOLUME_PATHS_H
-#define O2_MCH_GEO_VOLUME_PATHS_H
+#ifndef O2_MCH_GEOMETRY_TRANSFORMER_VOLUME_PATHS_H
+#define O2_MCH_GEOMETRY_TRANSFORMER_VOLUME_PATHS_H
 
 #include <string>
 
