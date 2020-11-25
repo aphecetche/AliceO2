@@ -15,10 +15,18 @@ o2_add_test(
   PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator
   LABELS muon mch)
 
-o2_add_test(
-  geometry-transformer
+o2_add_test(geometry-transformer-legacy
+  NAME mch/geometry-transformer-legacy
   COMPONENT_NAME mch
   SOURCES testGeometryTransformer.cxx
   PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator
-  COMMAND_LINE_ARGS ${CMAKE_CURRENT_LIST_DIR}/data/ideal-geometry.json
+  COMMAND_LINE_ARGS ${CMAKE_CURRENT_LIST_DIR}/data/ideal-geometry-aliroot.json
+  LABELS muon mch)
+
+o2_add_test(geometry-transformer
+                NAME mch/geometry-transformer
+  COMPONENT_NAME mch
+  SOURCES testGeometryTransformer.cxx
+  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator
+  COMMAND_LINE_ARGS ${CMAKE_CURRENT_LIST_DIR}/data/ideal-geometry-o2.json
   LABELS muon mch)

@@ -14,9 +14,10 @@
 #include <string>
 #include <vector>
 #include <TGeoManager.h>
+#include <TGeoMatrix.h>
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
-
+#include <fmt/format.h>
 namespace o2::mch::geo
 {
 
@@ -75,32 +76,58 @@ TransformationCreator transformationFromJSON(std::istream& in)
   rapidjson::Value& alignables = d["alignables"];
   assert(alignables.IsArray());
 
-  std::map<int, std::array<double, 9>> angles;
+  std::map<int, std::tuple<double, double, double>> angles;
+  std::map<int, std::tuple<double, double, double>> translations;
 
   // loop over json document and extract Tait-Bryan angles (yaw,pitch,roll)
+  // as well as translation vector (tx,ty,tz)
   // for each detection element
 
-  return [angles](int detElemId) -> o2::math_utils::Transform3D {
+  constexpr double deg2rad = 3.14159265358979323846 / 180.0;
+
+  for (auto& al : alignables.GetArray()) {
+    auto itr = al.FindMember("deid");
+    if (itr != al.MemberEnd()) {
+      int deid = itr->value.GetInt();
+      auto t = al["transform"].GetObject();
+      angles[deid] = {
+        deg2rad * t["yaw"].GetDouble(),
+        deg2rad * t["pitch"].GetDouble(),
+        deg2rad * t["roll"].GetDouble()};
+      translations[deid] = {
+        t["tx"].GetDouble(),
+        t["ty"].GetDouble(),
+        t["tz"].GetDouble()};
+    }
+  }
+
+  return [angles, translations](int detElemId) -> o2::math_utils::Transform3D {
     if (std::find(begin(allDeIds), end(allDeIds), detElemId) == end(allDeIds)) {
       throw std::runtime_error("Wrong detection element Id");
     }
-    TGeoHMatrix m;
+    auto [yaw, pitch, roll] = angles.at(detElemId);
+    auto [tx, ty, tz] = translations.at(detElemId);
+    double tr[3] = {tx, ty, tz};
     // get the angles, convert them to a matrix and build a Transform3D
     // from it
+    auto rot = o2::mch::geo::angles2matrix(yaw, pitch, roll);
+    TGeoHMatrix m;
+    m.SetRotation(&rot[0]);
+    m.SetTranslation(tr);
     return o2::math_utils::Transform3D(m);
   };
-}
+} // namespace o2::mch::geo
 
 std::array<double, 9> angles2matrix(double yaw, double pitch, double roll)
 {
   std::array<double, 9> rot;
 
-  double sinpsi = std::sin(yaw);
-  double cospsi = std::cos(yaw);
+  double sinpsi = std::sin(roll);
+  double cospsi = std::cos(roll);
   double sinthe = std::sin(pitch);
   double costhe = std::cos(pitch);
-  double sinphi = std::sin(roll);
-  double cosphi = std::cos(roll);
+  double sinphi = std::sin(yaw);
+  double cosphi = std::cos(yaw);
   rot[0] = costhe * cosphi;
   rot[1] = -costhe * sinphi;
   rot[2] = sinthe;
@@ -115,9 +142,9 @@ std::array<double, 9> angles2matrix(double yaw, double pitch, double roll)
 
 std::tuple<double, double, double> matrix2angles(gsl::span<double> rot)
 {
-  double yaw = std::atan2(-rot[5], rot[8]);
+  double roll = std::atan2(-rot[5], rot[8]);
   double pitch = std::asin(rot[2]);
-  double roll = std::atan2(-rot[1], rot[0]);
+  double yaw = std::atan2(-rot[1], rot[0]);
   return std::make_tuple(yaw,
                          pitch,
                          roll);

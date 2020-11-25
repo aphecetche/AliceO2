@@ -26,10 +26,13 @@
 #include <iomanip>
 #include <iostream>
 #include <fmt/format.h>
+#include <random>
 
 namespace bdata = boost::unit_test::data;
 
 BOOST_TEST_DONT_PRINT_LOG_VALUE(o2::mch::geo::TransformationCreator)
+
+constexpr int ntrans{2};
 
 o2::mch::geo::TransformationCreator transformation(int i)
 {
@@ -47,21 +50,58 @@ o2::mch::geo::TransformationCreator transformation(int i)
     std::ifstream in(jsonInput);
     vtrans = {
       o2::mch::geo::transformationFromJSON(in),
-      o2::mch::geo::transformationFromTGeoManager(*gGeoManager)
-    };
+      o2::mch::geo::transformationFromTGeoManager(*gGeoManager)};
   }
-
   return vtrans[i];
 }
 
-BOOST_DATA_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId, bdata::xrange(2), tindex)
+// auto rot0 = new TGeoRotation();
+// auto rot1 = new TGeoRotation("reflXZ", 90., 180., 90., 90., 180., 0.);
+// auto rot2 = new TGeoRotation("reflXY", 90., 180., 90., 270., 0., 0.);
+// auto rot3 = new TGeoRotation("reflYZ", 90., 0., 90., -90., 180., 0.);
+// std::array<TGeoRotation*, kNQuadrants> rot = {rot0, rot1, rot2, rot3};
+constexpr double rad2deg = 180.0 / 3.14159265358979323846;
+constexpr double deg2rad = 3.14159265358979323846 / 180.0;
+
+void dumpMat(gsl::span<double> m)
+{
+  std::cout << fmt::format(
+    "{:7.3f} {:7.3f} {:7.3f}\n"
+    "{:7.3f} {:7.3f} {:7.3f}\n"
+    "{:7.3f} {:7.3f} {:7.3f}\n",
+    m[0], m[1], m[2],
+    m[3], m[4], m[5],
+    m[6], m[7], m[8]);
+}
+
+// BOOST_AUTO_TEST_CASE(Basics)
+// {
+//   TGeoRotation rot1("reflXZ", 90., 180., 90., 90., 180., 0.);
+//   double* melem = const_cast<double*>(rot1.GetRotationMatrix());
+//   TGeoRotation rot3("reflYZ", 90., 0., 90., -90., 180., 0.);
+//   melem = const_cast<double*>(rot3.GetRotationMatrix());
+//   dumpMat({melem, 9});
+//   auto [yaw, pitch, roll] = o2::mch::geo::matrix2angles({const_cast<double*>(melem), 9});
+//   BOOST_CHECK_EQUAL(rad2deg * yaw, 0);
+//   BOOST_CHECK_EQUAL(rad2deg * pitch, -180);
+//   BOOST_CHECK_EQUAL(rad2deg * roll, -180);
+//
+//   auto m1 = o2::mch::geo::angles2matrix(deg2rad * -180, 0, 0);
+//   std::cout << "m1\n";
+//   dumpMat(m1);
+//   auto m2 = o2::mch::geo::angles2matrix(deg2rad * 0, deg2rad * -180, deg2rad * -180);
+//   std::cout << "m2\n";
+//   dumpMat(m2);
+// }
+
+BOOST_DATA_TEST_CASE(GetTransformationMustNotThrowForValidDetElemId, bdata::xrange(ntrans), tindex)
 {
   for (auto detElemId : o2::mch::geo::allDeIds) {
     BOOST_REQUIRE_NO_THROW((transformation(tindex))(detElemId));
   }
 }
 
-BOOST_DATA_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId, bdata::xrange(2), tindex)
+BOOST_DATA_TEST_CASE(GetTransformationMustThrowForInvalidDetElemId, bdata::xrange(ntrans), tindex)
 {
   const auto someInvalidDetElemIds = {99, 105, 1026};
 
@@ -95,6 +135,7 @@ bool operator==(const CoarseLocation& a, const CoarseLocation& b)
 CoarseLocation getDetElemCoarseLocation(int detElemId, o2::mch::geo::TransformationCreator transformation)
 {
   auto t = transformation(detElemId);
+
   o2::math_utils::Point3D<double> localTestPos{0.0, 0.0, 0.0}; // slat center
 
   if (detElemId < 500) {
@@ -143,7 +184,7 @@ void setExpectation(int firstDeId, int lastDeId, CoarseLocation q, std::map<int,
   }
 }
 
-BOOST_DATA_TEST_CASE(DetectionElementMustBeInTheRightCoarseLocation, bdata::xrange(2), tindex)
+BOOST_DATA_TEST_CASE(DetectionElementMustBeInTheRightCoarseLocation, bdata::xrange(ntrans), tindex)
 {
   std::map<int, CoarseLocation> expected;
 
@@ -174,7 +215,38 @@ BOOST_DATA_TEST_CASE(DetectionElementMustBeInTheRightCoarseLocation, bdata::xran
       std::cout << "got no expectation for DE=" << detElemId << "\n";
       return;
     }
-    BOOST_TEST_INFO(fmt::format("DeId {}", detElemId));
-    BOOST_REQUIRE_EQUAL(asString(getDetElemCoarseLocation(detElemId, transformation(tindex))), asString(expected[detElemId]));
+    BOOST_TEST_INFO_SCOPE(fmt::format("DeId {}", detElemId));
+    BOOST_CHECK_EQUAL(asString(getDetElemCoarseLocation(detElemId, transformation(tindex))), asString(expected[detElemId]));
   };
+}
+
+BOOST_AUTO_TEST_CASE(Angle2Matrix2Angle)
+{
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::vector<std::tuple<double, double, double>> testAngles;
+  int n{100};
+
+  testAngles.resize(n);
+  constexpr double pi = 3.14159265358979323846;
+  std::uniform_real_distribution<double> dist{-pi / 2.0, pi / 2.0};
+  std::uniform_real_distribution<double> dist2{-pi, pi};
+  std::generate(testAngles.begin(), testAngles.end(), [&dist, &dist2, &mt] {
+    return std::tuple<double, double, double>{dist2(mt), dist(mt), dist2(mt)};
+  });
+
+  testAngles.emplace_back(-pi, pi / 2.0, 0);
+  for (auto a : testAngles) {
+    auto [yaw, pitch, roll] = a;
+    auto m = o2::mch::geo::angles2matrix(yaw, pitch, roll);
+    auto [y, p, r] = o2::mch::geo::matrix2angles(m);
+    BOOST_TEST_INFO_SCOPE(fmt::format(
+      " input yaw {:7.2f} pitch {:7.2f} roll {:7.2f}\n"
+      "output yaw {:7.2f} pitch {:7.2f} roll {:7.2f}\n",
+      yaw, pitch, roll,
+      y, p, r));
+    BOOST_CHECK_CLOSE(y, yaw, 1E-6);
+    BOOST_CHECK_CLOSE(p, pitch, 1E-6);
+    BOOST_CHECK_CLOSE(r, roll, 1E-6);
+  }
 }

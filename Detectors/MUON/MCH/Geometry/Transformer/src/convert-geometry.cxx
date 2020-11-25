@@ -41,9 +41,9 @@ TGeoManager* readFromFile(std::string filename)
     throw std::runtime_error("can not open " + filename);
   }
 
-  auto possibleGeoNames = { "ALICE", "FAIRGeom", "MCH-ONLY", "MCH-BASICS" };
+  auto possibleGeoNames = {"ALICE", "FAIRGeom", "MCH-ONLY", "MCH-BASICS"};
 
-  TGeoManager* geo{ nullptr };
+  TGeoManager* geo{nullptr};
 
   for (auto name : possibleGeoNames) {
     geo = static_cast<TGeoManager*>(f->Get(name));
@@ -85,6 +85,16 @@ void matrix2json(const TGeoHMatrix& matrix, WRITER& w)
   w.Double(rad2deg * pitch);
   w.Key("roll");
   w.Double(rad2deg * roll);
+  // w.Key("rot");
+  // w.StartArray();
+  // for (auto i = 0; i < 3; i++) {
+  //   w.StartArray();
+  //   w.Double(m[0 + i * 3]);
+  //   w.Double(m[1 + i * 3]);
+  //   w.Double(m[2 + i * 3]);
+  //   w.EndArray();
+  // }
+  // w.EndArray();
 }
 
 std::tuple<bool, uint16_t> isMCH(std::string alignableName)
@@ -93,15 +103,15 @@ std::tuple<bool, uint16_t> isMCH(std::string alignableName)
   bool aliroot = parts[0] == "MUON";
   bool o2 = parts[0] == "MCH";
   if (!o2 && !aliroot) {
-    return { false, 0 };
+    return {false, 0};
   }
   auto id = std::stoi(parts[1].substr(2));
   bool ok = (aliroot && (id <= 15)) || (o2 && (id <= 19));
-  uint16_t deId{ 0 };
+  uint16_t deId{0};
   if (ok && parts.size() > 2) {
     deId = std::stoi(parts[2].substr(2));
   }
-  return { ok, deId };
+  return {ok, deId};
 }
 
 template <typename WRITER>
@@ -134,14 +144,14 @@ void convertGeom(const TGeoManager& geom)
       continue;
     }
     writer.StartObject();
-    if (deId>0) {
-        writer.Key("deid");
-        writer.Int(deId);
+    if (deId > 0) {
+      writer.Key("deid");
+      writer.Int(deId);
     }
     writer.Key("symname");
     writer.String(symname.c_str());
     auto matrix = ae->GetMatrix();
-    bool aligned{ true };
+    bool aligned{true};
     if (!matrix) {
       matrix = ae->GetGlobalOrig();
       aligned = false;
@@ -173,8 +183,16 @@ int main(int argc, char** argv)
   po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
 
   if (vm.count("help")) {
-    std::cout << "This program extracts MCH geometry\n";
+    std::cout << "This program extract MCH geometry transformation from "
+                 "a geometry root file and write them in json format.\n";
+    std::cout << "\n";
     std::cout << options << "\n";
+    std::cout << "\n";
+    std::cout << "Note that the json format can then be further manipulated using e.g."
+                 "the jq utility\n";
+    std::cout << "For instance sorting by deid:\n";
+    std::cout << "cat output.json | jq '.alignables|=sort_by(.deid)'\n";
+    std::cout << "\n";
     return 2;
   }
 
@@ -186,7 +204,7 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  TGeoManager* geom{ nullptr };
+  TGeoManager* geom{nullptr};
 
   if (vm.count("geom")) {
     geom = readFromFile(vm["geom"].as<std::string>());
