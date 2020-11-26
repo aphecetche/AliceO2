@@ -85,6 +85,8 @@ class ClusterSamplerTask
     // create the output message
     auto clusters = pc.outputs().make<ClusterStruct>(Output{"MCH", "CLUSTERS", 0, Lifetime::Timeframe}, nClusters);
 
+    auto dummy = pc.outputs().make<ClusterStruct>(Output{"MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}, 0);
+
     // fill clusters in O2 format, if any
     if (nClusters > 0) {
       mInputFile.read(reinterpret_cast<char*>(clusters.data()), clusters.size_bytes());
@@ -112,7 +114,8 @@ o2::framework::DataProcessorSpec getClusterSamplerSpec()
   return DataProcessorSpec{
     "ClusterSampler",
     Inputs{},
-    Outputs{OutputSpec{"MCH", "CLUSTERS", 0, Lifetime::Timeframe}},
+    Outputs{OutputSpec{"MCH", "CLUSTERS", 0, Lifetime::Timeframe},
+            OutputSpec{"MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
     AlgorithmSpec{adaptFromTask<ClusterSamplerTask>()},
     Options{{"infile", VariantType::String, "", {"input filename"}}}};
 }

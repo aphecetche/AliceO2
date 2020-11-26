@@ -13,13 +13,26 @@
 ///
 /// \author Philippe Pillot, Subatech
 
+#include "Framework/WorkflowSpec.h"
+#include "Framework/ConfigParamSpec.h"
+
+// add workflow options, note that customization needs to be declared before
+// including Framework/runDataProcessing
+void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+{
+  std::vector<o2::framework::ConfigParamSpec> options{
+    {"global", o2::framework::VariantType::Bool, false, {"read clusters with positions expressed in global reference frame"}},
+  };
+  std::swap(workflowOptions, options);
+}
+
 #include "Framework/runDataProcessing.h"
 
 #include "ClusterSinkSpec.h"
 
 using namespace o2::framework;
 
-WorkflowSpec defineDataProcessing(const ConfigContext&)
+WorkflowSpec defineDataProcessing(const ConfigContext& cc)
 {
-  return WorkflowSpec{o2::mch::getClusterSinkSpec()};
+  return WorkflowSpec{o2::mch::getClusterSinkSpec(cc.options().get<bool>("global"))};
 }

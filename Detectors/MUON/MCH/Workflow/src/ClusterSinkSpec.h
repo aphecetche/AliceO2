@@ -23,7 +23,7 @@ namespace o2
 namespace mch
 {
 
-o2::framework::DataProcessorSpec getClusterSinkSpec();
+o2::framework::DataProcessorSpec getClusterSinkSpec(bool globalReferenceSystem);
 
 } // end namespace mch
 } // end namespace o2

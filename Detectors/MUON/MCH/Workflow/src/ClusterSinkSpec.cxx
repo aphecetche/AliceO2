@@ -29,6 +29,7 @@
 #include "Framework/Lifetime.h"
 #include "Framework/Task.h"
 #include "Framework/Logger.h"
+#include "Framework/WorkflowSpec.h"
 
 #include "MCHBase/Digit.h"
 #include "MCHBase/ClusterBlock.h"
@@ -149,18 +150,25 @@ class ClusterSinkTask
 };
 
 //_________________________________________________________________________________________________
-o2::framework::DataProcessorSpec getClusterSinkSpec()
+o2::framework::DataProcessorSpec getClusterSinkSpec(bool globalReferenceSystem)
 {
+  //std::vector<InputSpec> inputs = select(inputConfig.c_str());
+
+  std::string inputConfig = fmt::format("clusters:MCH/{}CLUSTERS;digits:MCH/CLUSTERDIGITS",
+                                        globalReferenceSystem ? "GLOBAL" : "");
+  // globalReferenceSystem ? "clusters:MCH/GLOBALCLUSTERS" : "clusters:MCH/CLUSTERS"),
+  //        InputSpec{"digits", "MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
   return DataProcessorSpec{
     "ClusterSink",
-    Inputs{InputSpec{"clusters", "MCH", "CLUSTERS", 0, Lifetime::Timeframe},
-           InputSpec{"digits", "MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
+    Inputs{o2::framework::select(inputConfig.c_str())},
+
     Outputs{},
     AlgorithmSpec{adaptFromTask<ClusterSinkTask>()},
-    Options{{"outfile", VariantType::String, "clusters.out", {"output filename"}},
-            {"txt", VariantType::Bool, false, {"output clusters in text format"}},
-            {"useRun2DigitUID", VariantType::Bool, false, {"mPadID = digit UID in run2 format"}}}};
-}
+    Options{
+      {"outfile", VariantType::String, "clusters.out", {"output filename"}},
+      {"txt", VariantType::Bool, false, {"output clusters in text format"}},
+      {"useRun2DigitUID", VariantType::Bool, false, {"mPadID = digit UID in run2 format"}}}}; // namespace mch
+} // namespace mch
 
-} // end namespace mch
+} // namespace mch
 } // end namespace o2
