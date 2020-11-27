@@ -82,14 +82,18 @@ class ClusterSamplerTask
       throw length_error("incorrect message payload");
     }
 
-    // create the output message
+    // std::vector<ClusterStruct> clusters;
+    // std::vector<Digit> digits;
+
+    // // create the output message
     auto clusters = pc.outputs().make<ClusterStruct>(Output{"MCH", "CLUSTERS", 0, Lifetime::Timeframe}, nClusters);
 
-    auto dummy = pc.outputs().make<ClusterStruct>(Output{"MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}, 0);
+    auto dummy = pc.outputs().make<Digit>(Output{"MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}, 0);
 
     // fill clusters in O2 format, if any
     if (nClusters > 0) {
-      mInputFile.read(reinterpret_cast<char*>(clusters.data()), clusters.size_bytes());
+      //mInputFile.read(reinterpret_cast<char*>(clusters.data()), clusters.size_bytes());
+      mInputFile.read(reinterpret_cast<char*>(clusters.data()), nClusters * sizeof(ClusterStruct));
       for (auto& cluster : clusters) {
         cluster.ex = 0.2f;
         cluster.ey = 0.2f;
@@ -102,6 +106,9 @@ class ClusterSamplerTask
     if (nDigits > 0) {
       mInputFile.seekg(nDigits * sizeof(Digit), std::ios::cur);
     }
+
+    // pc.outputs().snapshot(Output{"MCH", "CLUSTERS", 0, Lifetime::Timeframe}, clusters);
+    // pc.outputs().snapshot(Output{"MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}, digits);
   }
 
  private:

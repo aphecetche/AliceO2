@@ -34,6 +34,22 @@
 #include "MCHBase/Digit.h"
 #include "MCHBase/ClusterBlock.h"
 #include "MCHMappingInterface/Segmentation.h"
+#include <fmt/format.h>
+
+namespace
+{
+std::string asString(const o2::mch::ClusterStruct& cluster)
+{
+  return fmt::format("DE {:4d} x={:9.2f} y={:9.2f} z={:9.2f} ex={:5.2f} ey={:5.2f} uid={:10d}",
+                     cluster.getDEId(),
+                     cluster.x,
+                     cluster.y,
+                     cluster.z,
+                     cluster.ex,
+                     cluster.ey,
+                     cluster.uid);
+}
+} // namespace
 
 namespace o2
 {
@@ -83,7 +99,7 @@ class ClusterSinkTask
       // write the clusters in ascii format
       mOutputFile << clusters.size() << " clusters:" << endl;
       for (const auto& cluster : clusters) {
-        mOutputFile << cluster << endl;
+        mOutputFile << asString(cluster) << endl;
       }
     } else {
       // write the number of clusters
@@ -152,15 +168,20 @@ class ClusterSinkTask
 //_________________________________________________________________________________________________
 o2::framework::DataProcessorSpec getClusterSinkSpec(bool globalReferenceSystem)
 {
-  //std::vector<InputSpec> inputs = select(inputConfig.c_str());
-
   std::string inputConfig = fmt::format("clusters:MCH/{}CLUSTERS;digits:MCH/CLUSTERDIGITS",
                                         globalReferenceSystem ? "GLOBAL" : "");
-  // globalReferenceSystem ? "clusters:MCH/GLOBALCLUSTERS" : "clusters:MCH/CLUSTERS"),
-  //        InputSpec{"digits", "MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
+
+  std::cout << "inputConfig=" << inputConfig << "\n";
+
+  //  Inputs{InputSpec{"clusters", "MCH", "CLUSTERS", 0, Lifetime::Timeframe},
+  //  +           InputSpec{"digits", "MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
+
   return DataProcessorSpec{
     "ClusterSink",
-    Inputs{o2::framework::select(inputConfig.c_str())},
+    //    Inputs{o2::framework::select(inputConfig.c_str())},
+
+    Inputs{InputSpec{"clusters", "MCH", "CLUSTERS", 0, Lifetime::Timeframe},
+           InputSpec{"digits", "MCH", "CLUSTERDIGITS", 0, Lifetime::Timeframe}},
 
     Outputs{},
     AlgorithmSpec{adaptFromTask<ClusterSinkTask>()},
