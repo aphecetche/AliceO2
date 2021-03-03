@@ -278,14 +278,35 @@ void DataDecoder::decodePage(gsl::span<const std::byte> page)
   }
 };
 
+//LA : conceptually this is the difference between two InteractionRecord ...
+//or not ? : except that IR bc is 16 bits, not 20 ...
+//so it's the difference between an IR and a sampaInfo (bc,orbit)
+//aka a difference between two TimeFrameInfo === DsTimeRecord ?
+//
+//LA : needs a unit test for this function !
+//
+//And its name is not great, what about o2::mch::dsTimeDiff or something alike
+// (i.e. it has nothing to do, as is, with digits)
+//
+// or maybe even better :
+//
+// struct DsTimeRecord {
+//  uint32_t orbit;
+//  uint20_t bc;
+//
+// uint32_t operator-(const DsTimeRecord& dsTime1, const DsTimeRecord& dsTime2) const;
+//
+// }
+// ?
+//
 int32_t digitsTimeDiff(uint32_t orbit1, uint32_t bc1, uint32_t orbit2, uint32_t bc2)
 {
   // bunch crossings are stored with 20 bits
-  static const int32_t BCROLLOVER = (1 << 20);
+  constexpr int32_t BCROLLOVER = (1 << 20);
   // bunch crossings half range
   //static const int32_t BCHALFRANGE = (1 << 19);
   // number of bunch crossings in one orbit
-  static const int32_t BCINORBIT = 3564;
+  constexpr int32_t BCINORBIT = 3564;
 
   // We use the difference of orbits values to estimate the minimum and maximum allowed
   // difference in bunch crossings
@@ -344,7 +365,7 @@ void DataDecoder::computeDigitsTime_(std::vector<o2::mch::Digit>& digits, std::v
 
     int32_t tfTime1 = 0, tfTime2 = -1;
 
-    if (tfInfo.empty()) {
+    if (tfInfo.empty()) { // LA: how is that possible ?
       d.setTimeValid(false);
       continue;
     }
@@ -356,7 +377,7 @@ void DataDecoder::computeDigitsTime_(std::vector<o2::mch::Digit>& digits, std::v
                 << "    tfTime(1) " << orbit << "," << bc << "    diff " << tfTime1 << std::endl;
     }
 
-    if (tfInfo.size() > 1) {
+    if (tfInfo.size() > 1) { // LA : what is the range of sizes expected for tfInfo ? 1, 2 max ? more ?
       bc = tfInfo[1].mBunchCrossing;
       orbit = tfInfo[1].mOrbit;
       tfTime2 = digitsTimeDiff(orbit, bc, info.orbit, info.getBXTime());

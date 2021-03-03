@@ -17,6 +17,7 @@
 
 #include <gsl/span>
 #include <unordered_set>
+#include <unordered_map>
 
 #include "Headers/RDHAny.h"
 #include "MCHBase/Digit.h"

@@ -47,6 +47,10 @@ class Digit
   /// idx = 0 -> the digit belongs to the TF before the currently processed one
   /// idx = 1 -> the digit belongs to the currently processed TF
   /// idx = 2 -> the digit belongs to the TF after the currently processed one
+  ///
+  /// LA: assuming we really need this index, should use constants (part of
+  /// the interface), e.g. PREVIOUS_TIME_FRAME, CURRENT_TIME_FRAME, NEXT_TIME_FRAME
+  /// ?
   uint8_t getTFindex() const;
   void setTFindex(uint8_t idx);
 
