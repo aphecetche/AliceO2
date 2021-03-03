@@ -53,4 +53,10 @@ template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormat, S
 template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormat, ChargeSumMode, true>(Solar2FeeLinkMapper);
 template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormat, ChargeSumMode, false>(Solar2FeeLinkMapper);
 
+// template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormatV1, SampleMode, true>(Solar2FeeLinkMapper);
+// template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormatV1, SampleMode, false>(Solar2FeeLinkMapper);
+//
+// template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormatV1, ChargeSumMode, true>(Solar2FeeLinkMapper);
+// template std::unique_ptr<PayloadEncoder> createPayloadEncoder<UserLogicFormatV1, ChargeSumMode, false>(Solar2FeeLinkMapper);
+
 } // namespace o2::mch::raw

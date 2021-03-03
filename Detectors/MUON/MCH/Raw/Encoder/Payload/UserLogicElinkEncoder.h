@@ -27,10 +27,10 @@ namespace o2::mch::raw
 {
 
 template <typename CHARGESUM>
-class ElinkEncoder<UserLogicFormat, CHARGESUM>
+class UserLogicElinkEncoder
 {
  public:
-  explicit ElinkEncoder(uint8_t elinkId, int phase = 0);
+  explicit UserLogicElinkEncoder(uint8_t elinkId, int phase = 0);
 
   void addChannelData(uint8_t chId, const std::vector<SampaCluster>& data);
 
@@ -38,15 +38,21 @@ class ElinkEncoder<UserLogicFormat, CHARGESUM>
 
   void clear();
 
- private:
   uint8_t mElinkId; //< Elink id 0..39
   bool mHasSync;    //< whether or not we've already added a sync word
   std::vector<uint10_t> mBuffer;
 };
 
 template <typename CHARGESUM>
-ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
-                                                       int phase)
+class ElinkEncoder<UserLogicFormat, CHARGESUM> : public UserLogicElinkEncoder<CHARGESUM>
+{
+ public:
+  explicit ElinkEncoder(uint8_t elinkId, int phase = 0) : UserLogicElinkEncoder<CHARGESUM>(elinkId, phase) {}
+};
+
+template <typename CHARGESUM>
+UserLogicElinkEncoder<CHARGESUM>::UserLogicElinkEncoder(uint8_t elinkId,
+                                                        int phase)
   : mElinkId{elinkId},
     mHasSync{false},
     mBuffer{}
@@ -55,8 +61,8 @@ ElinkEncoder<UserLogicFormat, CHARGESUM>::ElinkEncoder(uint8_t elinkId,
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
-                                                              const std::vector<SampaCluster>& data)
+void UserLogicElinkEncoder<CHARGESUM>::addChannelData(uint8_t chId,
+                                                      const std::vector<SampaCluster>& data)
 {
   if (data.empty()) {
     throw std::invalid_argument("cannot add empty data");
@@ -74,14 +80,14 @@ void ElinkEncoder<UserLogicFormat, CHARGESUM>::addChannelData(uint8_t chId,
 }
 
 template <typename CHARGESUM>
-void ElinkEncoder<UserLogicFormat, CHARGESUM>::clear()
+void UserLogicElinkEncoder<CHARGESUM>::clear()
 {
   mBuffer.clear();
   mHasSync = false;
 }
 
 template <typename CHARGESUM>
-size_t ElinkEncoder<UserLogicFormat, CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint16_t gbtId)
+size_t UserLogicElinkEncoder<CHARGESUM>::moveToBuffer(std::vector<uint64_t>& buffer, uint16_t gbtId)
 {
   if (mBuffer.empty()) {
     return 0;

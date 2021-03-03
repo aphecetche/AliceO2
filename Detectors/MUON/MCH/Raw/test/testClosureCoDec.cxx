@@ -181,6 +181,7 @@ std::vector<std::string> chargeSumInput = {
   "S448-J6-DS2-CH26-ts-24-bc-0-cs-461-q-460",
   "S448-J6-DS2-CH42-ts-24-bc-0-cs-421-q-420"};
 
+//typedef boost::mpl::list<BareFormat, UserLogicFormat, UserLogicFormatV1> testTypes;
 typedef boost::mpl::list<BareFormat, UserLogicFormat> testTypes;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(ClosureChargeSum, FORMAT, testTypes)
