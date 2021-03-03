@@ -19,7 +19,33 @@ namespace o2::mch::raw
 struct BareFormat {
 };
 
+// initial UL format
 struct UserLogicFormat {
+  union {
+    uint64_t word;
+    struct {
+      uint64_t data : 50;
+      uint64_t error : 2;
+      uint64_t incomplete : 1;
+      uint64_t dsID : 6;
+      uint64_t linkID : 5;
+    };
+  };
+};
+
+// version 1 of UL format
+// = as initial version with 1 bit less for linkID and one bit more for error
+struct UserLogicFormatV1 {
+  union {
+    uint64_t word;
+    struct {
+      uint64_t data : 50;
+      uint64_t error : 3;
+      uint64_t incomplete : 1;
+      uint64_t dsID : 6;
+      uint64_t linkID : 4;
+    };
+  };
 };
 
 struct ChargeSumMode {
@@ -33,7 +59,6 @@ struct SampleMode {
 using uint10_t = uint16_t;
 using uint20_t = uint32_t;
 using uint50_t = uint64_t;
-
 }; // namespace o2::mch::raw
 
 #endif

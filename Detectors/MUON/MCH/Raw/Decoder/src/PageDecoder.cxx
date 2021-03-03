@@ -15,13 +15,24 @@
 #include "MCHRawElecMap/Mapper.h"
 #include "UserLogicEndpointDecoder.h"
 #include <iostream>
+#include <stdexcept>
 
 namespace o2::mch::raw
 {
 namespace impl
 {
-uint16_t CRUID_MASK = 0xFF;
-uint16_t CHARGESUM_MASK = 0x100;
+
+struct FEEID {
+  union {
+    uint16_t word;
+    struct {
+      uint16_t id : 8;
+      uint16_t chargeSum : 1;
+      uint16_t reserved : 3;
+      uint16_t ulFormatVersion : 4;
+    };
+  };
+};
 
 template <typename FORMAT, typename CHARGESUM>
 struct PayloadDecoderImpl {
@@ -40,6 +51,16 @@ struct PayloadDecoderImpl<UserLogicFormat, CHARGESUM> {
   type operator()(const FeeLinkId& feeLinkId, DecodedDataHandlers decodedDataHandlers, FeeLink2SolarMapper fee2solar)
   {
     return std::move(UserLogicEndpointDecoder<CHARGESUM>(feeLinkId.feeId(), fee2solar, decodedDataHandlers));
+  }
+};
+
+template <typename CHARGESUM>
+struct PayloadDecoderImpl<UserLogicFormatV1, CHARGESUM> {
+  using type = UserLogicEndpointDecoder<CHARGESUM, UserLogicFormatV1>;
+
+  type operator()(const FeeLinkId& feeLinkId, DecodedDataHandlers decodedDataHandlers, FeeLink2SolarMapper fee2solar)
+  {
+    return std::move(UserLogicEndpointDecoder<CHARGESUM, UserLogicFormatV1>(feeLinkId.feeId(), fee2solar, decodedDataHandlers));
   }
 };
 
@@ -75,7 +96,8 @@ class PageDecoderImpl
 
     auto feeId = o2::raw::RDHUtils::getFEEID(rdhP);
     auto linkId = o2::raw::RDHUtils::getLinkID(rdhP);
-    FeeLinkId feeLinkId(feeId & CRUID_MASK, linkId);
+    FEEID f{feeId};
+    FeeLinkId feeLinkId(f.id, linkId);
 
     auto p = mPayloadDecoders.find(feeLinkId);
     if (p == mPayloadDecoders.end()) {
@@ -109,19 +131,32 @@ PageDecoder createPageDecoder(RawBuffer rdhBuffer, DecodedDataHandlers decodedDa
   }
   auto linkId = o2::raw::RDHUtils::getLinkID(rdhP);
   auto feeId = o2::raw::RDHUtils::getFEEID(rdhP);
+  impl::FEEID f{feeId};
   if (linkId == 15) {
-    if (feeId & impl::CHARGESUM_MASK) {
-      return impl::PageDecoderImpl<UserLogicFormat, ChargeSumMode>(decodedDataHandlers, fee2solar);
+    if (f.ulFormatVersion != 0 && f.ulFormatVersion != 1) {
+      throw std::logic_error(fmt::format("ulFormatVersion {} is unknown", static_cast<int>(f.ulFormatVersion)));
+    }
+    if (f.chargeSum) {
+      if (f.ulFormatVersion == 0) {
+        return impl::PageDecoderImpl<UserLogicFormat, ChargeSumMode>(decodedDataHandlers, fee2solar);
+      } else if (f.ulFormatVersion == 1) {
+        return impl::PageDecoderImpl<UserLogicFormatV1, ChargeSumMode>(decodedDataHandlers, fee2solar);
+      }
     } else {
-      return impl::PageDecoderImpl<UserLogicFormat, SampleMode>(decodedDataHandlers, fee2solar);
+      if (f.ulFormatVersion == 0) {
+        return impl::PageDecoderImpl<UserLogicFormat, SampleMode>(decodedDataHandlers, fee2solar);
+      } else if (f.ulFormatVersion == 1) {
+        return impl::PageDecoderImpl<UserLogicFormatV1, SampleMode>(decodedDataHandlers, fee2solar);
+      }
     }
   } else {
-    if (feeId & impl::CHARGESUM_MASK) {
+    if (f.chargeSum) {
       return impl::PageDecoderImpl<BareFormat, ChargeSumMode>(decodedDataHandlers, fee2solar);
     } else {
       return impl::PageDecoderImpl<BareFormat, SampleMode>(decodedDataHandlers, fee2solar);
     }
   }
+  return nullptr;
 }
 
 PageDecoder createPageDecoder(RawBuffer rdhBuffer, DecodedDataHandlers decodedDataHandlers)
