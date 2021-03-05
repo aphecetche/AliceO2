@@ -18,6 +18,7 @@
 
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CommonDataFormat/RangeReference.h"
+#include <iostream>
 
 namespace o2
 {
@@ -60,5 +61,11 @@ class ROFRecord
 
 } // namespace mch
 } // namespace o2
+
+inline std::ostream& operator<<(std::ostream& out, const o2::mch::ROFRecord& rof)
+{
+  out << rof.getBCData() << " Range : " << rof.getFirstIdx() << "-" << rof.getLastIdx();
+  return out;
+}
 
 #endif // ALICEO2_MCH_ROFRECORD_H
