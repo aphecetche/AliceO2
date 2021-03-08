@@ -8,6 +8,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <limits>
 #define BOOST_TEST_MODULE Test MCHRaw CRUEncoder
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_DYN_LINK
@@ -413,14 +414,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(AllSolarsMustGetAFeeLink, T, realTypes)
   std::set<uint16_t> solarIds = getSolarUIDs<T>();
   auto solar2feeLink = o2::mch::raw::createSolar2FeeLinkMapper<T>();
   int nbad{0};
+  uint16_t minSolarId{std::numeric_limits<uint16_t>::max()};
+  uint16_t maxSolarId{0};
   for (auto s : solarIds) {
     auto p = solar2feeLink(s);
     if (!p.has_value()) {
       ++nbad;
       std::cout << "Got no feelinkId for solarId " << s << "\n";
     }
+    minSolarId = std::min(minSolarId, s);
+    maxSolarId = std::max(maxSolarId, s);
   }
   BOOST_CHECK_EQUAL(nbad, 0);
+  BOOST_CHECK_EQUAL(minSolarId, 72);
+  BOOST_CHECK_EQUAL(maxSolarId, 925);
   BOOST_CHECK_EQUAL(solarIds.size(), 362); // must be updated when adding more chambers
 }
 

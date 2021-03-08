@@ -1,0 +1,4 @@
+Solar,DualSampaId,Channel,pedestal mean,pedestal sigma
+72,16,35,35,3.5
+720,1029,12,12,1.2
+
